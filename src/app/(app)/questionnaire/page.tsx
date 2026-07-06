@@ -1,0 +1,266 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { ChevronLeft, Check } from "lucide-react";
+import { api } from "../../../../convex/_generated/api";
+import type { Profile } from "@/types";
+import type { Preferences } from "@/lib/profile-progress";
+import {
+  calculateProfileProgress,
+  getResumeStepIndex,
+} from "@/lib/profile-progress";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { QuestionnaireStep } from "@/components/questionnaire/questionnaire-step";
+import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-review";
+import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
+import { STEPS } from "@/components/questionnaire/steps";
+
+const REVIEW_STEP_INDEX = STEPS.length;
+
+export default function QuestionnairePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEditMode = searchParams.get("edit") === "1";
+  const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
+  const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
+  const updateQuestionnaire = useMutation(api.profiles.updateQuestionnaire);
+  const autoSaveProfile = useMutation(api.profiles.autoSaveProfile);
+  const saveProfileEdits = useMutation(api.profiles.saveProfileEdits);
+
+  const [stepOverride, setStepOverride] = useState<number | null>(
+    isEditMode ? REVIEW_STEP_INDEX : null
+  );
+
+  const autoStep = useMemo(() => {
+    if (!profile) return null;
+    if (isEditMode) return REVIEW_STEP_INDEX;
+    if (profile.questionnaireComplete) return null;
+    const resume = getResumeStepIndex(profile, preferences);
+    return resume >= REVIEW_STEP_INDEX ? REVIEW_STEP_INDEX : resume;
+  }, [profile, preferences, isEditMode]);
+
+  const currentStep = stepOverride ?? autoStep;
+
+  const totalSteps = STEPS.length + 1;
+  const isReviewStep = currentStep === REVIEW_STEP_INDEX;
+  const progress =
+    currentStep !== null
+      ? ((currentStep + 1) / totalSteps) * 100
+      : 0;
+
+  const handleAutoSave = async (data: Record<string, unknown>) => {
+    if (currentStep === null || isReviewStep) return;
+    if (isEditMode) {
+      await saveProfileEdits({ data });
+      return;
+    }
+    await autoSaveProfile({
+      step: currentStep + 1,
+      data,
+    });
+  };
+
+  const handleNext = async (stepData: Record<string, unknown>) => {
+    if (currentStep === null) return;
+
+    try {
+      if (!isReviewStep) {
+        if (isEditMode) {
+          await saveProfileEdits({ data: stepData });
+          toast.success("Changes saved");
+          setStepOverride(REVIEW_STEP_INDEX);
+          return;
+        }
+        await updateQuestionnaire({
+          step: currentStep + 1,
+          data: stepData,
+        });
+      }
+
+      if (currentStep < REVIEW_STEP_INDEX) {
+        setStepOverride(currentStep + 1);
+      }
+    } catch {
+      toast.error("Failed to save. Please try again.");
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep !== null && currentStep > 0) {
+      setStepOverride(currentStep - 1);
+    }
+  };
+
+  const handleEditStep = (stepIndex: number) => {
+    setStepOverride(stepIndex);
+  };
+
+  const handleComplete = () => {
+    if (isEditMode) {
+      router.push("/profile");
+      return;
+    }
+    router.push("/dashboard");
+  };
+
+  if (profile === undefined) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto animate-pulse space-y-4">
+          <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
+          <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded" />
+          <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-lg mx-auto text-center py-16">
+          <p className="text-gray-500">Profile not found. Please try refreshing.</p>
+          <Button className="mt-4" onClick={() => router.push("/dashboard")}>
+            Go to Dashboard
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (profile.questionnaireComplete && !isEditMode) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-lg mx-auto text-center py-16">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mx-auto mb-4">
+            <Check className="h-8 w-8" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Profile Complete</h1>
+          <p className="text-muted-foreground mb-6">
+            Your profile is ready. Start browsing your matches!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button asChild>
+              <a href="/matches">View Matches</a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a href="/profile">My Profile</a>
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (currentStep === null) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto animate-pulse space-y-4">
+          <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
+          <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded" />
+          <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const completionPercent = calculateProfileProgress(profile, preferences);
+
+  return (
+    <DashboardLayout>
+      <div className="max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">
+                    {isEditMode ? "Edit Profile Details" : "Profile Questionnaire"}
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {isReviewStep
+                      ? isEditMode
+                        ? "Review and update your profile"
+                        : "Review your answers before submitting"
+                      : STEPS[currentStep]?.title}
+                  </p>
+                </div>
+                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full">
+                  {isReviewStep
+                    ? "Review"
+                    : `${currentStep + 1}/${STEPS.length}`}
+                </span>
+              </div>
+              <Progress value={progress} className="h-2.5" />
+              <p className="text-xs text-muted-foreground mt-2">
+                {completionPercent}% profile complete · Auto-saves as you go
+              </p>
+            </div>
+
+            <div className="lg:hidden">
+              <ProfileCompletionCard
+                profile={profile}
+                preferences={preferences}
+                showContinue={false}
+                compact
+              />
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {isReviewStep ? (
+                  <QuestionnaireReview
+                    profile={profile}
+                    preferences={preferences}
+                    onEditStep={handleEditStep}
+                    onComplete={handleComplete}
+                    isEditMode={isEditMode}
+                  />
+                ) : (
+                  <QuestionnaireStep
+                    key={`step-${currentStep}-${profile._id}`}
+                    step={STEPS[currentStep]}
+                    profile={profile}
+                    preferences={preferences}
+                    onSubmit={handleNext}
+                    onAutoSave={handleAutoSave}
+                    isLastFormStep={currentStep === STEPS.length - 1}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
+
+            {currentStep > 0 && !isReviewStep && (
+              <Button variant="ghost" onClick={handleBack}>
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+            )}
+          </div>
+
+          <div className="hidden lg:block">
+            <div className="sticky top-24">
+              <ProfileCompletionCard
+                profile={profile}
+                preferences={preferences}
+                showContinue={false}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}

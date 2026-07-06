@@ -1,36 +1,124 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Calaf — Halal Marriage Matchmaking Platform
+
+Find your halal life partner with confidence.
+
+## Tech Stack
+
+- **Frontend:** Next.js 15+, React 19, TypeScript, TailwindCSS, shadcn/ui, Framer Motion
+- **Backend:** Convex, Convex Auth, Convex File Storage
+- **Payments:** Stripe
+- **Deployment:** Vercel + Convex Cloud
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Set up Convex
+
+```bash
+npx convex dev
+```
+
+This will prompt you to create a Convex project and generate your `.env.local` file with `NEXT_PUBLIC_CONVEX_URL`.
+
+### 3. Configure Convex Auth (required for login/register)
+
+```bash
+npm run setup:auth
+```
+
+This generates `JWT_PRIVATE_KEY`, `JWKS`, and `SITE_URL` on your Convex deployment. If your app runs on a different port, set `SITE_URL` first:
+
+```bash
+SITE_URL=http://localhost:3000 npm run setup:auth
+```
+
+### 4. Configure remaining environment variables
+
+Copy `.env.example` to `.env.local` and fill in:
+
+```bash
+cp .env.example .env.local
+```
+
+Required variables:
+- `NEXT_PUBLIC_CONVEX_URL` — from Convex dashboard
+- `STRIPE_SECRET_KEY` — from Stripe dashboard
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — from Stripe dashboard
+- `NEXT_PUBLIC_APP_URL` — your app URL (http://localhost:3001 for dev)
+
+### 5. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── (marketing)/        # Public pages
+│   ├── dashboard/          # User dashboard
+│   ├── matches/            # Match discovery
+│   ├── chat/               # Real-time messaging
+│   ├── questionnaire/      # Profile questionnaire
+│   ├── admin/              # Admin dashboard
+│   └── api/stripe/         # Stripe checkout API
+├── components/
+│   ├── ui/                 # shadcn/ui components
+│   ├── layout/             # Navbar, footer, sidebar
+│   ├── matches/            # Match cards & filters
+│   ├── questionnaire/      # Multi-step form
+│   └── marketing/          # Landing page sections
+├── lib/                    # Utils & constants
+convex/
+├── schema.ts               # Database schema
+├── auth.ts                 # Convex Auth setup
+├── matching.ts             # Compatibility algorithm
+├── matchingEngine.ts       # Score recalculation
+├── profiles.ts             # Profile CRUD
+├── matches.ts              # Like/match system
+├── messages.ts             # Real-time chat
+├── notifications.ts        # Push notifications
+├── admin.ts                # Admin operations
+└── payments.ts             # Stripe integration
+```
 
-## Learn More
+## Features
 
-To learn more about Next.js, take a look at the following resources:
+- **Authentication** — Register, login, logout, forgot password
+- **7-Step Questionnaire** — Comprehensive profile builder
+- **Compatibility Algorithm** — 100-point scoring across 10 categories
+- **Match Discovery** — Filter and browse matches above 70%
+- **Like System** — Mutual likes create matches
+- **Real-time Chat** — Messages, typing indicators, read receipts, images, emoji
+- **Notifications** — Likes, matches, messages, announcements
+- **Stripe Payments** — $15 one-time chat unlock
+- **Admin Dashboard** — User management, analytics, announcements
+- **Dark Mode** — System-aware theme switching
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Vercel
 
-## Deploy on Vercel
+1. Push to GitHub
+2. Import to Vercel
+3. Add environment variables
+4. Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Convex Cloud
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx convex deploy
+```
+
+## License
+
+Private — All rights reserved.
