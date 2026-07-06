@@ -108,15 +108,24 @@ convex/
 
 ### Vercel
 
-1. Push to GitHub
-2. Import to Vercel
-3. Add environment variables
-4. Deploy
+1. Push to GitHub and import the repo in Vercel
+2. **Add environment variables** (required for build and runtime):
+   - `NEXT_PUBLIC_CONVEX_URL` — from [Convex dashboard](https://dashboard.convex.dev) → your project → Settings → URL  
+     Example: `https://your-project-name.convex.cloud`
+   - `NEXT_PUBLIC_APP_URL` — your production URL (e.g. `https://your-app.vercel.app`)
+   - `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (if using payments)
+3. Redeploy after adding variables
 
 ### Convex Cloud
 
 ```bash
 npx convex deploy
+```
+
+After deploying Convex, copy the deployment URL into Vercel as `NEXT_PUBLIC_CONVEX_URL`, then run auth setup for production:
+
+```bash
+SITE_URL=https://your-app.vercel.app npm run setup:auth
 ```
 
 ## License
