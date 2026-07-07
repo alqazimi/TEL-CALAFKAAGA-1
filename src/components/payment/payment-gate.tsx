@@ -8,11 +8,6 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { REGISTRATION_PRICE } from "@/lib/constants";
-import { loadStripe } from "@stripe/stripe-js";
-
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-  : null;
 
 export function PaymentCheckoutButton({
   className,
@@ -25,14 +20,8 @@ export function PaymentCheckoutButton({
   const [loading, setLoading] = useState(false);
 
   const handlePay = async () => {
-    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-      toast.error("Stripe is not configured. Contact support.");
-      return;
-    }
-
     setLoading(true);
     try {
-      await stripePromise;
       const { url } = await createCheckout({});
       window.location.href = url;
     } catch (error) {
