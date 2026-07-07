@@ -14,6 +14,7 @@ import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_createProfile from "../lib/createProfile.js";
+import type * as lib_profileEnrichment from "../lib/profileEnrichment.js";
 import type * as lib_questionnaire from "../lib/questionnaire.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_stripe from "../lib/stripe.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   "lib/access": typeof lib_access;
   "lib/adminAuth": typeof lib_adminAuth;
   "lib/createProfile": typeof lib_createProfile;
+  "lib/profileEnrichment": typeof lib_profileEnrichment;
   "lib/questionnaire": typeof lib_questionnaire;
   "lib/roles": typeof lib_roles;
   "lib/stripe": typeof lib_stripe;

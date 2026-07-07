@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import {
   countStaff,
@@ -101,7 +102,7 @@ export const claimFirstAdmin = mutation({
     const profile = await getProfileForUser(ctx, userId);
     if (!profile) throw new Error("Profile not found.");
 
-    await ctx.db.patch(profile._id, { role: "owner", hasPaid: true });
+    await ctx.db.patch(profile._id, { role: "owner", hasPaid: true, approved: true, verified: true });
     return { success: true };
   },
 });
@@ -126,7 +127,10 @@ export const setUserRole = mutation({
 
     if (targetProfile.role === args.role) return;
 
-    await ctx.db.patch(args.profileId, { role: args.role });
+    await ctx.db.patch(args.profileId, {
+      role: args.role,
+      ...(args.role === "admin" ? { approved: true, verified: true } : {}),
+    });
   },
 });
 
@@ -273,15 +277,22 @@ export const getAllUsers = query({
 });
 
 export const getAllPayments = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    includeInProgress: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
     await requireAdmin(ctx, userId);
 
-    const payments = await ctx.db.query("payments").collect();
-    payments.sort((a, b) => b.createdAt - a.createdAt);
+    const allPayments = await ctx.db.query("payments").collect();
+    allPayments.sort((a, b) => b.createdAt - a.createdAt);
+
+    const includeInProgress = args.includeInProgress ?? false;
+    const payments = includeInProgress
+      ? allPayments.filter((p) => p.status !== "failed")
+      : allPayments.filter((p) => p.status === "completed");
 
     return await Promise.all(
       payments.map(async (payment) => {
@@ -306,6 +317,55 @@ export const getAllPayments = query({
         };
       })
     );
+  },
+});
+
+/** One-time or occasional cleanup for abandoned checkout rows already in the DB. */
+export const reconcileAbandonedCheckouts = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    await requireAdmin(ctx, userId);
+
+    const allPayments = await ctx.db.query("payments").collect();
+    const usersWithCompleted = new Set(
+      allPayments
+        .filter((p) => p.status === "completed")
+        .map((p) => p.userId)
+    );
+
+    let updated = 0;
+
+    for (const payment of allPayments) {
+      if (payment.status !== "pending") continue;
+
+      if (usersWithCompleted.has(payment.userId)) {
+        await ctx.db.patch(payment._id, { status: "failed" });
+        updated++;
+      }
+    }
+
+    const pendingByUser = new Map<string, typeof allPayments>();
+    for (const payment of allPayments) {
+      if (payment.status !== "pending") continue;
+      if (usersWithCompleted.has(payment.userId)) continue;
+
+      const key = payment.userId;
+      const list = pendingByUser.get(key) ?? [];
+      list.push(payment);
+      pendingByUser.set(key, list);
+    }
+
+    for (const pendingList of pendingByUser.values()) {
+      pendingList.sort((a, b) => b.createdAt - a.createdAt);
+      for (const stale of pendingList.slice(1)) {
+        await ctx.db.patch(stale._id, { status: "failed" });
+        updated++;
+      }
+    }
+
+    return { updated };
   },
 });
 
@@ -357,7 +417,7 @@ export const approveUser = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     await requireAdmin(ctx, userId);
-    await ctx.db.patch(args.profileId, { approved: true });
+    await ctx.db.patch(args.profileId, { approved: true, verified: true });
   },
 });
 
@@ -495,7 +555,7 @@ export const getAnalytics = query({
 
     const monthlySignups: Record<string, number> = {};
     for (const p of profiles) {
-      const month = new Date().toISOString().slice(0, 7);
+      const month = new Date(p._creationTime).toISOString().slice(0, 7);
       monthlySignups[month] = (monthlySignups[month] ?? 0) + 1;
     }
 
@@ -515,5 +575,26 @@ export const getAnalytics = query({
             )
           : 0,
     };
+  },
+});
+
+/** Owner-only: backfill religiousLevel, questionnaireStep, and related fields. */
+export const runProfileBackfill = mutation({
+  args: {},
+  handler: async (ctx): Promise<{ updated: number; total: number }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    await requireOwner(ctx, userId);
+    const result: { updated: number; total: number } = await ctx.runMutation(
+      internal.migrations.backfillProfileFields,
+      {}
+    );
+    const profiles = await ctx.db.query("profiles").collect();
+    for (const profile of profiles) {
+      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
+        userId: profile.userId,
+      });
+    }
+    return result;
   },
 });

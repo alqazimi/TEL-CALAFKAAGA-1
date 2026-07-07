@@ -20,6 +20,11 @@ import {
   Phone,
   Headphones,
   CreditCard,
+  TrendingUp,
+  UserCheck,
+  Wallet,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -44,44 +49,51 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { WHATSAPP_URL } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n/context";
+import type { TranslationPath } from "@/lib/i18n/translations";
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
 type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
 
-const ROLE_FILTERS: { value: RoleFilter; label: string }[] = [
-  { value: "all", label: "All roles" },
-  { value: "user", label: "Members" },
-  { value: "admin", label: "Admins" },
-  { value: "owner", label: "Owner" },
+const ROLE_FILTER_KEYS = [
+  { value: "all" as const, key: "adminPage.filterAllRoles" as const },
+  { value: "user" as const, key: "adminPage.filterMembers" as const },
+  { value: "admin" as const, key: "adminPage.filterAdmins" as const },
+  { value: "owner" as const, key: "adminPage.filterOwner" as const },
 ];
 
-const PAYMENT_FILTERS: { value: PaymentFilter; label: string }[] = [
-  { value: "all", label: "All payments" },
-  { value: "unpaid", label: "Unpaid" },
-  { value: "basic", label: "Paid $15" },
-  { value: "premium", label: "Paid $20" },
-  { value: "paid", label: "Any paid" },
+const PAYMENT_FILTER_KEYS = [
+  { value: "all" as const, key: "adminPage.filterAllPayments" as const },
+  { value: "unpaid" as const, key: "adminPage.unpaid" as const },
+  { value: "basic" as const, key: "adminPage.paidBasic" as const },
+  { value: "premium" as const, key: "adminPage.paidPremium" as const },
+  { value: "paid" as const, key: "adminPage.filterAnyPaid" as const },
 ];
 
 function isPremiumUser(user: AdminUser) {
   return user.hasPersonalSupport === true || (user.paidCents ?? 0) >= 2000;
 }
 
-function formatPaymentLabel(payment: AdminPayment) {
+function formatPaymentLabel(
+  payment: AdminPayment,
+  t: (key: TranslationPath, params?: Record<string, string | number>) => string
+) {
   if (payment.registrationTier === "premium" || payment.paymentType === "registration_premium") {
-    return "Registration + Support ($20)";
+    return t("adminPage.paymentRegistrationPremium");
   }
   if (payment.registrationTier === "basic" || payment.paymentType === "registration") {
-    return "Registration ($15)";
+    return t("adminPage.paymentRegistrationBasic");
   }
-  if (payment.paymentType === "chat") return "Chat unlock";
+  if (payment.paymentType === "chat") return t("adminPage.paymentChatUnlock");
   return `$${(payment.amount / 100).toFixed(0)}`;
 }
 
 export default function AdminPage() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
+  const [showInProgressPayments, setShowInProgressPayments] = useState(false);
   const [announcement, setAnnouncement] = useState({ title: "", body: "" });
   const [selectedProfileId, setSelectedProfileId] = useState<Id<"profiles"> | null>(null);
 
@@ -101,8 +113,9 @@ export default function AdminPage() {
   ) as AdminAnalytics | undefined;
   const payments = useQuery(
     api.admin.getAllPayments,
-    isStaff ? {} : "skip"
+    isStaff ? { includeInProgress: showInProgressPayments } : "skip"
   ) as AdminPayment[] | undefined;
+  const reconcileCheckouts = useMutation(api.admin.reconcileAbandonedCheckouts);
   const approveUser = useMutation(api.admin.approveUser);
   const banUser = useMutation(api.admin.banUser);
   const deleteUser = useMutation(api.admin.deleteUser);
@@ -113,19 +126,19 @@ export default function AdminPage() {
     if (!announcement.title || !announcement.body) return;
     try {
       await createAnnouncement(announcement);
-      toast.success("Announcement sent to all users!");
+      toast.success(t("adminPage.announcementSent"));
       setAnnouncement({ title: "", body: "" });
     } catch {
-      toast.error("Failed to send announcement");
+      toast.error(t("adminPage.announcementFailed"));
     }
   };
 
   const handleRoleChange = async (profileId: Id<"profiles">, role: "user" | "admin") => {
     try {
       await setUserRole({ profileId, role });
-      toast.success(role === "admin" ? "User promoted to admin." : "Admin access removed.");
+      toast.success(role === "admin" ? t("adminPage.promoted") : t("adminPage.demoted"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update role.");
+      toast.error(error instanceof Error ? error.message : t("adminPage.roleFailed"));
     }
   };
 
@@ -151,148 +164,221 @@ export default function AdminPage() {
   const canManageRoles = stats.isOwner;
 
   const statCards = [
-    { label: "Total Users", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
-    { label: "Paid $15", value: stats.paidBasicCount, icon: DollarSign, color: "text-emerald-500" },
-    { label: "Paid $20", value: stats.paidPremiumCount, icon: Headphones, color: "text-violet-500" },
-    { label: "Unpaid", value: stats.unpaidCount, icon: Users, color: "text-gray-500" },
-    { label: "Matches", value: stats.totalMatches, icon: Heart, color: "text-primary" },
-    { label: "Revenue", value: `$${(stats.revenue / 100).toFixed(0)}`, icon: DollarSign, color: "text-amber-500" },
+    {
+      label: t("adminPage.totalUsers"),
+      value: stats.totalUsers,
+      icon: Users,
+      iconClass: "text-blue-600 dark:text-blue-400",
+      chipClass: "bg-blue-100 dark:bg-blue-950/60",
+    },
+    {
+      label: t("adminPage.paidBasic"),
+      value: stats.paidBasicCount,
+      icon: DollarSign,
+      iconClass: "text-emerald-600 dark:text-emerald-400",
+      chipClass: "bg-emerald-100 dark:bg-emerald-950/60",
+    },
+    {
+      label: t("adminPage.paidPremium"),
+      value: stats.paidPremiumCount,
+      icon: Headphones,
+      iconClass: "text-violet-600 dark:text-violet-400",
+      chipClass: "bg-violet-100 dark:bg-violet-950/60",
+    },
+    {
+      label: t("adminPage.unpaid"),
+      value: stats.unpaidCount,
+      icon: UserCheck,
+      iconClass: "text-slate-600 dark:text-slate-400",
+      chipClass: "bg-slate-100 dark:bg-slate-800/60",
+    },
+    {
+      label: t("dashboard.matches"),
+      value: stats.totalMatches,
+      icon: Heart,
+      iconClass: "text-primary",
+      chipClass: "bg-primary/10",
+    },
+    {
+      label: t("adminPage.revenue"),
+      value: `$${(stats.revenue / 100).toFixed(0)}`,
+      icon: Wallet,
+      iconClass: "text-amber-600 dark:text-amber-400",
+      chipClass: "bg-amber-100 dark:bg-amber-950/60",
+    },
   ];
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          {stats.isOwner && (
-            <p className="text-sm text-muted-foreground mt-1">
-              You are the owner — you can promote users to admin.
-            </p>
-          )}
+      <div className="space-y-6 sm:space-y-8">
+        <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-8">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                {stats.isOwner ? t("adminPage.ownerConsole") : t("adminPage.adminConsole")}
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                {t("adminPage.title")}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {stats.isOwner ? t("adminPage.ownerDesc") : t("adminPage.adminDesc")}
+              </p>
+            </div>
+            <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/70 px-5 py-3 backdrop-blur">
+              <div className="text-center">
+                <p className="text-xl font-bold leading-none">{stats.totalUsers}</p>
+                <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">{t("adminPage.members")}</p>
+              </div>
+              <div className="h-8 w-px bg-border" />
+              <div className="text-center">
+                <p className="text-xl font-bold leading-none text-emerald-600 dark:text-emerald-400">
+                  ${(stats.revenue / 100).toFixed(0)}
+                </p>
+                <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">{t("adminPage.revenue")}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {statCards.map((stat) => (
-            <Card key={stat.label}>
+            <Card
+              key={stat.label}
+              className="group border-border/70 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+            >
               <CardContent className="p-4">
-                <stat.icon className={`h-5 w-5 ${stat.color} mb-2`} />
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-gray-500">{stat.label}</p>
+                <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl ${stat.chipClass}`}>
+                  <stat.icon className={`h-5 w-5 ${stat.iconClass}`} />
+                </div>
+                <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
+                <p className="mt-0.5 text-xs text-muted-foreground">{stat.label}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         <Tabs defaultValue="users">
-          <TabsList>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="payments">Payments</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="announcements">Announcements</TabsTrigger>
+          <TabsList className="h-auto flex-wrap gap-1 rounded-2xl bg-muted/60 p-1.5">
+            <TabsTrigger value="users" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.users")}</TabsTrigger>
+            <TabsTrigger value="payments" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.payments")}</TabsTrigger>
+            <TabsTrigger value="analytics" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.analytics")}</TabsTrigger>
+            <TabsTrigger value="announcements" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.announcements")}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                className="pl-10"
-                placeholder="Search by name, email, phone, or location..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
+          <TabsContent value="users" className="space-y-4 pt-2">
+            <Card className="border-border/70">
+              <CardContent className="space-y-4 p-4 sm:p-5">
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    className="h-11 rounded-xl pl-10"
+                    placeholder={t("adminPage.searchPlaceholder")}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
 
-            <div className="space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Click any user to view their full profile and questionnaire answers.
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground mr-1">Role</span>
-                {ROLE_FILTERS.map((f) => (
-                  <Button
-                    key={f.value}
-                    size="sm"
-                    variant={roleFilter === f.value ? "default" : "outline"}
-                    className="h-8 rounded-full px-3 text-xs"
-                    onClick={() => setRoleFilter(f.value)}
-                  >
-                    {f.label}
-                  </Button>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground mr-1">Payment</span>
-                {PAYMENT_FILTERS.map((f) => (
-                  <Button
-                    key={f.value}
-                    size="sm"
-                    variant={paymentFilter === f.value ? "default" : "outline"}
-                    className="h-8 rounded-full px-3 text-xs"
-                    onClick={() => setPaymentFilter(f.value)}
-                  >
-                    {f.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("adminPage.role")}</span>
+                    {ROLE_FILTER_KEYS.map((f) => (
+                      <Button
+                        key={f.value}
+                        size="sm"
+                        variant={roleFilter === f.value ? "default" : "outline"}
+                        className="h-8 rounded-full px-3.5 text-xs"
+                        onClick={() => setRoleFilter(f.value)}
+                      >
+                        {t(f.key)}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="hidden h-6 w-px bg-border sm:block" />
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("adminPage.payment")}</span>
+                    {PAYMENT_FILTER_KEYS.map((f) => (
+                      <Button
+                        key={f.value}
+                        size="sm"
+                        variant={paymentFilter === f.value ? "default" : "outline"}
+                        className="h-8 rounded-full px-3.5 text-xs"
+                        onClick={() => setPaymentFilter(f.value)}
+                      >
+                        {t(f.key)}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="space-y-3">
-              {users?.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No users match these filters.
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <ChevronRight className="h-3.5 w-3.5" />
+                  {t("adminPage.clickHint")}
                 </p>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-2.5">
+              {users?.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-border py-12 text-center">
+                  <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                  <p className="text-sm text-muted-foreground">{t("adminPage.noUsers")}</p>
+                </div>
               )}
               {users?.map((user) => (
                 <Card
                   key={user._id}
-                  className={`cursor-pointer transition-colors hover:bg-muted/40 ${
-                    selectedProfileId === user._id ? "ring-2 ring-primary" : ""
+                  className={`group cursor-pointer border-border/70 transition-all hover:border-primary/30 hover:shadow-md ${
+                    selectedProfileId === user._id ? "border-primary/50 ring-2 ring-primary/40" : ""
                   }`}
                   onClick={() => setSelectedProfileId(user._id)}
                 >
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <Avatar>
+                  <CardContent className="flex items-center gap-4 p-4">
+                    <Avatar className="h-12 w-12 border border-border">
                       <AvatarImage src={user.imageUrl ?? undefined} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="bg-muted font-semibold">{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium">{user.name}</p>
+                        <p className="font-semibold">{user.name}</p>
                         <Badge variant="outline" className="text-xs capitalize">{user.gender}</Badge>
                         {isOwnerRole(user.role) && (
                           <Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
                             <Crown className="h-3 w-3 mr-1" />
-                            Owner
+                            {t("adminPage.badgeOwner")}
                           </Badge>
                         )}
                         {user.role === "admin" && (
-                          <Badge className="text-xs bg-primary/10 text-primary">Admin</Badge>
+                          <Badge className="text-xs bg-primary/10 text-primary">{t("adminPage.badgeAdmin")}</Badge>
                         )}
-                        {user.banned && <Badge className="text-xs bg-red-100 text-red-600">Banned</Badge>}
-                        {!user.approved && <Badge className="text-xs bg-amber-100 text-amber-600">Pending</Badge>}
+                        {user.banned && <Badge className="text-xs bg-red-100 text-red-600">{t("adminPage.badgeBanned")}</Badge>}
+                        {!user.approved && <Badge className="text-xs bg-amber-100 text-amber-600">{t("adminPage.badgePending")}</Badge>}
                         {isStaffRole(user.role) ? (
-                          <Badge variant="outline" className="text-xs">Staff access</Badge>
+                          <Badge variant="outline" className="text-xs">{t("adminPage.badgeStaff")}</Badge>
                         ) : user.hasPaid ? (
                           <>
                             <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
                               {user.paidCents
                                 ? `Paid $${(user.paidCents / 100).toFixed(0)}`
-                                : "Paid"}
+                                : t("adminPage.badgePaid")}
                             </Badge>
                             {isPremiumUser(user) && (
                               <Badge className="text-xs bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
                                 <Headphones className="h-3 w-3 mr-1" />
-                                Personal Support
+                                {t("adminPage.badgePersonalSupport")}
                               </Badge>
                             )}
                           </>
                         ) : (
                           <Badge variant="outline" className="text-xs text-muted-foreground">
-                            Unpaid
+                            {t("adminPage.unpaid")}
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500">{user.country} · {user.city}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {[user.country, user.city].filter(Boolean).join(" · ") || "—"}
+                      </p>
                       <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
                         {user.email && (
                           <p className="flex items-center gap-1.5 truncate">
@@ -313,7 +399,7 @@ export default function AdminPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Contact on WhatsApp"
+                          title={t("adminPage.contactWhatsApp")}
                           asChild
                         >
                           <a
@@ -332,7 +418,7 @@ export default function AdminPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Remove admin"
+                            title={t("adminPage.removeAdmin")}
                             onClick={() => void handleRoleChange(user._id, "user")}
                           >
                             <ShieldOff className="h-4 w-4 text-amber-600" />
@@ -341,7 +427,7 @@ export default function AdminPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Make admin"
+                            title={t("adminPage.makeAdmin")}
                             onClick={() => void handleRoleChange(user._id, "admin")}
                           >
                             <Shield className="h-4 w-4 text-primary" />
@@ -352,7 +438,7 @@ export default function AdminPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Approve user"
+                          title={t("adminPage.approveUser")}
                           onClick={() => approveUser({ profileId: user._id })}
                         >
                           <CheckCircle className="h-4 w-4 text-primary" />
@@ -361,7 +447,7 @@ export default function AdminPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        title={user.banned ? "Unban user" : "Ban user"}
+                        title={user.banned ? t("adminPage.unbanUser") : t("adminPage.banUser")}
                         onClick={() => banUser({ profileId: user._id, banned: !user.banned })}
                         disabled={isOwnerRole(user.role)}
                       >
@@ -371,7 +457,7 @@ export default function AdminPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Delete user"
+                          title={t("adminPage.deleteUser")}
                           onClick={() => deleteUser({ profileId: user._id })}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
@@ -384,19 +470,60 @@ export default function AdminPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="payments" className="space-y-4">
-            <div className="space-y-3">
+          <TabsContent value="payments" className="space-y-2.5 pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                {showInProgressPayments
+                  ? t("adminPage.paymentsShowingInProgress")
+                  : t("adminPage.paymentsShowingCompleted")}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant={showInProgressPayments ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowInProgressPayments((v) => !v)}
+                >
+                  {showInProgressPayments
+                    ? t("adminPage.hideInProgress")
+                    : t("adminPage.showInProgress")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const result = await reconcileCheckouts({});
+                      toast.success(
+                        t("adminPage.reconcileDone", { count: result.updated })
+                      );
+                    } catch (error) {
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : t("adminPage.reconcileFailed")
+                      );
+                    }
+                  }}
+                >
+                  {t("adminPage.reconcileCheckouts")}
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2.5">
               {payments?.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No payments recorded yet.
-                </p>
+                <div className="rounded-2xl border border-dashed border-border py-12 text-center">
+                  <CreditCard className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                  <p className="text-sm text-muted-foreground">{t("adminPage.noPayments")}</p>
+                </div>
               )}
               {payments?.map((payment) => (
-                <Card key={payment._id}>
+                <Card key={payment._id} className="border-border/70 transition-all hover:shadow-md">
                   <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-                        <CreditCard className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/60">
+                        <CreditCard className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -418,7 +545,7 @@ export default function AdminPage() {
                             {payment.status}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            {formatPaymentLabel(payment)}
+                            {formatPaymentLabel(payment, t)}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-0.5">
@@ -447,77 +574,98 @@ export default function AdminPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="analytics">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Match Rate</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-primary">
+          <TabsContent value="analytics" className="pt-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Card className="border-border/70">
+                <CardContent className="p-5">
+                  <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                    <Heart className="h-5 w-5 text-primary" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">{t("adminPage.matchRate")}</p>
+                  <div className="mt-1 text-4xl font-bold tracking-tight text-primary">
                     {analytics?.matchRate ?? 0}%
                   </div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Conversion Rate</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-primary">
+              <Card className="border-border/70">
+                <CardContent className="p-5">
+                  <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-950/60">
+                    <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">{t("adminPage.conversionRate")}</p>
+                  <div className="mt-1 text-4xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                     {analytics?.conversionRate ?? 0}%
                   </div>
                 </CardContent>
               </Card>
-              <Card className="sm:col-span-2">
+              <Card className="border-border/70 sm:col-span-2">
                 <CardHeader>
-                  <CardTitle>Users by Country</CardTitle>
+                  <CardTitle className="text-base">{t("adminPage.usersByCountry")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    {Object.entries(analytics?.countryBreakdown ?? {})
-                      .sort(([, a], [, b]) => b - a)
-                      .slice(0, 10)
-                      .map(([country, count]) => (
-                        <div key={country} className="flex items-center justify-between">
-                          <span className="text-sm">{country}</span>
-                          <Badge variant="secondary">{count}</Badge>
+                  {Object.keys(analytics?.countryBreakdown ?? {}).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("adminPage.noAnalytics")}</p>
+                  ) : (
+                    (() => {
+                      const entries = Object.entries(analytics?.countryBreakdown ?? {})
+                        .sort(([, a], [, b]) => b - a)
+                        .slice(0, 10);
+                      const max = Math.max(...entries.map(([, c]) => c), 1);
+                      return (
+                        <div className="space-y-3">
+                          {entries.map(([country, count]) => (
+                            <div key={country} className="space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium">{country}</span>
+                                <span className="text-muted-foreground">{count}</span>
+                              </div>
+                              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                                <div
+                                  className="h-full rounded-full bg-primary transition-all"
+                                  style={{ width: `${(count / max) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                  </div>
+                      );
+                    })()
+                  )}
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="announcements">
-            <Card>
+          <TabsContent value="announcements" className="pt-2">
+            <Card className="border-border/70">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Megaphone className="h-5 w-5" />
-                  Send Announcement
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                  </span>
+                  {t("adminPage.sendAnnouncement")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Title</Label>
+                  <Label>{t("adminPage.announcementTitle")}</Label>
                   <Input
                     value={announcement.title}
                     onChange={(e) => setAnnouncement({ ...announcement, title: e.target.value })}
-                    placeholder="Announcement title"
+                    placeholder={t("adminPage.announcementTitlePh")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Message</Label>
+                  <Label>{t("adminPage.announcementBody")}</Label>
                   <Textarea
                     value={announcement.body}
                     onChange={(e) => setAnnouncement({ ...announcement, body: e.target.value })}
-                    placeholder="Announcement message..."
+                    placeholder={t("adminPage.announcementBodyPh")}
                     rows={4}
                   />
                 </div>
                 <Button onClick={handleAnnouncement}>
-                  Send to All Users
+                  {t("adminPage.sendToAll")}
                 </Button>
               </CardContent>
             </Card>

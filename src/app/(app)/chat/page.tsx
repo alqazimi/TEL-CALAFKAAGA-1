@@ -17,6 +17,7 @@ import {
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { api } from "../../../../convex/_generated/api";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
+import { PendingApprovalCard } from "@/components/profile/pending-approval-card";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { Conversation, ChatMessage, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
@@ -32,22 +33,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/utils";
 import { REGISTRATION_PRICE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n/context";
 
 function MessagesEmptyState() {
+  const { t } = useTranslation();
+
   return (
     <Card className="border-border">
       <CardContent className="py-16 px-6 text-center max-w-md mx-auto">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-accent-foreground mx-auto mb-5">
           <MessageCircle className="h-8 w-8" />
         </div>
-        <h2 className="text-xl font-semibold mb-2">No messages yet</h2>
+        <h2 className="text-xl font-semibold mb-2">{t("chatPage.noMessages")}</h2>
         <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-          When you and someone like each other, your conversation will appear here.
+          {t("chatPage.noMessagesDesc")}
         </p>
         <Button asChild>
           <Link href="/matches">
             <Heart className="h-4 w-4 mr-2" />
-            Browse Matches
+            {t("chatPage.browseMatches")}
           </Link>
         </Button>
       </CardContent>
@@ -64,6 +68,7 @@ function ChatShell({ children }: { children: React.ReactNode }) {
 }
 
 export default function ChatPage() {
+  const { t } = useTranslation();
   const [activeConversation, setActiveConversation] = useState<Id<"conversations"> | null>(null);
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
@@ -117,9 +122,9 @@ export default function ChatPage() {
       setShowEmoji(false);
     } catch (error) {
       if (error instanceof Error && error.message.includes("payment")) {
-        toast.error(`Complete your $${REGISTRATION_PRICE} registration to unlock chat.`);
+        toast.error(t("chatPage.paymentRequired", { price: REGISTRATION_PRICE }));
       } else {
-        toast.error("Failed to send message");
+        toast.error(t("chatPage.sendFailed"));
       }
     }
   };
@@ -148,11 +153,11 @@ export default function ChatPage() {
       await registerUpload({ storageId });
       await sendMessage({
         conversationId: activeConversation,
-        message: "📷 Image",
+        message: t("chatPage.imageMessage"),
         imageId: storageId,
       });
     } catch {
-      toast.error("Failed to upload image");
+      toast.error(t("chatPage.uploadFailed"));
     }
   };
 
@@ -186,9 +191,19 @@ export default function ChatPage() {
         <ProfileLockedGate
           profile={profile}
           preferences={preferences}
-          title="Complete your profile"
-          description="Finish your profile to start connecting with your matches."
+          title={t("chatPage.completeProfileTitle")}
+          description={t("chatPage.completeProfileDesc")}
         />
+      </DashboardLayout>
+    );
+  }
+
+  if (profile && !profile.approved) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-lg mx-auto py-8">
+          <PendingApprovalCard />
+        </div>
       </DashboardLayout>
     );
   }
@@ -223,9 +238,12 @@ export default function ChatPage() {
             )}
           >
             <div className="px-4 py-3.5 border-b border-border">
-              <h2 className="text-sm font-semibold">Messages</h2>
+              <h2 className="text-sm font-semibold">{t("chatPage.messages")}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {conversations.length} {conversations.length === 1 ? "conversation" : "conversations"}
+                {conversations.length}{" "}
+                {conversations.length === 1
+                  ? t("chatPage.conversation")
+                  : t("chatPage.conversations")}
               </p>
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -253,7 +271,7 @@ export default function ChatPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-medium truncate text-sm">
-                          {conv.profile?.name ?? "Match"}
+                          {conv.profile?.name ?? t("chatPage.match")}
                         </p>
                         {conv.unreadCount > 0 && (
                           <Badge className="text-[10px] h-5 min-w-5 px-1.5 shrink-0">
@@ -262,7 +280,7 @@ export default function ChatPage() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {conv.lastMessage ?? "Say hello"}
+                        {conv.lastMessage ?? t("chatPage.sayHello")}
                       </p>
                     </div>
                     {!conv.chatUnlocked && (
@@ -303,11 +321,11 @@ export default function ChatPage() {
                       {activeConv.profile?.name}
                     </p>
                     {!activeConv.chatUnlocked ? (
-                      <p className="text-xs text-muted-foreground">Locked</p>
+                      <p className="text-xs text-muted-foreground">{t("chatPage.locked")}</p>
                     ) : isTyping ? (
-                      <p className="text-xs text-primary">Typing...</p>
+                      <p className="text-xs text-primary">{t("chatPage.typing")}</p>
                     ) : (
-                      <p className="text-xs text-muted-foreground">Active now</p>
+                      <p className="text-xs text-muted-foreground">{t("chatPage.activeNow")}</p>
                     )}
                   </div>
                 </div>
@@ -318,14 +336,17 @@ export default function ChatPage() {
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground mx-auto mb-4">
                         <Lock className="h-7 w-7" />
                       </div>
-                      <h3 className="text-lg font-semibold mb-2">Unlock chat</h3>
+                      <h3 className="text-lg font-semibold mb-2">{t("chatPage.unlockChat")}</h3>
                       <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-                        {`Complete your $${REGISTRATION_PRICE} registration to message ${
-                          activeConv.profile?.name?.split(" ")[0] ?? "your match"
-                        }.`}
+                        {t("chatPage.unlockChatDesc", {
+                          price: REGISTRATION_PRICE,
+                          name: activeConv.profile?.name?.split(" ")[0] ?? t("chatPage.match"),
+                        })}
                       </p>
                       <Button asChild>
-                        <Link href="/payment">{`Pay $${REGISTRATION_PRICE}`}</Link>
+                        <Link href="/payment">
+                          {t("chatPage.pay", { price: REGISTRATION_PRICE })}
+                        </Link>
                       </Button>
                     </div>
                   </div>
@@ -337,9 +358,11 @@ export default function ChatPage() {
                           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted mb-3">
                             <MessageCircle className="h-6 w-6 text-muted-foreground" />
                           </div>
-                          <p className="text-sm font-medium">Start the conversation</p>
+                          <p className="text-sm font-medium">{t("chatPage.startConversation")}</p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Say hello to {activeConv.profile?.name?.split(" ")[0]}
+                            {t("chatPage.sayHelloTo", {
+                              name: activeConv.profile?.name?.split(" ")[0] ?? "",
+                            })}
                           </p>
                         </div>
                       )}
@@ -363,7 +386,7 @@ export default function ChatPage() {
                               {msg.imageUrl && (
                                 <img
                                   src={msg.imageUrl}
-                                  alt="Shared"
+                                  alt={t("chatPage.sharedImage")}
                                   className="rounded-xl max-w-full mb-1.5"
                                 />
                               )}
@@ -427,7 +450,7 @@ export default function ChatPage() {
                           value={message}
                           onChange={(e) => handleTyping(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                          placeholder="Type a message..."
+                          placeholder={t("chatPage.typeMessage")}
                           className="flex-1 h-10 border-0 bg-transparent shadow-none focus-visible:ring-0 px-2"
                         />
                         <Button
@@ -450,9 +473,9 @@ export default function ChatPage() {
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground mx-auto mb-4">
                     <MessageCircle className="h-7 w-7" />
                   </div>
-                  <p className="font-semibold mb-1">Select a conversation</p>
+                  <p className="font-semibold mb-1">{t("chatPage.selectConversation")}</p>
                   <p className="text-sm text-muted-foreground">
-                    Choose a match from the list to start chatting
+                    {t("chatPage.selectConversationDesc")}
                   </p>
                 </div>
               </div>

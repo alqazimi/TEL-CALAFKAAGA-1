@@ -1,5 +1,9 @@
 import { internalMutation } from "./_generated/server";
 import { PROFILE_DEFAULTS } from "./lib/questionnaire";
+import {
+  QUESTIONNAIRE_COMPLETE_STEP,
+  religiousLevelFromPrayer,
+} from "./lib/profileEnrichment";
 
 /** One-time backfill for profiles created before new fields were added. */
 export const backfillProfileFields = internalMutation({
@@ -13,10 +17,13 @@ export const backfillProfileFields = internalMutation({
       if (profile.spousePrayerImportance === undefined) {
         patch.spousePrayerImportance = PROFILE_DEFAULTS.spousePrayerImportance;
       }
-      if (profile.questionnaireStep === undefined) {
+      if (profile.questionnaireStep === undefined || profile.questionnaireStep === 10) {
         patch.questionnaireStep = profile.questionnaireComplete
-          ? 8
+          ? QUESTIONNAIRE_COMPLETE_STEP
           : PROFILE_DEFAULTS.questionnaireStep;
+      }
+      if (!profile.religiousLevel?.trim() && profile.prayerFrequency?.trim()) {
+        patch.religiousLevel = religiousLevelFromPrayer(profile.prayerFrequency);
       }
       if (Object.keys(patch).length > 0) {
         await ctx.db.patch(profile._id, patch);

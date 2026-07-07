@@ -1,6 +1,10 @@
 import { GenericId } from "convex/values";
 import { MutationCtx } from "../_generated/server";
 import { PROFILE_DEFAULTS } from "./questionnaire";
+import {
+  QUESTIONNAIRE_COMPLETE_STEP,
+  religiousLevelFromPrayer,
+} from "./profileEnrichment";
 
 type ProfileArgs = {
   name: string;
@@ -49,7 +53,7 @@ export async function createUserProfile(
     registrationComplete: false,
     hasPaid: false,
     banned: false,
-    approved: true,
+    approved: false,
   });
 
   await ctx.db.insert("preferences", {
@@ -60,7 +64,7 @@ export async function createUserProfile(
     minHeight: 150,
     maxHeight: 210,
     preferredCountries: [],
-    acceptChildren: "Depends",
+    acceptChildren: "",
     educationLevel: "Bachelor",
     religiousLevel: "Practicing",
     acceptDivorcee: "Depends",
@@ -91,10 +95,13 @@ export async function ensureUserProfile(
     if (existing.registrationComplete === undefined) {
       backfill.registrationComplete = true;
     }
-    if (existing.questionnaireStep === undefined) {
+    if (existing.questionnaireStep === undefined || existing.questionnaireStep === 10) {
       backfill.questionnaireStep = existing.questionnaireComplete
-        ? 8
+        ? QUESTIONNAIRE_COMPLETE_STEP
         : PROFILE_DEFAULTS.questionnaireStep;
+    }
+    if (!existing.religiousLevel?.trim() && existing.prayerFrequency?.trim()) {
+      backfill.religiousLevel = religiousLevelFromPrayer(existing.prayerFrequency);
     }
     if (Object.keys(backfill).length > 0) {
       await ctx.db.patch(existing._id, backfill);

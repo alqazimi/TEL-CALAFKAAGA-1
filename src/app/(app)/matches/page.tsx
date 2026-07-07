@@ -24,12 +24,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MatchFilters } from "@/components/matches/match-filters";
 import { MatchProfileModal } from "@/components/matches/match-profile-modal";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
+import { PendingApprovalCard } from "@/components/profile/pending-approval-card";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess } from "@/lib/access";
+import { useTranslation } from "@/lib/i18n/context";
 
 export default function MatchesPage() {
+  const { t } = useTranslation();
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
@@ -39,7 +42,7 @@ export default function MatchesPage() {
 
   const matches = useQuery(
     api.matches.getMatches,
-    profile?.questionnaireComplete
+    profile?.questionnaireComplete && profile.approved
       ? {
           country: filters.country || undefined,
           minAge: filters.minAge ? parseInt(filters.minAge) : undefined,
@@ -49,7 +52,10 @@ export default function MatchesPage() {
           religiousLevel: filters.religiousLevel || undefined,
           education: filters.education || undefined,
           occupation: filters.occupation || undefined,
-          children: filters.children !== undefined && filters.children !== "" ? parseInt(filters.children) : undefined,
+          children:
+            filters.children !== undefined && filters.children !== ""
+              ? parseInt(filters.children)
+              : undefined,
         }
       : "skip"
   ) as MatchResult[] | undefined;
@@ -60,12 +66,12 @@ export default function MatchesPage() {
     try {
       const result = await likeUser({ toUserId: userId, action });
       if (result.matched) {
-        toast.success("It's a match! You can now chat.");
+        toast.success(t("matchesPage.matchedToast"));
       } else if (action === "like") {
-        toast.success("Profile liked!");
+        toast.success(t("matchesPage.likedToast"));
       }
     } catch {
-      toast.error("Something went wrong");
+      toast.error(t("matchesPage.errorToast"));
     }
   };
 
@@ -97,6 +103,16 @@ export default function MatchesPage() {
     );
   }
 
+  if (profile && !profile.approved) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto">
+          <PendingApprovalCard />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (matches === undefined) {
     return (
       <DashboardLayout>
@@ -109,30 +125,28 @@ export default function MatchesPage() {
     );
   }
 
+  const matchLabel = matches.length === 1 ? t("matchesPage.match") : t("matchesPage.matches");
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            {matches.length} compatible {matches.length === 1 ? "match" : "matches"}
+            {t("matchesPage.compatible", { count: matches.length, label: matchLabel })}
           </p>
           <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
             <Filter className="h-4 w-4 mr-2" />
-            Filters
+            {t("matchesPage.filters")}
           </Button>
         </div>
 
-        {showFilters && (
-          <MatchFilters filters={filters} onChange={setFilters} />
-        )}
+        {showFilters && <MatchFilters filters={filters} onChange={setFilters} />}
 
         {matches.length === 0 ? (
           <Card className="p-12 text-center">
             <Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No matches yet</h3>
-            <p className="text-muted-foreground">
-              No compatible matches above 70% yet. Check back soon or adjust your preferences in the questionnaire.
-            </p>
+            <h3 className="text-lg font-semibold mb-2">{t("matchesPage.noMatchesTitle")}</h3>
+            <p className="text-muted-foreground">{t("matchesPage.noMatchesDesc")}</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -179,9 +193,11 @@ export default function MatchesPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {match.religiousLevel}
-                      </Badge>
+                      {match.religiousLevel && (
+                        <Badge variant="outline" className="text-xs">
+                          {match.religiousLevel}
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="text-xs">
                         <GraduationCap className="h-3 w-3 mr-1" />
                         {match.education}
@@ -200,7 +216,7 @@ export default function MatchesPage() {
                         onClick={() => setSelectedMatch(match)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
-                        View
+                        {t("matchesPage.view")}
                       </Button>
                       <Button
                         size="sm"
@@ -209,7 +225,7 @@ export default function MatchesPage() {
                         disabled={match.liked}
                       >
                         <Heart className="h-4 w-4 mr-1" />
-                        {match.liked ? "Liked" : "Like"}
+                        {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
                       </Button>
                       <Button
                         variant="ghost"

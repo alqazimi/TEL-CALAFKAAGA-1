@@ -10,6 +10,7 @@ import {
   Crown,
   Headphones,
   Loader2,
+  UserRound,
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -17,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface AdminUserDetailPanelProps {
   profileId: Id<"profiles">;
@@ -50,10 +52,16 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function DetailGrid({ items }: { items: { label: string; value: string }[] }) {
+function DetailGrid({
+  items,
+  emptyLabel,
+}: {
+  items: { label: string; value: string }[];
+  emptyLabel: string;
+}) {
   const filled = items.filter((i) => i.value && i.value !== "—");
   if (filled.length === 0) {
-    return <p className="text-sm text-muted-foreground">Not provided yet.</p>;
+    return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
   }
   return (
     <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
@@ -65,7 +73,13 @@ function DetailGrid({ items }: { items: { label: string; value: string }[] }) {
 }
 
 export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPanelProps) {
+  const { t } = useTranslation();
   const detail = useQuery(api.admin.getUserDetail, { profileId });
+
+  const yesNo = (value: boolean | undefined) => {
+    if (value === undefined) return "—";
+    return value ? t("adminDetail.yes") : t("adminDetail.no");
+  };
 
   return (
     <div
@@ -75,12 +89,17 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card border border-border rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col"
+        className="bg-card border border-border rounded-t-3xl sm:rounded-3xl w-full sm:max-w-2xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 shrink-0">
-          <p className="font-bold text-lg">User Profile</p>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+        <div className="flex items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-primary/10 to-transparent px-5 py-4 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <UserRound className="h-4 w-4" />
+            </span>
+            <p className="font-bold text-lg">{t("adminDetail.title")}</p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="rounded-full">
             <X className="h-5 w-5" />
           </Button>
         </div>
@@ -91,7 +110,7 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : detail === null ? (
-            <p className="text-center text-muted-foreground py-16">User not found.</p>
+            <p className="text-center text-muted-foreground py-16">{t("adminDetail.notFound")}</p>
           ) : (
             <>
               <div className="flex flex-col sm:flex-row gap-4 items-start">
@@ -110,22 +129,22 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                     {isOwnerRole(detail.profile.role) && (
                       <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
                         <Crown className="h-3 w-3 mr-1" />
-                        Owner
+                        {t("adminPage.badgeOwner")}
                       </Badge>
                     )}
                     {detail.profile.role === "admin" && (
-                      <Badge className="bg-primary/10 text-primary">Admin</Badge>
+                      <Badge className="bg-primary/10 text-primary">{t("adminPage.badgeAdmin")}</Badge>
                     )}
                     {detail.profile.banned && (
-                      <Badge className="bg-red-100 text-red-600">Banned</Badge>
+                      <Badge className="bg-red-100 text-red-600">{t("adminPage.badgeBanned")}</Badge>
                     )}
                     {!detail.profile.approved && (
-                      <Badge className="bg-amber-100 text-amber-600">Pending</Badge>
+                      <Badge className="bg-amber-100 text-amber-600">{t("adminPage.badgePending")}</Badge>
                     )}
                     {detail.profile.hasPersonalSupport && (
                       <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
                         <Headphones className="h-3 w-3 mr-1" />
-                        Personal Support
+                        {t("adminPage.badgePersonalSupport")}
                       </Badge>
                     )}
                   </div>
@@ -147,77 +166,92 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                   )}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Badge variant={detail.profile.questionnaireComplete ? "default" : "secondary"}>
-                      {detail.profile.questionnaireComplete ? "Profile complete" : "Profile incomplete"}
+                      {detail.profile.questionnaireComplete
+                        ? t("adminDetail.profileComplete")
+                        : t("adminDetail.profileIncomplete")}
                     </Badge>
                     {!isStaffRole(detail.profile.role) && (
                       <Badge variant={detail.profile.hasPaid ? "default" : "outline"}>
                         {detail.profile.paidCents
                           ? `Paid $${(detail.profile.paidCents / 100).toFixed(0)}`
                           : detail.profile.hasPaid
-                            ? "Paid"
-                            : "Unpaid"}
+                            ? t("adminPage.badgePaid")
+                            : t("adminPage.unpaid")}
                       </Badge>
                     )}
                   </div>
                 </div>
               </div>
 
-              <DetailSection title="Basic Information">
+              <DetailSection title={t("adminDetail.basicInfo")}>
                 <DetailGrid
+                  emptyLabel={t("adminDetail.notProvided")}
                   items={[
-                    { label: "Age", value: detail.profile.age ? String(detail.profile.age) : "—" },
-                    { label: "Height", value: detail.profile.height ? `${detail.profile.height} cm` : "—" },
-                    { label: "Weight", value: detail.profile.weight ? `${detail.profile.weight} kg` : "—" },
-                    { label: "Country", value: detail.profile.country || "—" },
-                    { label: "City", value: detail.profile.city || "—" },
+                    { label: t("profilePage.age"), value: detail.profile.age ? String(detail.profile.age) : "—" },
+                    {
+                      label: t("profilePage.height"),
+                      value: detail.profile.height ? `${detail.profile.height} cm` : "—",
+                    },
+                    {
+                      label: t("profilePage.weight"),
+                      value: detail.profile.weight ? `${detail.profile.weight} kg` : "—",
+                    },
+                    { label: t("profilePage.country"), value: detail.profile.country || "—" },
+                    { label: t("profilePage.city"), value: detail.profile.city || "—" },
                   ]}
                 />
               </DetailSection>
 
-              <DetailSection title="Religious Practice">
+              <DetailSection title={t("adminDetail.religiousPractice")}>
                 <DetailGrid
+                  emptyLabel={t("adminDetail.notProvided")}
                   items={[
-                    { label: "Prayer Frequency", value: detail.profile.prayerFrequency || "—" },
+                    { label: t("profilePage.prayerFrequency"), value: detail.profile.prayerFrequency || "—" },
+                    { label: t("adminDetail.religiousLevel"), value: detail.profile.religiousLevel || "—" },
                     ...(detail.profile.gender === "female"
                       ? [{
-                          label: "Wears Hijab",
-                          value:
-                            detail.profile.wearsHijab !== undefined
-                              ? detail.profile.wearsHijab
-                                ? "Yes"
-                                : "No"
-                              : "—",
+                          label: t("profilePage.wearsHijab"),
+                          value: yesNo(detail.profile.wearsHijab),
                         }]
                       : []),
-                    { label: "Spouse Prayer Importance", value: detail.profile.spousePrayerImportance || "—" },
-                  ]}
-                />
-              </DetailSection>
-
-              <DetailSection title="Education & Work">
-                <DetailGrid
-                  items={[
-                    { label: "Education", value: detail.profile.education || "—" },
-                    { label: "Occupation", value: detail.profile.occupation || "—" },
-                  ]}
-                />
-              </DetailSection>
-
-              <DetailSection title="Marriage & Family">
-                <DetailGrid
-                  items={[
-                    { label: "Marital Status", value: detail.profile.maritalStatus || "—" },
-                    { label: "Children", value: detail.profile.children > 0 ? "Yes" : "No" },
                     {
-                      label: "Marry Someone With Children",
+                      label: t("adminDetail.spousePrayerImportance"),
+                      value: detail.profile.spousePrayerImportance || "—",
+                    },
+                  ]}
+                />
+              </DetailSection>
+
+              <DetailSection title={t("adminDetail.educationWork")}>
+                <DetailGrid
+                  emptyLabel={t("adminDetail.notProvided")}
+                  items={[
+                    { label: t("profilePage.education"), value: detail.profile.education || "—" },
+                    { label: t("profilePage.occupation"), value: detail.profile.occupation || "—" },
+                  ]}
+                />
+              </DetailSection>
+
+              <DetailSection title={t("adminDetail.marriageFamily")}>
+                <DetailGrid
+                  emptyLabel={t("adminDetail.notProvided")}
+                  items={[
+                    { label: t("profilePage.maritalStatus"), value: detail.profile.maritalStatus || "—" },
+                    {
+                      label: t("adminDetail.children"),
+                      value: detail.profile.children > 0 ? t("adminDetail.yes") : t("adminDetail.no"),
+                    },
+                    {
+                      label: t("adminDetail.marryWithChildren"),
                       value: detail.profile.marrySomeoneWithChildren || "—",
                     },
                   ]}
                 />
               </DetailSection>
 
-              <DetailSection title="Lifestyle">
+              <DetailSection title={t("adminDetail.lifestyle")}>
                 <DetailGrid
+                  emptyLabel={t("adminDetail.notProvided")}
                   items={[
                     { label: "Smokes", value: detail.profile.smokes || "—" },
                     { label: "Exercise", value: detail.profile.exercise || "—" },
@@ -225,20 +259,21 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                 />
               </DetailSection>
 
-              <DetailSection title="About">
+              <DetailSection title={t("adminDetail.about")}>
                 <DetailGrid
+                  emptyLabel={t("adminDetail.notProvided")}
                   items={[
-                    { label: "Ready to Relocate", value: detail.profile.readyToRelocate || "—" },
-                    { label: "Marriage Timeline", value: detail.profile.marriageTimeline || "—" },
-                    { label: "Love Language", value: detail.profile.loveLanguage || "—" },
+                    { label: t("adminDetail.readyToRelocate"), value: detail.profile.readyToRelocate || "—" },
+                    { label: t("adminDetail.marriageTimeline"), value: detail.profile.marriageTimeline || "—" },
+                    { label: t("profilePage.loveLanguage"), value: detail.profile.loveLanguage || "—" },
                     {
-                      label: "Qualities",
+                      label: t("profilePage.qualities"),
                       value: detail.profile.qualities?.length
                         ? detail.profile.qualities.join(", ")
                         : "—",
                     },
                     {
-                      label: "Hobbies",
+                      label: t("profilePage.hobbies"),
                       value: detail.profile.hobbies?.length
                         ? detail.profile.hobbies.join(", ")
                         : "—",
@@ -248,29 +283,50 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
               </DetailSection>
 
               {detail.preferences && (
-                <DetailSection title="Partner Preferences">
+                <DetailSection title={t("adminDetail.partnerPreferences")}>
                   <DetailGrid
+                    emptyLabel={t("adminDetail.notProvided")}
                     items={[
                       {
-                        label: "Preferred Age",
+                        label: t("adminDetail.preferredAge"),
                         value: `${detail.preferences.minAge ?? "—"} – ${detail.preferences.maxAge ?? "—"}`,
                       },
                       {
-                        label: "Preferred Height",
+                        label: t("adminDetail.preferredHeight"),
                         value: `${detail.preferences.minHeight ?? "—"} – ${detail.preferences.maxHeight ?? "—"} cm`,
                       },
                       {
-                        label: "Preferred Countries",
+                        label: t("adminDetail.preferredCountries"),
                         value: detail.preferences.preferredCountries?.length
                           ? detail.preferences.preferredCountries.join(", ")
-                          : "Any",
+                          : t("adminDetail.any"),
                       },
-                      { label: "Preferred Education", value: detail.preferences.educationLevel || "—" },
-                      { label: "Preferred Religious Level", value: detail.preferences.religiousLevel || "—" },
-                      { label: "Accept Divorcee", value: detail.preferences.acceptDivorcee || "—" },
-                      { label: "Accept Widow", value: detail.preferences.acceptWidow || "—" },
-                      { label: "Accept Children", value: detail.preferences.acceptChildren || "—" },
-                      { label: "Max Distance", value: detail.preferences.maxDistance || "—" },
+                      {
+                        label: t("adminDetail.preferredEducation"),
+                        value: detail.preferences.educationLevel || "—",
+                      },
+                      {
+                        label: t("adminDetail.preferredReligiousLevel"),
+                        value: detail.preferences.religiousLevel || "—",
+                      },
+                      {
+                        label: t("adminDetail.acceptDivorcee"),
+                        value: detail.preferences.acceptDivorcee || "—",
+                      },
+                      {
+                        label: t("adminDetail.acceptWidow"),
+                        value: detail.preferences.acceptWidow || "—",
+                      },
+                      ...(detail.profile.marrySomeoneWithChildren !== "No"
+                        ? [{
+                            label: t("adminDetail.acceptChildren"),
+                            value: detail.preferences.acceptChildren || "—",
+                          }]
+                        : []),
+                      {
+                        label: t("adminDetail.maxDistance"),
+                        value: detail.preferences.maxDistance || "—",
+                      },
                     ]}
                   />
                 </DetailSection>

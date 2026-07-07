@@ -4,6 +4,7 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { createUserProfile, ensureUserProfile } from "./lib/createProfile";
 import { splitQuestionnaireData } from "./lib/questionnaire";
+import { QUESTIONNAIRE_COMPLETE_STEP } from "./lib/profileEnrichment";
 import {
   assertStorageOwnership,
   requireActiveProfile,
@@ -174,7 +175,7 @@ export const completeQuestionnaire = mutation({
 
     await ctx.db.patch(profile._id, {
       questionnaireComplete: true,
-      questionnaireStep: 10,
+      questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
       lastSavedAt: Date.now(),
     });
 

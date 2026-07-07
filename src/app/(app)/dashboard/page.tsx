@@ -13,21 +13,29 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
+import { PendingApprovalCard } from "@/components/profile/pending-approval-card";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
+import { useTranslation } from "@/lib/i18n/context";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
   const isStaff = isStaffRole(user?.profile?.role);
+  const canViewMatches =
+    user?.profile?.questionnaireComplete &&
+    !isStaff &&
+    user?.profile?.approved &&
+    hasPaidAccess(user?.profile);
   const matches = useQuery(
     api.matches.getMatches,
-    user?.profile?.questionnaireComplete && !isStaff ? {} : "skip"
+    canViewMatches ? {} : "skip"
   ) as MatchResult[] | undefined;
   const myMatches = useQuery(
     api.matches.getMyMatches,
-    user?.profile?.questionnaireComplete && !isStaff ? undefined : "skip"
+    canViewMatches ? undefined : "skip"
   ) as MutualMatch[] | undefined;
 
   useEffect(() => {
@@ -52,21 +60,24 @@ export default function DashboardPage() {
   const firstName = profile?.name?.split(" ")[0] ?? "there";
   const isComplete = profile?.questionnaireComplete ?? false;
   const hasPaid = hasPaidAccess(profile);
+  const isApproved = profile?.approved ?? false;
 
   return (
     <DashboardLayout>
       <div className="mx-auto max-w-2xl space-y-8">
-        {/* Greeting */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            Hello, {firstName}
+            {t("dashboard.hello", { name: firstName })}
           </h1>
           <p className="text-muted-foreground mt-1">
             {!hasPaid
-              ? `Choose registration ($${REGISTRATION_PRICE}) or personal support ($${PERSONAL_SUPPORT_PRICE}) to continue.`
+              ? t("dashboard.payToContinue", {
+                  basic: REGISTRATION_PRICE,
+                  premium: PERSONAL_SUPPORT_PRICE,
+                })
               : isComplete
-                ? "Here is a quick overview of your account."
-                : "Finish your profile questionnaire to unlock matches."}
+                ? t("dashboard.overview")
+                : t("dashboard.finishQuestionnaire")}
           </p>
         </div>
 
@@ -74,29 +85,34 @@ export default function DashboardPage() {
           <Card className="border-primary/20 bg-primary/5">
             <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <p className="font-semibold">Step 1: Complete payment</p>
+                <p className="font-semibold">{t("dashboard.step1Payment")}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {`Choose standard registration ($${REGISTRATION_PRICE}) or registration with personal support ($${PERSONAL_SUPPORT_PRICE}).`}
+                  {t("dashboard.step1PaymentDesc", {
+                    basic: REGISTRATION_PRICE,
+                    premium: PERSONAL_SUPPORT_PRICE,
+                  })}
                 </p>
               </div>
               <Button className="shrink-0" asChild>
-                <Link href="/payment">Choose plan</Link>
+                <Link href="/payment">{t("dashboard.choosePlan")}</Link>
               </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Setup flow — paid but questionnaire incomplete */}
         {profile && hasPaid && !isComplete && (
           <ProfileCompletionCard profile={profile} preferences={preferences} />
         )}
 
-        {/* Stats — complete only */}
-        {isComplete && hasPaid && (
+        {profile && hasPaid && isComplete && !isApproved && (
+          <PendingApprovalCard />
+        )}
+
+        {isComplete && hasPaid && isApproved && (
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Matches", value: matches?.length ?? 0 },
-              { label: "Mutual", value: myMatches?.length ?? 0 },
+              { label: t("dashboard.matches"), value: matches?.length ?? 0 },
+              { label: t("dashboard.mutual"), value: myMatches?.length ?? 0 },
             ].map((stat) => (
               <div
                 key={stat.label}
@@ -109,13 +125,12 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Top matches */}
-        {isComplete && hasPaid && matches && matches.length > 0 && (
+        {isComplete && hasPaid && isApproved && matches && matches.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Suggested for you</h2>
+              <h2 className="text-lg font-semibold">{t("dashboard.suggested")}</h2>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/matches">See all</Link>
+                <Link href="/matches">{t("dashboard.seeAll")}</Link>
               </Button>
             </div>
             <div className="space-y-3">
@@ -139,7 +154,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-semibold text-primary">{match.score}%</p>
-                        <p className="text-xs text-muted-foreground">match</p>
+                        <p className="text-xs text-muted-foreground">{t("dashboard.match")}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -149,13 +164,12 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Empty state when complete but no matches */}
-        {isComplete && hasPaid && matches && matches.length === 0 && (
+        {isComplete && hasPaid && isApproved && matches && matches.length === 0 && (
           <Card className="border-border border-dashed">
             <CardContent className="p-8 text-center">
-              <p className="font-medium">No matches yet</p>
+              <p className="font-medium">{t("dashboard.noMatchesYet")}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                We are looking for compatible profiles. Check back soon.
+                {t("dashboard.noMatchesDesc")}
               </p>
             </CardContent>
           </Card>

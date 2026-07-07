@@ -23,6 +23,23 @@ const paymentTypeValidator = v.union(
   v.literal("chat")
 );
 
+async function supersedeOtherPendingPayments(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  completedPaymentId: Id<"payments">
+) {
+  const userPayments = await ctx.db
+    .query("payments")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .collect();
+
+  for (const other of userPayments) {
+    if (other.status === "pending" && other._id !== completedPaymentId) {
+      await ctx.db.patch(other._id, { status: "failed" });
+    }
+  }
+}
+
 async function applyPaymentCompletion(
   ctx: MutationCtx,
   payment: Doc<"payments">,
@@ -33,6 +50,7 @@ async function applyPaymentCompletion(
   }
 
   await ctx.db.patch(payment._id, { status: "completed" });
+  await supersedeOtherPendingPayments(ctx, payment.userId, payment._id);
 
   const profile = await ctx.db
     .query("profiles")

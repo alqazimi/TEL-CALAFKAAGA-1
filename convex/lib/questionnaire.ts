@@ -1,3 +1,5 @@
+import { enrichProfileUpdates } from "./profileEnrichment";
+
 /** Profile fields that may be written by the questionnaire. */
 const PROFILE_FIELD_KEYS = new Set([
   "age",
@@ -10,13 +12,11 @@ const PROFILE_FIELD_KEYS = new Set([
   "religiousLevel",
   "maritalStatus",
   "children",
-  "bio",
   "prayerFrequency",
   "spousePrayerImportance",
   "wearsHijab",
   "smokes",
   "exercise",
-  "wantChildren",
   "readyToRelocate",
   "marriageTimeline",
   "loveLanguage",
@@ -39,7 +39,10 @@ export function splitQuestionnaireData(data: Record<string, unknown>) {
     }
   }
 
-  return { profileUpdates, preferences };
+  return {
+    profileUpdates: enrichProfileUpdates(profileUpdates),
+    preferences,
+  };
 }
 
 export const PROFILE_DEFAULTS = {

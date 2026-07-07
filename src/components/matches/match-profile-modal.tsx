@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Id } from "../../../convex/_generated/dataModel";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface MatchProfileModalProps {
   match: {
@@ -18,7 +19,7 @@ interface MatchProfileModalProps {
     education: string;
     occupation: string;
     religiousLevel: string;
-    bio?: string;
+    prayerFrequency?: string;
     imageUrl: string | null;
     score: number;
   };
@@ -27,6 +28,8 @@ interface MatchProfileModalProps {
 }
 
 export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <motion.div
@@ -52,7 +55,7 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
           </button>
           <div className="absolute bottom-4 right-4">
             <Badge className="text-lg font-bold bg-primary text-primary-foreground border-0 px-3 py-1">
-              {match.score}% Match
+              {t("matchesPage.matchPercent", { score: match.score })}
             </Badge>
           </div>
         </div>
@@ -67,19 +70,21 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-sm">
+            {match.religiousLevel && (
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
+                <p className="text-gray-500">{t("matchesPage.religion")}</p>
+                <p className="font-medium">{match.religiousLevel}</p>
+              </div>
+            )}
             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
-              <p className="text-gray-500">Religion</p>
-              <p className="font-medium">{match.religiousLevel}</p>
-            </div>
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
-              <p className="text-gray-500">Education</p>
+              <p className="text-gray-500">{t("matchesPage.education")}</p>
               <p className="font-medium flex items-center gap-1">
                 <GraduationCap className="h-3.5 w-3.5" />
                 {match.education}
               </p>
             </div>
             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
-              <p className="text-gray-500">Occupation</p>
+              <p className="text-gray-500">{t("matchesPage.occupation")}</p>
               <p className="font-medium flex items-center gap-1">
                 <Briefcase className="h-3.5 w-3.5" />
                 {match.occupation}
@@ -87,26 +92,19 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
             </div>
             {match.height && (
               <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
-                <p className="text-gray-500">Height</p>
+                <p className="text-gray-500">{t("matchesPage.height")}</p>
                 <p className="font-medium">{match.height} cm</p>
               </div>
             )}
           </div>
 
-          {match.bio && (
-            <div>
-              <p className="text-sm text-gray-500 mb-1">About</p>
-              <p className="text-sm leading-relaxed">{match.bio}</p>
-            </div>
-          )}
-
           <div className="flex gap-3 pt-2">
             <Button className="flex-1" onClick={() => onLike("like")}>
               <Heart className="h-4 w-4 mr-2" />
-              Like
+              {t("matchesPage.like")}
             </Button>
             <Button variant="outline" className="flex-1" onClick={() => onLike("pass")}>
-              Pass
+              {t("matchesPage.pass")}
             </Button>
           </div>
         </div>

@@ -3,7 +3,8 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireActiveProfile, requireAuthUserId } from "./lib/access";
-import { hasPaidAccess } from "./lib/roles";
+import { hasPaidAccess, isStaffRole } from "./lib/roles";
+import { effectiveReligiousLevel } from "./lib/profileEnrichment";
 
 export const getMatches = query({
   args: {
@@ -28,6 +29,7 @@ export const getMatches = query({
 
     if (!myProfile?.questionnaireComplete) return [];
     if (!hasPaidAccess(myProfile)) return [];
+    if (!isStaffRole(myProfile.role) && !myProfile.approved) return [];
 
     const scores = await ctx.db
       .query("compatibilityScores")
@@ -60,7 +62,9 @@ export const getMatches = query({
           if (args.maxAge && profile.age > args.maxAge) return null;
           if (args.minHeight && profile.height < args.minHeight) return null;
           if (args.maxHeight && profile.height > args.maxHeight) return null;
-          if (args.religiousLevel && profile.religiousLevel !== args.religiousLevel) return null;
+          if (args.religiousLevel && effectiveReligiousLevel(profile) !== args.religiousLevel) {
+            return null;
+          }
           if (args.education && profile.education !== args.education) return null;
           if (args.occupation && profile.occupation !== args.occupation) return null;
           if (args.children !== undefined && profile.children !== args.children) return null;
@@ -81,8 +85,8 @@ export const getMatches = query({
             height: profile.height,
             education: profile.education,
             occupation: profile.occupation,
-            religiousLevel: profile.religiousLevel,
-            bio: profile.bio,
+            religiousLevel: effectiveReligiousLevel(profile),
+            prayerFrequency: profile.prayerFrequency ?? "",
             imageUrl,
             score: s.score,
             liked: existingLike?.action === "like",
@@ -110,6 +114,9 @@ export const likeUser = mutation({
     }
     if (!hasPaidAccess(myProfile)) {
       throw new Error("Complete payment to like profiles");
+    }
+    if (!isStaffRole(myProfile.role) && !myProfile.approved) {
+      throw new Error("Your profile is pending admin approval");
     }
 
     const existing = await ctx.db

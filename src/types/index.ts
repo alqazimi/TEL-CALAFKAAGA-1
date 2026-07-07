@@ -56,7 +56,7 @@ export interface MatchResult {
   education: string;
   occupation: string;
   religiousLevel: string;
-  bio?: string;
+  prayerFrequency?: string;
   imageUrl: string | null;
   score: number;
   liked?: boolean;
