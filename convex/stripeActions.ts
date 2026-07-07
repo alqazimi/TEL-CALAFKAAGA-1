@@ -117,7 +117,7 @@ export const verifyCheckoutSession = action({
   handler: async (
     ctx,
     args
-  ): Promise<{ success: boolean; alreadyCompleted: boolean }> => {
+  ): Promise<{ success: boolean; alreadyCompleted: boolean; isPremium: boolean }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -164,6 +164,10 @@ export const verifyCheckoutSession = action({
       }
     );
 
-    return { success: true, alreadyCompleted: result.alreadyCompleted };
+    return {
+      success: true,
+      alreadyCompleted: result.alreadyCompleted,
+      isPremium: !isChat && isPremium,
+    };
   },
 });

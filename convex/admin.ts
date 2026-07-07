@@ -10,6 +10,36 @@ import {
   verifyBootstrapCredentials,
 } from "./lib/adminAuth";
 import { isOwnerRole, isStaffRole } from "./lib/roles";
+import {
+  PERSONAL_SUPPORT_AMOUNT_CENTS,
+} from "./payments";
+
+function buildPaidByUserMap(
+  completedPayments: { userId: string; amount: number }[]
+) {
+  const paidByUser = new Map<string, number>();
+  for (const payment of completedPayments) {
+    paidByUser.set(
+      payment.userId,
+      (paidByUser.get(payment.userId) ?? 0) + payment.amount
+    );
+  }
+  return paidByUser;
+}
+
+function isPremiumMember(
+  profile: { hasPersonalSupport?: boolean },
+  paidCents: number
+) {
+  return profile.hasPersonalSupport === true || paidCents >= PERSONAL_SUPPORT_AMOUNT_CENTS;
+}
+
+function isBasicPaidMember(
+  profile: { hasPaid: boolean; hasPersonalSupport?: boolean },
+  paidCents: number
+) {
+  return profile.hasPaid && !isPremiumMember(profile, paidCents);
+}
 
 export const hasAnyAdmin = query({
   args: {},
@@ -116,6 +146,16 @@ export const getStats = query({
 
     const completedPayments = payments.filter((p) => p.status === "completed");
     const revenue = completedPayments.reduce((sum, p) => sum + p.amount, 0);
+    const paidByUser = buildPaidByUserMap(completedPayments);
+    const members = profiles.filter((p) => !isStaffRole(p.role));
+
+    const paidBasicCount = members.filter((p) =>
+      isBasicPaidMember(p, paidByUser.get(p.userId) ?? 0)
+    ).length;
+    const paidPremiumCount = members.filter((p) =>
+      isPremiumMember(p, paidByUser.get(p.userId) ?? 0)
+    ).length;
+    const unpaidCount = members.filter((p) => !p.hasPaid).length;
 
     return {
       totalUsers: profiles.length,
@@ -124,6 +164,9 @@ export const getStats = query({
       totalMatches: matches.filter((m) => m.status === "active").length,
       totalMessages: messages.length,
       revenue,
+      paidBasicCount,
+      paidPremiumCount,
+      unpaidCount,
       pendingApproval: profiles.filter((p) => !p.approved).length,
       bannedUsers: profiles.filter((p) => p.banned).length,
       isOwner: isOwnerRole(caller.role),
@@ -134,6 +177,23 @@ export const getStats = query({
 export const getAllUsers = query({
   args: {
     search: v.optional(v.string()),
+    role: v.optional(
+      v.union(
+        v.literal("all"),
+        v.literal("user"),
+        v.literal("admin"),
+        v.literal("owner")
+      )
+    ),
+    payment: v.optional(
+      v.union(
+        v.literal("all"),
+        v.literal("unpaid"),
+        v.literal("paid"),
+        v.literal("basic"),
+        v.literal("premium")
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -143,14 +203,54 @@ export const getAllUsers = query({
 
     let profiles = await ctx.db.query("profiles").collect();
 
+    const completedPayments = (await ctx.db.query("payments").collect()).filter(
+      (p) => p.status === "completed"
+    );
+    const paidByUser = buildPaidByUserMap(completedPayments);
+
+    const userCache = new Map<string, { email?: string } | null>();
+    for (const profile of profiles) {
+      if (!userCache.has(profile.userId)) {
+        userCache.set(profile.userId, await ctx.db.get(profile.userId));
+      }
+    }
+
     if (args.search) {
       const search = args.search.toLowerCase();
-      profiles = profiles.filter(
-        (p) =>
+      profiles = profiles.filter((p) => {
+        const email = userCache.get(p.userId)?.email?.toLowerCase() ?? "";
+        return (
           p.name.toLowerCase().includes(search) ||
           p.country.toLowerCase().includes(search) ||
-          p.city.toLowerCase().includes(search)
-      );
+          p.city.toLowerCase().includes(search) ||
+          email.includes(search) ||
+          (p.phone ?? "").toLowerCase().includes(search)
+        );
+      });
+    }
+
+    if (args.role && args.role !== "all") {
+      profiles = profiles.filter((p) => p.role === args.role);
+    }
+
+    if (args.payment && args.payment !== "all") {
+      profiles = profiles.filter((p) => {
+        if (isStaffRole(p.role)) return false;
+
+        const cents = paidByUser.get(p.userId) ?? 0;
+        switch (args.payment) {
+          case "unpaid":
+            return !p.hasPaid;
+          case "paid":
+            return p.hasPaid;
+          case "premium":
+            return isPremiumMember(p, cents);
+          case "basic":
+            return isBasicPaidMember(p, cents);
+          default:
+            return true;
+        }
+      });
     }
 
     return await Promise.all(
@@ -159,9 +259,95 @@ export const getAllUsers = query({
         if (p.profileImageId) {
           imageUrl = await ctx.storage.getUrl(p.profileImageId);
         }
-        return { ...p, imageUrl };
+        const user = userCache.get(p.userId);
+        const paidCents = paidByUser.get(p.userId) ?? 0;
+        return {
+          ...p,
+          imageUrl,
+          paidCents,
+          email: user?.email ?? null,
+        };
       })
     );
+  },
+});
+
+export const getAllPayments = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    await requireAdmin(ctx, userId);
+
+    const payments = await ctx.db.query("payments").collect();
+    payments.sort((a, b) => b.createdAt - a.createdAt);
+
+    return await Promise.all(
+      payments.map(async (payment) => {
+        const profile = await ctx.db
+          .query("profiles")
+          .withIndex("by_userId", (q) => q.eq("userId", payment.userId))
+          .unique();
+        const user = await ctx.db.get(payment.userId);
+
+        return {
+          _id: payment._id,
+          userId: payment.userId,
+          stripeSessionId: payment.stripeSessionId,
+          amount: payment.amount,
+          paymentType: payment.paymentType,
+          registrationTier: payment.registrationTier,
+          status: payment.status,
+          createdAt: payment.createdAt,
+          userName: profile?.name ?? "Unknown",
+          userEmail: user?.email ?? null,
+          userPhone: profile?.phone ?? null,
+        };
+      })
+    );
+  },
+});
+
+export const getUserDetail = query({
+  args: { profileId: v.id("profiles") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    await requireAdmin(ctx, userId);
+
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) return null;
+
+    const user = await ctx.db.get(profile.userId);
+    const preferences = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", profile.userId))
+      .unique();
+
+    let imageUrl = null;
+    if (profile.profileImageId) {
+      imageUrl = await ctx.storage.getUrl(profile.profileImageId);
+    }
+
+    const payments = await ctx.db
+      .query("payments")
+      .withIndex("by_user", (q) => q.eq("userId", profile.userId))
+      .collect();
+    const paidCents = payments
+      .filter((p) => p.status === "completed")
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    return {
+      profile: {
+        ...profile,
+        imageUrl,
+        email: user?.email ?? null,
+        paidCents,
+      },
+      preferences,
+    };
   },
 });
 

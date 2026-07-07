@@ -18,10 +18,13 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { QuestionnaireStep } from "@/components/questionnaire/questionnaire-step";
 import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-review";
+import { QuestionnairePhaseComplete } from "@/components/questionnaire/questionnaire-phase-complete";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { PaymentGate } from "@/components/payment/payment-gate";
-import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX } from "@/components/questionnaire/steps";
+import { QuestionnairePhotoStep } from "@/components/questionnaire/questionnaire-photo-step";
+import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX, PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
+import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import { useEffect } from "react";
 
 const REVIEW_STEP_INDEX = STEPS.length;
@@ -36,10 +39,12 @@ export default function QuestionnairePage() {
   const updateQuestionnaire = useMutation(api.profiles.updateQuestionnaire);
   const autoSaveProfile = useMutation(api.profiles.autoSaveProfile);
   const saveProfileEdits = useMutation(api.profiles.saveProfileEdits);
+  const { stepTitle, ui } = useQuestionnaireI18n();
 
   const [stepOverride, setStepOverride] = useState<number | null>(
     isEditMode ? REVIEW_STEP_INDEX : null
   );
+  const [phaseComplete, setPhaseComplete] = useState<"about" | null>(null);
 
   const autoStep = useMemo(() => {
     if (!profile) return null;
@@ -77,7 +82,7 @@ export default function QuestionnairePage() {
       if (!isReviewStep) {
         if (isEditMode) {
           await saveProfileEdits({ data: stepData });
-          toast.success("Changes saved");
+          toast.success(ui("changesSaved"));
           setStepOverride(REVIEW_STEP_INDEX);
           return;
         }
@@ -88,25 +93,61 @@ export default function QuestionnairePage() {
       }
 
       if (currentStep < REVIEW_STEP_INDEX) {
+        if (!isEditMode && currentStep === ABOUT_YOU_STEP_COUNT - 1) {
+          toast.success(ui("part1SavedToast"));
+          setPhaseComplete("about");
+          return;
+        }
+
         const nextStep = currentStep + 1;
         if (nextStep === PARTNER_PREFERENCES_STEP_INDEX) {
-          toast.success("Great! Now tell us what you're looking for in a partner.");
+          toast.success(ui("partnerToast"));
         }
+        if (nextStep === PHOTO_STEP_INDEX) {
+          toast.success(ui("almostDoneToast"));
+        }
+        setPhaseComplete(null);
         setStepOverride(nextStep);
       }
     } catch {
-      toast.error("Failed to save. Please try again.");
+      toast.error(ui("saveFailedToast"));
     }
   };
 
   const handleBack = () => {
+    setPhaseComplete(null);
     if (currentStep !== null && currentStep > 0) {
       setStepOverride(currentStep - 1);
     }
   };
 
   const handleEditStep = (stepIndex: number) => {
+    setPhaseComplete(null);
     setStepOverride(stepIndex);
+  };
+
+  const handlePhaseContinue = () => {
+    setPhaseComplete(null);
+    setStepOverride(PARTNER_PREFERENCES_STEP_INDEX);
+  };
+
+  const handlePhotoContinue = async () => {
+    if (!profile?.profileImageId) {
+      toast.error(ui("photoRequiredContinue"));
+      return;
+    }
+
+    try {
+      if (!isEditMode) {
+        await updateQuestionnaire({ step: STEPS.length, data: {} });
+        toast.success(ui("photoSavedToast"));
+      } else {
+        toast.success(ui("photoUpdatedToast"));
+      }
+      setStepOverride(REVIEW_STEP_INDEX);
+    } catch {
+      toast.error(ui("saveFailedToast"));
+    }
   };
 
   const handleComplete = () => {
@@ -139,9 +180,9 @@ export default function QuestionnairePage() {
     return (
       <DashboardLayout>
         <div className="max-w-lg mx-auto text-center py-16">
-          <p className="text-gray-500">Profile not found. Please try refreshing.</p>
+          <p className="text-gray-500">{ui("profileNotFound")}</p>
           <Button className="mt-4" onClick={() => router.push("/dashboard")}>
-            Go to Dashboard
+            {ui("goToDashboard")}
           </Button>
         </div>
       </DashboardLayout>
@@ -152,8 +193,8 @@ export default function QuestionnairePage() {
     return (
       <DashboardLayout>
         <PaymentGate
-          title="Complete payment first"
-          description="Pay the registration fee to unlock your profile questionnaire."
+          title={ui("completePaymentFirst")}
+          description={ui("payToUnlock")}
         />
       </DashboardLayout>
     );
@@ -166,16 +207,16 @@ export default function QuestionnairePage() {
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-primary mx-auto mb-4">
             <Check className="h-8 w-8" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Profile Complete</h1>
+          <h1 className="text-2xl font-bold mb-2">{ui("profileCompleteTitle")}</h1>
           <p className="text-muted-foreground mb-6">
-            Your profile is ready. Start browsing your matches!
+            {ui("profileReadySub")}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild>
-              <a href="/matches">View Matches</a>
+              <a href="/matches">{ui("viewMatches")}</a>
             </Button>
             <Button variant="outline" asChild>
-              <a href="/profile">My Profile</a>
+              <a href="/profile">{ui("myProfile")}</a>
             </Button>
           </div>
         </div>
@@ -198,7 +239,9 @@ export default function QuestionnairePage() {
   const completionPercent = calculateProfileProgress(profile, preferences);
   const currentStepConfig = !isReviewStep ? STEPS[currentStep] : null;
   const isPartnerPhase = currentStepConfig?.phase === "partner";
-  const aboutStepNumber = !isReviewStep && !isPartnerPhase ? currentStep + 1 : null;
+  const isPhotoPhase = currentStepConfig?.phase === "photo";
+  const aboutStepNumber =
+    !isReviewStep && currentStepConfig?.phase === "about" ? currentStep + 1 : null;
 
   return (
     <DashboardLayout>
@@ -209,29 +252,37 @@ export default function QuestionnairePage() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">
-                    {isEditMode ? "Edit Profile Details" : "Profile Questionnaire"}
+                    {isEditMode ? ui("editProfileDetails") : ui("profileQuestionnaire")}
                   </h1>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    {isReviewStep
+                    {phaseComplete === "about"
+                      ? ui("part1CompleteSub")
+                      : isReviewStep
                       ? isEditMode
-                        ? "Review and update your profile"
-                        : "Review your answers before submitting"
+                        ? ui("reviewUpdateSub")
+                        : ui("reviewAnswersSub")
+                      : isPhotoPhase
+                        ? ui("finalStepPhotoSub")
                       : isPartnerPhase
-                        ? "Part 2 — What you're looking for in a spouse"
-                        : `Part 1 — About you · ${STEPS[currentStep]?.title}`}
+                        ? ui("part2Sub")
+                        : `${ui("part1AboutPrefix")} · ${stepTitle(STEPS[currentStep]?.id, STEPS[currentStep]?.title)}`}
                   </p>
                 </div>
                 <span className="text-sm font-medium text-primary bg-accent dark:bg-primary/20 px-3 py-1 rounded-full">
                   {isReviewStep
-                    ? "Review"
+                    ? ui("badgeReview")
+                    : isPhotoPhase
+                      ? ui("badgePhoto")
                     : isPartnerPhase
-                      ? "Part 2"
-                      : `Step ${aboutStepNumber}/${ABOUT_YOU_STEP_COUNT}`}
+                      ? ui("badgePart2")
+                      : aboutStepNumber
+                        ? `${ui("stepWord")} ${aboutStepNumber}/${ABOUT_YOU_STEP_COUNT}`
+                        : ui("badgeQuestionnaire")}
                 </span>
               </div>
               <Progress value={progress} className="h-2.5" />
               <p className="text-xs text-muted-foreground mt-2">
-                {completionPercent}% profile complete · Auto-saves as you go
+                {ui("profileCompleteFooter").replace("{p}", String(completionPercent))}
               </p>
             </div>
 
@@ -246,13 +297,18 @@ export default function QuestionnairePage() {
 
             <AnimatePresence mode="wait">
               <motion.div
-                key={currentStep}
+                key={phaseComplete ?? currentStep}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                {isReviewStep ? (
+                {phaseComplete ? (
+                  <QuestionnairePhaseComplete
+                    phase={phaseComplete}
+                    onContinue={handlePhaseContinue}
+                  />
+                ) : isReviewStep ? (
                   <QuestionnaireReview
                     profile={profile}
                     preferences={preferences}
@@ -260,15 +316,20 @@ export default function QuestionnairePage() {
                     onComplete={handleComplete}
                     isEditMode={isEditMode}
                   />
+                ) : isPhotoPhase ? (
+                  <QuestionnairePhotoStep
+                    profile={profile}
+                    onSubmit={() => void handlePhotoContinue()}
+                  />
                 ) : (
                   <>
                     {isPartnerPhase && (
-                      <div className="mb-4 rounded-2xl border border-primary/20 bg-accent/80 dark:bg-primary/10 px-4 py-3">
-                        <p className="text-sm font-medium text-accent-foreground dark:text-primary">
-                          Part 2: Partner preferences
+                      <div className="mb-4 rounded-2xl border border-primary/20 bg-accent/80 dark:bg-primary/10 px-5 py-4">
+                        <p className="text-base font-bold text-accent-foreground dark:text-primary">
+                          {ui("part2CalloutTitle")}
                         </p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          You finished your own details. Now answer what you want in a spouse.
+                        <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                          {ui("part2CalloutDesc")}
                         </p>
                       </div>
                     )}
@@ -279,7 +340,7 @@ export default function QuestionnairePage() {
                       preferences={preferences}
                       onSubmit={handleNext}
                       onAutoSave={handleAutoSave}
-                      isLastFormStep={currentStep === STEPS.length - 1}
+                      isLastFormStep={false}
                       isLastAboutStep={currentStep === ABOUT_YOU_STEP_COUNT - 1}
                     />
                   </>
@@ -287,10 +348,10 @@ export default function QuestionnairePage() {
               </motion.div>
             </AnimatePresence>
 
-            {currentStep > 0 && !isReviewStep && (
+            {currentStep > 0 && !isReviewStep && !phaseComplete && (
               <Button variant="ghost" onClick={handleBack}>
                 <ChevronLeft className="h-4 w-4 mr-1" />
-                Back
+                {ui("back")}
               </Button>
             )}
           </div>

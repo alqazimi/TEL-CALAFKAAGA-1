@@ -29,6 +29,7 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
   { id: "lifestyle", title: "Lifestyle", stepIndex: 5 },
   { id: "about", title: "About You", stepIndex: 6 },
   { id: "preferences", title: "Partner Preferences", stepIndex: 7 },
+  { id: "photo", title: "Profile Photo", stepIndex: 8 },
 ];
 
 export type SectionStatus = "complete" | "in_progress" | "not_started";
@@ -60,7 +61,7 @@ export function isMarriageComplete(profile: Profile): boolean {
 }
 
 export function isLifestyleComplete(profile: Profile): boolean {
-  return !!profile.smokes && !!profile.drinksAlcohol && !!profile.exercise;
+  return !!profile.smokes && !!profile.exercise;
 }
 
 export function isAboutYouComplete(profile: Profile): boolean {
@@ -71,6 +72,10 @@ export function isAboutYouComplete(profile: Profile): boolean {
     (profile.qualities?.length ?? 0) > 0 &&
     (profile.hobbies?.length ?? 0) > 0
   );
+}
+
+export function isPhotoComplete(profile: Profile): boolean {
+  return !!profile.profileImageId;
 }
 
 export function isPreferencesComplete(
@@ -123,6 +128,7 @@ const sectionCheckers: Record<
   lifestyle: (p) => isLifestyleComplete(p),
   about: (p) => isAboutYouComplete(p),
   preferences: (p, prefs) => isPreferencesComplete(p, prefs),
+  photo: (p) => isPhotoComplete(p),
 };
 
 export function getSectionStatus(
@@ -145,13 +151,14 @@ export function getSectionStatus(
     religious: !!profile.prayerFrequency,
     education: !!profile.education || !!profile.occupation,
     marriage: !!profile.maritalStatus,
-    lifestyle: !!profile.smokes || !!profile.drinksAlcohol,
+    lifestyle: !!profile.smokes,
     about: !!profile.readyToRelocate || !!profile.marriageTimeline || !!profile.bio?.trim(),
     preferences:
       !!profile.spousePrayerImportance ||
       !!prefs?.educationLevel ||
       !!prefs?.religiousLevel ||
       (prefs?.preferredCountries?.length ?? 0) > 0,
+    photo: !!profile.profileImageId,
   };
 
   if (partialChecks[sectionId] || step >= sectionStep) return "in_progress";
@@ -192,6 +199,9 @@ export function getResumeStepIndex(
       if (section.id === "preferences" && isAboutYouPhaseComplete(profile, prefs)) {
         return ABOUT_YOU_STEP_COUNT;
       }
+      if (section.id === "photo" && isPreferencesComplete(profile, prefs)) {
+        return STEPS.length - 1;
+      }
       return section.stepIndex;
     }
   }
@@ -213,7 +223,7 @@ export function getEncouragementMessage(
     return "First, tell us about yourself. Partner preferences come next.";
   }
   if (remaining <= 2) {
-    return "Almost done — finish your partner preferences to unlock matches.";
+    return "Almost done — upload your photo and submit to unlock matches.";
   }
   if (progress >= 50) {
     return "The more information you provide, the better your matches will be.";

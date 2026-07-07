@@ -188,6 +188,9 @@ export const so: Translations = {
     confirmingDesc: "Fadlan sug inta aan lacagtaada Stripe ku xaqiijinayno.",
     success: "Lacag bixintu waa guulaysatay",
     successDesc: "Mahadsanid! Hadda dhammaystir su'aalaha profile-kaaga si aad u bilowdo isbarbardhigga.",
+    premiumSuccessDesc:
+      "Mahadsanid! Diiwaangelintaadu waxay ku jirtaa taageero shakhsi ah oo ka timid lataliyeyaasheena xirfad leh. Nala soo xiriir WhatsApp si aad u bilowdo.",
+    premiumWhatsApp: "Nala soo xiriir WhatsApp",
     continueSetup: "Sii wad Dejinta Profile-ka",
     verifyFailed: "Xaqiijinta lacag bixintu waa fashilantay",
     tryAgain: "Isku day mar kale",

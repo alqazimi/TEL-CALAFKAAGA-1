@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
+import { PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
+import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 
 interface QuestionnaireReviewProps {
   profile: Profile;
@@ -30,23 +32,24 @@ function ReviewSection({
   items: { label: string; value: string }[];
   onEdit: (stepIndex: number) => void;
 }) {
+  const { reviewLabel, optionLabel, ui } = useQuestionnaireI18n();
   const filled = items.filter((i) => i.value && i.value !== "—");
   if (filled.length === 0) return null;
 
   return (
     <div className="rounded-2xl border border-border bg-muted/50 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-foreground">{title}</h3>
+        <h3 className="font-bold text-lg text-foreground">{reviewLabel(title)}</h3>
         <Button variant="outline" size="sm" onClick={() => onEdit(stepIndex)} className="h-8">
           <Pencil className="h-3.5 w-3.5 mr-1" />
-          Edit
+          {ui("edit")}
         </Button>
       </div>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
         {filled.map((item) => (
           <div key={item.label} className="min-w-0">
-            <dt className="text-muted-foreground text-xs uppercase tracking-wide">{item.label}</dt>
-            <dd className="font-medium mt-1 text-foreground break-words">{item.value}</dd>
+            <dt className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">{reviewLabel(item.label)}</dt>
+            <dd className="font-bold mt-1 text-foreground break-words text-base">{optionLabel(item.value)}</dd>
           </div>
         ))}
       </dl>
@@ -63,6 +66,10 @@ export function QuestionnaireReview({
 }: QuestionnaireReviewProps) {
   const completeQuestionnaire = useMutation(api.profiles.completeQuestionnaire);
   const [submitting, setSubmitting] = useState(false);
+  const { optionLabel, ui } = useQuestionnaireI18n();
+
+  const translateList = (values: string[] | undefined) =>
+    values?.length ? values.map((v) => optionLabel(v)).join(", ") : "—";
 
   const handleSubmit = async () => {
     if (isEditMode) {
@@ -70,13 +77,19 @@ export function QuestionnaireReview({
       return;
     }
 
+    if (!profile.profileImageId) {
+      toast.error(ui("photoRequired"));
+      onEditStep(PHOTO_STEP_INDEX);
+      return;
+    }
+
     setSubmitting(true);
     try {
       await completeQuestionnaire({});
-      toast.success("Profile complete! Finding your matches...");
+      toast.success(ui("profileComplete"));
       onComplete();
     } catch {
-      toast.error("Failed to submit. Please try again.");
+      toast.error(ui("submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -109,7 +122,6 @@ export function QuestionnaireReview({
 
   const lifestyleItems = [
     { label: "Smokes", value: profile.smokes || "—" },
-    { label: "Drinks Alcohol", value: profile.drinksAlcohol || "—" },
     { label: "Exercise", value: profile.exercise || "—" },
   ];
 
@@ -117,8 +129,8 @@ export function QuestionnaireReview({
     { label: "Ready to Relocate", value: profile.readyToRelocate || "—" },
     { label: "Marriage Timeline", value: profile.marriageTimeline || "—" },
     { label: "Bio", value: profile.bio || "—" },
-    { label: "Qualities", value: profile.qualities?.length ? profile.qualities.join(", ") : "—" },
-    { label: "Hobbies", value: profile.hobbies?.length ? profile.hobbies.join(", ") : "—" },
+    { label: "Qualities", value: translateList(profile.qualities) },
+    { label: "Hobbies", value: translateList(profile.hobbies) },
   ];
 
   const prefItems = [
@@ -128,7 +140,7 @@ export function QuestionnaireReview({
       ? [
         { label: "Preferred Age", value: `${preferences.minAge ?? "—"} – ${preferences.maxAge ?? "—"}` },
         { label: "Preferred Height", value: `${preferences.minHeight ?? "—"} – ${preferences.maxHeight ?? "—"} cm` },
-        { label: "Preferred Countries", value: preferences.preferredCountries?.length ? preferences.preferredCountries.join(", ") : "Any" },
+        { label: "Preferred Countries", value: preferences.preferredCountries?.length ? preferences.preferredCountries.join(", ") : ui("anyValue") },
         { label: "Preferred Education", value: preferences.educationLevel || "—" },
         { label: "Preferred Religious Level", value: preferences.religiousLevel || "—" },
         { label: "Accept Divorcee", value: preferences.acceptDivorcee || "—" },
@@ -143,18 +155,16 @@ export function QuestionnaireReview({
     <Card className="border-border shadow-lg shadow-primary/5">
       <CardHeader className="border-b border-border bg-gradient-to-r from-accent/50 to-transparent dark:from-primary/10">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle>{isEditMode ? "Edit Profile Details" : "Final Review"}</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl font-bold">{isEditMode ? ui("editProfileDetails") : ui("finalReview")}</CardTitle>
           {!isEditMode && (
             <Badge variant="outline" className="inline-flex items-center text-primary border-primary/30">
               <Check className="h-3 w-3 mr-1" />
-              Review before submitting
+              {ui("reviewBeforeSubmitting")}
             </Badge>
           )}
         </div>
         <CardDescription>
-          {isEditMode
-            ? "Update any section below. Changes save when you finish editing a step."
-            : "Review everything you've entered. You can edit any section before submitting."}
+          {isEditMode ? ui("editModeDesc") : ui("reviewDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -165,14 +175,25 @@ export function QuestionnaireReview({
         <ReviewSection title="Lifestyle" stepIndex={5} items={lifestyleItems} onEdit={onEditStep} />
         <ReviewSection title="About You" stepIndex={6} items={aboutItems} onEdit={onEditStep} />
         <ReviewSection title="Partner Preferences" stepIndex={7} items={prefItems} onEdit={onEditStep} />
+        <ReviewSection
+          title="Profile Photo"
+          stepIndex={PHOTO_STEP_INDEX}
+          items={[
+            {
+              label: "Photo",
+              value: profile.profileImageId || profile.imageUrl ? ui("uploaded") : "—",
+            },
+          ]}
+          onEdit={onEditStep}
+        />
 
         <div className="pt-4 flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleSubmit} disabled={submitting} className="flex-1">
+          <Button onClick={handleSubmit} disabled={submitting} className="flex-1 text-base font-semibold" size="lg">
             {isEditMode
-              ? "Done"
+              ? ui("saveChanges")
               : submitting
-                ? "Submitting..."
-                : "Submit Profile"}
+                ? ui("submitting")
+                : ui("submitProfile")}
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

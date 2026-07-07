@@ -16,6 +16,7 @@ export interface Profile {
   maritalStatus: string;
   children: number;
   bio: string;
+  profileImageId?: Id<"_storage">;
   prayerFrequency?: string;
   spousePrayerImportance?: string;
   wearsHijab?: boolean;
@@ -40,6 +41,8 @@ export interface Profile {
   banned: boolean;
   approved: boolean;
   imageUrl?: string | null;
+  paidCents?: number;
+  email?: string | null;
 }
 
 export interface MatchResult {
@@ -100,9 +103,26 @@ export interface AdminStats {
   totalMatches: number;
   totalMessages: number;
   revenue: number;
+  paidBasicCount: number;
+  paidPremiumCount: number;
+  unpaidCount: number;
   pendingApproval: number;
   bannedUsers: number;
   isOwner: boolean;
+}
+
+export interface AdminPayment {
+  _id: Id<"payments">;
+  userId: Id<"users">;
+  stripeSessionId: string;
+  amount: number;
+  paymentType?: "registration" | "registration_premium" | "chat";
+  registrationTier?: "basic" | "premium";
+  status: "pending" | "completed" | "failed";
+  createdAt: number;
+  userName: string;
+  userEmail: string | null;
+  userPhone?: string | null;
 }
 
 export interface AdminAnalytics {

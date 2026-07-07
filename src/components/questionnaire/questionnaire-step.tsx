@@ -30,7 +30,24 @@ import { toast } from "sonner";
 import type { Preferences } from "@/lib/profile-progress";
 import type { Profile } from "@/types";
 import { CITIES } from "@/lib/constants";
+import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
+import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
 import type { StepConfig } from "./steps";
+
+/** Maps English validation strings from validateStepFields to translatable UI keys. */
+const ERROR_KEY_MAP: Record<string, QuestionnaireUiKey> = {
+  "Please select an option": "selectOption",
+  "This field is required": "requiredField",
+  "Please select at least one option": "selectAtLeastOne",
+};
+
+function translateError(
+  error: string,
+  ui: (key: QuestionnaireUiKey) => string
+): string {
+  const key = ERROR_KEY_MAP[error];
+  return key ? ui(key) : error;
+}
 
 interface QuestionnaireStepProps {
   step: StepConfig;
@@ -62,6 +79,7 @@ export function QuestionnaireStep({
   const skipAutoSaveRef = useRef(true);
   const { register, watch, setValue } = useForm({ defaultValues: { bio: initial.bio } });
   const bio = watch("bio", initial.bio);
+  const { stepTitle, stepDescription, fieldLabel, optionLabel, ui } = useQuestionnaireI18n();
 
   const profileId = profile?._id ?? null;
 
@@ -111,7 +129,7 @@ export function QuestionnaireStep({
     const errors = validateStepFields(step, profile, formState);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      toast.error("Please answer all required questions before continuing.");
+      toast.error(ui("answerAllRequired"));
       return;
     }
     setFieldErrors({});
@@ -133,51 +151,52 @@ export function QuestionnaireStep({
   const visibleFields = step.fields.filter((field) =>
     isFieldVisible(field, profile, radios)
   );
+  const isPartnerStep = step.phase === "partner";
 
   return (
     <Card className="shadow-lg shadow-primary/5">
       <CardHeader className="border-b border-border bg-gradient-to-r from-accent/50 to-transparent">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <CardTitle>{step.title}</CardTitle>
-            <CardDescription>{step.description}</CardDescription>
+            <CardTitle className="text-xl sm:text-2xl font-bold">{stepTitle(step.id, step.title)}</CardTitle>
+            <CardDescription className="text-sm sm:text-base mt-1">{stepDescription(step.id, step.description)}</CardDescription>
           </div>
           {onAutoSave && (
             <div className="flex items-center gap-1.5 text-xs shrink-0 rounded-full bg-card px-2.5 py-1 border border-border">
               {saveStatus === "saving" && (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                  <span className="text-muted-foreground">Saving...</span>
+                  <span className="text-muted-foreground">{ui("saving")}</span>
                 </>
               )}
               {saveStatus === "saved" && (
                 <>
                   <Cloud className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-primary">Saved</span>
+                  <span className="text-primary">{ui("saved")}</span>
                 </>
               )}
               {saveStatus === "error" && (
                 <>
                   <CloudOff className="h-3.5 w-3.5 text-destructive" />
-                  <span className="text-destructive">Save failed</span>
+                  <span className="text-destructive">{ui("saveFailed")}</span>
                 </>
               )}
               {saveStatus === "idle" && (
-                <span className="text-muted-foreground">Auto-save on</span>
+                <span className="text-muted-foreground">{ui("autoSaveOn")}</span>
               )}
             </div>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
         {visibleFields.map((field) => (
-          <div key={field.name} className="space-y-3">
-            <Label className="text-sm font-medium">
-              {field.label}
+          <div key={field.name} className="space-y-3.5">
+            <Label className="text-base sm:text-lg font-bold text-foreground leading-snug">
+              {fieldLabel(field.name, field.label)}
               {field.required && <span className="text-destructive ml-0.5">*</span>}
             </Label>
             {fieldErrors[field.name] && (
-              <p className="text-sm text-destructive">{fieldErrors[field.name]}</p>
+              <p className="text-sm text-destructive">{translateError(fieldErrors[field.name], ui)}</p>
             )}
 
             {field.type === "radio" && (
@@ -204,7 +223,7 @@ export function QuestionnaireStep({
                     )}
                   >
                     <RadioGroupItem value={String(option)} />
-                    <span className="text-sm font-medium">{String(option)}</span>
+                    <span className="text-sm font-semibold">{optionLabel(String(option))}</span>
                   </label>
                 ))}
               </RadioGroup>
@@ -257,7 +276,7 @@ export function QuestionnaireStep({
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select city" />
+                    <SelectValue placeholder={ui("selectCity")} />
                   </SelectTrigger>
                   <SelectContent>
                     {CITIES[selectedCountry].map((option) => (
@@ -278,7 +297,7 @@ export function QuestionnaireStep({
                       return next;
                     });
                   }}
-                  placeholder="Enter your city"
+                  placeholder={ui("enterCity")}
                 />
               )
             )}
@@ -297,12 +316,12 @@ export function QuestionnaireStep({
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                  <SelectValue placeholder={`${ui("selectPlaceholder")} ${fieldLabel(field.name, field.label).toLowerCase()}`} />
                 </SelectTrigger>
                 <SelectContent>
                   {(field.options ?? []).map((option) => (
                     <SelectItem key={String(option)} value={String(option)}>
-                      {String(option)}
+                      {optionLabel(String(option))}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -313,7 +332,7 @@ export function QuestionnaireStep({
               <div>
                 <Textarea
                   {...register("bio")}
-                  placeholder="Tell us about yourself..."
+                  placeholder={ui("bioPlaceholder")}
                   rows={4}
                   maxLength={500}
                   onChange={(e) => {
@@ -339,7 +358,7 @@ export function QuestionnaireStep({
                     <label
                       key={String(option)}
                       className={cn(
-                        "flex items-center gap-2 rounded-xl border p-3 cursor-pointer transition-all duration-200 text-sm",
+                        "flex items-center gap-2 rounded-xl border p-3 cursor-pointer transition-all duration-200 text-sm font-semibold",
                         selected
                           ? "border-primary bg-accent text-accent-foreground shadow-sm"
                           : "border-border bg-input hover:border-primary/40 hover:bg-muted/50"
@@ -356,7 +375,7 @@ export function QuestionnaireStep({
                           });
                         }}
                       />
-                      {String(option)}
+                      {optionLabel(String(option))}
                     </label>
                   );
                 })}
@@ -365,12 +384,14 @@ export function QuestionnaireStep({
           </div>
         ))}
 
-        <Button onClick={handleFormSubmit} className="w-full sm:w-auto">
+        <Button onClick={handleFormSubmit} className="w-full sm:w-auto text-base font-semibold" size="lg">
           {isLastFormStep
-            ? "Review Profile"
+            ? ui("submitAndReview")
             : isLastAboutStep
-              ? "Continue to Partner Preferences"
-              : "Continue"}
+              ? ui("submitAndContinue")
+              : isPartnerStep
+                ? ui("saveAndContinueToPhoto")
+                : ui("saveAndContinue")}
           <ChevronRight className="ml-2 h-4 w-4" />
         </Button>
       </CardContent>

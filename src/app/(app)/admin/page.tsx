@@ -16,11 +16,22 @@ import {
   Shield,
   ShieldOff,
   Crown,
+  Mail,
+  Phone,
+  Headphones,
+  CreditCard,
 } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
-import type { AdminStats, AdminAnalytics, Profile as AdminUser, CurrentUser } from "@/types";
+import type {
+  AdminStats,
+  AdminAnalytics,
+  AdminPayment,
+  Profile as AdminUser,
+  CurrentUser,
+} from "@/types";
 import { AdminBootstrapPanel } from "@/components/admin/admin-bootstrap-panel";
+import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,10 +43,47 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
+import { WHATSAPP_URL } from "@/lib/constants";
+
+type RoleFilter = "all" | "user" | "admin" | "owner";
+type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
+
+const ROLE_FILTERS: { value: RoleFilter; label: string }[] = [
+  { value: "all", label: "All roles" },
+  { value: "user", label: "Members" },
+  { value: "admin", label: "Admins" },
+  { value: "owner", label: "Owner" },
+];
+
+const PAYMENT_FILTERS: { value: PaymentFilter; label: string }[] = [
+  { value: "all", label: "All payments" },
+  { value: "unpaid", label: "Unpaid" },
+  { value: "basic", label: "Paid $15" },
+  { value: "premium", label: "Paid $20" },
+  { value: "paid", label: "Any paid" },
+];
+
+function isPremiumUser(user: AdminUser) {
+  return user.hasPersonalSupport === true || (user.paidCents ?? 0) >= 2000;
+}
+
+function formatPaymentLabel(payment: AdminPayment) {
+  if (payment.registrationTier === "premium" || payment.paymentType === "registration_premium") {
+    return "Registration + Support ($20)";
+  }
+  if (payment.registrationTier === "basic" || payment.paymentType === "registration") {
+    return "Registration ($15)";
+  }
+  if (payment.paymentType === "chat") return "Chat unlock";
+  return `$${(payment.amount / 100).toFixed(0)}`;
+}
 
 export default function AdminPage() {
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
   const [announcement, setAnnouncement] = useState({ title: "", body: "" });
+  const [selectedProfileId, setSelectedProfileId] = useState<Id<"profiles"> | null>(null);
 
   const currentUser = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
   const isStaff = isStaffRole(currentUser?.profile?.role);
@@ -43,12 +91,18 @@ export default function AdminPage() {
   const stats = useQuery(api.admin.getStats) as AdminStats | null | undefined;
   const users = useQuery(
     api.admin.getAllUsers,
-    isStaff ? { search: search || undefined } : "skip"
+    isStaff
+      ? { search: search || undefined, role: roleFilter, payment: paymentFilter }
+      : "skip"
   ) as AdminUser[] | undefined;
   const analytics = useQuery(
     api.admin.getAnalytics,
     isStaff ? {} : "skip"
   ) as AdminAnalytics | undefined;
+  const payments = useQuery(
+    api.admin.getAllPayments,
+    isStaff ? {} : "skip"
+  ) as AdminPayment[] | undefined;
   const approveUser = useMutation(api.admin.approveUser);
   const banUser = useMutation(api.admin.banUser);
   const deleteUser = useMutation(api.admin.deleteUser);
@@ -98,10 +152,10 @@ export default function AdminPage() {
 
   const statCards = [
     { label: "Total Users", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
-    { label: "Male", value: stats.maleUsers, icon: Users, color: "text-indigo-500" },
-    { label: "Female", value: stats.femaleUsers, icon: Users, color: "text-pink-500" },
+    { label: "Paid $15", value: stats.paidBasicCount, icon: DollarSign, color: "text-emerald-500" },
+    { label: "Paid $20", value: stats.paidPremiumCount, icon: Headphones, color: "text-violet-500" },
+    { label: "Unpaid", value: stats.unpaidCount, icon: Users, color: "text-gray-500" },
     { label: "Matches", value: stats.totalMatches, icon: Heart, color: "text-primary" },
-    { label: "Messages", value: stats.totalMessages, icon: MessageCircle, color: "text-purple-500" },
     { label: "Revenue", value: `$${(stats.revenue / 100).toFixed(0)}`, icon: DollarSign, color: "text-amber-500" },
   ];
 
@@ -132,6 +186,7 @@ export default function AdminPage() {
         <Tabs defaultValue="users">
           <TabsList>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
           </TabsList>
@@ -141,15 +196,60 @@ export default function AdminPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 className="pl-10"
-                placeholder="Search users..."
+                placeholder="Search by name, email, phone, or location..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
             <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Click any user to view their full profile and questionnaire answers.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground mr-1">Role</span>
+                {ROLE_FILTERS.map((f) => (
+                  <Button
+                    key={f.value}
+                    size="sm"
+                    variant={roleFilter === f.value ? "default" : "outline"}
+                    className="h-8 rounded-full px-3 text-xs"
+                    onClick={() => setRoleFilter(f.value)}
+                  >
+                    {f.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground mr-1">Payment</span>
+                {PAYMENT_FILTERS.map((f) => (
+                  <Button
+                    key={f.value}
+                    size="sm"
+                    variant={paymentFilter === f.value ? "default" : "outline"}
+                    className="h-8 rounded-full px-3 text-xs"
+                    onClick={() => setPaymentFilter(f.value)}
+                  >
+                    {f.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {users?.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No users match these filters.
+                </p>
+              )}
               {users?.map((user) => (
-                <Card key={user._id}>
+                <Card
+                  key={user._id}
+                  className={`cursor-pointer transition-colors hover:bg-muted/40 ${
+                    selectedProfileId === user._id ? "ring-2 ring-primary" : ""
+                  }`}
+                  onClick={() => setSelectedProfileId(user._id)}
+                >
                   <CardContent className="p-4 flex items-center gap-4">
                     <Avatar>
                       <AvatarImage src={user.imageUrl ?? undefined} />
@@ -170,10 +270,63 @@ export default function AdminPage() {
                         )}
                         {user.banned && <Badge className="text-xs bg-red-100 text-red-600">Banned</Badge>}
                         {!user.approved && <Badge className="text-xs bg-amber-100 text-amber-600">Pending</Badge>}
+                        {isStaffRole(user.role) ? (
+                          <Badge variant="outline" className="text-xs">Staff access</Badge>
+                        ) : user.hasPaid ? (
+                          <>
+                            <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                              {user.paidCents
+                                ? `Paid $${(user.paidCents / 100).toFixed(0)}`
+                                : "Paid"}
+                            </Badge>
+                            {isPremiumUser(user) && (
+                              <Badge className="text-xs bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                                <Headphones className="h-3 w-3 mr-1" />
+                                Personal Support
+                              </Badge>
+                            )}
+                          </>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">
+                            Unpaid
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-gray-500">{user.country} · {user.city}</p>
+                      <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                        {user.email && (
+                          <p className="flex items-center gap-1.5 truncate">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{user.email}</span>
+                          </p>
+                        )}
+                        {user.phone && (
+                          <p className="flex items-center gap-1.5">
+                            <Phone className="h-3 w-3 shrink-0" />
+                            {user.phone}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {isPremiumUser(user) && !isStaffRole(user.role) && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Contact on WhatsApp"
+                          asChild
+                        >
+                          <a
+                            href={`${WHATSAPP_URL}?text=${encodeURIComponent(
+                              `Hi, I'm ${user.name} — I registered for Calaf with personal support.`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <MessageCircle className="h-4 w-4 text-[#25D366]" />
+                          </a>
+                        </Button>
+                      )}
                       {canManageRoles && !isOwnerRole(user.role) && (
                         user.role === "admin" ? (
                           <Button
@@ -224,6 +377,69 @@ export default function AdminPage() {
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payments" className="space-y-4">
+            <div className="space-y-3">
+              {payments?.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No payments recorded yet.
+                </p>
+              )}
+              {payments?.map((payment) => (
+                <Card key={payment._id}>
+                  <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <CreditCard className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-medium">{payment.userName}</p>
+                          <Badge
+                            variant={
+                              payment.status === "completed"
+                                ? "default"
+                                : payment.status === "pending"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                            className={`text-xs capitalize ${
+                              payment.status === "failed"
+                                ? "border-destructive text-destructive"
+                                : ""
+                            }`}
+                          >
+                            {payment.status}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {formatPaymentLabel(payment)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {new Date(payment.createdAt).toLocaleString()}
+                        </p>
+                        {payment.userEmail && (
+                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 truncate">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{payment.userEmail}</span>
+                          </p>
+                        )}
+                        {payment.userPhone && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Phone className="h-3 w-3 shrink-0" />
+                            {payment.userPhone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-lg font-bold">${(payment.amount / 100).toFixed(0)}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -307,6 +523,13 @@ export default function AdminPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {selectedProfileId && (
+          <AdminUserDetailPanel
+            profileId={selectedProfileId}
+            onClose={() => setSelectedProfileId(null)}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

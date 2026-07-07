@@ -34,13 +34,19 @@ export function initFormState(
   if (profile.occupation) radios.occupation = profile.occupation;
 
   if (profile.maritalStatus) radios.maritalStatus = profile.maritalStatus;
-  radios.hasChildren = profile.children > 0 ? "Yes" : "No";
+  // Only pre-select "has children" when the user has actually answered the
+  // marriage step (marital status set) or has children on record. A brand-new
+  // profile defaults children to 0, so we must NOT auto-tick "No".
+  if (profile.children > 0) {
+    radios.hasChildren = "Yes";
+  } else if (profile.maritalStatus) {
+    radios.hasChildren = "No";
+  }
   if (profile.marrySomeoneWithChildren) {
     radios.marrySomeoneWithChildren = profile.marrySomeoneWithChildren;
   }
 
   if (profile.smokes) radios.smokes = profile.smokes;
-  if (profile.drinksAlcohol) radios.drinksAlcohol = profile.drinksAlcohol;
   if (profile.exercise) radios.exercise = profile.exercise;
 
   if (profile.readyToRelocate) radios.readyToRelocate = profile.readyToRelocate;

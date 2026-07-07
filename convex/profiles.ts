@@ -168,9 +168,13 @@ export const completeQuestionnaire = mutation({
 
     const profile = await ensureUserProfile(ctx, userId);
 
+    if (!profile.profileImageId) {
+      throw new Error("Please upload a profile photo before completing your profile.");
+    }
+
     await ctx.db.patch(profile._id, {
       questionnaireComplete: true,
-      questionnaireStep: 9,
+      questionnaireStep: 10,
       lastSavedAt: Date.now(),
     });
 

@@ -186,6 +186,9 @@ export const en = {
     confirmingDesc: "Please wait while we verify your payment with Stripe.",
     success: "Payment successful",
     successDesc: "Thank you! Now complete your profile questionnaire to start matching.",
+    premiumSuccessDesc:
+      "Thank you! Your registration includes personal support from our trained advisors. Message us on WhatsApp to get started.",
+    premiumWhatsApp: "Contact us on WhatsApp",
     continueSetup: "Continue to Profile Setup",
     verifyFailed: "Payment verification failed",
     tryAgain: "Try Again",

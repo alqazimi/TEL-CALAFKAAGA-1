@@ -53,6 +53,7 @@ export const getMatches = query({
             .unique();
 
           if (!profile || profile.banned || !profile.approved) return null;
+          if (!profile.profileImageId) return null;
 
           if (args.country && profile.country !== args.country) return null;
           if (args.minAge && profile.age < args.minAge) return null;

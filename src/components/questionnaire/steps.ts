@@ -20,7 +20,7 @@ import {
   HOBBIES,
 } from "@/lib/constants";
 
-export type QuestionnairePhase = "about" | "partner";
+export type QuestionnairePhase = "about" | "partner" | "photo";
 
 export interface StepConfig {
   id: number;
@@ -131,7 +131,6 @@ const ABOUT_YOU_STEPS: StepConfig[] = [
     phase: "about",
     fields: [
       { name: "smokes", label: "Do you smoke?", type: "radio", options: FREQUENCY, required: true },
-      { name: "drinksAlcohol", label: "Do you drink alcohol?", type: "radio", options: FREQUENCY, required: true },
       { name: "exercise", label: "How often do you exercise?", type: "radio", options: EXERCISE, required: true },
     ],
   },
@@ -203,7 +202,20 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
   },
 ];
 
-export const STEPS: StepConfig[] = [...ABOUT_YOU_STEPS, ...PARTNER_PREFERENCES_STEPS];
+const PROFILE_PHOTO_STEP: StepConfig = {
+  id: 9,
+  title: "Profile Photo",
+  description: "Upload a clear photo — matches will see this on your profile",
+  phase: "photo",
+  fields: [],
+};
+
+export const STEPS: StepConfig[] = [
+  ...ABOUT_YOU_STEPS,
+  ...PARTNER_PREFERENCES_STEPS,
+  PROFILE_PHOTO_STEP,
+];
 
 export const ABOUT_YOU_STEP_COUNT = ABOUT_YOU_STEPS.length;
 export const PARTNER_PREFERENCES_STEP_INDEX = ABOUT_YOU_STEP_COUNT;
+export const PHOTO_STEP_INDEX = STEPS.length - 1;
