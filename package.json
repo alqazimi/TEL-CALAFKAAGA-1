@@ -8,6 +8,7 @@
     "dev:convex": "convex dev",
     "dev:all": "convex dev & next dev",
     "setup:auth": "node scripts/setup-convex-auth.mjs",
+    "setup:auth:prod": "node scripts/setup-convex-auth.mjs --prod",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

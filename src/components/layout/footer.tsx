@@ -3,10 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useConvexAuth } from "convex/react";
-import { APP_NAME, APP_TAGLINE, FOOTER_MENU_LINKS } from "@/lib/constants";
+import { Phone, Mail, MapPin } from "lucide-react";
+import {
+  APP_NAME,
+  APP_DESCRIPTION,
+  NAV_LINKS,
+  REGISTRATION_PRICE,
+} from "@/lib/constants";
 import { isAppShellRoute } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { AuthRegisterCta } from "@/components/auth/auth-register-cta";
+
+const SUPPORT_LINKS = [
+  { href: "/faq", label: "Help Center" },
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms of Service" },
+] as const;
+
+const SOCIAL_LINKS = [
+  { label: "Facebook", href: "#" },
+  { label: "Instagram", href: "#" },
+  { label: "Twitter", href: "#" },
+  { label: "YouTube", href: "#" },
+] as const;
 
 export function Footer() {
   const pathname = usePathname();
@@ -16,76 +36,112 @@ export function Footer() {
     return null;
   }
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname === href;
+  const quickLinks = NAV_LINKS.filter((l) => l.href !== "/");
 
   return (
-    <footer className="border-t border-border bg-muted/40">
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-3 max-w-sm">
-            <BrandLogo size="sm" />
-            <p className="text-sm text-muted-foreground">{APP_TAGLINE}</p>
+    <footer className="bg-navy text-white">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.2fr_1fr_1fr_1fr_1.2fr]">
+          {/* Brand */}
+          <div className="space-y-4">
+            <BrandLogo variant="light" showTagline />
+            <p className="text-sm text-white/70 max-w-xs">{APP_DESCRIPTION}</p>
+            <div className="flex gap-3">
+              {SOCIAL_LINKS.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  aria-label={social.label}
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white/80 hover:bg-primary hover:text-white transition-colors text-xs font-bold"
+                >
+                  {social.label[0]}
+                </a>
+              ))}
+            </div>
           </div>
 
-          <div className="flex-1 lg:max-w-2xl">
-            <h3 className="text-sm font-semibold mb-4">Menu</h3>
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
-              {FOOTER_MENU_LINKS.map((link) => (
+          {/* Quick Links */}
+          <div>
+            <h3 className="text-sm font-semibold mb-4">Quick Links</h3>
+            <ul className="space-y-2">
+              {quickLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className={cn(
-                      "text-sm transition-colors hover:text-primary",
-                      isActive(link.href)
-                        ? "text-primary font-medium"
-                        : "text-muted-foreground"
-                    )}
+                    className="text-sm text-white/70 hover:text-primary transition-colors"
                   >
                     {link.label}
                   </Link>
                 </li>
               ))}
-              {!isLoading && isAuthenticated ? (
-                <li>
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h3 className="text-sm font-semibold mb-4">Support</h3>
+            <ul className="space-y-2">
+              {SUPPORT_LINKS.map((link) => (
+                <li key={link.href}>
                   <Link
-                    href="/dashboard"
-                    className={cn(
-                      "text-sm transition-colors hover:text-primary",
-                      pathname === "/dashboard"
-                        ? "text-primary font-medium"
-                        : "text-muted-foreground"
-                    )}
+                    href={link.href}
+                    className="text-sm text-white/70 hover:text-primary transition-colors"
                   >
-                    Dashboard
+                    {link.label}
                   </Link>
                 </li>
-              ) : !isLoading ? (
-                <>
-                  <li>
-                    <Link
-                      href="/login"
-                      className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                    >
-                      Log in
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/register"
-                      className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                    >
-                      Register
-                    </Link>
-                  </li>
-                </>
-              ) : null}
+              ))}
             </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="text-sm font-semibold mb-4">Contact Us</h3>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-2 text-sm text-white/70">
+                <Phone className="h-4 w-4 text-primary shrink-0" />
+                +252 61 000 0000
+              </li>
+              <li className="flex items-center gap-2 text-sm text-white/70">
+                <Mail className="h-4 w-4 text-primary shrink-0" />
+                hello@calaf.com
+              </li>
+              <li className="flex items-center gap-2 text-sm text-white/70">
+                <MapPin className="h-4 w-4 text-primary shrink-0" />
+                Somalia
+              </li>
+            </ul>
+          </div>
+
+          {/* CTA Box */}
+          <div className="rounded-2xl bg-primary p-6 lg:p-8">
+            <h3 className="text-lg font-bold text-white">
+              Ready to find your perfect match?
+            </h3>
+            <p className="mt-2 text-sm text-white/90">
+              Join thousands of serious people on {APP_NAME}.
+            </p>
+            {!isLoading && isAuthenticated ? (
+              <Link
+                href="/dashboard"
+                className={cn(
+                  "mt-4 inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-sm font-semibold text-primary hover:bg-white/90 transition-colors w-full"
+                )}
+              >
+                Go to Dashboard
+              </Link>
+            ) : (
+              <AuthRegisterCta
+                registerLabel={`Join Now – $${REGISTRATION_PRICE} ›`}
+                className="mt-4 w-full bg-white text-primary hover:bg-white/90"
+                size="default"
+              />
+            )}
           </div>
         </div>
 
-        <div className="mt-8 border-t border-border pt-6">
-          <p className="text-center text-sm text-muted-foreground">
+        <div className="mt-12 border-t border-white/10 pt-6">
+          <p className="text-center text-sm text-white/50">
             &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
           </p>
         </div>

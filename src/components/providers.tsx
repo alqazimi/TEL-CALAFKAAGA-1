@@ -6,6 +6,7 @@ import { ReactNode } from "react";
 import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "sonner";
 import { getConvexClient, isConvexConfigured } from "@/lib/convex-client";
+import { ConvexAuthStatus } from "@/components/auth/convex-auth-status";
 
 export function Providers({ children }: { children: ReactNode }) {
   const convex = useMemo(() => getConvexClient(), []);
@@ -26,7 +27,7 @@ export function Providers({ children }: { children: ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        {children}
+        <ConvexAuthStatus>{children}</ConvexAuthStatus>
         <Toaster position="top-right" richColors />
       </ThemeProvider>
     </ConvexAuthProvider>

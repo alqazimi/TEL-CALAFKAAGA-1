@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
+import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@/lib/constants";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,13 +16,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: `${APP_NAME} — Halal Marriage Matchmaking`,
+    default: `${APP_NAME} — Islamic Matchmaking Service`,
     template: `%s | ${APP_NAME}`,
   },
-  description: APP_TAGLINE,
-  keywords: ["halal", "marriage", "matchmaking", "muslim", "islamic"],
+  description: APP_DESCRIPTION,
+  keywords: ["halal", "marriage", "matchmaking", "muslim", "islamic", "calaf"],
 };
 
 export default function RootLayout({
@@ -31,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full`}>
+    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased">
         <Providers>
           <Navbar />

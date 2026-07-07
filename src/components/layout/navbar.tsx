@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Moon, Sun, LayoutDashboard } from "lucide-react";
+import { Menu, X, Moon, Sun, LayoutDashboard, User } from "lucide-react";
 import { useConvexAuth } from "convex/react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -25,32 +25,37 @@ export function Navbar() {
 
   const inAppShell = isAppShellRoute(pathname);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname === href;
+  const isActive = (href: string) => {
+    if (href.startsWith("/#")) return false;
+    return href === "/" ? pathname === "/" : pathname === href;
+  };
 
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur-xl pt-[env(safe-area-inset-top)]",
+        "sticky top-0 z-50 w-full border-b border-border bg-white/95 dark:bg-card/95 backdrop-blur-xl pt-[env(safe-area-inset-top)]",
         inAppShell && "hidden lg:block"
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <BrandLogo href="/" />
+        <BrandLogo href="/" showTagline />
 
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-0.5">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "px-4 py-2 text-sm font-medium rounded-xl transition-colors",
+                "relative px-3 py-2 text-sm font-medium transition-colors",
                 isActive(link.href)
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {link.label}
+              {isActive(link.href) && (
+                <span className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-primary" />
+              )}
             </Link>
           ))}
         </nav>
@@ -69,7 +74,7 @@ export function Navbar() {
 
           <div className="hidden sm:flex items-center gap-2">
             {isLoading ? (
-              <div className="h-10 w-28 rounded-xl bg-muted animate-pulse" aria-hidden />
+              <div className="h-10 w-32 rounded-xl bg-muted animate-pulse" aria-hidden />
             ) : isAuthenticated ? (
               <Button asChild>
                 <Link href="/dashboard">
@@ -78,14 +83,12 @@ export function Navbar() {
                 </Link>
               </Button>
             ) : (
-              <>
-                <Button variant={pathname === "/login" ? "secondary" : "ghost"} asChild>
-                  <Link href="/login">Log in</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/register">Get Started</Link>
-                </Button>
-              </>
+              <Button variant="outline" asChild className="border-primary text-primary hover:bg-accent">
+                <Link href="/login">
+                  <User className="h-4 w-4" />
+                  Member Login
+                </Link>
+              </Button>
             )}
           </div>
 
@@ -118,7 +121,7 @@ export function Navbar() {
                   className={cn(
                     "block px-4 py-3 text-sm font-medium rounded-xl transition-colors",
                     isActive(link.href)
-                      ? "bg-accent text-accent-foreground"
+                      ? "bg-accent text-primary"
                       : "hover:bg-muted"
                   )}
                 >
@@ -136,22 +139,12 @@ export function Navbar() {
                     </Link>
                   </Button>
                 ) : (
-                  <>
-                    <Button
-                      variant={pathname === "/login" ? "secondary" : "outline"}
-                      asChild
-                      className="w-full"
-                    >
-                      <Link href="/login" onClick={() => setOpen(false)}>
-                        Log in
-                      </Link>
-                    </Button>
-                    <Button asChild className="w-full">
-                      <Link href="/register" onClick={() => setOpen(false)}>
-                        Get Started
-                      </Link>
-                    </Button>
-                  </>
+                  <Button variant="outline" asChild className="w-full border-primary text-primary">
+                    <Link href="/login" onClick={() => setOpen(false)}>
+                      <User className="h-4 w-4" />
+                      Member Login
+                    </Link>
+                  </Button>
                 )}
               </div>
             </div>

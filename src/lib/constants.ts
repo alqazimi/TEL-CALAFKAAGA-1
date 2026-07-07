@@ -1,6 +1,12 @@
-export const APP_NAME = "Calaf";
-export const APP_TAGLINE = "Find your halal life partner with confidence.";
-export const EMERALD = "#10b981";
+export const APP_NAME = "CALAF";
+export const APP_TAGLINE = "Find Your Perfect Match";
+export const APP_DESCRIPTION =
+  "We connect serious men and women for marriage based on Islamic values, trust, and respect.";
+export const BRAND_PINK = "#E91E63";
+export const BRAND_NAVY = "#0B132B";
+export const WHATSAPP_GREEN = "#25D366";
+export const REGISTRATION_PRICE = 15;
+export const WHATSAPP_CALL_PRICE = 20;
 export const CHAT_UNLOCK_PRICE = 15;
 export const MIN_COMPATIBILITY_SCORE = 70;
 
@@ -142,8 +148,9 @@ export const CITIES: Record<string, string[]> = {
 
 export const NAV_LINKS = [
   { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/how-it-works", label: "How it Works" },
+  { href: "/about", label: "About Us" },
+  { href: "/how-it-works", label: "How It Works" },
+  { href: "/#success-stories", label: "Success Stories" },
   { href: "/pricing", label: "Pricing" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },

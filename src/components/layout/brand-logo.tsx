@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { APP_NAME } from "@/lib/constants";
+import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface BrandLogoProps {
   href?: string;
   size?: "sm" | "md";
   showName?: boolean;
+  showTagline?: boolean;
+  variant?: "default" | "light";
   className?: string;
 }
 
@@ -14,11 +16,14 @@ export function BrandLogo({
   href = "/",
   size = "md",
   showName = true,
+  showTagline = false,
+  variant = "default",
   className,
 }: BrandLogoProps) {
-  const iconSize = size === "sm" ? "h-8 w-8" : "h-9 w-9";
+  const iconSize = size === "sm" ? "h-8 w-8" : "h-10 w-10";
   const heartSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   const textSize = size === "sm" ? "text-lg" : "text-xl";
+  const isLight = variant === "light";
 
   return (
     <Link href={href} className={cn("inline-flex items-center gap-2.5 group", className)}>
@@ -28,10 +33,30 @@ export function BrandLogo({
           iconSize
         )}
       >
-        <Heart className={heartSize} />
+        <Heart className={heartSize} fill="currentColor" />
       </div>
       {showName && (
-        <span className={cn("font-bold tracking-tight", textSize)}>{APP_NAME}</span>
+        <div className="flex flex-col leading-tight">
+          <span
+            className={cn(
+              "font-bold tracking-tight",
+              textSize,
+              isLight ? "text-white" : "text-navy dark:text-white"
+            )}
+          >
+            {APP_NAME}
+          </span>
+          {showTagline && (
+            <span
+              className={cn(
+                "text-[10px] font-medium uppercase tracking-wider",
+                isLight ? "text-primary-foreground/80" : "text-primary"
+              )}
+            >
+              {APP_TAGLINE}
+            </span>
+          )}
+        </div>
       )}
     </Link>
   );

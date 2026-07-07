@@ -122,11 +122,17 @@ convex/
 npx convex deploy
 ```
 
-After deploying Convex, copy the deployment URL into Vercel as `NEXT_PUBLIC_CONVEX_URL`, then run auth setup for production:
+After deploying Convex, copy the **production** deployment URL into Vercel as `NEXT_PUBLIC_CONVEX_URL`, then configure auth on **production** Convex (not dev):
 
 ```bash
-SITE_URL=https://your-app.vercel.app npm run setup:auth
+# 1. Deploy Convex backend to production
+npx convex deploy
+
+# 2. Configure auth on PRODUCTION (use your Vercel URL)
+SITE_URL=https://your-app.vercel.app npm run setup:auth:prod
 ```
+
+**Important:** `npm run setup:auth` only configures your **dev** deployment. Vercel must use the **production** Convex URL and `setup:auth:prod`.
 
 ## License
 
