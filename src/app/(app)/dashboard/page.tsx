@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { CurrentUser, MatchResult, MutualMatch } from "@/types";
@@ -12,21 +14,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
-import { hasPaidAccess } from "@/lib/access";
+import { hasPaidAccess, isStaffRole } from "@/lib/access";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
+  const isStaff = isStaffRole(user?.profile?.role);
   const matches = useQuery(
     api.matches.getMatches,
-    user?.profile?.questionnaireComplete ? {} : "skip"
+    user?.profile?.questionnaireComplete && !isStaff ? {} : "skip"
   ) as MatchResult[] | undefined;
   const myMatches = useQuery(
     api.matches.getMyMatches,
-    user?.profile?.questionnaireComplete ? undefined : "skip"
+    user?.profile?.questionnaireComplete && !isStaff ? undefined : "skip"
   ) as MutualMatch[] | undefined;
 
-  if (user === undefined) {
+  useEffect(() => {
+    if (isStaff) {
+      router.replace("/admin");
+    }
+  }, [isStaff, router]);
+
+  if (user === undefined || isStaff) {
     return (
       <DashboardLayout>
         <div className="space-y-6 max-w-2xl">

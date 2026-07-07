@@ -21,7 +21,8 @@ import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-re
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX } from "@/components/questionnaire/steps";
-import { hasPaidAccess } from "@/lib/access";
+import { hasPaidAccess, isStaffRole } from "@/lib/access";
+import { useEffect } from "react";
 
 const REVIEW_STEP_INDEX = STEPS.length;
 
@@ -30,6 +31,7 @@ export default function QuestionnairePage() {
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get("edit") === "1";
   const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
+  const isStaff = isStaffRole(profile?.role);
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
   const updateQuestionnaire = useMutation(api.profiles.updateQuestionnaire);
   const autoSaveProfile = useMutation(api.profiles.autoSaveProfile);
@@ -115,7 +117,13 @@ export default function QuestionnairePage() {
     router.push("/dashboard");
   };
 
-  if (profile === undefined) {
+  useEffect(() => {
+    if (isStaff) {
+      router.replace("/admin");
+    }
+  }, [isStaff, router]);
+
+  if (profile === undefined || isStaff) {
     return (
       <DashboardLayout>
         <div className="max-w-2xl mx-auto animate-pulse space-y-4">

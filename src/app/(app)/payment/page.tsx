@@ -9,7 +9,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import { useTranslation } from "@/lib/i18n/context";
-import { hasPaidAccess } from "@/lib/access";
+import { hasPaidAccess, isStaffRole } from "@/lib/access";
 import { toast } from "sonner";
 
 export default function PaymentPage() {
@@ -27,6 +27,10 @@ export default function PaymentPage() {
   }, [canceled]);
 
   useEffect(() => {
+    if (isStaffRole(profile?.role)) {
+      router.replace("/admin");
+      return;
+    }
     if (profile?.registrationComplete === false) {
       router.replace("/register/details");
       return;

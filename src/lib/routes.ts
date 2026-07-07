@@ -39,7 +39,7 @@ export function isMarketingRoute(pathname: string): boolean {
   return !isAppShellRoute(pathname) && !isAuthRoute(pathname);
 }
 
-import { hasPaidAccess } from "./access";
+import { hasPaidAccess, isStaffRole } from "./access";
 
 /** Where signed-in users should land instead of the marketing homepage. */
 export function getAuthenticatedHomeRoute(
@@ -53,6 +53,10 @@ export function getAuthenticatedHomeRoute(
     | null
     | undefined
 ): string {
+  // Admins and owners never go through the member flow (payment/questionnaire).
+  if (isStaffRole(profile?.role)) {
+    return "/admin";
+  }
   if (profile?.registrationComplete === false) {
     return "/register/details";
   }

@@ -38,10 +38,17 @@ export default function AdminPage() {
   const [announcement, setAnnouncement] = useState({ title: "", body: "" });
 
   const currentUser = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
+  const isStaff = isStaffRole(currentUser?.profile?.role);
   const bootstrapStatus = useQuery(api.admin.getBootstrapStatus);
   const stats = useQuery(api.admin.getStats) as AdminStats | null | undefined;
-  const users = useQuery(api.admin.getAllUsers, { search: search || undefined }) as AdminUser[] | undefined;
-  const analytics = useQuery(api.admin.getAnalytics) as AdminAnalytics | undefined;
+  const users = useQuery(
+    api.admin.getAllUsers,
+    isStaff ? { search: search || undefined } : "skip"
+  ) as AdminUser[] | undefined;
+  const analytics = useQuery(
+    api.admin.getAnalytics,
+    isStaff ? {} : "skip"
+  ) as AdminAnalytics | undefined;
   const approveUser = useMutation(api.admin.approveUser);
   const banUser = useMutation(api.admin.banUser);
   const deleteUser = useMutation(api.admin.deleteUser);
