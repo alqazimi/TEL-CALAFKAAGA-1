@@ -11,6 +11,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAppNavLinks } from "@/lib/i18n/hooks";
+import { isStaffRole } from "@/lib/access";
 import { cn } from "@/lib/utils";
 
 const iconMap = {
@@ -27,6 +28,9 @@ export function AppMobileNav() {
   const user = useQuery(api.users.currentUser);
   const profileComplete = user?.profile?.questionnaireComplete ?? false;
   const appNavLinks = useAppNavLinks().filter((l) => l.tab);
+
+  // Admins and owners don't use the member bottom navigation.
+  if (isStaffRole(user?.profile?.role)) return null;
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">

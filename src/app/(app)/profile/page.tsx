@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import type { Preferences } from "@/lib/profile-progress";
+import { isStaffRole } from "@/lib/access";
 
 const profileSchema = z.object({
   name: z.string().min(2),
@@ -90,10 +91,12 @@ export default function ProfilePage() {
     );
   }
 
+  const isStaff = isStaffRole(profile?.role);
+
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        {profile && !profile.questionnaireComplete && (
+        {profile && !profile.questionnaireComplete && !isStaff && (
           <ProfileCompletionCard profile={profile} preferences={preferences} />
         )}
 

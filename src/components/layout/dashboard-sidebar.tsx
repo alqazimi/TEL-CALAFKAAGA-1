@@ -42,6 +42,7 @@ export function DashboardSidebar() {
   const preferences = useQuery(api.profiles.getPreferences);
   const unreadCount = useQuery(api.notifications.getUnreadCount);
 
+  const isStaff = isStaffRole(user?.profile?.role);
   const profileComplete = user?.profile?.questionnaireComplete ?? false;
   const progress = user?.profile
     ? calculateProfileProgress(user.profile, preferences ?? undefined)
@@ -52,9 +53,9 @@ export function DashboardSidebar() {
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:top-16 lg:bottom-0 lg:left-0 lg:z-40 lg:border-r lg:border-border lg:bg-card/95 lg:backdrop-blur-xl">
       <div className="flex flex-col flex-1 px-4 py-6 overflow-y-auto">
-        <BrandLogo href="/dashboard" className="px-2 mb-6" />
+        <BrandLogo href={isStaff ? "/admin" : "/dashboard"} className="px-2 mb-6" />
 
-        {user?.profile && !profileComplete && (
+        {!isStaff && user?.profile && !profileComplete && (
           <div className="mb-4 rounded-xl bg-accent p-3 space-y-1.5">
             <p className="text-xs font-medium text-accent-foreground">
               Profile {progress}% {t("app.profileSetup").toLowerCase()}
@@ -69,34 +70,35 @@ export function DashboardSidebar() {
         )}
 
         <nav className="flex-1 space-y-1">
-          {appNavLinks.map((link) => {
-            const Icon = iconMap[link.icon as AppNavIcon];
-            const isActive = pathname === link.href;
-            const isLocked = "locked" in link && link.locked && !profileComplete;
-            const href = isLocked ? "/questionnaire" : link.href;
+          {!isStaff &&
+            appNavLinks.map((link) => {
+              const Icon = iconMap[link.icon as AppNavIcon];
+              const isActive = pathname === link.href;
+              const isLocked = "locked" in link && link.locked && !profileComplete;
+              const href = isLocked ? "/questionnaire" : link.href;
 
-            return (
-              <Link
-                key={link.href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all",
-                  isActive
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  isLocked && "opacity-80"
-                )}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                {link.label}
-                {link.href === "/notifications" && unreadCount ? (
-                  <Badge className="ml-auto">{unreadCount}</Badge>
-                ) : null}
-              </Link>
-            );
-          })}
+              return (
+                <Link
+                  key={link.href}
+                  href={href}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    isLocked && "opacity-80"
+                  )}
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  {link.label}
+                  {link.href === "/notifications" && unreadCount ? (
+                    <Badge className="ml-auto">{unreadCount}</Badge>
+                  ) : null}
+                </Link>
+              );
+            })}
 
-          {isStaffRole(user?.profile?.role) && (
+          {isStaff && (
             <Link
               href="/admin"
               className={cn(
