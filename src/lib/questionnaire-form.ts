@@ -2,11 +2,6 @@ import type { FieldConfig, StepConfig } from "@/components/questionnaire/steps";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 
-function parseChildrenCount(value: string): number {
-  if (value === "5+") return 5;
-  return parseInt(value) || 0;
-}
-
 function formatHeightWeight(value: number, plus: string): string {
   if (value >= parseInt(plus)) return plus;
   return String(value);
@@ -40,9 +35,6 @@ export function initFormState(
 
   if (profile.maritalStatus) radios.maritalStatus = profile.maritalStatus;
   radios.hasChildren = profile.children > 0 ? "Yes" : "No";
-  if (profile.children > 0) {
-    selects.children = profile.children >= 5 ? "5+" : String(profile.children);
-  }
   if (profile.marrySomeoneWithChildren) {
     radios.marrySomeoneWithChildren = profile.marrySomeoneWithChildren;
   }
@@ -51,7 +43,6 @@ export function initFormState(
   if (profile.drinksAlcohol) radios.drinksAlcohol = profile.drinksAlcohol;
   if (profile.exercise) radios.exercise = profile.exercise;
 
-  if (profile.wantChildren) radios.wantChildren = profile.wantChildren;
   if (profile.readyToRelocate) radios.readyToRelocate = profile.readyToRelocate;
   if (profile.marriageTimeline) radios.marriageTimeline = profile.marriageTimeline;
 
@@ -159,8 +150,6 @@ export function buildStepData(
           value === "200+" || value === "100+"
             ? parseInt(value) || 200
             : parseInt(value) || 0;
-      } else if (field.name === "children") {
-        data[field.name] = parseChildrenCount(value);
       } else if (field.name === "wearsHijab") {
         data[field.name] = value === "Yes";
       } else {
@@ -178,11 +167,7 @@ export function buildStepData(
 
   if (step.fields.some((f) => f.name === "hasChildren")) {
     const hasChildren = radios.hasChildren ?? getFieldValue("hasChildren", profile, radios);
-    if (hasChildren === "No") {
-      data.children = 0;
-    } else if (hasChildren === "Yes") {
-      data.children = parseChildrenCount(selects.children ?? "");
-    }
+    data.children = hasChildren === "Yes" ? 1 : 0;
   }
 
   if (Object.keys(preferences).length > 0) {

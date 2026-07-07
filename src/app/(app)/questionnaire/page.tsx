@@ -19,7 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { QuestionnaireStep } from "@/components/questionnaire/questionnaire-step";
 import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-review";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
-import { STEPS } from "@/components/questionnaire/steps";
+import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX } from "@/components/questionnaire/steps";
 
 const REVIEW_STEP_INDEX = STEPS.length;
 
@@ -84,7 +84,11 @@ export default function QuestionnairePage() {
       }
 
       if (currentStep < REVIEW_STEP_INDEX) {
-        setStepOverride(currentStep + 1);
+        const nextStep = currentStep + 1;
+        if (nextStep === PARTNER_PREFERENCES_STEP_INDEX) {
+          toast.success("Great! Now tell us what you're looking for in a partner.");
+        }
+        setStepOverride(nextStep);
       }
     } catch {
       toast.error("Failed to save. Please try again.");
@@ -171,6 +175,9 @@ export default function QuestionnairePage() {
   }
 
   const completionPercent = calculateProfileProgress(profile, preferences);
+  const currentStepConfig = !isReviewStep ? STEPS[currentStep] : null;
+  const isPartnerPhase = currentStepConfig?.phase === "partner";
+  const aboutStepNumber = !isReviewStep && !isPartnerPhase ? currentStep + 1 : null;
 
   return (
     <DashboardLayout>
@@ -188,13 +195,17 @@ export default function QuestionnairePage() {
                       ? isEditMode
                         ? "Review and update your profile"
                         : "Review your answers before submitting"
-                      : STEPS[currentStep]?.title}
+                      : isPartnerPhase
+                        ? "Part 2 — What you're looking for in a spouse"
+                        : `Part 1 — About you · ${STEPS[currentStep]?.title}`}
                   </p>
                 </div>
                 <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full">
                   {isReviewStep
                     ? "Review"
-                    : `${currentStep + 1}/${STEPS.length}`}
+                    : isPartnerPhase
+                      ? "Part 2"
+                      : `Step ${aboutStepNumber}/${ABOUT_YOU_STEP_COUNT}`}
                 </span>
               </div>
               <Progress value={progress} className="h-2.5" />
@@ -229,15 +240,28 @@ export default function QuestionnairePage() {
                     isEditMode={isEditMode}
                   />
                 ) : (
-                  <QuestionnaireStep
-                    key={`step-${currentStep}-${profile._id}`}
-                    step={STEPS[currentStep]}
-                    profile={profile}
-                    preferences={preferences}
-                    onSubmit={handleNext}
-                    onAutoSave={handleAutoSave}
-                    isLastFormStep={currentStep === STEPS.length - 1}
-                  />
+                  <>
+                    {isPartnerPhase && (
+                      <div className="mb-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/30 px-4 py-3">
+                        <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                          Part 2: Partner preferences
+                        </p>
+                        <p className="text-sm text-emerald-700/90 dark:text-emerald-300/90 mt-1">
+                          You finished your own details. Now answer what you want in a spouse.
+                        </p>
+                      </div>
+                    )}
+                    <QuestionnaireStep
+                      key={`step-${currentStep}-${profile._id}`}
+                      step={STEPS[currentStep]}
+                      profile={profile}
+                      preferences={preferences}
+                      onSubmit={handleNext}
+                      onAutoSave={handleAutoSave}
+                      isLastFormStep={currentStep === STEPS.length - 1}
+                      isLastAboutStep={currentStep === ABOUT_YOU_STEP_COUNT - 1}
+                    />
+                  </>
                 )}
               </motion.div>
             </AnimatePresence>

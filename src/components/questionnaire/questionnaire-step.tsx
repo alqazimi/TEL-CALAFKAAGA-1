@@ -37,6 +37,7 @@ interface QuestionnaireStepProps {
   onSubmit: (data: Record<string, unknown>) => void;
   onAutoSave?: (data: Record<string, unknown>) => Promise<void>;
   isLastFormStep?: boolean;
+  isLastAboutStep?: boolean;
 }
 
 export function QuestionnaireStep({
@@ -46,6 +47,7 @@ export function QuestionnaireStep({
   onSubmit,
   onAutoSave,
   isLastFormStep = false,
+  isLastAboutStep = false,
 }: QuestionnaireStepProps) {
   const initial = initFormState(profile, preferences);
   const [selectedCountry, setSelectedCountry] = useState(initial.selectedCountry);
@@ -164,12 +166,7 @@ export function QuestionnaireStep({
             {field.type === "radio" && (
               <RadioGroup
                 value={radios[field.name] ?? ""}
-                onValueChange={(v) => {
-                  setRadios((prev) => ({ ...prev, [field.name]: v }));
-                  if (field.name === "hasChildren" && v === "No") {
-                    setSelects((prev) => ({ ...prev, children: "" }));
-                  }
-                }}
+                onValueChange={(v) => setRadios((prev) => ({ ...prev, [field.name]: v }))}
                 className="grid grid-cols-1 sm:grid-cols-2 gap-3"
               >
                 {field.options?.map((option) => (
@@ -306,7 +303,11 @@ export function QuestionnaireStep({
         ))}
 
         <Button onClick={handleFormSubmit} className="w-full sm:w-auto">
-          {isLastFormStep ? "Review Profile" : "Continue"}
+          {isLastFormStep
+            ? "Review Profile"
+            : isLastAboutStep
+              ? "Continue to Partner Preferences"
+              : "Continue"}
           <ChevronRight className="ml-2 h-4 w-4" />
         </Button>
       </CardContent>

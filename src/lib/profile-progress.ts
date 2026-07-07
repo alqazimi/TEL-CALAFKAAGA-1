@@ -1,4 +1,5 @@
 import type { Profile } from "@/types";
+import { ABOUT_YOU_STEP_COUNT, STEPS } from "@/components/questionnaire/steps";
 
 export interface Preferences {
   minAge?: number;
@@ -22,11 +23,12 @@ export interface ProfileSection {
 
 export const PROFILE_SECTIONS: ProfileSection[] = [
   { id: "basic", title: "Basic Information", stepIndex: 0 },
-  { id: "religious", title: "Religious Practice", stepIndex: 1 },
+  { id: "religious", title: "Your Religious Practice", stepIndex: 1 },
   { id: "education", title: "Education & Work", stepIndex: 2 },
-  { id: "marriage", title: "Marriage Information", stepIndex: 4 },
-  { id: "preferences", title: "Partner Preferences", stepIndex: 6 },
+  { id: "marriage", title: "Marriage & Family", stepIndex: 4 },
+  { id: "lifestyle", title: "Lifestyle", stepIndex: 5 },
   { id: "about", title: "About You", stepIndex: 6 },
+  { id: "preferences", title: "Partner Preferences", stepIndex: 7 },
 ];
 
 export type SectionStatus = "complete" | "in_progress" | "not_started";
@@ -42,10 +44,7 @@ export function isBasicComplete(profile: Profile): boolean {
 }
 
 export function isReligiousComplete(profile: Profile): boolean {
-  const base =
-    !!profile.religiousLevel &&
-    !!profile.prayerFrequency &&
-    !!profile.spousePrayerImportance;
+  const base = !!profile.prayerFrequency;
   if (profile.gender === "female") {
     return base && profile.wearsHijab !== undefined;
   }
@@ -57,13 +56,15 @@ export function isEducationComplete(profile: Profile): boolean {
 }
 
 export function isMarriageComplete(profile: Profile): boolean {
-  return (
-    !!profile.maritalStatus &&
-    !!profile.smokes &&
-    !!profile.drinksAlcohol &&
-    !!profile.exercise &&
-    !!profile.marrySomeoneWithChildren
-  );
+  return !!profile.maritalStatus;
+}
+
+export function isLifestyleComplete(profile: Profile): boolean {
+  return !!profile.smokes && !!profile.drinksAlcohol && !!profile.exercise;
+}
+
+export function isAboutYouComplete(profile: Profile): boolean {
+  return !!profile.readyToRelocate && !!profile.marriageTimeline;
 }
 
 export function isPreferencesComplete(
@@ -75,6 +76,8 @@ export function isPreferencesComplete(
     profile.maritalStatus === "Divorced" || !!prefs.acceptDivorcee;
   const widowOk = profile.maritalStatus === "Widowed" || !!prefs.acceptWidow;
   return (
+    !!profile.spousePrayerImportance &&
+    !!profile.marrySomeoneWithChildren &&
     prefs.minAge !== undefined &&
     prefs.maxAge !== undefined &&
     prefs.minHeight !== undefined &&
@@ -88,11 +91,17 @@ export function isPreferencesComplete(
   );
 }
 
-export function isAboutComplete(profile: Profile): boolean {
+export function isAboutYouPhaseComplete(
+  profile: Profile,
+  prefs?: Preferences | null
+): boolean {
   return (
-    !!profile.wantChildren &&
-    !!profile.readyToRelocate &&
-    !!profile.marriageTimeline
+    isBasicComplete(profile) &&
+    isReligiousComplete(profile) &&
+    isEducationComplete(profile) &&
+    isMarriageComplete(profile) &&
+    isLifestyleComplete(profile) &&
+    isAboutYouComplete(profile)
   );
 }
 
@@ -104,8 +113,9 @@ const sectionCheckers: Record<
   religious: (p) => isReligiousComplete(p),
   education: (p) => isEducationComplete(p),
   marriage: (p) => isMarriageComplete(p),
+  lifestyle: (p) => isLifestyleComplete(p),
+  about: (p) => isAboutYouComplete(p),
   preferences: (p, prefs) => isPreferencesComplete(p, prefs),
-  about: (p) => isAboutComplete(p),
 };
 
 export function getSectionStatus(
@@ -125,11 +135,15 @@ export function getSectionStatus(
 
   const partialChecks: Record<string, boolean> = {
     basic: profile.age > 0 || !!profile.country || !!profile.city,
-    religious: !!profile.religiousLevel || !!profile.prayerFrequency,
+    religious: !!profile.prayerFrequency,
     education: !!profile.education || !!profile.occupation,
-    marriage: !!profile.maritalStatus || !!profile.smokes,
-    preferences: !!prefs?.educationLevel || !!prefs?.religiousLevel,
-    about: !!profile.wantChildren || !!profile.readyToRelocate,
+    marriage: !!profile.maritalStatus,
+    lifestyle: !!profile.smokes || !!profile.drinksAlcohol,
+    about: !!profile.readyToRelocate || !!profile.marriageTimeline,
+    preferences:
+      !!profile.spousePrayerImportance ||
+      !!prefs?.educationLevel ||
+      !!prefs?.religiousLevel,
   };
 
   if (partialChecks[sectionId] || step >= sectionStep) return "in_progress";
@@ -156,7 +170,10 @@ export function getRemainingSections(
   ).length;
 }
 
-export function getResumeStepIndex(profile: Profile, prefs?: Preferences | null): number {
+export function getResumeStepIndex(
+  profile: Profile,
+  prefs?: Preferences | null
+): number {
   if (profile.questionnaireComplete) return 0;
 
   for (const section of PROFILE_SECTIONS) {
@@ -164,11 +181,14 @@ export function getResumeStepIndex(profile: Profile, prefs?: Preferences | null)
       if (section.id === "education" && isReligiousComplete(profile)) {
         return profile.education ? 3 : 2;
       }
+      if (section.id === "preferences" && isAboutYouPhaseComplete(profile, prefs)) {
+        return ABOUT_YOU_STEP_COUNT;
+      }
       return section.stepIndex;
     }
   }
 
-  return 7;
+  return STEPS.length;
 }
 
 export function getEncouragementMessage(
@@ -181,8 +201,11 @@ export function getEncouragementMessage(
   if (progress >= 100) {
     return "Your profile is complete. Start exploring your matches!";
   }
+  if (!isAboutYouPhaseComplete(profile, prefs)) {
+    return "First, tell us about yourself. Partner preferences come next.";
+  }
   if (remaining <= 2) {
-    return "You're only 2 minutes away from unlocking your matches.";
+    return "Almost done — finish your partner preferences to unlock matches.";
   }
   if (progress >= 50) {
     return "The more information you provide, the better your matches will be.";

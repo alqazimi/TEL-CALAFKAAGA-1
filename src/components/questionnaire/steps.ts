@@ -18,13 +18,15 @@ import {
   MAX_DISTANCE,
   QUALITIES,
   HOBBIES,
-  CHILDREN_COUNT,
 } from "@/lib/constants";
+
+export type QuestionnairePhase = "about" | "partner";
 
 export interface StepConfig {
   id: number;
   title: string;
   description: string;
+  phase: QuestionnairePhase;
   fields: FieldConfig[];
 }
 
@@ -34,23 +36,22 @@ export interface FieldConfig {
   type: "select" | "radio" | "number" | "textarea" | "multi-select" | "range" | "country-search" | "country-multi";
   options?: readonly string[] | number[];
   required?: boolean;
-  /** Show only when another field equals this value */
   condition?: { field: string; value: string };
-  /** Hide when another field is one of these values */
   hideWhen?: { field: string; values: string[] };
   min?: number;
   max?: number;
   maxSelect?: number;
   preferences?: boolean;
-  /** UI-only field, not saved to profile */
   uiOnly?: boolean;
 }
 
-export const STEPS: StepConfig[] = [
+/** Part 1 — about the user (steps 1–7). */
+const ABOUT_YOU_STEPS: StepConfig[] = [
   {
     id: 1,
     title: "Basic Information",
     description: "Tell us about yourself",
+    phase: "about",
     fields: [
       { name: "age", label: "Age", type: "select", options: AGE_OPTIONS, required: true },
       { name: "country", label: "Country", type: "country-search", required: true },
@@ -61,22 +62,15 @@ export const STEPS: StepConfig[] = [
   },
   {
     id: 2,
-    title: "Religion",
-    description: "Your religious practices and preferences",
+    title: "Your Religious Practice",
+    description: "Your own religious habits",
+    phase: "about",
     fields: [
-      { name: "religiousLevel", label: "How religious are you?", type: "radio", options: RELIGIOUS_LEVELS, required: true },
       {
         name: "prayerFrequency",
         label: "Do you perform the five daily prayers?",
         type: "radio",
         options: PRAYER_FREQUENCY,
-        required: true,
-      },
-      {
-        name: "spousePrayerImportance",
-        label: "How important is it that your spouse prays regularly?",
-        type: "radio",
-        options: SPOUSE_PRAYER_IMPORTANCE,
         required: true,
       },
       {
@@ -92,6 +86,7 @@ export const STEPS: StepConfig[] = [
     id: 3,
     title: "Education",
     description: "Your educational background",
+    phase: "about",
     fields: [
       { name: "education", label: "Education Level", type: "radio", options: EDUCATION_LEVELS, required: true },
     ],
@@ -100,6 +95,7 @@ export const STEPS: StepConfig[] = [
     id: 4,
     title: "Employment",
     description: "Your work situation",
+    phase: "about",
     fields: [
       { name: "occupation", label: "Employment Status", type: "radio", options: OCCUPATIONS, required: true },
     ],
@@ -108,6 +104,7 @@ export const STEPS: StepConfig[] = [
     id: 5,
     title: "Marriage & Family",
     description: "Your marriage history and family",
+    phase: "about",
     fields: [
       {
         name: "maritalStatus",
@@ -124,12 +121,47 @@ export const STEPS: StepConfig[] = [
         required: true,
         uiOnly: true,
       },
+    ],
+  },
+  {
+    id: 6,
+    title: "Lifestyle",
+    description: "Your daily habits",
+    phase: "about",
+    fields: [
+      { name: "smokes", label: "Do you smoke?", type: "radio", options: FREQUENCY, required: true },
+      { name: "drinksAlcohol", label: "Do you drink alcohol?", type: "radio", options: FREQUENCY, required: true },
+      { name: "exercise", label: "How often do you exercise?", type: "radio", options: EXERCISE, required: true },
+    ],
+  },
+  {
+    id: 7,
+    title: "About You",
+    description: "Your plans, personality, and interests",
+    phase: "about",
+    fields: [
+      { name: "readyToRelocate", label: "Ready to relocate?", type: "radio", options: YES_NO_MAYBE, required: true },
+      { name: "marriageTimeline", label: "Marriage Timeline", type: "radio", options: MARRIAGE_TIMELINE, required: true },
+      { name: "bio", label: "Tell us about yourself (max 500 characters)", type: "textarea", max: 500 },
+      { name: "qualities", label: "Choose up to 10 qualities that describe you", type: "multi-select", options: QUALITIES, maxSelect: 10 },
+      { name: "hobbies", label: "Choose your hobbies", type: "multi-select", options: HOBBIES },
+    ],
+  },
+];
+
+/** Part 2 — what the user wants in a partner (after about-you is done). */
+const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
+  {
+    id: 8,
+    title: "Partner Preferences",
+    description: "What you are looking for in a spouse",
+    phase: "partner",
+    fields: [
       {
-        name: "children",
-        label: "How many children do you have?",
-        type: "select",
-        options: CHILDREN_COUNT,
-        condition: { field: "hasChildren", value: "Yes" },
+        name: "spousePrayerImportance",
+        label: "How important is it that your spouse prays regularly?",
+        type: "radio",
+        options: SPOUSE_PRAYER_IMPORTANCE,
         required: true,
       },
       {
@@ -139,45 +171,16 @@ export const STEPS: StepConfig[] = [
         options: YES_NO_DEPENDS,
         required: true,
       },
-    ],
-  },
-  {
-    id: 6,
-    title: "Lifestyle",
-    description: "Your daily habits",
-    fields: [
-      { name: "smokes", label: "Do you smoke?", type: "radio", options: FREQUENCY, required: true },
-      { name: "drinksAlcohol", label: "Do you drink alcohol?", type: "radio", options: FREQUENCY, required: true },
-      { name: "exercise", label: "How often do you exercise?", type: "radio", options: EXERCISE, required: true },
-    ],
-  },
-  {
-    id: 7,
-    title: "Future Plans",
-    description: "Your vision for the future",
-    fields: [
-      {
-        name: "wantChildren",
-        label: "Do you want children in the future?",
-        type: "radio",
-        options: YES_NO_MAYBE,
-        required: true,
-      },
-      { name: "readyToRelocate", label: "Ready to relocate?", type: "radio", options: YES_NO_MAYBE, required: true },
-      { name: "marriageTimeline", label: "Marriage Timeline", type: "radio", options: MARRIAGE_TIMELINE, required: true },
-      { name: "bio", label: "Tell us about yourself (max 500 characters)", type: "textarea", max: 500 },
-      { name: "qualities", label: "Choose up to 10 qualities", type: "multi-select", options: QUALITIES, maxSelect: 10 },
-      { name: "hobbies", label: "Choose your hobbies", type: "multi-select", options: HOBBIES },
-      { name: "pref_minAge", label: "Preferred Min Age", type: "select", options: AGE_OPTIONS, preferences: true },
-      { name: "pref_maxAge", label: "Preferred Max Age", type: "select", options: AGE_OPTIONS, preferences: true },
-      { name: "pref_minHeight", label: "Preferred Min Height", type: "select", options: HEIGHT_OPTIONS, preferences: true },
-      { name: "pref_maxHeight", label: "Preferred Max Height", type: "select", options: HEIGHT_OPTIONS, preferences: true },
+      { name: "pref_minAge", label: "Preferred Min Age", type: "select", options: AGE_OPTIONS, preferences: true, required: true },
+      { name: "pref_maxAge", label: "Preferred Max Age", type: "select", options: AGE_OPTIONS, preferences: true, required: true },
+      { name: "pref_minHeight", label: "Preferred Min Height", type: "select", options: HEIGHT_OPTIONS, preferences: true, required: true },
+      { name: "pref_maxHeight", label: "Preferred Max Height", type: "select", options: HEIGHT_OPTIONS, preferences: true, required: true },
       { name: "pref_preferredCountries", label: "Preferred Countries", type: "country-multi", preferences: true },
-      { name: "pref_educationLevel", label: "Preferred Education", type: "radio", options: EDUCATION_LEVELS, preferences: true },
-      { name: "pref_religiousLevel", label: "Preferred Religious Level", type: "radio", options: RELIGIOUS_LEVELS, preferences: true },
+      { name: "pref_educationLevel", label: "Preferred Education", type: "radio", options: EDUCATION_LEVELS, preferences: true, required: true },
+      { name: "pref_religiousLevel", label: "Preferred Religious Level", type: "radio", options: RELIGIOUS_LEVELS, preferences: true, required: true },
       {
         name: "pref_acceptDivorcee",
-        label: "Accept Divorcee?",
+        label: "Accept someone who is divorced?",
         type: "radio",
         options: YES_NO_DEPENDS,
         preferences: true,
@@ -185,14 +188,19 @@ export const STEPS: StepConfig[] = [
       },
       {
         name: "pref_acceptWidow",
-        label: "Accept Widow?",
+        label: "Accept someone who is widowed?",
         type: "radio",
         options: YES_NO_DEPENDS,
         preferences: true,
         hideWhen: { field: "maritalStatus", values: ["Widowed"] },
       },
-      { name: "pref_acceptChildren", label: "Accept Children?", type: "radio", options: YES_NO, preferences: true },
-      { name: "pref_maxDistance", label: "Maximum Distance", type: "radio", options: MAX_DISTANCE, preferences: true },
+      { name: "pref_acceptChildren", label: "Accept someone with children?", type: "radio", options: YES_NO, preferences: true, required: true },
+      { name: "pref_maxDistance", label: "Maximum Distance", type: "radio", options: MAX_DISTANCE, preferences: true, required: true },
     ],
   },
 ];
+
+export const STEPS: StepConfig[] = [...ABOUT_YOU_STEPS, ...PARTNER_PREFERENCES_STEPS];
+
+export const ABOUT_YOU_STEP_COUNT = ABOUT_YOU_STEPS.length;
+export const PARTNER_PREFERENCES_STEP_INDEX = ABOUT_YOU_STEP_COUNT;

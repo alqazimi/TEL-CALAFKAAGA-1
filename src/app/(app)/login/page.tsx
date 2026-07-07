@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvex } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { APP_NAME } from "@/lib/constants";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -25,6 +29,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
+  const convex = useConvex();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -44,10 +49,11 @@ export default function LoginPage() {
         password: data.password,
         flow: "signIn",
       });
+      const user = await convex.query(api.users.currentUser, {});
       toast.success("Welcome back!");
-      router.push("/dashboard");
-    } catch {
-      toast.error("Invalid email or password");
+      router.push(getAuthenticatedHomeRoute(user?.profile ?? undefined));
+    } catch (error) {
+      toast.error(getAuthErrorMessage(error, "Invalid email or password"));
     } finally {
       setLoading(false);
     }

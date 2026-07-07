@@ -4,13 +4,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useMutation } from "convex/react";
+import { useConvex } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Mail, Lock, User, Phone } from "lucide-react";
-import { api } from "../../../../convex/_generated/api";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { GuestGate } from "@/components/auth/guest-gate";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { OptionPills } from "@/components/ui/option-pills";
 import { APP_NAME } from "@/lib/constants";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -29,9 +31,23 @@ const registerSchema = z.object({
 
 type RegisterForm = z.infer<typeof registerSchema>;
 
+function profileHasExistingProgress(profile: {
+  age?: number;
+  country?: string;
+  questionnaireStep?: number;
+  questionnaireComplete?: boolean;
+}): boolean {
+  return (
+    profile.questionnaireComplete === true ||
+    (profile.age ?? 0) > 0 ||
+    !!profile.country ||
+    (profile.questionnaireStep ?? 1) > 1
+  );
+}
+
 export default function RegisterPage() {
   const { signIn } = useAuthActions();
-  const ensureProfile = useMutation(api.profiles.ensureProfile);
+  const convex = useConvex();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [gender, setGender] = useState<"male" | "female">("male");
@@ -57,11 +73,21 @@ export default function RegisterPage() {
         ...(data.phone ? { phone: data.phone } : {}),
         flow: "signUp",
       });
-      await ensureProfile();
+      const user = await convex.query(api.users.currentUser, {});
+      const profile = user?.profile;
+
+      if (profile && profileHasExistingProgress(profile)) {
+        toast.info("You already have an account. Signed you in.");
+        router.push(getAuthenticatedHomeRoute(profile));
+        return;
+      }
+
       toast.success("Welcome! Let's complete your profile to find your best matches.");
       router.push("/questionnaire");
-    } catch {
-      toast.error("Registration failed. Email may already be in use.");
+    } catch (error) {
+      toast.error(
+        getAuthErrorMessage(error, "Registration failed. Please try again.")
+      );
     } finally {
       setLoading(false);
     }

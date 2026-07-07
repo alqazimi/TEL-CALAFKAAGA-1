@@ -33,7 +33,17 @@ export const { auth, signIn, signOut, store } = convexAuth({
       const gender = (profile.gender as "male" | "female") ?? "male";
       const phone = profile.phone as string | undefined;
 
-      await createUserProfile(mutationCtx, userId, { name, gender, phone });
+      try {
+        await createUserProfile(mutationCtx, userId, { name, gender, phone });
+      } catch (error) {
+        // Another request may have created the profile (e.g. ensureProfile race).
+        const again = await mutationCtx.db
+          .query("profiles")
+          .withIndex("by_userId", (q) => q.eq("userId", userId))
+          .unique();
+        if (again) return;
+        throw error;
+      }
     },
   },
 });

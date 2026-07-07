@@ -91,9 +91,7 @@ export function QuestionnaireReview({
   ];
 
   const religiousItems = [
-    { label: "Religious Level", value: profile.religiousLevel || "—" },
     { label: "Prayer Frequency", value: profile.prayerFrequency || "—" },
-    { label: "Spouse Prayer Importance", value: profile.spousePrayerImportance || "—" },
     ...(profile.gender === "female"
       ? [{ label: "Wears Hijab", value: profile.wearsHijab !== undefined ? (profile.wearsHijab ? "Yes" : "No") : "—" }]
       : []),
@@ -106,15 +104,16 @@ export function QuestionnaireReview({
 
   const marriageItems = [
     { label: "Marital Status", value: profile.maritalStatus || "—" },
-    { label: "Children", value: profile.children > 0 ? String(profile.children) : "None" },
-    { label: "Marry Someone With Children", value: profile.marrySomeoneWithChildren || "—" },
+    { label: "Children", value: profile.children > 0 ? "Yes" : "No" },
+  ];
+
+  const lifestyleItems = [
     { label: "Smokes", value: profile.smokes || "—" },
     { label: "Drinks Alcohol", value: profile.drinksAlcohol || "—" },
     { label: "Exercise", value: profile.exercise || "—" },
   ];
 
   const aboutItems = [
-    { label: "Want Children", value: profile.wantChildren || "—" },
     { label: "Ready to Relocate", value: profile.readyToRelocate || "—" },
     { label: "Marriage Timeline", value: profile.marriageTimeline || "—" },
     { label: "Bio", value: profile.bio || "—" },
@@ -122,8 +121,11 @@ export function QuestionnaireReview({
     { label: "Hobbies", value: profile.hobbies?.length ? profile.hobbies.join(", ") : "—" },
   ];
 
-  const prefItems = preferences
-    ? [
+  const prefItems = [
+    { label: "Spouse Prayer Importance", value: profile.spousePrayerImportance || "—" },
+    { label: "Marry Someone With Children", value: profile.marrySomeoneWithChildren || "—" },
+    ...(preferences
+      ? [
         { label: "Preferred Age", value: `${preferences.minAge ?? "—"} – ${preferences.maxAge ?? "—"}` },
         { label: "Preferred Height", value: `${preferences.minHeight ?? "—"} – ${preferences.maxHeight ?? "—"} cm` },
         { label: "Preferred Countries", value: preferences.preferredCountries?.length ? preferences.preferredCountries.join(", ") : "Any" },
@@ -134,7 +136,8 @@ export function QuestionnaireReview({
         { label: "Accept Children", value: preferences.acceptChildren || "—" },
         { label: "Max Distance", value: preferences.maxDistance || "—" },
       ]
-    : [];
+      : []),
+  ];
 
   return (
     <Card className="border-gray-100 dark:border-gray-800 shadow-lg shadow-emerald-500/5">
@@ -156,11 +159,12 @@ export function QuestionnaireReview({
       </CardHeader>
       <CardContent className="space-y-4">
         <ReviewSection title="Basic Information" stepIndex={0} items={basicItems} onEdit={onEditStep} />
-        <ReviewSection title="Religious Practice" stepIndex={1} items={religiousItems} onEdit={onEditStep} />
+        <ReviewSection title="Your Religious Practice" stepIndex={1} items={religiousItems} onEdit={onEditStep} />
         <ReviewSection title="Education & Work" stepIndex={2} items={educationItems} onEdit={onEditStep} />
-        <ReviewSection title="Marriage Information" stepIndex={4} items={marriageItems} onEdit={onEditStep} />
+        <ReviewSection title="Marriage & Family" stepIndex={4} items={marriageItems} onEdit={onEditStep} />
+        <ReviewSection title="Lifestyle" stepIndex={5} items={lifestyleItems} onEdit={onEditStep} />
         <ReviewSection title="About You" stepIndex={6} items={aboutItems} onEdit={onEditStep} />
-        <ReviewSection title="Partner Preferences" stepIndex={6} items={prefItems} onEdit={onEditStep} />
+        <ReviewSection title="Partner Preferences" stepIndex={7} items={prefItems} onEdit={onEditStep} />
 
         <div className="pt-4 flex flex-col sm:flex-row gap-3">
           <Button onClick={handleSubmit} disabled={submitting} className="flex-1">

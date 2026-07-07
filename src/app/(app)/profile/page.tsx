@@ -176,7 +176,6 @@ export default function ProfilePage() {
               <div><span className="text-muted-foreground">City</span><p className="font-medium">{profile.city}</p></div>
               <div><span className="text-muted-foreground">Education</span><p className="font-medium">{profile.education}</p></div>
               <div><span className="text-muted-foreground">Occupation</span><p className="font-medium">{profile.occupation}</p></div>
-              <div><span className="text-muted-foreground">Religious Level</span><p className="font-medium">{profile.religiousLevel}</p></div>
               <div><span className="text-muted-foreground">Marital Status</span><p className="font-medium">{profile.maritalStatus}</p></div>
               <div><span className="text-muted-foreground">Prayer Frequency</span><p className="font-medium">{profile.prayerFrequency || "—"}</p></div>
               {profile.gender === "female" && (
