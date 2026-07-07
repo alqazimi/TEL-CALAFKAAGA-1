@@ -19,8 +19,10 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { CurrentUser } from "@/types";
-import { NAV_LINKS } from "@/lib/constants";
+import { useNavLinks } from "@/lib/i18n/hooks";
+import { useTranslation } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
+import { LanguageToggle } from "@/components/layout/language-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isAppShellRoute } from "@/lib/routes";
 import { BrandLogo } from "@/components/layout/brand-logo";
@@ -42,6 +44,8 @@ export function AppShellHeader() {
 
   const profileName = profile?.name ?? user?.profile?.name ?? "";
   const profileImage = profile?.imageUrl;
+  const navLinks = useNavLinks();
+  const { t } = useTranslation();
 
   const isMarketingActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href;
@@ -92,6 +96,8 @@ export function AppShellHeader() {
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
+            <LanguageToggle className="h-9 px-2 rounded-xl" />
+
             <Button
               variant="ghost"
               size="icon"
@@ -100,7 +106,7 @@ export function AppShellHeader() {
                 "relative rounded-xl h-10 w-10",
                 pathname === "/notifications" && "bg-accent text-accent-foreground"
               )}
-              aria-label="Notifications"
+              aria-label={t("app.notifications")}
             >
               <Link href="/notifications">
                 <Bell className="h-5 w-5" />
@@ -117,7 +123,7 @@ export function AppShellHeader() {
               size="icon"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="rounded-xl h-10 w-10"
-              aria-label="Toggle theme"
+              aria-label={t("common.toggleTheme")}
             >
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -145,7 +151,7 @@ export function AppShellHeader() {
               {accountOpen && (
                 <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-border bg-card shadow-lg py-1 z-50">
                   <p className="px-4 py-2 text-xs text-muted-foreground truncate border-b border-border mb-1">
-                    {profileName || "Account"}
+                    {profileName || t("app.account")}
                   </p>
                   <Link
                     href="/profile"
@@ -156,7 +162,7 @@ export function AppShellHeader() {
                     )}
                   >
                     <User className="h-4 w-4" />
-                    My Profile
+                    {t("app.myProfile")}
                   </Link>
                   {user?.profile?.role === "admin" && (
                     <Link
@@ -168,7 +174,7 @@ export function AppShellHeader() {
                       )}
                     >
                       <Shield className="h-4 w-4" />
-                      Admin
+                      {t("app.admin")}
                     </Link>
                   )}
                   <button
@@ -177,7 +183,7 @@ export function AppShellHeader() {
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/10 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
-                    Log out
+                    {t("app.logOut")}
                   </button>
                 </div>
               )}
@@ -218,7 +224,7 @@ export function AppShellHeader() {
                 </Button>
               </div>
               <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-                {NAV_LINKS.map((link) => (
+                {navLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}

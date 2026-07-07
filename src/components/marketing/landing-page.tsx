@@ -13,15 +13,26 @@ import {
   Heart,
   MessageCircleHeart,
   Star,
-  Check,
   Headphones,
-  Phone,
-  Mail,
-  MapPin,
+  ClipboardList,
+  Sparkles,
+  ArrowRight,
+  BadgeCheck,
 } from "lucide-react";
 import { AuthRegisterCta } from "@/components/auth/auth-register-cta";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { REGISTRATION_PRICE, WHATSAPP_CALL_PRICE } from "@/lib/constants";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { FAQAccordion } from "@/components/marketing/faq-accordion";
+import {
+  MIN_COMPATIBILITY_SCORE,
+  PERSONAL_SUPPORT_PRICE,
+  REGISTRATION_PRICE,
+  WHATSAPP_URL,
+} from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n/context";
+import { cn } from "@/lib/utils";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
@@ -29,98 +40,156 @@ const fadeUp = {
   transition: { duration: 0.5 },
 };
 
-const heroFeatures = [
-  { icon: User, label: "Serious Members Only" },
-  { icon: Shield, label: "Verified Profiles" },
-  { icon: Lock, label: "Private & Secure" },
-  { icon: Landmark, label: "Islamic Values" },
-];
+function QuoteCard({ className }: { className?: string }) {
+  const { t } = useTranslation();
 
-const whyPayReasons = [
-  {
-    num: 1,
-    icon: User,
-    title: "Genuine People",
-    desc: "Waxaan hubinaa in qof kasta uu yahay qof dhab ah oo doonaya guur.",
-  },
-  {
-    num: 2,
-    icon: User,
-    title: "Serious Members",
-    desc: "Lacagta yar waxay ka saartaa dadka aan dhab ahayn.",
-  },
-  {
-    num: 3,
-    icon: Headphones,
-    title: "Dedicated Support",
-    desc: "Kooxdayadu waxay ku caawinaysaa safarkaaga guurka.",
-  },
-  {
-    num: 4,
-    icon: Lock,
-    title: "Privacy First",
-    desc: "Macluumaadkaaga waa qarsoodi oo ammaan ah.",
-  },
-];
+  return (
+    <div className={cn("glass rounded-2xl p-6 sm:p-8 shadow-2xl", className)}>
+      <Quote className="h-9 w-9 text-primary mb-4" />
+      <p className="text-base sm:text-lg text-foreground italic leading-relaxed">
+        &ldquo;{t("landing.quote")}&rdquo;
+      </p>
+      <p className="mt-4 text-sm text-muted-foreground">— {t("landing.quoteAuthor")}</p>
+    </div>
+  );
+}
 
-const steps = [
-  {
-    icon: UserPlus,
-    title: "Join & Pay",
-    desc: "Is diiwaangeli oo bixi lacagta diiwaangelinta.",
-  },
-  {
-    icon: Search,
-    title: "We Review",
-    desc: "Waxaan hubinaa dhammaan macluumaadkaaga.",
-  },
-  {
-    icon: Heart,
-    title: "Get Matched",
-    desc: "Waxaan kuu helnaa qofka ugu habboon.",
-  },
-  {
-    icon: MessageCircleHeart,
-    title: "Connect & Build",
-    desc: "Bilow wada hadalka oo dhis xiriir.",
-  },
-];
+function AppPreviewMock() {
+  const { t } = useTranslation();
 
-const stats = [
-  { value: "1,000+", label: "Serious Members", icon: User },
-  { value: "100%", label: "Verified Profiles", icon: Shield },
-  { value: "500+", label: "Successful Matches", icon: Heart },
-  { value: "4.9/5", label: "Member Rating", icon: Star },
-];
+  const previews = [
+    {
+      title: t("landing.previewProfile"),
+      icon: ClipboardList,
+      content: (
+        <div className="space-y-2">
+          <div className="h-2 w-full rounded-full bg-primary/20" />
+          <div className="h-2 w-4/5 rounded-full bg-muted" />
+          <div className="h-2 w-3/5 rounded-full bg-muted" />
+          <div className="mt-3 h-8 w-full rounded-lg bg-primary/10" />
+        </div>
+      ),
+    },
+    {
+      title: t("landing.previewMatches"),
+      icon: Heart,
+      content: (
+        <div className="space-y-3">
+          {["84%", "78%", "72%"].map((score) => (
+            <div key={score} className="flex items-center gap-3 rounded-xl bg-muted/60 p-2">
+              <div className="h-9 w-9 rounded-full bg-primary/15" />
+              <div className="flex-1 space-y-1">
+                <div className="h-2 w-20 rounded-full bg-muted" />
+                <div className="h-2 w-14 rounded-full bg-muted/70" />
+              </div>
+              <span className="text-xs font-bold text-primary">{score}</span>
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    {
+      title: t("landing.previewChat"),
+      icon: MessageCircleHeart,
+      content: (
+        <div className="space-y-2">
+          <div className="ml-auto max-w-[80%] rounded-2xl rounded-br-md bg-primary/15 px-3 py-2 text-xs">
+            Assalamu alaikum
+          </div>
+          <div className="max-w-[80%] rounded-2xl rounded-bl-md bg-muted px-3 py-2 text-xs">
+            Wa alaikum assalam
+          </div>
+          <div className="ml-auto max-w-[80%] rounded-2xl rounded-br-md bg-primary/15 px-3 py-2 text-xs">
+            How are you?
+          </div>
+        </div>
+      ),
+    },
+  ];
 
-const stories = [
-  {
-    names: "Ayaan & Farhan",
-    quote:
-      "Alhamdulillah, waxaan ku helay lammaanaha noloshayda CALAF. Adeegga waa mid aad u wanaagsan.",
-    initials: "AF",
-  },
-  {
-    names: "Halima & Yusuf",
-    quote:
-      "CALAF waxay naga caawisay inaan helno qof ku habboon diinta iyo dhaqankeena.",
-    initials: "HY",
-  },
-  {
-    names: "Sahra & Ahmed",
-    quote:
-      "Adeeg xirfad leh oo ixtiraam leh. Waxaan ku talin lahaa qof kasta oo doonaya guur.",
-    initials: "SA",
-  },
-];
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      {previews.map((preview) => (
+        <Card key={preview.title} className="overflow-hidden border-border/80 shadow-md">
+          <CardContent className="p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <preview.icon className="h-4 w-4" />
+              </div>
+              <p className="text-sm font-semibold leading-snug">{preview.title}</p>
+            </div>
+            {preview.content}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
 
 export function LandingPage() {
+  const { t } = useTranslation();
+
+  const heroFeatures = [
+    { icon: User, label: t("landing.heroFeature1") },
+    { icon: Shield, label: t("landing.heroFeature2") },
+    { icon: Lock, label: t("landing.heroFeature3") },
+    { icon: Landmark, label: t("landing.heroFeature4") },
+  ];
+
+  const whyPayReasons = [
+    { num: 1, icon: User, title: t("landing.whyPay1Title"), desc: t("landing.whyPay1Desc") },
+    { num: 2, icon: User, title: t("landing.whyPay2Title"), desc: t("landing.whyPay2Desc") },
+    { num: 3, icon: Headphones, title: t("landing.whyPay3Title"), desc: t("landing.whyPay3Desc") },
+    { num: 4, icon: Lock, title: t("landing.whyPay4Title"), desc: t("landing.whyPay4Desc") },
+  ];
+
+  const steps = [
+    { icon: UserPlus, title: t("landing.step1Title"), desc: t("landing.step1Desc") },
+    { icon: ClipboardList, title: t("landing.step2Title"), desc: t("landing.step2Desc") },
+    { icon: Search, title: t("landing.step3Title"), desc: t("landing.step3Desc") },
+    { icon: MessageCircleHeart, title: t("landing.step4Title"), desc: t("landing.step4Desc") },
+  ];
+
+  const stats = [
+    { value: t("landing.stat1Value"), label: t("landing.stat1"), icon: Heart },
+    { value: t("landing.stat2Value"), label: t("landing.stat2"), icon: Landmark },
+    { value: t("landing.stat3Value"), label: t("landing.stat3"), icon: Shield },
+    { value: t("landing.stat4Value"), label: t("landing.stat4"), icon: Headphones },
+  ];
+
+  const stories = [
+    {
+      names: "Ayaan & Farhan",
+      quote: t("landing.story1Quote"),
+      initials: "AF",
+      location: t("landing.story1Location"),
+    },
+    {
+      names: "Halima & Yusuf",
+      quote: t("landing.story2Quote"),
+      initials: "HY",
+      location: t("landing.story2Location"),
+    },
+    {
+      names: "Sahra & Ahmed",
+      quote: t("landing.story3Quote"),
+      initials: "SA",
+      location: t("landing.story3Location"),
+    },
+  ];
+
+  const trustItems = [
+    { icon: Lock, label: t("landing.trust1") },
+    { icon: Landmark, label: t("landing.trust2") },
+    { icon: Shield, label: t("landing.trust3") },
+  ];
+
   return (
     <div className="overflow-hidden">
       {/* Hero */}
-      <section className="relative min-h-[600px] flex items-center bg-gradient-to-br from-navy via-[#1a2744] to-primary/40 dark:from-black dark:via-navy dark:to-primary/20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/70 to-navy/40 dark:from-black/90 dark:via-black/75 dark:to-black/50" />
+      <section className="relative min-h-[600px] flex items-center bg-gradient-to-br from-[#4a0d1f] via-[#8a1230] to-primary/50 dark:from-[#2a0512] dark:via-[#4a0d1f] dark:to-primary/30">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/30 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#4a0d1f]/90 via-[#4a0d1f]/70 to-[#4a0d1f]/40 dark:from-black/90 dark:via-black/75 dark:to-black/50" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 w-full">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -133,21 +202,42 @@ export function LandingPage() {
                 variants={fadeUp}
                 className="inline-flex items-center rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground mb-6"
               >
-                Islamic Matchmaking Service
+                {t("landing.badge")}
               </motion.span>
 
               <motion.h1
                 variants={fadeUp}
-                className="font-serif text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl leading-tight"
+                className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]"
               >
-                Find Your Life Partner{" "}
-                <span className="text-primary">With Trust & Respect</span>
+                {t("landing.heroTitle")}{" "}
+                <span className="text-primary">{t("landing.heroHighlight")}</span>
               </motion.h1>
 
-              <motion.p variants={fadeUp} className="mt-6 text-lg text-white/80 max-w-xl">
-                We connect serious men and women for marriage based on Islamic values.
-                Waxaan isku xirnaa rag iyo dumar dhab ah oo doonaya guur.
+              <motion.p
+                variants={fadeUp}
+                className="mt-6 text-lg text-white/85 max-w-xl leading-relaxed"
+              >
+                {t("landing.heroDesc")}
               </motion.p>
+
+              <motion.div
+                variants={fadeUp}
+                className="mt-8 flex flex-col sm:flex-row gap-3"
+              >
+                <AuthRegisterCta
+                  registerLabel={t("landing.heroCta", { price: REGISTRATION_PRICE })}
+                  className="text-base px-8"
+                  size="lg"
+                />
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                >
+                  <Link href="/how-it-works">{t("landing.seeHowItWorks")}</Link>
+                </Button>
+              </motion.div>
 
               <motion.div
                 variants={fadeUp}
@@ -170,54 +260,90 @@ export function LandingPage() {
               transition={{ delay: 0.3, duration: 0.6 }}
               className="hidden lg:block"
             >
-              <div className="glass rounded-2xl p-8 shadow-2xl max-w-md ml-auto">
-                <Quote className="h-10 w-10 text-primary mb-4" />
-                <p className="text-lg text-foreground italic leading-relaxed">
-                  &ldquo;The right partner is not just about love, it&apos;s about building a
-                  beautiful future together.&rdquo;
-                </p>
-                <p className="mt-4 text-sm text-muted-foreground">
-                  — CALAF Member
-                </p>
-              </div>
+              <QuoteCard className="max-w-md ml-auto" />
             </motion.div>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="mt-10 lg:hidden"
+          >
+            <QuoteCard />
+          </motion.div>
         </div>
       </section>
 
-      {/* Pricing CTA */}
+      {/* Pricing */}
       <section className="relative -mt-16 z-10 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-3xl bg-card border border-border shadow-xl p-8 lg:p-12">
-            <div className="grid lg:grid-cols-2 gap-10 items-start">
-              <div>
-                <h2 className="text-2xl font-bold text-navy dark:text-white">
-                  Start Your Journey Today
-                </h2>
-                <p className="mt-2 text-muted-foreground">One-time Registration Fee</p>
-                <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-5xl font-bold text-primary">${REGISTRATION_PRICE}</span>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  One Payment • Lifetime Access
-                </p>
-                <AuthRegisterCta
-                  registerLabel={`Join Now – $${REGISTRATION_PRICE}`}
-                  className="mt-6 w-full sm:w-auto text-base px-8"
-                  size="lg"
-                />
-                <div className="mt-6 flex items-center gap-3 text-sm text-muted-foreground">
-                  <Lock className="h-4 w-4" />
-                  <span>Secure Payments</span>
-                  <span className="text-xs font-semibold tracking-wide">VISA</span>
-                  <span className="text-xs font-semibold tracking-wide">MC</span>
-                  <span className="text-xs font-semibold tracking-wide text-blue-600">PayPal</span>
-                </div>
-              </div>
+          <div className="rounded-3xl bg-card border border-border shadow-xl p-8 lg:p-12 space-y-8">
+            <div className="text-center max-w-2xl mx-auto">
+              <h2 className="font-display text-2xl sm:text-3xl font-semibold">
+                {t("landing.pricingTitle")}
+              </h2>
+              <p className="mt-2 text-muted-foreground">
+                {t("landing.pricingSubtitle", { premium: PERSONAL_SUPPORT_PRICE })}
+              </p>
+            </div>
 
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="shadow-md">
+                <CardContent className="p-6 space-y-4">
+                  <div>
+                    <h3 className="text-xl font-semibold">{t("landing.basicPlan")}</h3>
+                    <div className="mt-2 flex items-baseline gap-2">
+                      <span className="text-4xl font-bold text-primary">
+                        ${REGISTRATION_PRICE}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {t("common.oneTime")}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {t("landing.basicPlanDesc")}
+                    </p>
+                  </div>
+                  <AuthRegisterCta
+                    registerLabel={t("auth.joinNowPrice", { price: REGISTRATION_PRICE })}
+                    className="w-full"
+                    variant="outline"
+                  />
+                </CardContent>
+              </Card>
+
+              <Card className="ring-2 ring-primary shadow-xl shadow-primary/10">
+                <CardContent className="p-6 space-y-4">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-xl font-semibold">{t("landing.premiumPlan")}</h3>
+                      <Badge>{t("landing.recommended")}</Badge>
+                    </div>
+                    <div className="mt-2 flex items-baseline gap-2">
+                      <span className="text-4xl font-bold text-primary">
+                        ${PERSONAL_SUPPORT_PRICE}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {t("common.oneTime")}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {t("landing.premiumPlanDesc")}
+                    </p>
+                  </div>
+                  <AuthRegisterCta
+                    registerLabel={t("auth.joinNowPrice", { price: PERSONAL_SUPPORT_PRICE })}
+                    className="w-full"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-10 items-start pt-4 border-t border-border">
               <div>
-                <h3 className="text-xl font-bold text-navy dark:text-white mb-6">
-                  Why Pay ${REGISTRATION_PRICE}?
+                <h3 className="font-display text-xl font-semibold mb-6">
+                  {t("landing.whyPay")}
                 </h3>
                 <div className="space-y-5">
                   {whyPayReasons.map((reason) => (
@@ -236,57 +362,63 @@ export function LandingPage() {
                   ))}
                 </div>
               </div>
+
+              <div className="rounded-2xl border border-[#128C7E]/30 bg-gradient-to-br from-[#128C7E]/10 to-whatsapp/10 p-6">
+                <h3 className="font-semibold text-lg">{t("landing.personalSupportTitle")}</h3>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                  {t("landing.personalSupportDesc")}
+                </p>
+                <Button asChild className="mt-4 bg-whatsapp hover:bg-whatsapp/90 text-white">
+                  <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                    {t("landing.chatWhatsApp")}
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground pt-2">
+              <Lock className="h-4 w-4" />
+              <span>{t("common.securePayments")}</span>
+              <span className="text-xs font-semibold tracking-wide">VISA</span>
+              <span className="text-xs font-semibold tracking-wide">MC</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* WhatsApp Banner */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8">
+      {/* App Preview */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#128C7E] to-whatsapp p-8 lg:p-10">
-            <div className="grid lg:grid-cols-[auto_1fr_auto] gap-6 items-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
-                <svg viewBox="0 0 24 24" className="h-10 w-10 fill-white" aria-hidden>
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.884 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                </svg>
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold text-white">
-                  Need Personal Advice?
-                </h3>
-                <p className="mt-1 text-white/90">
-                  Talk to our relationship advisor on WhatsApp Call
-                </p>
-                <Link
-                  href="/contact"
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-[#128C7E] hover:bg-white/90 transition-colors"
-                >
-                  WhatsApp Call – ${WHATSAPP_CALL_PRICE}
-                </Link>
-              </div>
-
-              <div className="hidden lg:block space-y-2 text-white/90 text-sm">
-                {["1-on-1 Private Call", "Professional Guidance", "Confidential Support"].map(
-                  (item) => (
-                    <div key={item} className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-white" />
-                      {item}
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="landing-section-title font-display text-3xl font-semibold">
+              {t("landing.previewTitle")}
+            </h2>
+            <p className="mt-3 text-muted-foreground">{t("landing.previewSubtitle")}</p>
           </div>
+          <AppPreviewMock />
+        </div>
+      </section>
+
+      {/* Compatibility */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-muted/40">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 text-primary mb-6">
+            <Sparkles className="h-7 w-7" />
+          </div>
+          <h2 className="landing-section-title font-display text-3xl font-semibold">
+            {t("landing.matchingTitle")}
+          </h2>
+          <p className="mt-4 text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+            {t("landing.matchingDesc", { score: MIN_COMPATIBILITY_SCORE })}
+          </p>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/40">
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl text-center">
-          <h2 className="landing-section-title text-3xl font-bold font-serif">
-            How CALAF Works
+          <h2 className="landing-section-title font-display text-3xl font-semibold">
+            {t("landing.howWorks")}
           </h2>
 
           <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -314,13 +446,13 @@ export function LandingPage() {
       </section>
 
       {/* Stats */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-navy dark:bg-card">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-brand-dark dark:bg-card">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
                 <stat.icon className="mx-auto h-8 w-8 text-gold mb-3" />
-                <div className="text-3xl font-bold text-white">{stat.value}</div>
+                <div className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</div>
                 <div className="mt-1 text-sm text-white/70">{stat.label}</div>
               </div>
             ))}
@@ -331,8 +463,8 @@ export function LandingPage() {
       {/* Success Stories */}
       <section id="success-stories" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl text-center">
-          <h2 className="landing-section-title text-3xl font-bold font-serif">
-            Success Stories
+          <h2 className="landing-section-title font-display text-3xl font-semibold">
+            {t("landing.successStories")}
           </h2>
 
           <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -357,9 +489,14 @@ export function LandingPage() {
                       ))}
                     </div>
                     <p className="mt-1 text-sm font-semibold">{story.names}</p>
+                    <p className="text-xs text-muted-foreground">{story.location}</p>
                   </div>
                 </div>
-                <p className="mt-4 text-sm text-muted-foreground italic leading-relaxed">
+                <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-primary">
+                  <BadgeCheck className="h-3.5 w-3.5" />
+                  {t("landing.verifiedMember")}
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground italic leading-relaxed">
                   &ldquo;{story.quote}&rdquo;
                 </p>
               </motion.div>
@@ -368,15 +505,54 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/40">
+        <div className="mx-auto max-w-7xl">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="landing-section-title font-display text-3xl font-semibold">
+              {t("landing.faqTitle")}
+            </h2>
+            <p className="mt-3 text-muted-foreground">{t("landing.faqSubtitle")}</p>
+          </div>
+          <FAQAccordion
+            limit={4}
+            viewAllHref="/faq"
+            viewAllLabel={t("landing.viewAllFaq")}
+          />
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl rounded-3xl bg-gradient-to-br from-[#4a0d1f] via-[#8a1230] to-primary p-8 sm:p-12 text-center text-white shadow-xl">
+          <h2 className="font-display text-2xl sm:text-3xl font-semibold">
+            {t("landing.finalCtaTitle")}
+          </h2>
+          <p className="mt-3 text-white/85 max-w-xl mx-auto">{t("landing.finalCtaDesc")}</p>
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+            <AuthRegisterCta
+              registerLabel={t("landing.heroCta", { price: REGISTRATION_PRICE })}
+              className="bg-white text-primary hover:bg-white/90"
+            />
+            <Button
+              asChild
+              variant="outline"
+              className="border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white"
+            >
+              <Link href="/pricing">
+                {t("nav.pricing")}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Trust Bar */}
       <section className="py-12 px-4 sm:px-6 lg:px-8 bg-muted/40">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {[
-              { icon: Lock, label: "Your Privacy is Our Priority" },
-              { icon: Landmark, label: "Islamic Values & Respect" },
-              { icon: Shield, label: "Safe & Secure Platform" },
-            ].map((item) => (
+            {trustItems.map((item) => (
               <div
                 key={item.label}
                 className="flex items-center justify-center gap-3 rounded-xl bg-card border border-border p-4"

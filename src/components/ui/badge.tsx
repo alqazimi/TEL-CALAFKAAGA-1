@@ -12,11 +12,11 @@ function Badge({
       className={cn(
         "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium transition-colors",
         {
-          "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300":
+          "bg-accent text-accent-foreground dark:bg-primary/20 dark:text-primary":
             variant === "default" || variant === "success",
-          "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300":
+          "bg-muted text-muted-foreground":
             variant === "secondary",
-          "border border-gray-200 text-gray-700 dark:border-gray-700 dark:text-gray-300":
+          "border border-border text-foreground":
             variant === "outline",
         },
         className

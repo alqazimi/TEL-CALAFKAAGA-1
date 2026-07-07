@@ -8,7 +8,7 @@ import type { Profile } from "@/types";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PaymentGate } from "@/components/payment/payment-gate";
-import { REGISTRATION_PRICE } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n/context";
 import { toast } from "sonner";
 
 export default function PaymentPage() {
@@ -17,6 +17,7 @@ export default function PaymentPage() {
   const canceled = searchParams.get("canceled") === "true";
   const welcome = searchParams.get("welcome") === "true";
   const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (canceled) {
@@ -68,8 +69,8 @@ export default function PaymentPage() {
   return (
     <DashboardLayout>
       <PaymentGate
-        title={welcome ? "Welcome to Calaf!" : "Complete Your Registration"}
-        description={`Your account is created. Pay the one-time $${REGISTRATION_PRICE} registration fee to activate your account, then complete your profile questionnaire.`}
+        title={welcome ? t("payment.welcome") : undefined}
+        description={welcome ? t("payment.welcomeDesc") : undefined}
       />
     </DashboardLayout>
   );

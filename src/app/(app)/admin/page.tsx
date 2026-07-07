@@ -13,10 +13,13 @@ import {
   CheckCircle,
   Trash2,
   Megaphone,
+  Shield,
+  ShieldOff,
 } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
-import type { AdminStats, AdminAnalytics, Profile as AdminUser } from "@/types";
+import type { AdminStats, AdminAnalytics, Profile as AdminUser, CurrentUser } from "@/types";
+import { AdminBootstrapPanel } from "@/components/admin/admin-bootstrap-panel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,12 +35,15 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [announcement, setAnnouncement] = useState({ title: "", body: "" });
 
+  const currentUser = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
+  const bootstrapStatus = useQuery(api.admin.getBootstrapStatus);
   const stats = useQuery(api.admin.getStats) as AdminStats | null | undefined;
   const users = useQuery(api.admin.getAllUsers, { search: search || undefined }) as AdminUser[] | undefined;
   const analytics = useQuery(api.admin.getAnalytics) as AdminAnalytics | undefined;
   const approveUser = useMutation(api.admin.approveUser);
   const banUser = useMutation(api.admin.banUser);
   const deleteUser = useMutation(api.admin.deleteUser);
+  const setUserRole = useMutation(api.admin.setUserRole);
   const createAnnouncement = useMutation(api.admin.createAnnouncement);
 
   const handleAnnouncement = async () => {
@@ -51,7 +57,16 @@ export default function AdminPage() {
     }
   };
 
-  if (stats === undefined) {
+  const handleRoleChange = async (profileId: Id<"profiles">, role: "user" | "admin") => {
+    try {
+      await setUserRole({ profileId, role });
+      toast.success(role === "admin" ? "User promoted to admin." : "Admin access removed.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update role.");
+    }
+  };
+
+  if (currentUser === undefined || bootstrapStatus === undefined || stats === undefined) {
     return (
       <DashboardLayout>
         <Skeleton className="h-96 w-full" />
@@ -62,19 +77,20 @@ export default function AdminPage() {
   if (stats === null) {
     return (
       <DashboardLayout>
-        <div className="text-center py-16">
-          <h1 className="text-2xl font-bold">Access Denied</h1>
-          <p className="text-gray-500 mt-2">You don&apos;t have admin privileges.</p>
+        <div className="py-16">
+          <AdminBootstrapPanel />
         </div>
       </DashboardLayout>
     );
   }
 
+  const currentProfileId = currentUser?.profile?._id;
+
   const statCards = [
     { label: "Total Users", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
     { label: "Male", value: stats.maleUsers, icon: Users, color: "text-indigo-500" },
     { label: "Female", value: stats.femaleUsers, icon: Users, color: "text-pink-500" },
-    { label: "Matches", value: stats.totalMatches, icon: Heart, color: "text-emerald-500" },
+    { label: "Matches", value: stats.totalMatches, icon: Heart, color: "text-primary" },
     { label: "Messages", value: stats.totalMessages, icon: MessageCircle, color: "text-purple-500" },
     { label: "Revenue", value: `$${(stats.revenue / 100).toFixed(0)}`, icon: DollarSign, color: "text-amber-500" },
   ];
@@ -123,38 +139,65 @@ export default function AdminPage() {
                       <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium">{user.name}</p>
                         <Badge variant="outline" className="text-xs capitalize">{user.gender}</Badge>
+                        {user.role === "admin" && (
+                          <Badge className="text-xs bg-primary/10 text-primary">Admin</Badge>
+                        )}
                         {user.banned && <Badge className="text-xs bg-red-100 text-red-600">Banned</Badge>}
                         {!user.approved && <Badge className="text-xs bg-amber-100 text-amber-600">Pending</Badge>}
                       </div>
                       <p className="text-sm text-gray-500">{user.country} · {user.city}</p>
                     </div>
                     <div className="flex gap-1">
+                      {user.role === "admin" ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Remove admin"
+                          onClick={() => void handleRoleChange(user._id, "user")}
+                        >
+                          <ShieldOff className="h-4 w-4 text-amber-600" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Make admin"
+                          onClick={() => void handleRoleChange(user._id, "admin")}
+                        >
+                          <Shield className="h-4 w-4 text-primary" />
+                        </Button>
+                      )}
                       {!user.approved && (
                         <Button
                           variant="ghost"
                           size="icon"
+                          title="Approve user"
                           onClick={() => approveUser({ profileId: user._id })}
                         >
-                          <CheckCircle className="h-4 w-4 text-emerald-500" />
+                          <CheckCircle className="h-4 w-4 text-primary" />
                         </Button>
                       )}
                       <Button
                         variant="ghost"
                         size="icon"
+                        title={user.banned ? "Unban user" : "Ban user"}
                         onClick={() => banUser({ profileId: user._id, banned: !user.banned })}
                       >
-                        <Ban className={`h-4 w-4 ${user.banned ? "text-emerald-500" : "text-red-500"}`} />
+                        <Ban className={`h-4 w-4 ${user.banned ? "text-primary" : "text-destructive"}`} />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteUser({ profileId: user._id })}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      {user.role !== "admin" && user._id !== currentProfileId && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Delete user"
+                          onClick={() => deleteUser({ profileId: user._id })}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -169,7 +212,7 @@ export default function AdminPage() {
                   <CardTitle>Match Rate</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold text-emerald-500">
+                  <div className="text-4xl font-bold text-primary">
                     {analytics?.matchRate ?? 0}%
                   </div>
                 </CardContent>
@@ -179,7 +222,7 @@ export default function AdminPage() {
                   <CardTitle>Conversion Rate</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-4xl font-bold text-emerald-500">
+                  <div className="text-4xl font-bold text-primary">
                     {analytics?.conversionRate ?? 0}%
                   </div>
                 </CardContent>

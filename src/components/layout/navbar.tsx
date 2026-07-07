@@ -8,10 +8,12 @@ import { Menu, X, Moon, Sun, LayoutDashboard, User } from "lucide-react";
 import { useConvexAuth } from "convex/react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
-import { NAV_LINKS } from "@/lib/constants";
 import { isAppShellRoute } from "@/lib/routes";
+import { useNavLinks } from "@/lib/i18n/hooks";
+import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { LanguageToggle } from "@/components/layout/language-toggle";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -24,6 +26,8 @@ export function Navbar() {
   }, [pathname]);
 
   const inAppShell = isAppShellRoute(pathname);
+  const navLinks = useNavLinks();
+  const { t } = useTranslation();
 
   const isActive = (href: string) => {
     if (href.startsWith("/#")) return false;
@@ -41,7 +45,7 @@ export function Navbar() {
         <BrandLogo href="/" showTagline />
 
         <nav className="hidden lg:flex items-center gap-0.5">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -61,12 +65,14 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <LanguageToggle className="rounded-xl h-10 px-3" />
+
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="rounded-xl h-10 w-10"
-            aria-label="Toggle theme"
+            aria-label={t("common.toggleTheme")}
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -79,14 +85,14 @@ export function Navbar() {
               <Button asChild>
                 <Link href="/dashboard">
                   <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
               </Button>
             ) : (
               <Button variant="outline" asChild className="border-primary text-primary hover:bg-accent">
                 <Link href="/login">
                   <User className="h-4 w-4" />
-                  Member Login
+                  {t("nav.memberLogin")}
                 </Link>
               </Button>
             )}
@@ -113,7 +119,7 @@ export function Navbar() {
             className="lg:hidden border-t border-border"
           >
             <div className="px-4 py-4 space-y-1">
-              {NAV_LINKS.map((link) => (
+              {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -129,20 +135,21 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-3">
+                <LanguageToggle className="w-full justify-center" />
                 {isLoading ? (
                   <div className="h-10 w-full rounded-xl bg-muted animate-pulse" aria-hidden />
                 ) : isAuthenticated ? (
                   <Button asChild className="w-full">
                     <Link href="/dashboard" onClick={() => setOpen(false)}>
                       <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
+                      {t("nav.dashboard")}
                     </Link>
                   </Button>
                 ) : (
                   <Button variant="outline" asChild className="w-full border-primary text-primary">
                     <Link href="/login" onClick={() => setOpen(false)}>
                       <User className="h-4 w-4" />
-                      Member Login
+                      {t("nav.memberLogin")}
                     </Link>
                   </Button>
                 )}

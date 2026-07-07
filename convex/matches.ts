@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
+import { requireActiveProfile, requireAuthUserId } from "./lib/access";
 
 export const getMatches = query({
   args: {
@@ -99,8 +100,15 @@ export const likeUser = mutation({
     action: v.union(v.literal("like"), v.literal("pass")),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    const myProfile = await requireActiveProfile(ctx, userId);
+
+    if (!myProfile.questionnaireComplete) {
+      throw new Error("Complete your questionnaire first");
+    }
+    if (!myProfile.hasPaid) {
+      throw new Error("Complete payment to like profiles");
+    }
 
     const existing = await ctx.db
       .query("likes")

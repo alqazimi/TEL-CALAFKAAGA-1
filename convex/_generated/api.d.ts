@@ -11,8 +11,11 @@
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as lib_access from "../lib/access.js";
+import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_createProfile from "../lib/createProfile.js";
 import type * as lib_questionnaire from "../lib/questionnaire.js";
+import type * as lib_stripe from "../lib/stripe.js";
 import type * as matches from "../matches.js";
 import type * as matching from "../matching.js";
 import type * as matchingEngine from "../matchingEngine.js";
@@ -22,6 +25,8 @@ import type * as notifications from "../notifications.js";
 import type * as payments from "../payments.js";
 import type * as profiles from "../profiles.js";
 import type * as stripeActions from "../stripeActions.js";
+import type * as stripeWebhook from "../stripeWebhook.js";
+import type * as stripeWebhookNode from "../stripeWebhookNode.js";
 import type * as users from "../users.js";
 
 import type {
@@ -34,8 +39,11 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auth: typeof auth;
   http: typeof http;
+  "lib/access": typeof lib_access;
+  "lib/adminAuth": typeof lib_adminAuth;
   "lib/createProfile": typeof lib_createProfile;
   "lib/questionnaire": typeof lib_questionnaire;
+  "lib/stripe": typeof lib_stripe;
   matches: typeof matches;
   matching: typeof matching;
   matchingEngine: typeof matchingEngine;
@@ -45,6 +53,8 @@ declare const fullApi: ApiFromModules<{
   payments: typeof payments;
   profiles: typeof profiles;
   stripeActions: typeof stripeActions;
+  stripeWebhook: typeof stripeWebhook;
+  stripeWebhookNode: typeof stripeWebhookNode;
   users: typeof users;
 }>;
 

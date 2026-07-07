@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useConvexAuth } from "convex/react";
 import { LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n/context";
 
 type AuthRegisterCtaProps = {
   registerHref?: string;
@@ -23,6 +24,8 @@ export function AuthRegisterCta({
   variant = "default",
 }: AuthRegisterCtaProps) {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const { t } = useTranslation();
+  const dashboardText = dashboardLabel ?? t("common.goToDashboard");
 
   if (isLoading) {
     return (
@@ -37,7 +40,7 @@ export function AuthRegisterCta({
       <Button size={size} variant={variant} className={className} asChild>
         <Link href="/dashboard">
           <LayoutDashboard className="mr-2 h-4 w-4" />
-          {dashboardLabel}
+          {dashboardText}
         </Link>
       </Button>
     );

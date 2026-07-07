@@ -2,56 +2,45 @@
 
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import Stripe from "stripe";
 import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { REGISTRATION_AMOUNT_CENTS } from "./payments";
+import { getAppUrl, getStripe } from "./lib/stripe";
+import {
+  PERSONAL_SUPPORT_AMOUNT_CENTS,
+  REGISTRATION_AMOUNT_CENTS,
+} from "./payments";
 
-function normalizeStripeSecretKey(key: string): string {
-  let normalized = key.trim();
-  while (
-    normalized.startsWith("sk_live_sk_live_") ||
-    normalized.startsWith("sk_test_sk_test_")
-  ) {
-    normalized = normalized.startsWith("sk_live_sk_live_")
-      ? normalized.slice("sk_live_".length)
-      : normalized.slice("sk_test_".length);
+const registrationTierValidator = v.union(
+  v.literal("basic"),
+  v.literal("premium")
+);
+
+function getRegistrationCheckoutDetails(tier: "basic" | "premium") {
+  if (tier === "premium") {
+    return {
+      amount: PERSONAL_SUPPORT_AMOUNT_CENTS,
+      paymentType: "registration_premium" as const,
+      registrationTier: "premium" as const,
+      productName: "Calaf Registration + Personal Support",
+      productDescription:
+        "Registration plus one-on-one guidance from trained experts to build a healthy marriage relationship",
+    };
   }
-  return normalized;
-}
 
-function getStripeSecretKey(): string {
-  const raw = process.env.STRIPE_SECRET_KEY;
-  if (!raw) {
-    throw new Error(
-      "STRIPE_SECRET_KEY is not configured on Convex. Run: npx convex env set STRIPE_SECRET_KEY sk_live_..."
-    );
-  }
-
-  const key = normalizeStripeSecretKey(raw);
-  if (!/^sk_(live|test)_[A-Za-z0-9]+$/.test(key)) {
-    throw new Error(
-      "STRIPE_SECRET_KEY format is invalid. Copy the secret key from Stripe Dashboard → API keys."
-    );
-  }
-  return key;
-}
-
-function getStripe() {
-  return new Stripe(getStripeSecretKey());
-}
-
-function getAppUrl() {
-  return (
-    process.env.SITE_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    "http://localhost:3001"
-  );
+  return {
+    amount: REGISTRATION_AMOUNT_CENTS,
+    paymentType: "registration" as const,
+    registrationTier: "basic" as const,
+    productName: "Calaf Registration",
+    productDescription: "One-time registration — lifetime access to Calaf",
+  };
 }
 
 export const createRegistrationCheckout = action({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    tier: registrationTierValidator,
+  },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -60,10 +49,12 @@ export const createRegistrationCheckout = action({
     });
 
     if (!profile) throw new Error("Profile not found");
+    if (profile.banned) throw new Error("Account suspended");
     if (profile.hasPaid) {
       throw new Error("Already paid");
     }
 
+    const checkout = getRegistrationCheckoutDetails(args.tier);
     const stripe = getStripe();
     const appUrl = getAppUrl();
 
@@ -76,11 +67,10 @@ export const createRegistrationCheckout = action({
             price_data: {
               currency: "usd",
               product_data: {
-                name: "Calaf Registration",
-                description:
-                  "One-time registration — lifetime access to Calaf",
+                name: checkout.productName,
+                description: checkout.productDescription,
               },
-              unit_amount: REGISTRATION_AMOUNT_CENTS,
+              unit_amount: checkout.amount,
             },
             quantity: 1,
           },
@@ -91,6 +81,7 @@ export const createRegistrationCheckout = action({
         metadata: {
           userId,
           type: "registration",
+          tier: checkout.registrationTier,
         },
       });
     } catch (error) {
@@ -111,8 +102,9 @@ export const createRegistrationCheckout = action({
     await ctx.runMutation(internal.payments.recordPendingPayment, {
       userId,
       stripeSessionId: session.id,
-      amount: REGISTRATION_AMOUNT_CENTS,
-      paymentType: "registration",
+      amount: checkout.amount,
+      paymentType: checkout.paymentType,
+      registrationTier: checkout.registrationTier,
     });
 
     return { url: session.url };
@@ -143,11 +135,33 @@ export const verifyCheckoutSession = action({
       ? (session.metadata.matchId as import("./_generated/dataModel").Id<"matches">)
       : undefined;
 
-    const result = await ctx.runMutation(internal.payments.markPaymentComplete, {
-      userId,
-      stripeSessionId: args.sessionId,
-      matchId,
-    });
+    const isChat = session.metadata?.type === "chat";
+    const isPremium = session.metadata?.tier === "premium";
+    const paymentType = isChat
+      ? "chat"
+      : isPremium
+        ? "registration_premium"
+        : "registration";
+
+    const result = await ctx.runMutation(
+      internal.payments.fulfillCheckoutSession,
+      {
+        stripeSessionId: args.sessionId,
+        userId,
+        amount:
+          session.amount_total ??
+          (isPremium
+            ? PERSONAL_SUPPORT_AMOUNT_CENTS
+            : REGISTRATION_AMOUNT_CENTS),
+        paymentType,
+        registrationTier: isChat
+          ? undefined
+          : isPremium
+            ? "premium"
+            : "basic",
+        matchId,
+      }
+    );
 
     return { success: true, alreadyCompleted: result.alreadyCompleted };
   },

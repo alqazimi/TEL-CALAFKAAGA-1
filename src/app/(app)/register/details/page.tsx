@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { OptionPills } from "@/components/ui/option-pills";
 import { Skeleton } from "@/components/ui/skeleton";
-import { REGISTRATION_PRICE } from "@/lib/constants";
 import { getAuthenticatedHomeRoute } from "@/lib/routes";
 
 const detailsSchema = z.object({
@@ -99,7 +98,7 @@ export default function RegisterDetailsPage() {
   return (
     <AuthShell
       title="Your details"
-      description={`Step 2 — all fields are required before payment ($${REGISTRATION_PRICE})`}
+      description="Step 2 — all fields are required before you choose a payment plan"
       footer={
         <p className="text-center text-sm text-muted-foreground">
           Wrong account?{" "}
@@ -153,7 +152,7 @@ export default function RegisterDetailsPage() {
         </FormField>
 
         <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? "Saving..." : `Continue to Payment — $${REGISTRATION_PRICE}`}
+          {loading ? "Saving..." : "Continue to Payment"}
         </Button>
       </form>
     </AuthShell>

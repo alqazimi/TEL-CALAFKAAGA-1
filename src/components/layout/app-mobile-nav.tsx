@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { APP_MOBILE_TABS } from "@/lib/constants";
+import { useAppNavLinks } from "@/lib/i18n/hooks";
 import { cn } from "@/lib/utils";
 
 const iconMap = {
@@ -26,11 +26,12 @@ export function AppMobileNav() {
   const pathname = usePathname();
   const user = useQuery(api.users.currentUser);
   const profileComplete = user?.profile?.questionnaireComplete ?? false;
+  const appNavLinks = useAppNavLinks().filter((l) => l.tab);
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch justify-around px-1">
-        {APP_MOBILE_TABS.map((link) => {
+        {appNavLinks.map((link) => {
           const Icon = iconMap[link.icon as TabIcon];
           const isActive = pathname === link.href;
           const isLocked = "locked" in link && link.locked && !profileComplete;

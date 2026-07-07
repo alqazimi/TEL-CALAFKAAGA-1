@@ -34,7 +34,7 @@ function ReviewSection({
   if (filled.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 p-4 space-y-3">
+    <div className="rounded-2xl border border-border bg-muted/50 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground">{title}</h3>
         <Button variant="outline" size="sm" onClick={() => onEdit(stepIndex)} className="h-8">
@@ -140,12 +140,12 @@ export function QuestionnaireReview({
   ];
 
   return (
-    <Card className="border-gray-100 dark:border-gray-800 shadow-lg shadow-emerald-500/5">
-      <CardHeader className="border-b border-gray-50 dark:border-gray-800/80 bg-gradient-to-r from-emerald-50/50 to-transparent dark:from-emerald-950/20">
+    <Card className="border-border shadow-lg shadow-primary/5">
+      <CardHeader className="border-b border-border bg-gradient-to-r from-accent/50 to-transparent dark:from-primary/10">
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle>{isEditMode ? "Edit Profile Details" : "Final Review"}</CardTitle>
           {!isEditMode && (
-            <Badge variant="outline" className="inline-flex items-center text-emerald-600 border-emerald-200 dark:text-emerald-400 dark:border-emerald-800">
+            <Badge variant="outline" className="inline-flex items-center text-primary border-primary/30">
               <Check className="h-3 w-3 mr-1" />
               Review before submitting
             </Badge>

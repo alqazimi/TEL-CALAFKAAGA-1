@@ -32,15 +32,15 @@ export function ProfileLockedGate({
 
   return (
     <div className="max-w-lg mx-auto py-8 px-2">
-      <Card className="overflow-hidden text-center border-gray-100 dark:border-gray-800 shadow-xl shadow-emerald-500/5">
-        <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-500" />
+      <Card className="overflow-hidden text-center border-border shadow-xl shadow-primary/5">
+        <div className="h-1.5 bg-gradient-to-r from-primary/80 via-primary to-primary/60" />
         <CardContent className="p-8 space-y-6">
           <div className="relative mx-auto w-fit">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 dark:from-emerald-900/60 dark:to-emerald-950/40 dark:text-emerald-300">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/60 text-primary dark:from-primary/20 dark:to-primary/10 dark:text-primary">
               <Heart className="h-9 w-9" />
             </div>
-            <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
-              <Lock className="h-4 w-4 text-gray-400" />
+            <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-card border border-border shadow-sm">
+              <Lock className="h-4 w-4 text-muted-foreground" />
             </div>
           </div>
 
@@ -49,10 +49,10 @@ export function ProfileLockedGate({
             <p className="text-muted-foreground leading-relaxed">{description}</p>
           </div>
 
-          <div className="rounded-2xl bg-gray-50 dark:bg-gray-900/50 p-4 space-y-3 text-left">
+          <div className="rounded-2xl bg-muted/50 p-4 space-y-3 text-left">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Profile Completion</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">{progress}%</span>
+              <span className="font-bold text-primary">{progress}%</span>
             </div>
             <Progress value={progress} className="h-3" />
             {remaining > 0 && (
@@ -62,9 +62,9 @@ export function ProfileLockedGate({
             )}
           </div>
 
-          <div className="flex items-start gap-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 p-4 text-left">
-            <Sparkles className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-            <p className="text-sm text-emerald-800 dark:text-emerald-200 font-medium leading-relaxed">
+          <div className="flex items-start gap-2 rounded-xl bg-accent/80 dark:bg-primary/10 p-4 text-left">
+            <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <p className="text-sm text-accent-foreground dark:text-primary font-medium leading-relaxed">
               {message}
             </p>
           </div>

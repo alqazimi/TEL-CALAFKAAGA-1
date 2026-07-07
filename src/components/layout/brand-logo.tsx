@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
+import { APP_NAME } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 interface BrandLogoProps {
@@ -20,6 +23,7 @@ export function BrandLogo({
   variant = "default",
   className,
 }: BrandLogoProps) {
+  const { t } = useTranslation();
   const iconSize = size === "sm" ? "h-8 w-8" : "h-10 w-10";
   const heartSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
   const textSize = size === "sm" ? "text-lg" : "text-xl";
@@ -39,9 +43,9 @@ export function BrandLogo({
         <div className="flex flex-col leading-tight">
           <span
             className={cn(
-              "font-bold tracking-tight",
+              "font-display font-semibold tracking-tight",
               textSize,
-              isLight ? "text-white" : "text-navy dark:text-white"
+              isLight ? "text-white" : "text-foreground"
             )}
           >
             {APP_NAME}
@@ -53,7 +57,7 @@ export function BrandLogo({
                 isLight ? "text-primary-foreground/80" : "text-primary"
               )}
             >
-              {APP_TAGLINE}
+              {t("brand.tagline")}
             </span>
           )}
         </div>

@@ -11,8 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
-import { PaymentCheckoutButton } from "@/components/payment/payment-gate";
-import { REGISTRATION_PRICE } from "@/lib/constants";
+import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 
 export default function DashboardPage() {
   const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
@@ -53,7 +52,7 @@ export default function DashboardPage() {
           </h1>
           <p className="text-muted-foreground mt-1">
             {!hasPaid
-              ? `Complete your $${REGISTRATION_PRICE} registration to continue.`
+              ? `Choose registration ($${REGISTRATION_PRICE}) or personal support ($${PERSONAL_SUPPORT_PRICE}) to continue.`
               : isComplete
                 ? "Here is a quick overview of your account."
                 : "Finish your profile questionnaire to unlock matches."}
@@ -66,10 +65,12 @@ export default function DashboardPage() {
               <div>
                 <p className="font-semibold">Step 1: Complete payment</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {`Pay $${REGISTRATION_PRICE} once to activate your account.`}
+                  {`Choose standard registration ($${REGISTRATION_PRICE}) or registration with personal support ($${PERSONAL_SUPPORT_PRICE}).`}
                 </p>
               </div>
-              <PaymentCheckoutButton className="shrink-0" />
+              <Button className="shrink-0" asChild>
+                <Link href="/payment">Choose plan</Link>
+              </Button>
             </CardContent>
           </Card>
         )}

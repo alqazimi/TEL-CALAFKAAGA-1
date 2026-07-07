@@ -1,20 +1,108 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { QueryCtx, MutationCtx } from "./_generated/server";
 import { Id } from "./_generated/dataModel";
+import {
+  countAdmins,
+  getProfileForUser,
+  normalizeEmail,
+  requireAdmin,
+  verifyBootstrapCredentials,
+} from "./lib/adminAuth";
 
-async function requireAdmin(ctx: QueryCtx | MutationCtx, userId: Id<"users">) {
-  const profile = await ctx.db
-    .query("profiles")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .unique();
+export const hasAnyAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    return (await countAdmins(ctx)) > 0;
+  },
+});
 
-  if (!profile || profile.role !== "admin") {
-    throw new Error("Unauthorized");
-  }
-  return profile;
-}
+export const getBootstrapStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return { hasAdmins: await countAdmins(ctx) > 0, canClaim: false, reason: "not_authenticated" as const };
+    }
+
+    const hasAdmins = (await countAdmins(ctx)) > 0;
+    if (hasAdmins) {
+      return { hasAdmins: true, canClaim: false, reason: "admins_exist" as const };
+    }
+
+    const bootstrapEmail = process.env.ADMIN_BOOTSTRAP_EMAIL;
+    const bootstrapSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
+    if (!bootstrapEmail || !bootstrapSecret) {
+      return { hasAdmins: false, canClaim: false, reason: "not_configured" as const };
+    }
+
+    const user = await ctx.db.get(userId);
+    const userEmail = user?.email;
+    if (!userEmail) {
+      return { hasAdmins: false, canClaim: false, reason: "no_email" as const };
+    }
+
+    if (normalizeEmail(userEmail) !== normalizeEmail(bootstrapEmail)) {
+      return { hasAdmins: false, canClaim: false, reason: "email_mismatch" as const };
+    }
+
+    return { hasAdmins: false, canClaim: true, reason: "ready" as const };
+  },
+});
+
+export const claimFirstAdmin = mutation({
+  args: { secret: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    if ((await countAdmins(ctx)) > 0) {
+      throw new Error("An admin already exists.");
+    }
+
+    const user = await ctx.db.get(userId);
+    verifyBootstrapCredentials(args.secret, user?.email);
+
+    const profile = await getProfileForUser(ctx, userId);
+    if (!profile) throw new Error("Profile not found.");
+
+    await ctx.db.patch(profile._id, { role: "admin" });
+    return { success: true };
+  },
+});
+
+export const setUserRole = mutation({
+  args: {
+    profileId: v.id("profiles"),
+    role: v.union(v.literal("user"), v.literal("admin")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const adminProfile = await requireAdmin(ctx, userId);
+    const targetProfile = await ctx.db.get(args.profileId);
+    if (!targetProfile) throw new Error("Profile not found.");
+
+    if (targetProfile.role === args.role) return;
+
+    if (targetProfile.role === "admin" && args.role === "user") {
+      const adminCount = await countAdmins(ctx);
+      if (adminCount <= 1) {
+        throw new Error("Cannot remove the last admin.");
+      }
+    }
+
+    if (targetProfile._id === adminProfile._id && args.role === "user") {
+      const adminCount = await countAdmins(ctx);
+      if (adminCount <= 1) {
+        throw new Error("You cannot remove your own admin access while you are the only admin.");
+      }
+    }
+
+    await ctx.db.patch(args.profileId, { role: args.role });
+  },
+});
 
 export const getStats = query({
   args: {},
@@ -107,6 +195,64 @@ export const deleteUser = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     await requireAdmin(ctx, userId);
+
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) return;
+
+    if (profile.role === "admin") {
+      throw new Error("Cannot delete an admin account. Remove admin access first.");
+    }
+
+    const targetUserId = profile.userId;
+
+    const preferences = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", targetUserId))
+      .unique();
+    if (preferences) {
+      await ctx.db.delete(preferences._id);
+    }
+
+    const likesFrom = await ctx.db
+      .query("likes")
+      .withIndex("by_from", (q) => q.eq("fromUserId", targetUserId))
+      .collect();
+    const likesTo = await ctx.db
+      .query("likes")
+      .withIndex("by_to", (q) => q.eq("toUserId", targetUserId))
+      .collect();
+    for (const like of [...likesFrom, ...likesTo]) {
+      await ctx.db.delete(like._id);
+    }
+
+    const notifications = await ctx.db
+      .query("notifications")
+      .withIndex("by_user", (q) => q.eq("userId", targetUserId))
+      .collect();
+    for (const notification of notifications) {
+      await ctx.db.delete(notification._id);
+    }
+
+    const scoresA = await ctx.db
+      .query("compatibilityScores")
+      .withIndex("by_userA", (q) => q.eq("userA", targetUserId))
+      .collect();
+    const scoresB = await ctx.db
+      .query("compatibilityScores")
+      .withIndex("by_userB", (q) => q.eq("userB", targetUserId))
+      .collect();
+    for (const score of [...scoresA, ...scoresB]) {
+      await ctx.db.delete(score._id);
+    }
+
+    const uploads = await ctx.db
+      .query("userUploads")
+      .filter((q) => q.eq(q.field("userId"), targetUserId))
+      .collect();
+    for (const upload of uploads) {
+      await ctx.db.delete(upload._id);
+    }
+
     await ctx.db.delete(args.profileId);
   },
 });

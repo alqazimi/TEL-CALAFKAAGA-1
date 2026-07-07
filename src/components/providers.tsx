@@ -7,6 +7,7 @@ import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "sonner";
 import { getConvexClient, isConvexConfigured } from "@/lib/convex-client";
 import { ConvexAuthStatus } from "@/components/auth/convex-auth-status";
+import { LanguageProvider } from "@/lib/i18n/context";
 
 export function Providers({ children }: { children: ReactNode }) {
   const convex = useMemo(() => getConvexClient(), []);
@@ -21,15 +22,17 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <ConvexAuthProvider client={convex}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="light"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <ConvexAuthStatus>{children}</ConvexAuthStatus>
-        <Toaster position="top-right" richColors />
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ConvexAuthStatus>{children}</ConvexAuthStatus>
+          <Toaster position="top-right" richColors />
+        </ThemeProvider>
+      </LanguageProvider>
     </ConvexAuthProvider>
   );
 }

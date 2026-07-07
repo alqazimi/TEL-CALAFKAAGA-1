@@ -35,6 +35,7 @@ export default function ProfilePage() {
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
   const updateProfile = useMutation(api.profiles.updateProfile);
   const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
+  const registerUpload = useMutation(api.profiles.registerUpload);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -62,6 +63,7 @@ export default function ProfilePage() {
         body: file,
       });
       const { storageId } = await result.json();
+      await registerUpload({ storageId });
       await updateProfile({ profileImageId: storageId });
       toast.success("Profile photo updated!");
     } catch {
@@ -108,7 +110,7 @@ export default function ProfilePage() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 transition-colors"
+                  className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
                 >
                   <Camera className="h-4 w-4" />
                 </button>

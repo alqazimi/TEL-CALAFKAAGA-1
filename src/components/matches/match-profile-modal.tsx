@@ -34,7 +34,7 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white dark:bg-gray-900 rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl"
       >
-        <div className="relative h-56 bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-950 dark:to-emerald-900">
+        <div className="relative h-56 bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
           {match.imageUrl ? (
             <img src={match.imageUrl} alt={match.name} className="h-full w-full object-cover" />
           ) : (
@@ -51,7 +51,7 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
             <X className="h-4 w-4" />
           </button>
           <div className="absolute bottom-4 right-4">
-            <Badge className="text-lg font-bold bg-emerald-500 text-white border-0 px-3 py-1">
+            <Badge className="text-lg font-bold bg-primary text-primary-foreground border-0 px-3 py-1">
               {match.score}% Match
             </Badge>
           </div>

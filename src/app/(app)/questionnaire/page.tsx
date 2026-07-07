@@ -154,7 +154,7 @@ export default function QuestionnairePage() {
     return (
       <DashboardLayout>
         <div className="max-w-lg mx-auto text-center py-16">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mx-auto mb-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-primary mx-auto mb-4">
             <Check className="h-8 w-8" />
           </div>
           <h1 className="text-2xl font-bold mb-2">Profile Complete</h1>
@@ -196,7 +196,7 @@ export default function QuestionnairePage() {
       <div className="max-w-4xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm p-5">
+            <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-5">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">
@@ -212,7 +212,7 @@ export default function QuestionnairePage() {
                         : `Part 1 — About you · ${STEPS[currentStep]?.title}`}
                   </p>
                 </div>
-                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full">
+                <span className="text-sm font-medium text-primary bg-accent dark:bg-primary/20 px-3 py-1 rounded-full">
                   {isReviewStep
                     ? "Review"
                     : isPartnerPhase
@@ -254,11 +254,11 @@ export default function QuestionnairePage() {
                 ) : (
                   <>
                     {isPartnerPhase && (
-                      <div className="mb-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/30 px-4 py-3">
-                        <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                      <div className="mb-4 rounded-2xl border border-primary/20 bg-accent/80 dark:bg-primary/10 px-4 py-3">
+                        <p className="text-sm font-medium text-accent-foreground dark:text-primary">
                           Part 2: Partner preferences
                         </p>
-                        <p className="text-sm text-emerald-700/90 dark:text-emerald-300/90 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           You finished your own details. Now answer what you want in a spouse.
                         </p>
                       </div>

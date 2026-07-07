@@ -7,6 +7,7 @@ import { Check, Loader2 } from "lucide-react";
 import { api } from "../../../../../convex/_generated/api";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n/context";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
@@ -15,11 +16,12 @@ export default function PaymentSuccessPage() {
   const verifyCheckout = useAction(api.stripeActions.verifyCheckoutSession);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!sessionId) {
       setStatus("error");
-      setError("Missing payment session.");
+      setError(t("payment.missingSession"));
       return;
     }
 
@@ -33,7 +35,7 @@ export default function PaymentSuccessPage() {
         if (!cancelled) {
           setStatus("error");
           setError(
-            err instanceof Error ? err.message : "Could not verify payment."
+            err instanceof Error ? err.message : t("payment.verifyFailed")
           );
         }
       }
@@ -43,7 +45,7 @@ export default function PaymentSuccessPage() {
     return () => {
       cancelled = true;
     };
-  }, [sessionId, verifyCheckout]);
+  }, [sessionId, verifyCheckout, t]);
 
   return (
     <DashboardLayout>
@@ -51,36 +53,32 @@ export default function PaymentSuccessPage() {
         {status === "loading" && (
           <>
             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Confirming payment...</h1>
-            <p className="text-muted-foreground">
-              Please wait while we verify your payment with Stripe.
-            </p>
+            <h1 className="text-2xl font-bold mb-2">{t("payment.confirming")}</h1>
+            <p className="text-muted-foreground">{t("payment.confirmingDesc")}</p>
           </>
         )}
 
         {status === "success" && (
           <>
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mx-auto mb-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-primary mx-auto mb-4">
               <Check className="h-8 w-8" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">Payment successful</h1>
-            <p className="text-muted-foreground mb-6">
-              Thank you! Now complete your profile questionnaire to start matching.
-            </p>
+            <h1 className="text-2xl font-bold mb-2">{t("payment.success")}</h1>
+            <p className="text-muted-foreground mb-6">{t("payment.successDesc")}</p>
             <Button onClick={() => router.push("/questionnaire")}>
-              Continue to Profile Setup
+              {t("payment.continueSetup")}
             </Button>
           </>
         )}
 
         {status === "error" && (
           <>
-            <h1 className="text-2xl font-bold mb-2">Payment verification failed</h1>
+            <h1 className="text-2xl font-bold mb-2">{t("payment.verifyFailed")}</h1>
             <p className="text-muted-foreground mb-6">{error}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={() => router.push("/payment")}>Try Again</Button>
+              <Button onClick={() => router.push("/payment")}>{t("payment.tryAgain")}</Button>
               <Button variant="outline" onClick={() => router.push("/dashboard")}>
-                Go to Dashboard
+                {t("common.goToDashboard")}
               </Button>
             </div>
           </>

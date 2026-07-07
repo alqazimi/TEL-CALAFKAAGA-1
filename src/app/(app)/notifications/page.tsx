@@ -27,7 +27,7 @@ const typeIcons = {
 
 const typeColors = {
   like: "text-pink-500 bg-pink-50 dark:bg-pink-950/30",
-  match: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30",
+  match: "text-primary bg-accent dark:bg-primary/20",
   message: "text-blue-500 bg-blue-50 dark:bg-blue-950/30",
   announcement: "text-purple-500 bg-purple-50 dark:bg-purple-950/30",
 };
@@ -85,7 +85,7 @@ export default function NotificationsPage() {
                 >
                   <Card
                     className={`cursor-pointer transition-all hover:shadow-md ${
-                      !notification.read ? "border-emerald-200 dark:border-emerald-800" : ""
+                      !notification.read ? "border-primary/30" : ""
                     }`}
                     onClick={() => {
                       if (!notification.read) {

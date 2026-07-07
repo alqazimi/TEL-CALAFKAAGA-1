@@ -92,6 +92,7 @@ export default function ChatPage() {
   const markAsRead = useMutation(api.messages.markAsRead);
   const setTyping = useMutation(api.messages.setTyping);
   const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
+  const registerUpload = useMutation(api.profiles.registerUpload);
 
   const activeConv = conversations?.find((c) => c.conversationId === activeConversation);
   const myUserId = currentUser?.userId;
@@ -143,6 +144,7 @@ export default function ChatPage() {
         body: file,
       });
       const { storageId } = await result.json();
+      await registerUpload({ storageId });
       await sendMessage({
         conversationId: activeConversation,
         message: "📷 Image",

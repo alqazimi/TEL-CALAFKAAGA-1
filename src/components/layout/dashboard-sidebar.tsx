@@ -17,7 +17,8 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { CurrentUser } from "@/types";
 import type { AppNavIcon } from "@/lib/constants";
-import { APP_NAV_LINKS } from "@/lib/constants";
+import { useAppNavLinks } from "@/lib/i18n/hooks";
+import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,8 @@ export function DashboardSidebar() {
   const progress = user?.profile
     ? calculateProfileProgress(user.profile, preferences ?? undefined)
     : 0;
+  const appNavLinks = useAppNavLinks();
+  const { t } = useTranslation();
 
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:top-16 lg:bottom-0 lg:left-0 lg:z-40 lg:border-r lg:border-border lg:bg-card/95 lg:backdrop-blur-xl">
@@ -53,7 +56,7 @@ export function DashboardSidebar() {
         {user?.profile && !profileComplete && (
           <div className="mb-4 rounded-xl bg-accent p-3 space-y-1.5">
             <p className="text-xs font-medium text-accent-foreground">
-              Profile {progress}% complete
+              Profile {progress}% {t("app.profileSetup").toLowerCase()}
             </p>
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <div
@@ -65,7 +68,7 @@ export function DashboardSidebar() {
         )}
 
         <nav className="flex-1 space-y-1">
-          {APP_NAV_LINKS.map((link) => {
+          {appNavLinks.map((link) => {
             const Icon = iconMap[link.icon as AppNavIcon];
             const isActive = pathname === link.href;
             const isLocked = "locked" in link && link.locked && !profileComplete;
@@ -103,7 +106,7 @@ export function DashboardSidebar() {
               )}
             >
               <Shield className="h-5 w-5" />
-              Admin
+              {t("app.admin")}
             </Link>
           )}
         </nav>
@@ -115,7 +118,7 @@ export function DashboardSidebar() {
             onClick={() => void signOut()}
           >
             <LogOut className="h-5 w-5" />
-            Log out
+            {t("app.logOut")}
           </Button>
         </div>
       </div>

@@ -142,8 +142,8 @@ export default function MatchesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
               >
-                <Card className="overflow-hidden group hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300">
-                  <div className="relative h-48 bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-950 dark:to-emerald-900">
+                <Card className="overflow-hidden group hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300">
+                  <div className="relative h-48 bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
                     {match.imageUrl ? (
                       <img
                         src={match.imageUrl}
@@ -160,7 +160,7 @@ export default function MatchesPage() {
                       </div>
                     )}
                     <div className="absolute top-3 right-3">
-                      <Badge className="text-sm font-bold bg-emerald-500 text-white border-0 shadow-lg">
+                      <Badge className="text-sm font-bold bg-primary text-primary-foreground border-0 shadow-lg">
                         {match.score}%
                       </Badge>
                     </div>

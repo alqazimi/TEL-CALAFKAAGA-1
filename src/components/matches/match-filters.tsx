@@ -40,7 +40,7 @@ export function MatchFilters({ filters, onChange }: MatchFiltersProps) {
             {filters.country && (
               <button
                 type="button"
-                className="text-xs text-emerald-600 hover:underline"
+                className="text-xs text-primary hover:underline"
                 onClick={() => update("country", "")}
               >
                 Clear country filter

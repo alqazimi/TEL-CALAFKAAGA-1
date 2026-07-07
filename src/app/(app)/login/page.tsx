@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { APP_NAME } from "@/lib/constants";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { useTranslation } from "@/lib/i18n/context";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -32,6 +33,7 @@ export default function LoginPage() {
   const convex = useConvex();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
   const {
     register,
@@ -50,7 +52,7 @@ export default function LoginPage() {
         flow: "signIn",
       });
       const user = await convex.query(api.users.currentUser, {});
-      toast.success("Welcome back!");
+      toast.success(t("auth.welcomeBackToast"));
       router.push(getAuthenticatedHomeRoute(user?.profile ?? undefined));
     } catch (error) {
       toast.error(getAuthErrorMessage(error, "Invalid email or password"));
@@ -62,19 +64,19 @@ export default function LoginPage() {
   return (
     <GuestGate>
     <AuthShell
-      title="Welcome back"
-      description={`Sign in to your ${APP_NAME} account`}
+      title={t("auth.welcomeBack")}
+      description={t("auth.signInDesc", { name: APP_NAME })}
       footer={
         <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
+          {t("auth.noAccount")}{" "}
           <Link href="/register" className="font-medium text-primary hover:underline">
-            Create account
+            {t("auth.createAccount")}
           </Link>
         </p>
       }
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <FormField label="Email" htmlFor="email" error={errors.email?.message}>
+        <FormField label={t("auth.email")} htmlFor="email" error={errors.email?.message}>
           <InputIconWrapper icon={<Mail className="h-4 w-4" />}>
             <Input
               id="email"
@@ -88,12 +90,12 @@ export default function LoginPage() {
         </FormField>
 
         <FormField
-          label="Password"
+          label={t("auth.password")}
           htmlFor="password"
           error={errors.password?.message}
           labelAction={
             <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
-              Forgot password?
+              {t("auth.forgotPassword")}
             </Link>
           }
         >
@@ -110,7 +112,7 @@ export default function LoginPage() {
         </FormField>
 
         <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? "Signing in..." : "Sign In"}
+          {loading ? t("auth.signingIn") : t("auth.signIn")}
         </Button>
       </form>
     </AuthShell>

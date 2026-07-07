@@ -1,6 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import {
+  assertStorageOwnership,
+  requireActiveProfile,
+  requireAuthUserId,
+  requireConversationParticipant,
+} from "./lib/access";
 
 export const getConversations = query({
   args: {},
@@ -120,13 +126,14 @@ export const sendMessage = mutation({
     imageId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
 
-    const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation?.participants.includes(userId)) {
-      throw new Error("Not authorized");
-    }
+    const conversation = await requireConversationParticipant(
+      ctx,
+      args.conversationId,
+      userId
+    );
 
     const myProfile = await ctx.db
       .query("profiles")
@@ -138,10 +145,22 @@ export const sendMessage = mutation({
       throw new Error("Please complete payment to unlock chat.");
     }
 
+    if (args.imageId) {
+      await assertStorageOwnership(ctx, userId, args.imageId);
+    }
+
+    const trimmedMessage = args.message.trim();
+    if (!trimmedMessage && !args.imageId) {
+      throw new Error("Message cannot be empty");
+    }
+    if (trimmedMessage.length > 2000) {
+      throw new Error("Message is too long");
+    }
+
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       senderId: userId,
-      message: args.message,
+      message: trimmedMessage || "📷 Image",
       imageId: args.imageId,
       read: false,
       createdAt: Date.now(),
@@ -176,8 +195,8 @@ export const sendMessage = mutation({
 export const markAsRead = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return;
+    const userId = await requireAuthUserId(ctx);
+    await requireConversationParticipant(ctx, args.conversationId, userId);
 
     const messages = await ctx.db
       .query("messages")
@@ -200,8 +219,9 @@ export const setTyping = mutation({
     isTyping: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return;
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
+    await requireConversationParticipant(ctx, args.conversationId, userId);
 
     const existing = await ctx.db
       .query("typingIndicators")
@@ -225,8 +245,8 @@ export const setTyping = mutation({
 export const getTypingStatus = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return false;
+    const userId = await requireAuthUserId(ctx);
+    await requireConversationParticipant(ctx, args.conversationId, userId);
 
     const indicators = await ctx.db
       .query("typingIndicators")

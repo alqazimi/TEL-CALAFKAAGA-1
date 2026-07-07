@@ -36,6 +36,7 @@ export interface Profile {
   lastSavedAt?: number;
   registrationComplete?: boolean;
   hasPaid: boolean;
+  hasPersonalSupport?: boolean;
   banned: boolean;
   approved: boolean;
   imageUrl?: string | null;

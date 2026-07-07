@@ -4,17 +4,21 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { createUserProfile, ensureUserProfile } from "./lib/createProfile";
 import { splitQuestionnaireData } from "./lib/questionnaire";
+import {
+  assertStorageOwnership,
+  requireActiveProfile,
+  requireAuthUserId,
+} from "./lib/access";
 
 export const getProfile = query({
-  args: { userId: v.optional(v.id("users")) },
-  handler: async (ctx, args) => {
-    const authUserId = await getAuthUserId(ctx);
-    const targetId = args.userId ?? authUserId;
-    if (!targetId) return null;
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
 
     const profile = await ctx.db
       .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", targetId))
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
       .unique();
 
     if (!profile) return null;
@@ -35,8 +39,8 @@ export const createProfile = mutation({
     phone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
 
     const existing = await ctx.db
       .query("profiles")
@@ -68,8 +72,8 @@ export const updateQuestionnaire = mutation({
     data: v.any(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
 
     const profile = await ensureUserProfile(ctx, userId);
 
@@ -112,8 +116,8 @@ export const autoSaveProfile = mutation({
     data: v.any(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
 
     const profile = await ensureUserProfile(ctx, userId);
     if (profile.questionnaireComplete) return profile._id;
@@ -159,8 +163,8 @@ export const autoSaveProfile = mutation({
 export const completeQuestionnaire = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
 
     const profile = await ensureUserProfile(ctx, userId);
 
@@ -185,8 +189,8 @@ export const completeRegistrationDetails = mutation({
     phone: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
 
     const trimmedName = args.name.trim();
     const trimmedPhone = args.phone.trim();
@@ -236,16 +240,19 @@ export const updateProfile = mutation({
     phone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
 
     const profile = await ensureUserProfile(ctx, userId);
 
     const updates: Record<string, unknown> = {};
     if (args.name !== undefined) updates.name = args.name;
     if (args.bio !== undefined) updates.bio = args.bio;
-    if (args.profileImageId !== undefined) updates.profileImageId = args.profileImageId;
     if (args.phone !== undefined) updates.phone = args.phone;
+    if (args.profileImageId !== undefined) {
+      await assertStorageOwnership(ctx, userId, args.profileImageId);
+      updates.profileImageId = args.profileImageId;
+    }
 
     await ctx.db.patch(profile._id, updates);
 
@@ -263,8 +270,8 @@ export const saveProfileEdits = mutation({
     data: v.any(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
 
     const profile = await ensureUserProfile(ctx, userId);
 
@@ -301,9 +308,35 @@ export const saveProfileEdits = mutation({
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
     return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const registerUpload = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
+
+    const existing = await ctx.db
+      .query("userUploads")
+      .withIndex("by_storage", (q) => q.eq("storageId", args.storageId))
+      .unique();
+
+    if (existing) {
+      if (existing.userId !== userId) {
+        throw new Error("Invalid file upload");
+      }
+      return existing._id;
+    }
+
+    return await ctx.db.insert("userUploads", {
+      userId,
+      storageId: args.storageId,
+      createdAt: Date.now(),
+    });
   },
 });
 
@@ -317,85 +350,5 @@ export const getPreferences = query({
       .query("preferences")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .unique();
-  },
-});
-
-export const searchUsers = query({
-  args: {
-    country: v.optional(v.string()),
-    minAge: v.optional(v.number()),
-    maxAge: v.optional(v.number()),
-    minHeight: v.optional(v.number()),
-    maxHeight: v.optional(v.number()),
-    religiousLevel: v.optional(v.string()),
-    education: v.optional(v.string()),
-    occupation: v.optional(v.string()),
-    children: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-
-    const myProfile = await ctx.db
-      .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .unique();
-
-    if (!myProfile) return [];
-
-    const allProfiles = await ctx.db
-      .query("profiles")
-      .withIndex("by_approved", (q) => q.eq("approved", true))
-      .collect();
-
-    const myPrefs = await ctx.db
-      .query("preferences")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .unique();
-
-    const oppositeGender = myProfile.gender === "male" ? "female" : "male";
-
-    const filtered = allProfiles.filter((p) => {
-      if (p.userId === userId) return false;
-      if (p.banned) return false;
-      if (!p.questionnaireComplete) return false;
-      if (p.gender !== oppositeGender) return false;
-      if (args.country && p.country !== args.country) return false;
-      if (args.minAge && p.age < args.minAge) return false;
-      if (args.maxAge && p.age > args.maxAge) return false;
-      if (args.minHeight && p.height < args.minHeight) return false;
-      if (args.maxHeight && p.height > args.maxHeight) return false;
-      if (args.religiousLevel && p.religiousLevel !== args.religiousLevel) return false;
-      if (args.education && p.education !== args.education) return false;
-      if (args.occupation && p.occupation !== args.occupation) return false;
-      if (args.children !== undefined && p.children !== args.children) return false;
-      return true;
-    });
-
-    const results = await Promise.all(
-      filtered.map(async (p) => {
-        const score = await ctx.db
-          .query("compatibilityScores")
-          .withIndex("by_pair", (q) =>
-            q.eq("userA", userId).eq("userB", p.userId)
-          )
-          .unique();
-
-        let imageUrl = null;
-        if (p.profileImageId) {
-          imageUrl = await ctx.storage.getUrl(p.profileImageId);
-        }
-
-        return {
-          ...p,
-          imageUrl,
-          score: score?.score ?? 0,
-        };
-      })
-    );
-
-    return results
-      .filter((r) => r.score >= 70)
-      .sort((a, b) => b.score - a.score);
   },
 });

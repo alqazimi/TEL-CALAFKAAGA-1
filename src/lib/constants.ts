@@ -5,8 +5,14 @@ export const APP_DESCRIPTION =
 export const BRAND_PINK = "#E91E63";
 export const BRAND_NAVY = "#0B132B";
 export const WHATSAPP_GREEN = "#25D366";
+export const WHATSAPP_NUMBER = "254793692710";
+export const WHATSAPP_DISPLAY = "+254 793 692710";
+export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
+export const SUPPORT_EMAIL = "hello@calaf.com";
 export const REGISTRATION_PRICE = 15;
-export const WHATSAPP_CALL_PRICE = 20;
+export const PERSONAL_SUPPORT_PRICE = 20;
+/** @deprecated Use PERSONAL_SUPPORT_PRICE */
+export const WHATSAPP_CALL_PRICE = PERSONAL_SUPPORT_PRICE;
 export const MIN_COMPATIBILITY_SCORE = 70;
 
 export const GENDERS = ["male", "female"] as const;

@@ -54,6 +54,7 @@ export default defineSchema({
     lastSavedAt: v.optional(v.number()),
     registrationComplete: v.optional(v.boolean()),
     hasPaid: v.boolean(),
+    hasPersonalSupport: v.optional(v.boolean()),
     banned: v.boolean(),
     approved: v.boolean(),
   })
@@ -154,7 +155,14 @@ export default defineSchema({
     stripeSessionId: v.string(),
     amount: v.number(),
     paymentType: v.optional(
-      v.union(v.literal("registration"), v.literal("chat"))
+      v.union(
+        v.literal("registration"),
+        v.literal("registration_premium"),
+        v.literal("chat")
+      )
+    ),
+    registrationTier: v.optional(
+      v.union(v.literal("basic"), v.literal("premium"))
     ),
     matchId: v.optional(v.id("matches")),
     status: v.union(
@@ -173,4 +181,10 @@ export default defineSchema({
     createdAt: v.number(),
     createdBy: v.id("users"),
   }),
+
+  userUploads: defineTable({
+    userId: v.id("users"),
+    storageId: v.id("_storage"),
+    createdAt: v.number(),
+  }).index("by_storage", ["storageId"]),
 });
