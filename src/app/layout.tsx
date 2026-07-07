@@ -4,7 +4,7 @@ import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { WhatsAppButton } from "@/components/layout/whatsapp-button";
-import { APP_NAME, APP_TAGLINE, APP_DESCRIPTION } from "@/lib/constants";
+import { APP_NAME, APP_DESCRIPTION, PRODUCTION_SITE_URL } from "@/lib/constants";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   },
   description: APP_DESCRIPTION,
   keywords: ["halal", "marriage", "matchmaking", "muslim", "islamic", "calaf"],
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? PRODUCTION_SITE_URL
+  ),
 };
 
 export default function RootLayout({

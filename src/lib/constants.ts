@@ -1,4 +1,5 @@
 export const APP_NAME = "CALAF";
+export const PRODUCTION_SITE_URL = "https://helcalfkaaga.com";
 export const APP_TAGLINE = "Find Your Perfect Match";
 export const APP_DESCRIPTION =
   "We connect serious men and women for marriage based on Islamic values, trust, and respect.";
