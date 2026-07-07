@@ -67,30 +67,42 @@ export const createRegistrationCheckout = action({
     const stripe = getStripe();
     const appUrl = getAppUrl();
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "Calaf Registration",
-              description:
-                "One-time registration — lifetime access to Calaf",
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: "Calaf Registration",
+                description:
+                  "One-time registration — lifetime access to Calaf",
+              },
+              unit_amount: REGISTRATION_AMOUNT_CENTS,
             },
-            unit_amount: REGISTRATION_AMOUNT_CENTS,
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        mode: "payment",
+        success_url: `${appUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}/payment?canceled=true`,
+        metadata: {
+          userId,
+          type: "registration",
         },
-      ],
-      mode: "payment",
-      success_url: `${appUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/payment?canceled=true`,
-      metadata: {
-        userId,
-        type: "registration",
-      },
-    });
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Stripe checkout failed";
+      if (/invalid api key/i.test(message)) {
+        throw new Error(
+          "Stripe secret key is invalid on Convex. Re-copy it from Stripe Dashboard → API keys, then run: npx convex env set STRIPE_SECRET_KEY sk_live_..."
+        );
+      }
+      throw error;
+    }
 
     if (!session.url) {
       throw new Error("Failed to create Stripe checkout session");
