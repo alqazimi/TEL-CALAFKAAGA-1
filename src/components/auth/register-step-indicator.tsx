@@ -1,14 +1,18 @@
 "use client";
 
+import { useTranslation } from "@/lib/i18n/context";
+
 interface RegisterStepIndicatorProps {
   step: 1 | 2;
 }
 
 export function RegisterStepIndicator({ step }: RegisterStepIndicatorProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="mb-6 space-y-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        Step {step} of 2
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {t("auth.stepOf", { step: String(step), total: "2" })}
       </p>
       <div className="flex gap-2">
         <div

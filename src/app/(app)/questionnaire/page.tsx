@@ -26,6 +26,7 @@ import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX, PHOTO_STEP
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import { useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const REVIEW_STEP_INDEX = STEPS.length;
 
@@ -94,18 +95,11 @@ export default function QuestionnairePage() {
 
       if (currentStep < REVIEW_STEP_INDEX) {
         if (!isEditMode && currentStep === ABOUT_YOU_STEP_COUNT - 1) {
-          toast.success(ui("part1SavedToast"));
           setPhaseComplete("about");
           return;
         }
 
         const nextStep = currentStep + 1;
-        if (nextStep === PARTNER_PREFERENCES_STEP_INDEX) {
-          toast.success(ui("partnerToast"));
-        }
-        if (nextStep === PHOTO_STEP_INDEX) {
-          toast.success(ui("almostDoneToast"));
-        }
         setPhaseComplete(null);
         setStepOverride(nextStep);
       }
@@ -167,10 +161,10 @@ export default function QuestionnairePage() {
   if (profile === undefined || isStaff) {
     return (
       <DashboardLayout>
-        <div className="max-w-2xl mx-auto animate-pulse space-y-4">
-          <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
-          <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded" />
-          <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+        <div className="max-w-2xl mx-auto space-y-4">
+          <Skeleton className="h-8 w-1/2" />
+          <Skeleton className="h-2 w-full" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
         </div>
       </DashboardLayout>
     );
@@ -180,7 +174,7 @@ export default function QuestionnairePage() {
     return (
       <DashboardLayout>
         <div className="max-w-lg mx-auto text-center py-16">
-          <p className="text-gray-500">{ui("profileNotFound")}</p>
+          <p className="text-muted-foreground">{ui("profileNotFound")}</p>
           <Button className="mt-4" onClick={() => router.push("/dashboard")}>
             {ui("goToDashboard")}
           </Button>
@@ -227,10 +221,10 @@ export default function QuestionnairePage() {
   if (currentStep === null) {
     return (
       <DashboardLayout>
-        <div className="max-w-2xl mx-auto animate-pulse space-y-4">
-          <div className="h-8 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
-          <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded" />
-          <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+        <div className="max-w-2xl mx-auto space-y-4">
+          <Skeleton className="h-8 w-1/2" />
+          <Skeleton className="h-2 w-full" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
         </div>
       </DashboardLayout>
     );

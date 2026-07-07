@@ -3,19 +3,19 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
+  --background: #fdfcfd;
   --foreground: #0b132b;
   --card: #ffffff;
   --card-foreground: #0b132b;
-  --muted: #f4f5f7;
+  --muted: #f5f6f9;
   --muted-foreground: #64748b;
-  --border: #e2e8f0;
+  --border: #e6e8ee;
   --input: #ffffff;
   --ring: #e91e63;
   --primary: #e91e63;
   --primary-foreground: #ffffff;
-  --accent: #fce4ec;
-  --accent-foreground: #880e4f;
+  --accent: #fde7ef;
+  --accent-foreground: #9d1244;
   --destructive: #ef4444;
   --navy: #0b132b;
   --brand-dark: #4a0d1f;
@@ -30,22 +30,23 @@
 }
 
 .dark {
-  --background: #050510;
-  --foreground: #f8fafc;
-  --card: #0f1629;
-  --card-foreground: #f8fafc;
-  --muted: #151b2e;
-  --muted-foreground: #94a3b8;
-  --border: #1e293b;
-  --input: #151b2e;
-  --ring: #e91e63;
-  --primary: #e91e63;
+  --background: #0a0e1a;
+  --foreground: #f5f7fb;
+  --card: #121829;
+  --card-foreground: #f5f7fb;
+  --muted: #1a2135;
+  --muted-foreground: #9aa6bd;
+  --border: #26304a;
+  --input: #1a2135;
+  --ring: #f43f78;
+  --primary: #f43f78;
   --primary-foreground: #ffffff;
-  --accent: #2a1020;
-  --accent-foreground: #f48fb1;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --accent: #2c1424;
+  --accent-foreground: #f9a8c9;
+  --destructive: #f87171;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4);
 }
 
 @theme inline {
@@ -89,6 +90,16 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth day/night handoff for surfaces without janking animations */
+.dark-transition,
+.dark-transition * {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
 }
 
 h1,
@@ -110,15 +121,17 @@ h3,
 
 .auth-bg {
   background:
-    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(233, 30, 99, 0.1), transparent),
-    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(11, 19, 43, 0.06), transparent),
+    radial-gradient(ellipse 70% 55% at 0% 0%, rgba(233, 30, 99, 0.12), transparent 60%),
+    radial-gradient(ellipse 60% 55% at 100% 20%, rgba(212, 168, 83, 0.08), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(11, 19, 43, 0.05), transparent),
     var(--background);
 }
 
 .dark .auth-bg {
   background:
-    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(233, 30, 99, 0.12), transparent),
-    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(233, 30, 99, 0.06), transparent),
+    radial-gradient(ellipse 70% 55% at 0% 0%, rgba(244, 63, 120, 0.16), transparent 60%),
+    radial-gradient(ellipse 60% 55% at 100% 20%, rgba(212, 168, 83, 0.07), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(244, 63, 120, 0.06), transparent),
     var(--background);
 }
 

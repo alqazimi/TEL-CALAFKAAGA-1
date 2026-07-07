@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LazyImage } from "@/components/ui/lazy-image";
 import { MatchFilters } from "@/components/matches/match-filters";
 import { MatchProfileModal } from "@/components/matches/match-profile-modal";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
@@ -144,8 +145,8 @@ export default function MatchesPage() {
 
         {matches.length === 0 ? (
           <Card className="p-12 text-center">
-            <Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">{t("matchesPage.noMatchesTitle")}</h3>
+            <Heart className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+            <h3 className="text-lg font-bold mb-2">{t("matchesPage.noMatchesTitle")}</h3>
             <p className="text-muted-foreground">{t("matchesPage.noMatchesDesc")}</p>
           </Card>
         ) : (
@@ -160,7 +161,7 @@ export default function MatchesPage() {
                 <Card className="overflow-hidden group hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300">
                   <div className="relative h-48 bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
                     {match.imageUrl ? (
-                      <img
+                      <LazyImage
                         src={match.imageUrl}
                         alt={match.name}
                         className="h-full w-full object-cover"
@@ -183,10 +184,10 @@ export default function MatchesPage() {
 
                   <CardContent className="p-5 space-y-3">
                     <div>
-                      <h3 className="text-lg font-semibold">
+                      <h3 className="text-lg font-bold">
                         {match.name}, {match.age}
                       </h3>
-                      <p className="text-sm text-gray-500 flex items-center gap-1">
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <MapPin className="h-3.5 w-3.5" />
                         {match.country}
                       </p>

@@ -4,6 +4,7 @@ import { useAction } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
+  Check,
   CreditCard,
   Headphones,
   Lock,
@@ -60,7 +61,7 @@ export function PaymentCheckoutButton({
       disabled={loading}
       size={size}
       variant={variant}
-      className={className}
+      className={cn("font-semibold", className)}
     >
       <CreditCard className="h-4 w-4 mr-2" />
       {loading
@@ -73,23 +74,67 @@ export function PaymentCheckoutButton({
 interface PaymentGateProps {
   title?: string;
   description?: string;
+  showProgress?: boolean;
 }
 
-export function PaymentGate({ title, description }: PaymentGateProps) {
+function PaymentProgress() {
+  const { t } = useTranslation();
+  const steps = [
+    { label: t("payment.stepAccount"), done: true },
+    { label: t("payment.stepDetails"), done: true },
+    { label: t("payment.stepPayment"), done: false },
+  ];
+
+  return (
+    <div className="flex items-center justify-center gap-2 sm:gap-3 mb-8">
+      {steps.map((step, i) => (
+        <div key={step.label} className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5">
+            <div
+              className={cn(
+                "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
+                step.done
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-primary/15 text-primary ring-2 ring-primary/40"
+              )}
+            >
+              {step.done ? <Check className="h-3.5 w-3.5" /> : i + 1}
+            </div>
+            <span
+              className={cn(
+                "text-xs font-semibold hidden sm:inline",
+                step.done ? "text-muted-foreground" : "text-foreground"
+              )}
+            >
+              {step.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div className={cn("h-px w-6 sm:w-10", step.done ? "bg-primary/40" : "bg-border")} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function PaymentGate({ title, description, showProgress = true }: PaymentGateProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-2">
-      <div className="text-center mb-8 space-y-2">
-        <div className="relative mx-auto w-fit mb-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-accent to-accent/60 text-primary dark:from-primary/20 dark:to-primary/10 dark:text-primary">
+    <div className="max-w-4xl mx-auto py-6 sm:py-8 px-2">
+      {showProgress && <PaymentProgress />}
+
+      <div className="text-center mb-8 space-y-3">
+        <div className="relative mx-auto w-fit mb-2">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary shadow-md shadow-primary/10">
             <Lock className="h-7 w-7" />
           </div>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
           {title ?? t("payment.completeRegistration")}
         </h1>
-        <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+        <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto text-sm sm:text-base">
           {description ??
             t("payment.choosePlan", {
               premium: PERSONAL_SUPPORT_PRICE,
@@ -99,39 +144,39 @@ export function PaymentGate({ title, description }: PaymentGateProps) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="overflow-hidden border-border shadow-lg">
-          <CardContent className="p-6 space-y-5 flex flex-col h-full">
+        <Card className="overflow-hidden rounded-3xl border-border shadow-md hover:shadow-lg transition-shadow">
+          <CardContent className="p-6 sm:p-7 space-y-5 flex flex-col h-full">
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold">{t("payment.basicPlan")}</h2>
+              <h2 className="text-xl font-bold">{t("payment.basicPlan")}</h2>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-primary">
                   ${REGISTRATION_PRICE}
                 </span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground font-medium">
                   {t("common.oneTime")}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {t("payment.basicPlanDesc")}
               </p>
             </div>
 
-            <ul className="space-y-2 text-sm text-muted-foreground flex-1">
-              <li className="flex items-center gap-2">
+            <ul className="space-y-2.5 text-sm text-muted-foreground flex-1">
+              <li className="flex items-center gap-2.5">
                 <Sparkles className="h-4 w-4 text-primary shrink-0" />
-                {t("payment.activate")}
+                <span className="font-medium text-foreground/80">{t("payment.activate")}</span>
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2.5">
                 <Sparkles className="h-4 w-4 text-primary shrink-0" />
-                {t("payment.completeQuestionnaire")}
+                <span className="font-medium text-foreground/80">{t("payment.completeQuestionnaire")}</span>
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2.5">
                 <Sparkles className="h-4 w-4 text-primary shrink-0" />
-                {t("payment.browseMatches")}
+                <span className="font-medium text-foreground/80">{t("payment.browseMatches")}</span>
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2.5">
                 <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                {t("payment.secureStripe")}
+                <span className="font-medium text-foreground/80">{t("payment.secureStripe")}</span>
               </li>
             </ul>
 
@@ -141,45 +186,47 @@ export function PaymentGate({ title, description }: PaymentGateProps) {
 
         <Card
           className={cn(
-            "overflow-hidden border-primary shadow-xl shadow-primary/10 ring-2 ring-primary/30"
+            "overflow-hidden rounded-3xl border-primary shadow-xl shadow-primary/10 ring-2 ring-primary/30 hover:shadow-2xl transition-shadow"
           )}
         >
           <div className="h-1.5 bg-gradient-to-r from-primary/80 via-primary to-primary/60" />
-          <CardContent className="p-6 space-y-5 flex flex-col h-full">
+          <CardContent className="p-6 sm:p-7 space-y-5 flex flex-col h-full">
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl font-semibold">{t("payment.premiumPlan")}</h2>
-                <Badge>{t("payment.recommended")}</Badge>
+                <h2 className="text-xl font-bold">{t("payment.premiumPlan")}</h2>
+                <Badge className="font-semibold">{t("payment.recommended")}</Badge>
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-primary">
                   ${PERSONAL_SUPPORT_PRICE}
                 </span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground font-medium">
                   {t("common.oneTime")}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {t("payment.premiumPlanDesc")}
               </p>
             </div>
 
-            <ul className="space-y-2 text-sm text-muted-foreground flex-1">
-              <li className="flex items-center gap-2">
+            <ul className="space-y-2.5 text-sm text-muted-foreground flex-1">
+              <li className="flex items-center gap-2.5">
                 <Sparkles className="h-4 w-4 text-primary shrink-0" />
-                {t("payment.premiumIncludesBasic", { price: REGISTRATION_PRICE })}
+                <span className="font-medium text-foreground/80">
+                  {t("payment.premiumIncludesBasic", { price: REGISTRATION_PRICE })}
+                </span>
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2.5">
                 <Users className="h-4 w-4 text-primary shrink-0" />
-                {t("payment.personalGuidance")}
+                <span className="font-medium text-foreground/80">{t("payment.personalGuidance")}</span>
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2.5">
                 <Headphones className="h-4 w-4 text-primary shrink-0" />
-                {t("payment.expertSupport")}
+                <span className="font-medium text-foreground/80">{t("payment.expertSupport")}</span>
               </li>
-              <li className="flex items-center gap-2">
+              <li className="flex items-center gap-2.5">
                 <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                {t("payment.relationshipCoaching")}
+                <span className="font-medium text-foreground/80">{t("payment.relationshipCoaching")}</span>
               </li>
             </ul>
 
@@ -188,9 +235,14 @@ export function PaymentGate({ title, description }: PaymentGateProps) {
         </Card>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center mt-6">
-        {t("payment.stripeNote")}
-      </p>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+        <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+        <span className="font-medium">{t("payment.stripeNote")}</span>
+        <span className="hidden sm:inline text-border">|</span>
+        <span className="font-semibold tracking-wide">VISA</span>
+        <span className="font-semibold tracking-wide">MC</span>
+        <span className="font-semibold tracking-wide">AMEX</span>
+      </div>
     </div>
   );
 }

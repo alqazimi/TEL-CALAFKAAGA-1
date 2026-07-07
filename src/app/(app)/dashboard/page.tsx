@@ -66,7 +66,7 @@ export default function DashboardPage() {
     <DashboardLayout>
       <div className="mx-auto max-w-2xl space-y-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             {t("dashboard.hello", { name: firstName })}
           </h1>
           <p className="text-muted-foreground mt-1">

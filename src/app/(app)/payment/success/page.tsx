@@ -3,10 +3,19 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAction } from "convex/react";
-import { Check, Headphones, Loader2, MessageCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  Check,
+  ClipboardList,
+  Headphones,
+  Loader2,
+  MessageCircle,
+  Sparkles,
+} from "lucide-react";
 import { api } from "../../../../../convex/_generated/api";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n/context";
 import { WHATSAPP_URL } from "@/lib/constants";
 
@@ -54,58 +63,104 @@ export default function PaymentSuccessPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-lg mx-auto text-center py-16 px-4">
+      <div className="max-w-lg mx-auto py-12 sm:py-16 px-4">
         {status === "loading" && (
-          <>
-            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">{t("payment.confirming")}</h1>
-            <p className="text-muted-foreground">{t("payment.confirmingDesc")}</p>
-          </>
+          <Card className="rounded-3xl border-border shadow-lg">
+            <CardContent className="py-16 text-center">
+              <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+              <h1 className="text-2xl font-bold mb-2">{t("payment.confirming")}</h1>
+              <p className="text-muted-foreground">{t("payment.confirmingDesc")}</p>
+            </CardContent>
+          </Card>
         )}
 
         {status === "success" && (
-          <>
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-primary mx-auto mb-4">
-              {isPremium ? (
-                <Headphones className="h-8 w-8" />
-              ) : (
-                <Check className="h-8 w-8" />
-              )}
-            </div>
-            <h1 className="text-2xl font-bold mb-2">{t("payment.success")}</h1>
-            <p className="text-muted-foreground mb-6">
-              {isPremium ? t("payment.premiumSuccessDesc") : t("payment.successDesc")}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              {isPremium && (
-                <Button asChild>
-                  <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    {t("payment.premiumWhatsApp")}
-                  </a>
-                </Button>
-              )}
-              <Button
-                variant={isPremium ? "outline" : "default"}
-                onClick={() => router.push("/questionnaire")}
-              >
-                {t("payment.continueSetup")}
-              </Button>
-            </div>
-          </>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card className="rounded-3xl border-primary/20 shadow-xl shadow-primary/10 overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-primary/80 via-primary to-primary/60" />
+              <CardContent className="py-10 sm:py-12 text-center">
+                <div className="relative mx-auto w-fit mb-6">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 text-primary mx-auto">
+                    {isPremium ? (
+                      <Headphones className="h-10 w-10" />
+                    ) : (
+                      <Check className="h-10 w-10" strokeWidth={2.5} />
+                    )}
+                  </div>
+                  <Sparkles className="absolute -top-1 -right-1 h-5 w-5 text-gold" />
+                </div>
+
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t("payment.success")}</h1>
+                <p className="text-muted-foreground mb-8 leading-relaxed max-w-sm mx-auto">
+                  {isPremium ? t("payment.premiumSuccessDesc") : t("payment.successDesc")}
+                </p>
+
+                <div className="rounded-2xl bg-muted/50 border border-border p-4 mb-8 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary mb-3">
+                    {t("payment.nextSteps")}
+                  </p>
+                  <ol className="space-y-2.5 text-sm text-muted-foreground">
+                    <li className="flex items-center gap-2.5">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+                      <span className="font-medium text-foreground/90">{t("payment.nextStep1")}</span>
+                    </li>
+                    {isPremium && (
+                      <li className="flex items-center gap-2.5">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
+                        <span className="font-medium text-foreground/90">{t("payment.nextStepPremium")}</span>
+                      </li>
+                    )}
+                    <li className="flex items-center gap-2.5">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">
+                        {isPremium ? "3" : "2"}
+                      </span>
+                      <span className="font-medium text-foreground/90">{t("payment.nextStep2")}</span>
+                    </li>
+                  </ol>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  {isPremium && (
+                    <Button asChild className="font-semibold">
+                      <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        {t("payment.premiumWhatsApp")}
+                      </a>
+                    </Button>
+                  )}
+                  <Button
+                    variant={isPremium ? "outline" : "default"}
+                    className="font-semibold"
+                    onClick={() => router.push("/questionnaire")}
+                  >
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    {t("payment.continueSetup")}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
 
         {status === "error" && (
-          <>
-            <h1 className="text-2xl font-bold mb-2">{t("payment.verifyFailed")}</h1>
-            <p className="text-muted-foreground mb-6">{error}</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={() => router.push("/payment")}>{t("payment.tryAgain")}</Button>
-              <Button variant="outline" onClick={() => router.push("/dashboard")}>
-                {t("common.goToDashboard")}
-              </Button>
-            </div>
-          </>
+          <Card className="rounded-3xl border-destructive/30">
+            <CardContent className="py-12 text-center">
+              <h1 className="text-2xl font-bold mb-2">{t("payment.verifyFailed")}</h1>
+              <p className="text-muted-foreground mb-6">{error}</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button onClick={() => router.push("/payment")} className="font-semibold">
+                  {t("payment.tryAgain")}
+                </Button>
+                <Button variant="outline" onClick={() => router.push("/dashboard")}>
+                  {t("common.goToDashboard")}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </DashboardLayout>

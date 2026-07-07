@@ -22,18 +22,18 @@ export function HowItWorksContent() {
   ];
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-5 max-w-3xl mx-auto">
       {steps.map((step, i) => (
-        <Card key={step.title} className="overflow-hidden">
-          <CardContent className="p-6 flex gap-6">
+        <Card key={step.title} className="overflow-hidden rounded-3xl border-border/80 shadow-sm">
+          <CardContent className="flex gap-6 p-6 sm:p-8">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent text-primary dark:bg-primary/20">
               <step.icon className="h-6 w-6" />
             </div>
             <div>
-              <div className="text-sm font-medium text-primary mb-1">
+              <div className="mb-1 text-sm font-semibold text-primary">
                 {t("howItWorks.stepLabel", { num: i + 1 })}
               </div>
-              <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
+              <h3 className="mb-2 text-lg font-bold">{step.title}</h3>
               <p className="text-muted-foreground leading-relaxed">{step.description}</p>
             </div>
           </CardContent>

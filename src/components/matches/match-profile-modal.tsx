@@ -5,6 +5,7 @@ import { X, Heart, MapPin, GraduationCap, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LazyImage } from "@/components/ui/lazy-image";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -35,11 +36,11 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-gray-900 rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-card text-card-foreground rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-border"
       >
         <div className="relative h-56 bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
           {match.imageUrl ? (
-            <img src={match.imageUrl} alt={match.name} className="h-full w-full object-cover" />
+            <LazyImage src={match.imageUrl} alt={match.name} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center">
               <Avatar className="h-24 w-24">
@@ -63,7 +64,7 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
         <div className="p-6 space-y-4">
           <div>
             <h2 className="text-2xl font-bold">{match.name}, {match.age}</h2>
-            <p className="text-gray-500 flex items-center gap-1 mt-1">
+            <p className="text-muted-foreground flex items-center gap-1 mt-1">
               <MapPin className="h-4 w-4" />
               {match.city ? `${match.city}, ` : ""}{match.country}
             </p>
@@ -71,39 +72,39 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
 
           <div className="grid grid-cols-2 gap-3 text-sm">
             {match.religiousLevel && (
-              <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
-                <p className="text-gray-500">{t("matchesPage.religion")}</p>
-                <p className="font-medium">{match.religiousLevel}</p>
+              <div className="rounded-xl bg-muted p-3">
+                <p className="text-muted-foreground text-xs font-medium">{t("matchesPage.religion")}</p>
+                <p className="font-semibold mt-0.5">{match.religiousLevel}</p>
               </div>
             )}
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
-              <p className="text-gray-500">{t("matchesPage.education")}</p>
-              <p className="font-medium flex items-center gap-1">
+            <div className="rounded-xl bg-muted p-3">
+              <p className="text-muted-foreground text-xs font-medium">{t("matchesPage.education")}</p>
+              <p className="font-semibold flex items-center gap-1 mt-0.5">
                 <GraduationCap className="h-3.5 w-3.5" />
                 {match.education}
               </p>
             </div>
-            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
-              <p className="text-gray-500">{t("matchesPage.occupation")}</p>
-              <p className="font-medium flex items-center gap-1">
+            <div className="rounded-xl bg-muted p-3">
+              <p className="text-muted-foreground text-xs font-medium">{t("matchesPage.occupation")}</p>
+              <p className="font-semibold flex items-center gap-1 mt-0.5">
                 <Briefcase className="h-3.5 w-3.5" />
                 {match.occupation}
               </p>
             </div>
             {match.height && (
-              <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-3">
-                <p className="text-gray-500">{t("matchesPage.height")}</p>
-                <p className="font-medium">{match.height} cm</p>
+              <div className="rounded-xl bg-muted p-3">
+                <p className="text-muted-foreground text-xs font-medium">{t("matchesPage.height")}</p>
+                <p className="font-semibold mt-0.5">{match.height} cm</p>
               </div>
             )}
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button className="flex-1" onClick={() => onLike("like")}>
+            <Button className="flex-1 font-semibold" onClick={() => onLike("like")}>
               <Heart className="h-4 w-4 mr-2" />
               {t("matchesPage.like")}
             </Button>
-            <Button variant="outline" className="flex-1" onClick={() => onLike("pass")}>
+            <Button variant="outline" className="flex-1 font-semibold" onClick={() => onLike("pass")}>
               {t("matchesPage.pass")}
             </Button>
           </div>

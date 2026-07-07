@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n/context";
 
 const typeIcons = {
   like: Heart,
@@ -26,13 +27,14 @@ const typeIcons = {
 };
 
 const typeColors = {
-  like: "text-pink-500 bg-pink-50 dark:bg-pink-950/30",
+  like: "text-primary bg-accent",
   match: "text-primary bg-accent dark:bg-primary/20",
-  message: "text-blue-500 bg-blue-50 dark:bg-blue-950/30",
-  announcement: "text-purple-500 bg-purple-50 dark:bg-purple-950/30",
+  message: "text-blue-600 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400",
+  announcement: "text-purple-600 bg-purple-50 dark:bg-purple-950/30 dark:text-purple-400",
 };
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const notifications = useQuery(api.notifications.getNotifications) as Notification[] | undefined;
   const markAsRead = useMutation(api.notifications.markAsRead);
   const markAllAsRead = useMutation(api.notifications.markAllAsRead);
@@ -54,21 +56,22 @@ export default function NotificationsPage() {
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        {unreadCount > 0 && (
-          <div className="flex justify-end">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold tracking-tight">{t("notificationsPage.title")}</h1>
+          {unreadCount > 0 && (
             <Button variant="outline" size="sm" onClick={() => markAllAsRead()}>
               <CheckCheck className="h-4 w-4 mr-2" />
-              Mark all read
+              {t("notificationsPage.markAllRead")}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         {notifications.length === 0 ? (
           <Card className="p-12 text-center">
-            <Megaphone className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No notifications</h3>
-            <p className="text-gray-500 text-sm">
-              You&apos;ll be notified about likes, matches, and messages here.
+            <Megaphone className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+            <h3 className="text-lg font-bold mb-2">{t("notificationsPage.emptyTitle")}</h3>
+            <p className="text-muted-foreground text-sm">
+              {t("notificationsPage.emptyDesc")}
             </p>
           </Card>
         ) : (
@@ -85,7 +88,7 @@ export default function NotificationsPage() {
                 >
                   <Card
                     className={`cursor-pointer transition-all hover:shadow-md ${
-                      !notification.read ? "border-primary/30" : ""
+                      !notification.read ? "border-primary/30 bg-accent/30" : ""
                     }`}
                     onClick={() => {
                       if (!notification.read) {
@@ -99,13 +102,13 @@ export default function NotificationsPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{notification.title}</p>
+                          <p className="font-semibold">{notification.title}</p>
                           {!notification.read && (
-                            <Badge variant="success" className="text-[10px]">New</Badge>
+                            <Badge variant="success" className="text-[10px]">{t("notificationsPage.new")}</Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 mt-0.5">{notification.body}</p>
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-sm text-muted-foreground mt-0.5">{notification.body}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">
                           {formatDate(notification.createdAt)}
                         </p>
                       </div>

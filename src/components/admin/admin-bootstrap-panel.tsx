@@ -9,17 +9,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "@/lib/i18n/context";
 
-const REASON_MESSAGES: Record<string, string> = {
-  not_authenticated: "Sign in with the bootstrap email account, then return here.",
-  admins_exist: "An owner or admin already exists. Ask them to grant you access.",
-  not_configured:
-    "Bootstrap is not configured yet. Set ADMIN_BOOTSTRAP_EMAIL and ADMIN_BOOTSTRAP_SECRET in your Convex deployment.",
-  no_email: "Your account has no email. Register with the bootstrap email address.",
-  email_mismatch: "Your account email does not match ADMIN_BOOTSTRAP_EMAIL.",
-};
+const REASON_KEYS = {
+  not_authenticated: "adminPage.bootstrapReasonNotAuthenticated",
+  admins_exist: "adminPage.bootstrapReasonAdminsExist",
+  not_configured: "adminPage.bootstrapReasonNotConfigured",
+  no_email: "adminPage.bootstrapReasonNoEmail",
+  email_mismatch: "adminPage.bootstrapReasonEmailMismatch",
+} as const;
 
 export function AdminBootstrapPanel() {
+  const { t } = useTranslation();
   const [secret, setSecret] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const bootstrapStatus = useQuery(api.admin.getBootstrapStatus);
@@ -30,14 +31,18 @@ export function AdminBootstrapPanel() {
   }
 
   if (!bootstrapStatus.canClaim) {
-    const message =
-      REASON_MESSAGES[bootstrapStatus.reason] ?? "You cannot claim owner access.";
+    const reasonKey =
+      REASON_KEYS[bootstrapStatus.reason as keyof typeof REASON_KEYS] ??
+      null;
+    const message = reasonKey
+      ? t(reasonKey)
+      : t("adminPage.bootstrapCannotClaim");
 
     return (
       <Card className="max-w-lg mx-auto">
         <CardHeader className="text-center">
           <Shield className="h-10 w-10 text-primary mx-auto mb-2" />
-          <CardTitle>Access Denied</CardTitle>
+          <CardTitle>{t("adminPage.bootstrapAccessDenied")}</CardTitle>
           <CardDescription>{message}</CardDescription>
         </CardHeader>
       </Card>
@@ -46,17 +51,19 @@ export function AdminBootstrapPanel() {
 
   const handleClaim = async () => {
     if (!secret.trim()) {
-      toast.error("Enter the bootstrap secret.");
+      toast.error(t("adminPage.bootstrapSecretRequired"));
       return;
     }
 
     setSubmitting(true);
     try {
       await claimFirstAdmin({ secret: secret.trim() });
-      toast.success("You are now the owner with full access.");
+      toast.success(t("adminPage.bootstrapSuccess"));
       setSecret("");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to claim owner access.");
+      toast.error(
+        error instanceof Error ? error.message : t("adminPage.bootstrapFailed")
+      );
     } finally {
       setSubmitting(false);
     }
@@ -66,22 +73,19 @@ export function AdminBootstrapPanel() {
     <Card className="max-w-lg mx-auto">
       <CardHeader className="text-center">
         <Crown className="h-10 w-10 text-amber-500 mx-auto mb-2" />
-        <CardTitle>Claim Owner Account</CardTitle>
-        <CardDescription>
-          No owner exists yet. Enter your bootstrap secret to become the platform owner.
-          This only works once and grants free access plus admin management.
-        </CardDescription>
+        <CardTitle>{t("adminPage.bootstrapClaimTitle")}</CardTitle>
+        <CardDescription>{t("adminPage.bootstrapClaimDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="bootstrap-secret">Bootstrap Secret</Label>
+          <Label htmlFor="bootstrap-secret">{t("adminPage.bootstrapSecretLabel")}</Label>
           <div className="relative">
             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               id="bootstrap-secret"
               type="password"
               className="pl-10"
-              placeholder="Paste ADMIN_BOOTSTRAP_SECRET"
+              placeholder={t("adminPage.bootstrapSecretPlaceholder")}
               value={secret}
               onChange={(e) => setSecret(e.target.value)}
               autoComplete="off"
@@ -89,7 +93,7 @@ export function AdminBootstrapPanel() {
           </div>
         </div>
         <Button className="w-full" onClick={() => void handleClaim()} disabled={submitting}>
-          {submitting ? "Claiming..." : "Become Owner"}
+          {submitting ? t("adminPage.bootstrapClaiming") : t("adminPage.bootstrapBecomeOwner")}
         </Button>
       </CardContent>
     </Card>

@@ -99,7 +99,7 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
             </span>
             <p className="font-bold text-lg">{t("adminDetail.title")}</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="rounded-full">
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("common.a11yClose")} className="rounded-full">
             <X className="h-5 w-5" />
           </Button>
         </div>

@@ -4,7 +4,7 @@ Find your halal life partner with confidence.
 
 ## Tech Stack
 
-- **Frontend:** Next.js 15+, React 19, TypeScript, TailwindCSS, shadcn/ui, Framer Motion
+- **Frontend:** Next.js 16, React 19, TypeScript, TailwindCSS, shadcn/ui, Framer Motion
 - **Backend:** Convex, Convex Auth, Convex File Storage
 - **Payments:** Stripe
 - **Deployment:** Vercel + Convex Cloud
@@ -100,39 +100,74 @@ convex/
 - **Like System** — Mutual likes create matches
 - **Real-time Chat** — Messages, typing indicators, read receipts, images, emoji
 - **Notifications** — Likes, matches, messages, announcements
-- **Stripe Payments** — $15 one-time chat unlock
+- **Stripe Payments** — $15 standard or $20 with personal support (one-time)
 - **Admin Dashboard** — User management, analytics, announcements
 - **Dark Mode** — System-aware theme switching
 
-## Deployment
+## Deployment (helcalfkaaga.com)
+
+### 1. Convex production
+
+```bash
+npx convex deploy
+```
+
+Copy the **production** URL (e.g. `https://your-project.convex.cloud`).
+
+### 2. Vercel environment variables
+
+| Variable | Value |
+|----------|-------|
+| `NEXT_PUBLIC_CONVEX_URL` | Production Convex URL from step 1 |
+| `NEXT_PUBLIC_APP_URL` | `https://helcalfkaaga.com` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` |
+
+### 3. Convex production secrets
+
+```bash
+# Auth (required)
+SITE_URL=https://helcalfkaaga.com npm run setup:auth:prod
+
+# Stripe (required for payments)
+npm run setup:stripe:prod -- sk_live_...
+npx convex env set STRIPE_WEBHOOK_SECRET whsec_... --prod
+
+# Password reset, signup verification & contact form (Resend)
+AUTH_EMAIL_FROM="Calaf <hello@helcalfkaaga.com>" SUPPORT_EMAIL=hello@helcalfkaaga.com \
+  npm run setup:resend:prod -- re_...
+
+# Admin bootstrap (one-time)
+npm run bootstrap:admin:prod -- you@example.com
+# Then register/login with that email and open /admin to claim owner.
+```
+
+### 4. Stripe webhook (production)
+
+Run `npm run convex:webhook-url` (uses `NEXT_PUBLIC_CONVEX_URL` from `.env.local` or Vercel) to print the endpoint, or set it manually:
+
+- **URL:** `https://YOUR-PROD-DEPLOYMENT.convex.site/stripe/webhook`
+- **Event:** `checkout.session.completed`
+
+### 5. Google Search Console
+
+Domain `helcalfkaaga.com` — verification file is in `public/googleca20de5c3c61d824.html`.
 
 ### Vercel
 
 1. Push to GitHub and import the repo in Vercel
-2. **Add environment variables** (required for build and runtime):
-   - `NEXT_PUBLIC_CONVEX_URL` — from [Convex dashboard](https://dashboard.convex.dev) → your project → Settings → URL  
-     Example: `https://your-project-name.convex.cloud`
-   - `NEXT_PUBLIC_APP_URL` — your production URL (e.g. `https://your-app.vercel.app`)
-   - `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (if using payments)
-3. Redeploy after adding variables
+2. Add the environment variables from step 2
+3. Point your custom domain `helcalfkaaga.com` to Vercel
+4. Redeploy after adding variables
 
-### Convex Cloud
+### 6. Verify before launch
 
 ```bash
-npx convex deploy
+npm run preflight              # local .env.local
+npm run preflight -- --prod    # production Convex secrets (after deploy)
+npm run convex:webhook-url
 ```
 
-After deploying Convex, copy the **production** deployment URL into Vercel as `NEXT_PUBLIC_CONVEX_URL`, then configure auth on **production** Convex (not dev):
-
-```bash
-# 1. Deploy Convex backend to production
-npx convex deploy
-
-# 2. Configure auth on PRODUCTION (use your Vercel URL)
-SITE_URL=https://your-app.vercel.app npm run setup:auth:prod
-```
-
-**Important:** `npm run setup:auth` only configures your **dev** deployment. Vercel must use the **production** Convex URL and `setup:auth:prod`.
+**Important:** `npm run setup:auth` only configures your **dev** deployment. Production must use `setup:auth:prod`.
 
 ## License
 

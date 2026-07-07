@@ -8,14 +8,18 @@
  * @module
  */
 
+import type * as ResendOTPEmailVerification from "../ResendOTPEmailVerification.js";
+import type * as ResendOTPPasswordReset from "../ResendOTPPasswordReset.js";
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
+import type * as contact from "../contact.js";
 import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_createProfile from "../lib/createProfile.js";
 import type * as lib_profileEnrichment from "../lib/profileEnrichment.js";
 import type * as lib_questionnaire from "../lib/questionnaire.js";
+import type * as lib_resendOtp from "../lib/resendOtp.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_stripe from "../lib/stripe.js";
 import type * as matches from "../matches.js";
@@ -38,14 +42,18 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  ResendOTPEmailVerification: typeof ResendOTPEmailVerification;
+  ResendOTPPasswordReset: typeof ResendOTPPasswordReset;
   admin: typeof admin;
   auth: typeof auth;
+  contact: typeof contact;
   http: typeof http;
   "lib/access": typeof lib_access;
   "lib/adminAuth": typeof lib_adminAuth;
   "lib/createProfile": typeof lib_createProfile;
   "lib/profileEnrichment": typeof lib_profileEnrichment;
   "lib/questionnaire": typeof lib_questionnaire;
+  "lib/resendOtp": typeof lib_resendOtp;
   "lib/roles": typeof lib_roles;
   "lib/stripe": typeof lib_stripe;
   matches: typeof matches;

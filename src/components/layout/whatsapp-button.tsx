@@ -1,13 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import { WHATSAPP_URL } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n/context";
 
 export function WhatsAppButton() {
+  const { t } = useTranslation();
+
   return (
     <Link
       href={WHATSAPP_URL}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Chat on WhatsApp"
+      aria-label={t("common.a11yWhatsapp")}
       className="fixed bottom-20 right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-whatsapp text-white shadow-lg shadow-black/20 transition-transform hover:scale-105 hover:bg-whatsapp/90 lg:bottom-5 lg:right-5 lg:h-12 lg:w-12"
     >
       <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden>

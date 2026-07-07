@@ -35,7 +35,7 @@ export function FAQAccordion({
             onClick={() => setOpenIndex(openIndex === index ? null : index)}
             className="flex w-full items-center justify-between p-6 text-left"
           >
-            <span className="font-medium pr-4">{item.question}</span>
+            <span className="font-bold pr-4">{item.question}</span>
             <ChevronDown
               className={cn(
                 "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",

@@ -22,9 +22,9 @@ export default function PaymentPage() {
 
   useEffect(() => {
     if (canceled) {
-      toast.message("Payment canceled. Complete payment to activate your account.");
+      toast.message(t("payment.paymentCanceled"));
     }
-  }, [canceled]);
+  }, [canceled, t]);
 
   useEffect(() => {
     if (isStaffRole(profile?.role)) {
@@ -56,7 +56,7 @@ export default function PaymentPage() {
   if (!profile) {
     return (
       <DashboardLayout>
-        <p className="text-center text-muted-foreground py-16">Profile not found.</p>
+        <p className="text-center text-muted-foreground py-16">{t("payment.profileNotFound")}</p>
       </DashboardLayout>
     );
   }

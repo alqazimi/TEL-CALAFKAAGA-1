@@ -3,6 +3,8 @@ import { HowItWorksPageContent } from "@/components/marketing/how-it-works-page-
 
 export const metadata: Metadata = {
   title: "How it Works",
+  description:
+    "Register, complete your profile, discover compatible matches, and connect respectfully on Calaf.",
 };
 
 export default function HowItWorksPage() {

@@ -6,6 +6,7 @@ import { useConvexAuth } from "convex/react";
 import { Phone, Mail, MapPin } from "lucide-react";
 import {
   APP_NAME,
+  PERSONAL_SUPPORT_PRICE,
   REGISTRATION_PRICE,
   SUPPORT_EMAIL,
   WHATSAPP_DISPLAY,
@@ -122,13 +123,16 @@ export function Footer() {
               {t("common.readyToMatch")}
             </h3>
             <p className="mt-2 text-sm text-white/90">
-              {t("common.joinThousands", { name: APP_NAME })}
+              {t("common.joinPlans", {
+                basic: REGISTRATION_PRICE,
+                premium: PERSONAL_SUPPORT_PRICE,
+              })}
             </p>
             {!isLoading && isAuthenticated ? (
               <Link
                 href="/dashboard"
                 className={cn(
-                  "mt-4 inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-sm font-semibold text-primary hover:bg-white/90 transition-colors w-full"
+                  "mt-4 inline-flex items-center justify-center rounded-xl bg-primary-foreground px-6 py-3 text-sm font-semibold text-primary hover:bg-primary-foreground/90 transition-colors w-full"
                 )}
               >
                 {t("common.goToDashboard")}
@@ -136,7 +140,7 @@ export function Footer() {
             ) : (
               <AuthRegisterCta
                 registerLabel={t("auth.joinNowPrice", { price: REGISTRATION_PRICE })}
-                className="mt-4 w-full bg-white text-primary hover:bg-white/90"
+                className="mt-4 w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90"
                 size="default"
               />
             )}

@@ -4,9 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Moon, Sun, LayoutDashboard, User } from "lucide-react";
+import { Menu, X, LayoutDashboard, User } from "lucide-react";
 import { useConvexAuth } from "convex/react";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { isAppShellRoute } from "@/lib/routes";
 import { useNavLinks } from "@/lib/i18n/hooks";
@@ -14,11 +13,11 @@ import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageToggle } from "@/components/layout/language-toggle";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
   const { isAuthenticated, isLoading } = useConvexAuth();
 
   useEffect(() => {
@@ -37,7 +36,7 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-border bg-white/95 dark:bg-card/95 backdrop-blur-xl pt-[env(safe-area-inset-top)]",
+        "sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur-xl pt-[env(safe-area-inset-top)]",
         inAppShell && "hidden lg:block"
       )}
     >
@@ -67,16 +66,7 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <LanguageToggle className="rounded-xl h-10 px-3" />
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="rounded-xl h-10 w-10"
-            aria-label={t("common.toggleTheme")}
-          >
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          </Button>
+          <ThemeToggle />
 
           <div className="hidden sm:flex items-center gap-2">
             {isLoading ? (
@@ -103,7 +93,7 @@ export function Navbar() {
             size="icon"
             className="lg:hidden rounded-xl h-10 w-10"
             onClick={() => setOpen(!open)}
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={open ? t("common.a11yCloseMenu") : t("common.a11yOpenMenu")}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>

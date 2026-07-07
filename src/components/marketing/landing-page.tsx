@@ -207,7 +207,7 @@ export function LandingPage() {
 
               <motion.h1
                 variants={fadeUp}
-                className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]"
+                className="font-display text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]"
               >
                 {t("landing.heroTitle")}{" "}
                 <span className="text-primary">{t("landing.heroHighlight")}</span>
@@ -280,7 +280,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="rounded-3xl bg-card border border-border shadow-xl p-8 lg:p-12 space-y-8">
             <div className="text-center max-w-2xl mx-auto">
-              <h2 className="font-display text-2xl sm:text-3xl font-semibold">
+              <h2 className="font-display text-2xl sm:text-3xl font-bold">
                 {t("landing.pricingTitle")}
               </h2>
               <p className="mt-2 text-muted-foreground">
@@ -292,7 +292,7 @@ export function LandingPage() {
               <Card className="shadow-md">
                 <CardContent className="p-6 space-y-4">
                   <div>
-                    <h3 className="text-xl font-semibold">{t("landing.basicPlan")}</h3>
+                    <h3 className="text-xl font-bold">{t("landing.basicPlan")}</h3>
                     <div className="mt-2 flex items-baseline gap-2">
                       <span className="text-4xl font-bold text-primary">
                         ${REGISTRATION_PRICE}
@@ -317,7 +317,7 @@ export function LandingPage() {
                 <CardContent className="p-6 space-y-4">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-xl font-semibold">{t("landing.premiumPlan")}</h3>
+                      <h3 className="text-xl font-bold">{t("landing.premiumPlan")}</h3>
                       <Badge>{t("landing.recommended")}</Badge>
                     </div>
                     <div className="mt-2 flex items-baseline gap-2">
@@ -342,7 +342,7 @@ export function LandingPage() {
 
             <div className="grid lg:grid-cols-2 gap-10 items-start pt-4 border-t border-border">
               <div>
-                <h3 className="font-display text-xl font-semibold mb-6">
+                <h3 className="font-display text-xl font-bold mb-6">
                   {t("landing.whyPay")}
                 </h3>
                 <div className="space-y-5">
@@ -354,7 +354,7 @@ export function LandingPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <reason.icon className="h-4 w-4 text-primary" />
-                          <h4 className="font-semibold">{reason.title}</h4>
+                          <h4 className="font-bold">{reason.title}</h4>
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">{reason.desc}</p>
                       </div>
@@ -364,7 +364,7 @@ export function LandingPage() {
               </div>
 
               <div className="rounded-2xl border border-[#128C7E]/30 bg-gradient-to-br from-[#128C7E]/10 to-whatsapp/10 p-6">
-                <h3 className="font-semibold text-lg">{t("landing.personalSupportTitle")}</h3>
+                <h3 className="font-bold text-lg">{t("landing.personalSupportTitle")}</h3>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                   {t("landing.personalSupportDesc")}
                 </p>
@@ -390,7 +390,7 @@ export function LandingPage() {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="landing-section-title font-display text-3xl font-semibold">
+            <h2 className="landing-section-title font-display text-3xl font-bold">
               {t("landing.previewTitle")}
             </h2>
             <p className="mt-3 text-muted-foreground">{t("landing.previewSubtitle")}</p>
@@ -405,7 +405,7 @@ export function LandingPage() {
           <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 text-primary mb-6">
             <Sparkles className="h-7 w-7" />
           </div>
-          <h2 className="landing-section-title font-display text-3xl font-semibold">
+          <h2 className="landing-section-title font-display text-3xl font-bold">
             {t("landing.matchingTitle")}
           </h2>
           <p className="mt-4 text-muted-foreground leading-relaxed max-w-2xl mx-auto">
@@ -417,7 +417,7 @@ export function LandingPage() {
       {/* How It Works */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl text-center">
-          <h2 className="landing-section-title font-display text-3xl font-semibold">
+          <h2 className="landing-section-title font-display text-3xl font-bold">
             {t("landing.howWorks")}
           </h2>
 
@@ -437,7 +437,7 @@ export function LandingPage() {
                 <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-primary bg-card text-primary shadow-md">
                   <step.icon className="h-7 w-7" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
+                <h3 className="mt-4 text-lg font-bold">{step.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{step.desc}</p>
               </motion.div>
             ))}
@@ -463,7 +463,7 @@ export function LandingPage() {
       {/* Success Stories */}
       <section id="success-stories" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl text-center">
-          <h2 className="landing-section-title font-display text-3xl font-semibold">
+          <h2 className="landing-section-title font-display text-3xl font-bold">
             {t("landing.successStories")}
           </h2>
 
@@ -509,7 +509,7 @@ export function LandingPage() {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/40">
         <div className="mx-auto max-w-7xl">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="landing-section-title font-display text-3xl font-semibold">
+            <h2 className="landing-section-title font-display text-3xl font-bold">
               {t("landing.faqTitle")}
             </h2>
             <p className="mt-3 text-muted-foreground">{t("landing.faqSubtitle")}</p>
@@ -525,14 +525,14 @@ export function LandingPage() {
       {/* Final CTA */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl rounded-3xl bg-gradient-to-br from-[#4a0d1f] via-[#8a1230] to-primary p-8 sm:p-12 text-center text-white shadow-xl">
-          <h2 className="font-display text-2xl sm:text-3xl font-semibold">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold">
             {t("landing.finalCtaTitle")}
           </h2>
           <p className="mt-3 text-white/85 max-w-xl mx-auto">{t("landing.finalCtaDesc")}</p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <AuthRegisterCta
               registerLabel={t("landing.heroCta", { price: REGISTRATION_PRICE })}
-              className="bg-white text-primary hover:bg-white/90"
+              className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
             />
             <Button
               asChild

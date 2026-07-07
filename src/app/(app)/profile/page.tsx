@@ -126,8 +126,8 @@ export default function ProfilePage() {
                 />
               </div>
               <div>
-                <h2 className="text-xl font-semibold">{profile?.name}</h2>
-                <p className="text-gray-500 capitalize">{profile?.gender}</p>
+                <h2 className="text-xl font-bold">{profile?.name}</h2>
+                <p className="text-muted-foreground capitalize">{profile?.gender}</p>
                 <div className="flex gap-2 mt-2">
                   {profile?.verified && (
                     <Badge variant="success">{t("dashboard.verified")}</Badge>

@@ -7,14 +7,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Bell,
   LogOut,
-  Moon,
-  Sun,
   User,
   Shield,
   Menu,
   X,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -27,11 +24,11 @@ import { LanguageToggle } from "@/components/layout/language-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isAppShellRoute } from "@/lib/routes";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
 
 export function AppShellHeader() {
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
   const { signOut } = useAuthActions();
   const [accountOpen, setAccountOpen] = useState(false);
   const [siteMenuOpen, setSiteMenuOpen] = useState(false);
@@ -89,7 +86,7 @@ export function AppShellHeader() {
               size="icon"
               className="shrink-0 rounded-xl h-10 w-10"
               onClick={() => setSiteMenuOpen(true)}
-              aria-label="Open website menu"
+              aria-label={t("common.a11yOpenWebsiteMenu")}
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -119,22 +116,13 @@ export function AppShellHeader() {
               </Link>
             </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="rounded-xl h-10 w-10"
-              aria-label={t("common.toggleTheme")}
-            >
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            </Button>
+            <ThemeToggle className="h-10 w-10" />
 
             <div className="relative" ref={accountRef}>
               <button
                 type="button"
                 onClick={() => setAccountOpen((o) => !o)}
-                aria-label="Account menu"
+                aria-label={t("common.a11yAccountMenu")}
                 aria-expanded={accountOpen}
                 className={cn(
                   "shrink-0 rounded-full ring-2 ring-transparent transition-all",
@@ -202,7 +190,7 @@ export function AppShellHeader() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="lg:hidden fixed inset-0 z-50 bg-black/40"
-              aria-label="Close website menu"
+              aria-label={t("common.a11yCloseWebsiteMenu")}
               onClick={() => setSiteMenuOpen(false)}
             />
             <motion.aside
@@ -219,7 +207,7 @@ export function AppShellHeader() {
                   size="icon"
                   className="rounded-xl h-9 w-9"
                   onClick={() => setSiteMenuOpen(false)}
-                  aria-label="Close website menu"
+                  aria-label={t("common.a11yCloseWebsiteMenu")}
                 >
                   <X className="h-5 w-5" />
                 </Button>

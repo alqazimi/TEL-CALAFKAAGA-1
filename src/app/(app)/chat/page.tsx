@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
-import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
   Send,
@@ -13,8 +12,10 @@ import {
   MessageCircle,
   Heart,
   ArrowLeft,
+  Check,
+  CheckCheck,
 } from "lucide-react";
-import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
+import { LazyEmojiPicker, type EmojiClickData } from "@/components/chat/lazy-emoji-picker";
 import { api } from "../../../../convex/_generated/api";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PendingApprovalCard } from "@/components/profile/pending-approval-card";
@@ -32,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/utils";
 import { REGISTRATION_PRICE } from "@/lib/constants";
+import { LazyImage } from "@/components/ui/lazy-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -44,7 +46,7 @@ function MessagesEmptyState() {
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-accent text-accent-foreground mx-auto mb-5">
           <MessageCircle className="h-8 w-8" />
         </div>
-        <h2 className="text-xl font-semibold mb-2">{t("chatPage.noMessages")}</h2>
+        <h2 className="text-xl font-bold mb-2">{t("chatPage.noMessages")}</h2>
         <p className="text-muted-foreground text-sm leading-relaxed mb-6">
           {t("chatPage.noMessagesDesc")}
         </p>
@@ -238,7 +240,7 @@ export default function ChatPage() {
             )}
           >
             <div className="px-4 py-3.5 border-b border-border">
-              <h2 className="text-sm font-semibold">{t("chatPage.messages")}</h2>
+              <h2 className="text-sm font-bold">{t("chatPage.messages")}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {conversations.length}{" "}
                 {conversations.length === 1
@@ -270,7 +272,7 @@ export default function ChatPage() {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium truncate text-sm">
+                        <p className="font-semibold truncate text-sm">
                           {conv.profile?.name ?? t("chatPage.match")}
                         </p>
                         {conv.unreadCount > 0 && (
@@ -317,7 +319,7 @@ export default function ChatPage() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm truncate">
+                    <p className="font-bold text-sm truncate">
                       {activeConv.profile?.name}
                     </p>
                     {!activeConv.chatUnlocked ? (
@@ -336,7 +338,7 @@ export default function ChatPage() {
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground mx-auto mb-4">
                         <Lock className="h-7 w-7" />
                       </div>
-                      <h3 className="text-lg font-semibold mb-2">{t("chatPage.unlockChat")}</h3>
+                      <h3 className="text-lg font-bold mb-2">{t("chatPage.unlockChat")}</h3>
                       <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
                         {t("chatPage.unlockChatDesc", {
                           price: REGISTRATION_PRICE,
@@ -369,10 +371,8 @@ export default function ChatPage() {
                       {messages?.map((msg) => {
                         const isMine = msg.senderId === myUserId;
                         return (
-                          <motion.div
+                          <div
                             key={msg._id}
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
                             className={cn("flex", isMine ? "justify-end" : "justify-start")}
                           >
                             <div
@@ -384,23 +384,34 @@ export default function ChatPage() {
                               )}
                             >
                               {msg.imageUrl && (
-                                <img
+                                <LazyImage
                                   src={msg.imageUrl}
                                   alt={t("chatPage.sharedImage")}
                                   className="rounded-xl max-w-full mb-1.5"
                                 />
                               )}
                               <p className="text-sm leading-relaxed">{msg.message}</p>
-                              <p
-                                className={cn(
-                                  "text-[10px] mt-1",
-                                  isMine ? "text-primary-foreground/70" : "text-muted-foreground"
+                              <div className="flex items-center justify-end gap-1 mt-1">
+                                <p
+                                  className={cn(
+                                    "text-[10px]",
+                                    isMine ? "text-primary-foreground/70" : "text-muted-foreground"
+                                  )}
+                                >
+                                  {formatTime(msg.createdAt)}
+                                </p>
+                                {isMine && (
+                                  <span className="inline-flex" title={msg.read ? t("chatPage.read") : t("chatPage.sent")}>
+                                    {msg.read ? (
+                                      <CheckCheck className="h-3.5 w-3.5 text-primary-foreground/85" />
+                                    ) : (
+                                      <Check className="h-3.5 w-3.5 text-primary-foreground/60" />
+                                    )}
+                                  </span>
                                 )}
-                              >
-                                {formatTime(msg.createdAt)}
-                              </p>
+                              </div>
                             </div>
-                          </motion.div>
+                          </div>
                         );
                       })}
                       <div ref={messagesEndRef} />
@@ -409,7 +420,7 @@ export default function ChatPage() {
                     <div className="p-3 sm:p-4 border-t border-border bg-card">
                       {showEmoji && (
                         <div className="mb-3 overflow-hidden rounded-xl border border-border">
-                          <EmojiPicker
+                          <LazyEmojiPicker
                             onEmojiClick={(emoji: EmojiClickData) =>
                               setMessage((prev) => prev + emoji.emoji)
                             }
@@ -473,7 +484,7 @@ export default function ChatPage() {
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground mx-auto mb-4">
                     <MessageCircle className="h-7 w-7" />
                   </div>
-                  <p className="font-semibold mb-1">{t("chatPage.selectConversation")}</p>
+                  <p className="font-bold mb-1">{t("chatPage.selectConversation")}</p>
                   <p className="text-sm text-muted-foreground">
                     {t("chatPage.selectConversationDesc")}
                   </p>

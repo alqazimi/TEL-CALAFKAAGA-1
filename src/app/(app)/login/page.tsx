@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -14,26 +14,29 @@ import { toast } from "sonner";
 import { Mail, Lock } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { GuestGate } from "@/components/auth/guest-gate";
+import { EmailVerificationStep } from "@/components/auth/email-verification-step";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { APP_NAME } from "@/lib/constants";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { createLoginSchema } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
 
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
+type LoginForm = z.infer<ReturnType<typeof createLoginSchema>>;
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
   const convex = useConvex();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [step, setStep] = useState<"credentials" | "verify">("credentials");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingPassword, setPendingPassword] = useState("");
   const { t } = useTranslation();
+  const loginSchema = useMemo(() => createLoginSchema(t), [t]);
 
   const {
     register,
@@ -43,79 +46,153 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  const completeSignIn = async () => {
+    const user = await convex.query(api.users.currentUser, {});
+    toast.success(t("auth.welcomeBackToast"));
+    router.push(getAuthenticatedHomeRoute(user?.profile ?? undefined));
+  };
+
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      await signIn("password", {
+      const result = await signIn("password", {
         email: data.email,
         password: data.password,
         flow: "signIn",
       });
-      const user = await convex.query(api.users.currentUser, {});
-      toast.success(t("auth.welcomeBackToast"));
-      router.push(getAuthenticatedHomeRoute(user?.profile ?? undefined));
+
+      if (!result.signingIn) {
+        setPendingEmail(data.email);
+        setPendingPassword(data.password);
+        setStep("verify");
+        toast.success(t("auth.verifyCodeSent"));
+        return;
+      }
+
+      await completeSignIn();
     } catch (error) {
-      toast.error(getAuthErrorMessage(error, "Invalid email or password"));
+      toast.error(getAuthErrorMessage(error, t("validation.invalidCredentials")));
     } finally {
       setLoading(false);
     }
   };
 
+  const onVerifyEmail = async (code: string) => {
+    setVerifying(true);
+    try {
+      const result = await signIn("password", {
+        email: pendingEmail,
+        code,
+        flow: "email-verification",
+      });
+
+      if (!result.signingIn) {
+        toast.error(t("auth.verifyFailed"));
+        return;
+      }
+
+      await completeSignIn();
+    } catch (error) {
+      toast.error(getAuthErrorMessage(error, t("auth.verifyFailed")));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const onResendCode = async () => {
+    if (!pendingEmail || !pendingPassword) return;
+    setResending(true);
+    try {
+      await signIn("password", {
+        email: pendingEmail,
+        password: pendingPassword,
+        flow: "signIn",
+      });
+      toast.success(t("auth.verifyCodeSent"));
+    } catch (error) {
+      toast.error(getAuthErrorMessage(error, t("auth.resendVerifyFailed")));
+    } finally {
+      setResending(false);
+    }
+  };
+
   return (
     <GuestGate>
-    <AuthShell
-      title={t("auth.welcomeBack")}
-      description={t("auth.signInDesc", { name: APP_NAME })}
-      footer={
-        <p className="text-center text-sm text-muted-foreground">
-          {t("auth.noAccount")}{" "}
-          <Link href="/register" className="font-medium text-primary hover:underline">
-            {t("auth.createAccount")}
-          </Link>
-        </p>
-      }
-    >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <FormField label={t("auth.email")} htmlFor="email" error={errors.email?.message}>
-          <InputIconWrapper icon={<Mail className="h-4 w-4" />}>
-            <Input
-              id="email"
-              type="email"
-              className="pl-11"
-              {...register("email")}
-              placeholder="you@email.com"
-              autoComplete="email"
-            />
-          </InputIconWrapper>
-        </FormField>
-
-        <FormField
-          label={t("auth.password")}
-          htmlFor="password"
-          error={errors.password?.message}
-          labelAction={
-            <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
-              {t("auth.forgotPassword")}
+      <AuthShell
+        title={
+          step === "credentials"
+            ? t("auth.welcomeBack")
+            : t("auth.verifyEmailTitle")
+        }
+        description={
+          step === "credentials"
+            ? t("auth.signInDesc", { name: APP_NAME })
+            : t("auth.loginVerifyDesc", { email: pendingEmail })
+        }
+        footer={
+          <p className="text-center text-sm text-muted-foreground">
+            {t("auth.noAccount")}{" "}
+            <Link href="/register" className="font-medium text-primary hover:underline">
+              {t("auth.createAccount")}
             </Link>
-          }
-        >
-          <InputIconWrapper icon={<Lock className="h-4 w-4" />}>
-            <Input
-              id="password"
-              type="password"
-              className="pl-11"
-              {...register("password")}
-              placeholder="Enter your password"
-              autoComplete="current-password"
-            />
-          </InputIconWrapper>
-        </FormField>
+          </p>
+        }
+      >
+        {step === "credentials" ? (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <FormField label={t("auth.email")} htmlFor="email" error={errors.email?.message}>
+              <InputIconWrapper icon={<Mail className="h-4 w-4" />}>
+                <Input
+                  id="email"
+                  type="email"
+                  className="pl-11"
+                  {...register("email")}
+                  placeholder={t("auth.emailPlaceholder")}
+                  autoComplete="email"
+                />
+              </InputIconWrapper>
+            </FormField>
 
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? t("auth.signingIn") : t("auth.signIn")}
-        </Button>
-      </form>
-    </AuthShell>
+            <FormField
+              label={t("auth.password")}
+              htmlFor="password"
+              error={errors.password?.message}
+              labelAction={
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  {t("auth.forgotPassword")}
+                </Link>
+              }
+            >
+              <InputIconWrapper icon={<Lock className="h-4 w-4" />}>
+                <Input
+                  id="password"
+                  type="password"
+                  className="pl-11"
+                  {...register("password")}
+                  placeholder={t("auth.passwordPlaceholder")}
+                  autoComplete="current-password"
+                />
+              </InputIconWrapper>
+            </FormField>
+
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? t("auth.signingIn") : t("auth.signIn")}
+            </Button>
+          </form>
+        ) : (
+          <EmailVerificationStep
+            verifying={verifying}
+            resending={resending}
+            onSubmit={onVerifyEmail}
+            onResend={onResendCode}
+            onBack={() => setStep("credentials")}
+            backLabel={t("auth.backToSignIn")}
+          />
+        )}
+      </AuthShell>
     </GuestGate>
   );
 }

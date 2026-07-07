@@ -1,4 +1,4 @@
-export const APP_NAME = "CALAF";
+export const APP_NAME = "Calaf";
 export const PRODUCTION_SITE_URL = "https://helcalfkaaga.com";
 export const APP_TAGLINE = "Find Your Perfect Match";
 export const APP_DESCRIPTION =
@@ -9,7 +9,7 @@ export const WHATSAPP_GREEN = "#25D366";
 export const WHATSAPP_NUMBER = "254793692710";
 export const WHATSAPP_DISPLAY = "+254 793 692710";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
-export const SUPPORT_EMAIL = "hello@calaf.com";
+export const SUPPORT_EMAIL = "hello@helcalfkaaga.com";
 export const REGISTRATION_PRICE = 15;
 export const PERSONAL_SUPPORT_PRICE = 20;
 /** @deprecated Use PERSONAL_SUPPORT_PRICE */
@@ -211,7 +211,7 @@ export const FAQ_ITEMS = [
   {
     question: "How much does Calaf cost?",
     answer:
-      "Registration is a one-time $15 fee via Stripe. This unlocks full access to matches and messaging.",
+      "Standard registration is a one-time $15 fee. For $20, you also get personal support from trained experts. Both plans unlock full access to matches and messaging.",
   },
   {
     question: "How is my data protected?",
@@ -222,5 +222,10 @@ export const FAQ_ITEMS = [
     question: "Can I delete my account?",
     answer:
       "Yes, you can delete your account at any time from your profile settings. All your data will be permanently removed.",
+  },
+  {
+    question: "What is personal support?",
+    answer:
+      "The $20 premium plan includes confidential one-on-one guidance from trained advisors. After payment, message us on WhatsApp to get started.",
   },
 ] as const;

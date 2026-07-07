@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
-import { ChevronRight, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +25,7 @@ import {
   buildStepData,
   initFormState,
   isFieldVisible,
+  validateField,
   validateStepFields,
 } from "@/lib/questionnaire-form";
 import { toast } from "sonner";
@@ -32,7 +34,10 @@ import type { Profile } from "@/types";
 import { CITIES } from "@/lib/constants";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
-import type { StepConfig } from "./steps";
+import type { FieldConfig, StepConfig } from "./steps";
+
+const AUTO_ADVANCE_MS = 450;
+const AUTO_ADVANCE_TYPES = new Set(["radio", "select", "country-search"]);
 
 /** Maps English validation strings from validateStepFields to translatable UI keys. */
 const ERROR_KEY_MAP: Record<string, QuestionnaireUiKey> = {
@@ -73,9 +78,11 @@ export function QuestionnaireStep({
   const [multiSelects, setMultiSelects] = useState(initial.multiSelects);
   const [selects, setSelects] = useState(initial.selects);
   const [radios, setRadios] = useState(initial.radios);
+  const [fieldIndex, setFieldIndex] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null);
   const skipAutoSaveRef = useRef(true);
   const { register, watch, setValue } = useForm({ defaultValues: { bio: initial.bio } });
   const bio = watch("bio", initial.bio);
@@ -83,7 +90,6 @@ export function QuestionnaireStep({
 
   const profileId = profile?._id ?? null;
 
-  // Hydrate form when profile data loads or step changes
   useEffect(() => {
     const state = initFormState(profile, preferences);
     setSelectedCountry(state.selectedCountry);
@@ -92,10 +98,20 @@ export function QuestionnaireStep({
     setRadios(state.radios);
     setValue("bio", state.bio);
     setFieldErrors({});
+    setFieldIndex(0);
     skipAutoSaveRef.current = true;
   }, [profileId, preferences, step.id, setValue]);
 
   const formState = { radios, selects, multiSelects, bio };
+
+  const visibleFields = step.fields.filter((field) =>
+    isFieldVisible(field, profile, radios)
+  );
+  const focusMode = visibleFields.length > 1;
+  const currentField = visibleFields[fieldIndex] ?? visibleFields[0];
+  const isLastField = fieldIndex >= visibleFields.length - 1;
+  const isPartnerStep = step.phase === "partner";
+  const fieldsToRender = focusMode && currentField ? [currentField] : visibleFields;
 
   const triggerAutoSave = useCallback(() => {
     if (!onAutoSave) return;
@@ -125,10 +141,45 @@ export function QuestionnaireStep({
     };
   }, [triggerAutoSave]);
 
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+    };
+  }, []);
+
+  const scheduleAutoAdvance = (field: FieldConfig) => {
+    if (!focusMode || isLastField || !AUTO_ADVANCE_TYPES.has(field.type)) return;
+    if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+    autoAdvanceRef.current = setTimeout(() => {
+      setFieldIndex((i) => Math.min(i + 1, visibleFields.length - 1));
+    }, AUTO_ADVANCE_MS);
+  };
+
+  const goToPreviousField = () => {
+    if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+    setFieldIndex((i) => Math.max(0, i - 1));
+    setFieldErrors({});
+  };
+
+  const goToNextField = () => {
+    if (!currentField) return;
+    const error = validateField(currentField, profile, formState);
+    if (error) {
+      setFieldErrors({ [currentField.name]: error });
+      return;
+    }
+    setFieldErrors({});
+    setFieldIndex((i) => Math.min(i + 1, visibleFields.length - 1));
+  };
+
   const handleFormSubmit = () => {
     const errors = validateStepFields(step, profile, formState);
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
+      const firstErrorField = visibleFields.find((f) => errors[f.name]);
+      if (firstErrorField && focusMode) {
+        setFieldIndex(visibleFields.indexOf(firstErrorField));
+      }
       toast.error(ui("answerAllRequired"));
       return;
     }
@@ -148,20 +199,195 @@ export function QuestionnaireStep({
     });
   };
 
-  const visibleFields = step.fields.filter((field) =>
-    isFieldVisible(field, profile, radios)
+  const clearFieldError = (fieldName: string) => {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      delete next[fieldName];
+      return next;
+    });
+  };
+
+  const renderFieldInput = (field: FieldConfig) => (
+    <>
+      {field.type === "radio" && (
+        <RadioGroup
+          value={radios[field.name] ?? ""}
+          onValueChange={(v) => {
+            setRadios((prev) => ({ ...prev, [field.name]: v }));
+            clearFieldError(field.name);
+            scheduleAutoAdvance(field);
+          }}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+        >
+          {field.options?.map((option) => (
+            <label
+              key={String(option)}
+              className={cn(
+                "flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-all duration-200 active:scale-[0.98]",
+                radios[field.name] === String(option)
+                  ? "border-primary bg-accent text-accent-foreground shadow-sm ring-1 ring-primary/30"
+                  : "border-border bg-input hover:border-primary/40 hover:bg-muted/50 hover:shadow-sm"
+              )}
+            >
+              <RadioGroupItem value={String(option)} />
+              <span className="text-sm font-semibold">{optionLabel(String(option))}</span>
+            </label>
+          ))}
+        </RadioGroup>
+      )}
+
+      {field.type === "country-search" && (
+        <CountryCombobox
+          value={selects[field.name] ?? ""}
+          onChange={(v) => {
+            setSelects((prev) => ({ ...prev, [field.name]: v }));
+            if (field.name === "country") {
+              setSelectedCountry(v);
+              setSelects((prev) => ({ ...prev, city: "" }));
+            }
+            clearFieldError(field.name);
+            clearFieldError("city");
+            scheduleAutoAdvance(field);
+          }}
+        />
+      )}
+
+      {field.type === "country-multi" && (
+        <CountryMultiCombobox
+          value={multiSelects[field.name] ?? []}
+          onChange={(v) => {
+            setMultiSelects((prev) => ({ ...prev, [field.name]: v }));
+            clearFieldError(field.name);
+          }}
+        />
+      )}
+
+      {field.type === "select" && field.name === "city" && (
+        CITIES[selectedCountry]?.length ? (
+          <Select
+            value={selects[field.name] ?? ""}
+            onValueChange={(v) => {
+              setSelects((prev) => ({ ...prev, [field.name]: v }));
+              clearFieldError(field.name);
+              scheduleAutoAdvance(field);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={ui("selectCity")} />
+            </SelectTrigger>
+            <SelectContent>
+              {CITIES[selectedCountry].map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            value={selects[field.name] ?? ""}
+            onChange={(e) => {
+              setSelects((prev) => ({ ...prev, [field.name]: e.target.value }));
+              clearFieldError(field.name);
+            }}
+            placeholder={ui("enterCity")}
+          />
+        )
+      )}
+
+      {field.type === "select" && field.name !== "city" && (
+        <Select
+          value={selects[field.name] ?? ""}
+          onValueChange={(v) => {
+            setSelects((prev) => ({ ...prev, [field.name]: v }));
+            if (field.name === "country") setSelectedCountry(v);
+            clearFieldError(field.name);
+            scheduleAutoAdvance(field);
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue
+              placeholder={`${ui("selectPlaceholder")} ${fieldLabel(field.name, field.label).toLowerCase()}`}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {(field.options ?? []).map((option) => (
+              <SelectItem key={String(option)} value={String(option)}>
+                {optionLabel(String(option))}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {field.type === "textarea" && (
+        <div>
+          <Textarea
+            {...register("bio")}
+            placeholder={ui("bioPlaceholder")}
+            rows={4}
+            maxLength={500}
+            onChange={(e) => {
+              setValue("bio", e.target.value);
+              clearFieldError("bio");
+            }}
+          />
+          <p className="text-xs text-muted-foreground mt-1 text-right">
+            {(bio?.length ?? 0)}/500
+          </p>
+        </div>
+      )}
+
+      {field.type === "multi-select" && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {field.options?.map((option) => {
+            const selected = (multiSelects[field.name] ?? []).includes(String(option));
+            return (
+              <label
+                key={String(option)}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border p-3 cursor-pointer transition-all duration-200 text-sm font-semibold active:scale-[0.98]",
+                  selected
+                    ? "border-primary bg-accent text-accent-foreground shadow-sm ring-1 ring-primary/30"
+                    : "border-border bg-input hover:border-primary/40 hover:bg-muted/50 hover:shadow-sm"
+                )}
+              >
+                <Checkbox
+                  checked={selected}
+                  onCheckedChange={() => {
+                    toggleMultiSelect(field.name, String(option), field.maxSelect);
+                    clearFieldError(field.name);
+                  }}
+                />
+                {optionLabel(String(option))}
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
-  const isPartnerStep = step.phase === "partner";
 
   return (
-    <Card className="shadow-lg shadow-primary/5">
+    <Card className="shadow-lg shadow-primary/5 overflow-hidden">
       <CardHeader className="border-b border-border bg-gradient-to-r from-accent/50 to-transparent">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <CardTitle className="text-xl sm:text-2xl font-bold">{stepTitle(step.id, step.title)}</CardTitle>
-            <CardDescription className="text-sm sm:text-base mt-1">{stepDescription(step.id, step.description)}</CardDescription>
+          <div className="min-w-0">
+            <CardTitle className="text-xl sm:text-2xl font-bold">
+              {stepTitle(step.id, step.title)}
+            </CardTitle>
+            <CardDescription className="text-sm sm:text-base mt-1">
+              {stepDescription(step.id, step.description)}
+            </CardDescription>
+            {focusMode && (
+              <p className="text-xs font-semibold text-primary mt-2">
+                {ui("questionOf")
+                  .replace("{current}", String(fieldIndex + 1))
+                  .replace("{total}", String(visibleFields.length))}
+              </p>
+            )}
           </div>
-          {onAutoSave && (
+          {onAutoSave && saveStatus !== "idle" && (
             <div className="flex items-center gap-1.5 text-xs shrink-0 rounded-full bg-card px-2.5 py-1 border border-border">
               {saveStatus === "saving" && (
                 <>
@@ -181,219 +407,83 @@ export function QuestionnaireStep({
                   <span className="text-destructive">{ui("saveFailed")}</span>
                 </>
               )}
-              {saveStatus === "idle" && (
-                <span className="text-muted-foreground">{ui("autoSaveOn")}</span>
-              )}
             </div>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-8">
-        {visibleFields.map((field) => (
-          <div key={field.name} className="space-y-3.5">
-            <Label className="text-base sm:text-lg font-bold text-foreground leading-snug">
-              {fieldLabel(field.name, field.label)}
-              {field.required && <span className="text-destructive ml-0.5">*</span>}
-            </Label>
-            {fieldErrors[field.name] && (
-              <p className="text-sm text-destructive">{translateError(fieldErrors[field.name], ui)}</p>
-            )}
-
-            {field.type === "radio" && (
-              <RadioGroup
-                value={radios[field.name] ?? ""}
-                onValueChange={(v) => {
-                  setRadios((prev) => ({ ...prev, [field.name]: v }));
-                  setFieldErrors((prev) => {
-                    const next = { ...prev };
-                    delete next[field.name];
-                    return next;
-                  });
-                }}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-              >
-                {field.options?.map((option) => (
-                  <label
-                    key={String(option)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-all duration-200",
-                      radios[field.name] === String(option)
-                        ? "border-primary bg-accent text-accent-foreground shadow-sm"
-                        : "border-border bg-input hover:border-primary/40 hover:bg-muted/50"
-                    )}
-                  >
-                    <RadioGroupItem value={String(option)} />
-                    <span className="text-sm font-semibold">{optionLabel(String(option))}</span>
-                  </label>
-                ))}
-              </RadioGroup>
-            )}
-
-            {field.type === "country-search" && (
-              <CountryCombobox
-                value={selects[field.name] ?? ""}
-                onChange={(v) => {
-                  setSelects((prev) => ({ ...prev, [field.name]: v }));
-                  if (field.name === "country") {
-                    setSelectedCountry(v);
-                    setSelects((prev) => ({ ...prev, city: "" }));
-                  }
-                  setFieldErrors((prev) => {
-                    const next = { ...prev };
-                    delete next[field.name];
-                    delete next.city;
-                    return next;
-                  });
-                }}
+        {focusMode && (
+          <div className="flex gap-1.5 mt-4">
+            {visibleFields.map((field, i) => (
+              <div
+                key={field.name}
+                className={cn(
+                  "h-1 flex-1 rounded-full transition-colors duration-300",
+                  i < fieldIndex
+                    ? "bg-primary"
+                    : i === fieldIndex
+                      ? "bg-primary/60"
+                      : "bg-muted"
+                )}
               />
-            )}
-
-            {field.type === "country-multi" && (
-              <CountryMultiCombobox
-                value={multiSelects[field.name] ?? []}
-                onChange={(v) => {
-                  setMultiSelects((prev) => ({ ...prev, [field.name]: v }));
-                  setFieldErrors((prev) => {
-                    const next = { ...prev };
-                    delete next[field.name];
-                    return next;
-                  });
-                }}
-              />
-            )}
-
-            {field.type === "select" && field.name === "city" && (
-              CITIES[selectedCountry]?.length ? (
-                <Select
-                  value={selects[field.name] ?? ""}
-                  onValueChange={(v) => {
-                    setSelects((prev) => ({ ...prev, [field.name]: v }));
-                    setFieldErrors((prev) => {
-                      const next = { ...prev };
-                      delete next[field.name];
-                      return next;
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={ui("selectCity")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CITIES[selectedCountry].map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  value={selects[field.name] ?? ""}
-                  onChange={(e) => {
-                    setSelects((prev) => ({ ...prev, [field.name]: e.target.value }));
-                    setFieldErrors((prev) => {
-                      const next = { ...prev };
-                      delete next[field.name];
-                      return next;
-                    });
-                  }}
-                  placeholder={ui("enterCity")}
-                />
-              )
-            )}
-
-            {field.type === "select" && field.name !== "city" && (
-              <Select
-                value={selects[field.name] ?? ""}
-                onValueChange={(v) => {
-                  setSelects((prev) => ({ ...prev, [field.name]: v }));
-                  if (field.name === "country") setSelectedCountry(v);
-                  setFieldErrors((prev) => {
-                    const next = { ...prev };
-                    delete next[field.name];
-                    return next;
-                  });
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={`${ui("selectPlaceholder")} ${fieldLabel(field.name, field.label).toLowerCase()}`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(field.options ?? []).map((option) => (
-                    <SelectItem key={String(option)} value={String(option)}>
-                      {optionLabel(String(option))}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            {field.type === "textarea" && (
-              <div>
-                <Textarea
-                  {...register("bio")}
-                  placeholder={ui("bioPlaceholder")}
-                  rows={4}
-                  maxLength={500}
-                  onChange={(e) => {
-                    setValue("bio", e.target.value);
-                    setFieldErrors((prev) => {
-                      const next = { ...prev };
-                      delete next.bio;
-                      return next;
-                    });
-                  }}
-                />
-                <p className="text-xs text-muted-foreground mt-1 text-right">
-                  {(bio?.length ?? 0)}/500
-                </p>
-              </div>
-            )}
-
-            {field.type === "multi-select" && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {field.options?.map((option) => {
-                  const selected = (multiSelects[field.name] ?? []).includes(String(option));
-                  return (
-                    <label
-                      key={String(option)}
-                      className={cn(
-                        "flex items-center gap-2 rounded-xl border p-3 cursor-pointer transition-all duration-200 text-sm font-semibold",
-                        selected
-                          ? "border-primary bg-accent text-accent-foreground shadow-sm"
-                          : "border-border bg-input hover:border-primary/40 hover:bg-muted/50"
-                      )}
-                    >
-                      <Checkbox
-                        checked={selected}
-                        onCheckedChange={() => {
-                          toggleMultiSelect(field.name, String(option), field.maxSelect);
-                          setFieldErrors((prev) => {
-                            const next = { ...prev };
-                            delete next[field.name];
-                            return next;
-                          });
-                        }}
-                      />
-                      {optionLabel(String(option))}
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+            ))}
           </div>
-        ))}
+        )}
+      </CardHeader>
 
-        <Button onClick={handleFormSubmit} className="w-full sm:w-auto text-base font-semibold" size="lg">
-          {isLastFormStep
-            ? ui("submitAndReview")
-            : isLastAboutStep
-              ? ui("submitAndContinue")
-              : isPartnerStep
-                ? ui("saveAndContinueToPhoto")
-                : ui("saveAndContinue")}
-          <ChevronRight className="ml-2 h-4 w-4" />
-        </Button>
+      <CardContent className="space-y-8 pt-8">
+        <AnimatePresence mode="wait">
+          {fieldsToRender.map((field) => (
+            <motion.div
+              key={`${step.id}-${field.name}-${fieldIndex}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="space-y-4"
+            >
+              <Label className="text-lg sm:text-xl font-bold text-foreground leading-snug block">
+                {fieldLabel(field.name, field.label)}
+                {field.required && <span className="text-destructive ml-0.5">*</span>}
+              </Label>
+              {fieldErrors[field.name] && (
+                <p className="text-sm text-destructive font-medium">
+                  {translateError(fieldErrors[field.name], ui)}
+                </p>
+              )}
+              {renderFieldInput(field)}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 pt-2">
+          {focusMode && fieldIndex > 0 && (
+            <Button variant="ghost" onClick={goToPreviousField} className="sm:mr-auto">
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              {ui("previousQuestion")}
+            </Button>
+          )}
+
+          {focusMode && !isLastField ? (
+            <Button onClick={goToNextField} className="w-full sm:w-auto text-base font-semibold" size="lg">
+              {ui("nextQuestion")}
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              onClick={handleFormSubmit}
+              className="w-full sm:w-auto sm:ml-auto text-base font-semibold"
+              size="lg"
+            >
+              {isLastFormStep
+                ? ui("submitAndReview")
+                : isLastAboutStep
+                  ? ui("submitAndContinue")
+                  : isPartnerStep
+                    ? ui("saveAndContinueToPhoto")
+                    : ui("saveAndContinue")}
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

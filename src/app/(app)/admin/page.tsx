@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import {
@@ -89,6 +90,7 @@ function formatPaymentLabel(
 }
 
 export default function AdminPage() {
+  const router = useRouter();
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
@@ -121,6 +123,12 @@ export default function AdminPage() {
   const deleteUser = useMutation(api.admin.deleteUser);
   const setUserRole = useMutation(api.admin.setUserRole);
   const createAnnouncement = useMutation(api.admin.createAnnouncement);
+
+  useEffect(() => {
+    if (currentUser !== undefined && !isStaffRole(currentUser?.profile?.role)) {
+      router.replace("/dashboard");
+    }
+  }, [currentUser, router]);
 
   const handleAnnouncement = async () => {
     if (!announcement.title || !announcement.body) return;
@@ -341,7 +349,7 @@ export default function AdminPage() {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold">{user.name}</p>
+                        <p className="font-bold">{user.name}</p>
                         <Badge variant="outline" className="text-xs capitalize">{user.gender}</Badge>
                         {isOwnerRole(user.role) && (
                           <Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200">

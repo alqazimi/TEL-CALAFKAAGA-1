@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
@@ -19,20 +19,15 @@ import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { OptionPills } from "@/components/ui/option-pills";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAuthenticatedHomeRoute } from "@/lib/routes";
+import { createDetailsSchema } from "@/lib/form-schemas";
+import { useTranslation } from "@/lib/i18n/context";
 
-const detailsSchema = z.object({
-  name: z.string().min(2, "Full name is required"),
-  gender: z.enum(["male", "female"], { message: "Please select your gender" }),
-  phone: z
-    .string()
-    .min(8, "Phone number is required")
-    .regex(/^[\d\s+\-()]+$/, "Enter a valid phone number"),
-});
-
-type DetailsForm = z.infer<typeof detailsSchema>;
+type DetailsForm = z.infer<ReturnType<typeof createDetailsSchema>>;
 
 export default function RegisterDetailsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const detailsSchema = useMemo(() => createDetailsSchema(t), [t]);
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.currentUser);
   const completeDetails = useMutation(api.profiles.completeRegistrationDetails);
@@ -60,6 +55,22 @@ export default function RegisterDetailsPage() {
     }
   }, [authLoading, isAuthenticated, user?.profile, router]);
 
+  useEffect(() => {
+    const profile = user?.profile;
+    if (!profile) return;
+
+    if (profile.name && profile.name !== "User") {
+      setValue("name", profile.name);
+    }
+    if (profile.phone) {
+      setValue("phone", profile.phone);
+    }
+    if (profile.gender === "male" || profile.gender === "female") {
+      setGender(profile.gender);
+      setValue("gender", profile.gender);
+    }
+  }, [user?.profile, setValue]);
+
   const onSubmit = async (data: DetailsForm) => {
     setLoading(true);
     try {
@@ -68,11 +79,11 @@ export default function RegisterDetailsPage() {
         gender: data.gender,
         phone: data.phone,
       });
-      toast.success("Profile saved! Complete your payment to continue.");
+      toast.success(t("auth.registerDetailsSuccess"));
       router.push("/payment?welcome=true");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to save details."
+        error instanceof Error ? error.message : t("validation.saveDetailsFailed")
       );
     } finally {
       setLoading(false);
@@ -97,13 +108,13 @@ export default function RegisterDetailsPage() {
 
   return (
     <AuthShell
-      title="Your details"
-      description="Step 2 — all fields are required before you choose a payment plan"
+      title={t("auth.registerStep2Title")}
+      description={t("auth.registerStep2Desc")}
       footer={
         <p className="text-center text-sm text-muted-foreground">
-          Wrong account?{" "}
-          <Link href="/login" className="font-medium text-primary hover:underline">
-            Sign in
+          {t("auth.wrongAccount")}{" "}
+          <Link href="/login" className="font-semibold text-primary hover:underline">
+            {t("auth.signInLink")}
           </Link>
         </p>
       }
@@ -111,19 +122,19 @@ export default function RegisterDetailsPage() {
       <RegisterStepIndicator step={2} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <FormField label="Full Name" htmlFor="name" error={errors.name?.message} required>
+        <FormField label={t("auth.fullName")} htmlFor="name" error={errors.name?.message} required>
           <InputIconWrapper icon={<User className="h-4 w-4" />}>
             <Input
               id="name"
               className="pl-11"
               {...register("name")}
-              placeholder="Your full name"
+              placeholder={t("auth.namePlaceholder")}
               autoComplete="name"
             />
           </InputIconWrapper>
         </FormField>
 
-        <FormField label="Gender" error={errors.gender?.message} required>
+        <FormField label={t("auth.gender")} error={errors.gender?.message} required>
           <OptionPills
             value={gender}
             onChange={(v) => {
@@ -132,27 +143,27 @@ export default function RegisterDetailsPage() {
               setValue("gender", g, { shouldValidate: true });
             }}
             options={[
-              { value: "male", label: "Male" },
-              { value: "female", label: "Female" },
+              { value: "male", label: t("auth.male") },
+              { value: "female", label: t("auth.female") },
             ]}
           />
         </FormField>
 
-        <FormField label="Phone Number" htmlFor="phone" error={errors.phone?.message} required>
+        <FormField label={t("auth.phoneNumber")} htmlFor="phone" error={errors.phone?.message} required>
           <InputIconWrapper icon={<Phone className="h-4 w-4" />}>
             <Input
               id="phone"
               type="tel"
               className="pl-11"
               {...register("phone")}
-              placeholder="+1 234 567 8900"
+              placeholder={t("auth.phonePlaceholder")}
               autoComplete="tel"
             />
           </InputIconWrapper>
         </FormField>
 
         <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? "Saving..." : "Continue to Payment"}
+          {loading ? t("auth.savingDetails") : t("auth.continueToPayment")}
         </Button>
       </form>
     </AuthShell>
