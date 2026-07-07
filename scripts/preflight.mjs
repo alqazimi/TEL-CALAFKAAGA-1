@@ -146,6 +146,16 @@ if (useProd) {
         continue;
       }
 
+      if (
+        key === "AUTH_RESEND_KEY" &&
+        (value.length < 20 || value === "re_..." || value.includes("YOUR_RESEND"))
+      ) {
+        fail(
+          "AUTH_RESEND_KEY looks like a placeholder — run: npm run setup:resend:prod -- re_YOUR_REAL_KEY"
+        );
+        continue;
+      }
+
       pass(`${key} on Convex (production) = ${maskValue(key, value)}`);
     }
   }
