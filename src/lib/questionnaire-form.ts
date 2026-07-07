@@ -51,6 +51,7 @@ export function initFormState(
 
   if (profile.readyToRelocate) radios.readyToRelocate = profile.readyToRelocate;
   if (profile.marriageTimeline) radios.marriageTimeline = profile.marriageTimeline;
+  if (profile.loveLanguage) radios.loveLanguage = profile.loveLanguage;
 
   if (preferences) {
     if (preferences.minAge) selects.pref_minAge = String(preferences.minAge);
@@ -174,6 +175,15 @@ export function buildStepData(
   if (step.fields.some((f) => f.name === "hasChildren")) {
     const hasChildren = radios.hasChildren ?? getFieldValue("hasChildren", profile, radios);
     data.children = hasChildren === "Yes" ? 1 : 0;
+  }
+
+  // When the user won't marry someone with children, the "accept children"
+  // question is hidden — keep the stored preference consistent as "No".
+  if (
+    step.fields.some((f) => f.name === "pref_acceptChildren") &&
+    radios.marrySomeoneWithChildren === "No"
+  ) {
+    preferences.acceptChildren = "No";
   }
 
   if (Object.keys(preferences).length > 0) {

@@ -19,6 +19,7 @@ const PROFILE_FIELD_KEYS = new Set([
   "wantChildren",
   "readyToRelocate",
   "marriageTimeline",
+  "loveLanguage",
   "marrySomeoneWithChildren",
   "qualities",
   "hobbies",

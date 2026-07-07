@@ -26,6 +26,7 @@ export interface Profile {
   wantChildren?: string;
   readyToRelocate?: string;
   marriageTimeline?: string;
+  loveLanguage?: string;
   marrySomeoneWithChildren?: string;
   verified: boolean;
   role: "user" | "admin" | "owner";

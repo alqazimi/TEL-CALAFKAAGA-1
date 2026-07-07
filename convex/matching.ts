@@ -16,6 +16,7 @@ const EDUCATION_SCORES: Record<string, number> = {
 
 const TIMELINE_SCORES: Record<string, number> = {
   Immediately: 4,
+  "Within 3 months": 4,
   "Within 6 months": 3,
   "Within 1 year": 2,
   "No timeline": 1,
@@ -72,7 +73,9 @@ export function calculateCompatibility(
   score += Math.max(0, 10 - eduDiff * 2);
 
   // Children - 10 points
-  if (userPrefs.acceptChildren === "Yes") {
+  if (user.marrySomeoneWithChildren === "No") {
+    if (candidate.children === 0) score += 10;
+  } else if (userPrefs.acceptChildren === "Yes") {
     score += 10;
   } else if (userPrefs.acceptChildren === "Depends" && candidate.children === 0) {
     score += 10;
@@ -123,6 +126,7 @@ export interface Profile {
   qualities: string[];
   hobbies: string[];
   marriageTimeline: string;
+  marrySomeoneWithChildren?: string;
   gender: "male" | "female";
 }
 

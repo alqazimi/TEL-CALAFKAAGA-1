@@ -39,6 +39,7 @@ export async function createUserProfile(
     wantChildren: "",
     readyToRelocate: "",
     marriageTimeline: "",
+    loveLanguage: "",
     marrySomeoneWithChildren: "",
     qualities: [],
     hobbies: [],

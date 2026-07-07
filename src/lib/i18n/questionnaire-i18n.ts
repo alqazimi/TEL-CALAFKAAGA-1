@@ -84,6 +84,10 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     so: "Ma diyaar u tahay inaad guurto meel kale?",
   },
   marriageTimeline: { en: "Marriage Timeline", so: "Wakhtiga Guurka" },
+  loveLanguage: {
+    en: "What is your love language?",
+    so: "Waa maxay luuqadda jacaylkaaga?",
+  },
   bio: {
     en: "Tell us about yourself (max 500 characters)",
     so: "Noo sheeg wax kugu saabsan (ugu badnaan 500 xaraf)",
@@ -184,9 +188,19 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   Weekly: { en: "Weekly", so: "Toddobaadle" },
   // Marriage timeline
   Immediately: { en: "Immediately", so: "Isla markiiba" },
+  "Within 3 months": { en: "Within 3 months", so: "Muddo 3 bilood gudahood" },
   "Within 6 months": { en: "Within 6 months", so: "Muddo 6 bilood gudahood" },
   "Within 1 year": { en: "Within 1 year", so: "Muddo 1 sano gudaheed" },
   "No timeline": { en: "No timeline", so: "Wakhti go'an ma jiro" },
+  // Love languages
+  "Words of Affirmation": {
+    en: "Words of Affirmation",
+    so: "Erayada Xaqiijinta",
+  },
+  "Acts of Service": { en: "Acts of Service", so: "Ficilada Adeegga" },
+  "Receiving Gifts": { en: "Receiving Gifts", so: "Helida Hadiyadaha" },
+  "Quality Time": { en: "Quality Time", so: "Waqtiga Tayada Leh" },
+  "Physical Touch": { en: "Physical Touch", so: "Taabashada Jirka" },
   // Max distance
   "Same City": { en: "Same City", so: "Isla Magaalada" },
   "Same Country": { en: "Same Country", so: "Isla Dalka" },
@@ -255,6 +269,7 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
   Exercise: { en: "Exercise", so: "Jimicsi" },
   "Ready to Relocate": { en: "Ready to Relocate", so: "Diyaar u ah Guuritaan" },
   "Marriage Timeline": { en: "Marriage Timeline", so: "Wakhtiga Guurka" },
+  "Love Language": { en: "Love Language", so: "Luuqadda Jacaylka" },
   Bio: { en: "Bio", so: "Faahfaahin" },
   Qualities: { en: "Qualities", so: "Sifooyin" },
   Hobbies: { en: "Hobbies", so: "Hiwaayado" },

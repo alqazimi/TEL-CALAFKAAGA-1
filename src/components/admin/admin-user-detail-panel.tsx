@@ -230,7 +230,7 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                   items={[
                     { label: "Ready to Relocate", value: detail.profile.readyToRelocate || "—" },
                     { label: "Marriage Timeline", value: detail.profile.marriageTimeline || "—" },
-                    { label: "Bio", value: detail.profile.bio || "—" },
+                    { label: "Love Language", value: detail.profile.loveLanguage || "—" },
                     {
                       label: "Qualities",
                       value: detail.profile.qualities?.length

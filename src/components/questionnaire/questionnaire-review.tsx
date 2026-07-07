@@ -128,7 +128,7 @@ export function QuestionnaireReview({
   const aboutItems = [
     { label: "Ready to Relocate", value: profile.readyToRelocate || "—" },
     { label: "Marriage Timeline", value: profile.marriageTimeline || "—" },
-    { label: "Bio", value: profile.bio || "—" },
+    { label: "Love Language", value: profile.loveLanguage ? optionLabel(profile.loveLanguage) : "—" },
     { label: "Qualities", value: translateList(profile.qualities) },
     { label: "Hobbies", value: translateList(profile.hobbies) },
   ];
@@ -145,7 +145,9 @@ export function QuestionnaireReview({
         { label: "Preferred Religious Level", value: preferences.religiousLevel || "—" },
         { label: "Accept Divorcee", value: preferences.acceptDivorcee || "—" },
         { label: "Accept Widow", value: preferences.acceptWidow || "—" },
-        { label: "Accept Children", value: preferences.acceptChildren || "—" },
+        ...(profile.marrySomeoneWithChildren !== "No"
+          ? [{ label: "Accept Children", value: preferences.acceptChildren || "—" }]
+          : []),
         { label: "Max Distance", value: preferences.maxDistance || "—" },
       ]
       : []),

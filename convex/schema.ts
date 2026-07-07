@@ -46,6 +46,7 @@ export default defineSchema({
     wantChildren: v.string(),
     readyToRelocate: v.string(),
     marriageTimeline: v.string(),
+    loveLanguage: v.optional(v.string()),
     marrySomeoneWithChildren: v.string(),
     qualities: v.array(v.string()),
     hobbies: v.array(v.string()),

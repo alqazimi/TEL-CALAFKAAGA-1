@@ -68,7 +68,7 @@ export function isAboutYouComplete(profile: Profile): boolean {
   return (
     !!profile.readyToRelocate &&
     !!profile.marriageTimeline &&
-    !!profile.bio?.trim() &&
+    !!profile.loveLanguage &&
     (profile.qualities?.length ?? 0) > 0 &&
     (profile.hobbies?.length ?? 0) > 0
   );
@@ -86,6 +86,8 @@ export function isPreferencesComplete(
   const divorceeOk =
     profile.maritalStatus === "Divorced" || !!prefs.acceptDivorcee;
   const widowOk = profile.maritalStatus === "Widowed" || !!prefs.acceptWidow;
+  const childrenOk =
+    profile.marrySomeoneWithChildren === "No" || !!prefs.acceptChildren;
   return (
     !!profile.spousePrayerImportance &&
     !!profile.marrySomeoneWithChildren &&
@@ -95,7 +97,7 @@ export function isPreferencesComplete(
     prefs.maxHeight !== undefined &&
     !!prefs.educationLevel &&
     !!prefs.religiousLevel &&
-    !!prefs.acceptChildren &&
+    childrenOk &&
     !!prefs.maxDistance &&
     (prefs.preferredCountries?.length ?? 0) > 0 &&
     divorceeOk &&
@@ -152,7 +154,7 @@ export function getSectionStatus(
     education: !!profile.education || !!profile.occupation,
     marriage: !!profile.maritalStatus,
     lifestyle: !!profile.smokes,
-    about: !!profile.readyToRelocate || !!profile.marriageTimeline || !!profile.bio?.trim(),
+    about: !!profile.readyToRelocate || !!profile.marriageTimeline || !!profile.loveLanguage,
     preferences:
       !!profile.spousePrayerImportance ||
       !!prefs?.educationLevel ||

@@ -84,10 +84,18 @@ export const FREQUENCY = ["Never", "Sometimes", "Yes"] as const;
 export const EXERCISE = ["Daily", "Weekly", "Rarely", "Never"] as const;
 
 export const MARRIAGE_TIMELINE = [
-  "Immediately",
+  "Within 3 months",
   "Within 6 months",
   "Within 1 year",
   "No timeline",
+] as const;
+
+export const LOVE_LANGUAGES = [
+  "Words of Affirmation",
+  "Acts of Service",
+  "Receiving Gifts",
+  "Quality Time",
+  "Physical Touch",
 ] as const;
 
 export const MAX_DISTANCE = [
