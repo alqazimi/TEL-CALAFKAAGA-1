@@ -21,6 +21,7 @@ import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-re
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX } from "@/components/questionnaire/steps";
+import { hasPaidAccess } from "@/lib/access";
 
 const REVIEW_STEP_INDEX = STEPS.length;
 
@@ -139,7 +140,7 @@ export default function QuestionnairePage() {
     );
   }
 
-  if (!profile.hasPaid && !isEditMode) {
+  if (!hasPaidAccess(profile) && !isEditMode) {
     return (
       <DashboardLayout>
         <PaymentGate

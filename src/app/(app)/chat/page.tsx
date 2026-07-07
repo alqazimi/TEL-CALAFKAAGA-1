@@ -20,6 +20,7 @@ import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { Conversation, ChatMessage, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
+import { hasPaidAccess } from "@/lib/access";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -171,7 +172,7 @@ export default function ChatPage() {
     );
   }
 
-  if (profile && !profile.hasPaid) {
+  if (profile && !hasPaidAccess(profile)) {
     return (
       <DashboardLayout>
         <PaymentGate />

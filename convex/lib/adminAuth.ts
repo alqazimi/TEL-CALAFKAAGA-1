@@ -1,9 +1,15 @@
 import { QueryCtx, MutationCtx } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
+import { hasPaidAccess, isOwnerRole, isStaffRole } from "./roles";
 
-export async function countAdmins(ctx: QueryCtx | MutationCtx): Promise<number> {
+export async function countStaff(ctx: QueryCtx | MutationCtx): Promise<number> {
   const profiles = await ctx.db.query("profiles").collect();
-  return profiles.filter((p) => p.role === "admin").length;
+  return profiles.filter((p) => isStaffRole(p.role)).length;
+}
+
+export async function countOwners(ctx: QueryCtx | MutationCtx): Promise<number> {
+  const profiles = await ctx.db.query("profiles").collect();
+  return profiles.filter((p) => isOwnerRole(p.role)).length;
 }
 
 export async function getProfileForUser(
@@ -16,15 +22,29 @@ export async function getProfileForUser(
     .unique();
 }
 
+/** Admin panel access: owner or admin. */
 export async function requireAdmin(ctx: QueryCtx | MutationCtx, userId: Id<"users">) {
   const profile = await getProfileForUser(ctx, userId);
 
-  if (!profile || profile.role !== "admin") {
+  if (!profile || !isStaffRole(profile.role)) {
     throw new Error("Unauthorized");
   }
 
   return profile;
 }
+
+/** Role management: owner only. */
+export async function requireOwner(ctx: QueryCtx | MutationCtx, userId: Id<"users">) {
+  const profile = await getProfileForUser(ctx, userId);
+
+  if (!profile || !isOwnerRole(profile.role)) {
+    throw new Error("Only the owner can manage admin roles.");
+  }
+
+  return profile;
+}
+
+export { hasPaidAccess };
 
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -57,7 +77,7 @@ export function verifyBootstrapCredentials(secret: string, userEmail: string | u
   }
 
   if (normalizeEmail(userEmail) !== normalizeEmail(expectedEmail)) {
-    throw new Error("This account is not authorized to claim the first admin role.");
+    throw new Error("This account is not authorized to claim the owner role.");
   }
 
   if (!secretsMatch(secret, expectedSecret)) {

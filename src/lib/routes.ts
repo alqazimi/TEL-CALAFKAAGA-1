@@ -39,6 +39,8 @@ export function isMarketingRoute(pathname: string): boolean {
   return !isAppShellRoute(pathname) && !isAuthRoute(pathname);
 }
 
+import { hasPaidAccess } from "./access";
+
 /** Where signed-in users should land instead of the marketing homepage. */
 export function getAuthenticatedHomeRoute(
   profile:
@@ -46,6 +48,7 @@ export function getAuthenticatedHomeRoute(
         registrationComplete?: boolean;
         questionnaireComplete?: boolean;
         hasPaid?: boolean;
+        role?: string;
       }
     | null
     | undefined
@@ -53,7 +56,7 @@ export function getAuthenticatedHomeRoute(
   if (profile?.registrationComplete === false) {
     return "/register/details";
   }
-  if (!profile?.hasPaid) {
+  if (!hasPaidAccess(profile)) {
     return "/payment";
   }
   if (!profile?.questionnaireComplete) {

@@ -15,6 +15,7 @@ import {
   Megaphone,
   Shield,
   ShieldOff,
+  Crown,
 } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -30,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { isOwnerRole, isStaffRole } from "@/lib/access";
 
 export default function AdminPage() {
   const [search, setSearch] = useState("");
@@ -85,6 +87,7 @@ export default function AdminPage() {
   }
 
   const currentProfileId = currentUser?.profile?._id;
+  const canManageRoles = stats.isOwner;
 
   const statCards = [
     { label: "Total Users", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
@@ -98,7 +101,14 @@ export default function AdminPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+          {stats.isOwner && (
+            <p className="text-sm text-muted-foreground mt-1">
+              You are the owner — you can promote users to admin.
+            </p>
+          )}
+        </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {statCards.map((stat) => (
@@ -142,6 +152,12 @@ export default function AdminPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium">{user.name}</p>
                         <Badge variant="outline" className="text-xs capitalize">{user.gender}</Badge>
+                        {isOwnerRole(user.role) && (
+                          <Badge className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                            <Crown className="h-3 w-3 mr-1" />
+                            Owner
+                          </Badge>
+                        )}
                         {user.role === "admin" && (
                           <Badge className="text-xs bg-primary/10 text-primary">Admin</Badge>
                         )}
@@ -151,24 +167,26 @@ export default function AdminPage() {
                       <p className="text-sm text-gray-500">{user.country} · {user.city}</p>
                     </div>
                     <div className="flex gap-1">
-                      {user.role === "admin" ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Remove admin"
-                          onClick={() => void handleRoleChange(user._id, "user")}
-                        >
-                          <ShieldOff className="h-4 w-4 text-amber-600" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Make admin"
-                          onClick={() => void handleRoleChange(user._id, "admin")}
-                        >
-                          <Shield className="h-4 w-4 text-primary" />
-                        </Button>
+                      {canManageRoles && !isOwnerRole(user.role) && (
+                        user.role === "admin" ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Remove admin"
+                            onClick={() => void handleRoleChange(user._id, "user")}
+                          >
+                            <ShieldOff className="h-4 w-4 text-amber-600" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Make admin"
+                            onClick={() => void handleRoleChange(user._id, "admin")}
+                          >
+                            <Shield className="h-4 w-4 text-primary" />
+                          </Button>
+                        )
                       )}
                       {!user.approved && (
                         <Button
@@ -185,10 +203,11 @@ export default function AdminPage() {
                         size="icon"
                         title={user.banned ? "Unban user" : "Ban user"}
                         onClick={() => banUser({ profileId: user._id, banned: !user.banned })}
+                        disabled={isOwnerRole(user.role)}
                       >
                         <Ban className={`h-4 w-4 ${user.banned ? "text-primary" : "text-destructive"}`} />
                       </Button>
-                      {user.role !== "admin" && user._id !== currentProfileId && (
+                      {!isStaffRole(user.role) && user._id !== currentProfileId && (
                         <Button
                           variant="ghost"
                           size="icon"

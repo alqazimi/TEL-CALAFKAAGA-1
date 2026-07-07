@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { isStaffRole } from "@/lib/access";
 import { calculateProfileProgress } from "@/lib/profile-progress";
 
 const iconMap = {
@@ -95,7 +96,7 @@ export function DashboardSidebar() {
             );
           })}
 
-          {user?.profile?.role === "admin" && (
+          {isStaffRole(user?.profile?.role) && (
             <Link
               href="/admin"
               className={cn(

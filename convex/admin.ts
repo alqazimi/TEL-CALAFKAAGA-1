@@ -1,19 +1,20 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { Id } from "./_generated/dataModel";
 import {
-  countAdmins,
+  countStaff,
   getProfileForUser,
   normalizeEmail,
   requireAdmin,
+  requireOwner,
   verifyBootstrapCredentials,
 } from "./lib/adminAuth";
+import { isOwnerRole, isStaffRole } from "./lib/roles";
 
 export const hasAnyAdmin = query({
   args: {},
   handler: async (ctx) => {
-    return (await countAdmins(ctx)) > 0;
+    return (await countStaff(ctx)) > 0;
   },
 });
 
@@ -22,11 +23,15 @@ export const getBootstrapStatus = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      return { hasAdmins: await countAdmins(ctx) > 0, canClaim: false, reason: "not_authenticated" as const };
+      return {
+        hasAdmins: (await countStaff(ctx)) > 0,
+        canClaim: false,
+        reason: "not_authenticated" as const,
+      };
     }
 
-    const hasAdmins = (await countAdmins(ctx)) > 0;
-    if (hasAdmins) {
+    const hasStaff = (await countStaff(ctx)) > 0;
+    if (hasStaff) {
       return { hasAdmins: true, canClaim: false, reason: "admins_exist" as const };
     }
 
@@ -56,8 +61,8 @@ export const claimFirstAdmin = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    if ((await countAdmins(ctx)) > 0) {
-      throw new Error("An admin already exists.");
+    if ((await countStaff(ctx)) > 0) {
+      throw new Error("An owner or admin already exists.");
     }
 
     const user = await ctx.db.get(userId);
@@ -66,7 +71,7 @@ export const claimFirstAdmin = mutation({
     const profile = await getProfileForUser(ctx, userId);
     if (!profile) throw new Error("Profile not found.");
 
-    await ctx.db.patch(profile._id, { role: "admin" });
+    await ctx.db.patch(profile._id, { role: "owner", hasPaid: true });
     return { success: true };
   },
 });
@@ -80,25 +85,16 @@ export const setUserRole = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    const adminProfile = await requireAdmin(ctx, userId);
+    await requireOwner(ctx, userId);
+
     const targetProfile = await ctx.db.get(args.profileId);
     if (!targetProfile) throw new Error("Profile not found.");
 
+    if (isOwnerRole(targetProfile.role)) {
+      throw new Error("The owner role cannot be changed.");
+    }
+
     if (targetProfile.role === args.role) return;
-
-    if (targetProfile.role === "admin" && args.role === "user") {
-      const adminCount = await countAdmins(ctx);
-      if (adminCount <= 1) {
-        throw new Error("Cannot remove the last admin.");
-      }
-    }
-
-    if (targetProfile._id === adminProfile._id && args.role === "user") {
-      const adminCount = await countAdmins(ctx);
-      if (adminCount <= 1) {
-        throw new Error("You cannot remove your own admin access while you are the only admin.");
-      }
-    }
 
     await ctx.db.patch(args.profileId, { role: args.role });
   },
@@ -110,14 +106,13 @@ export const getStats = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    await requireAdmin(ctx, userId);
+    const caller = await getProfileForUser(ctx, userId);
+    if (!caller || !isStaffRole(caller.role)) return null;
 
     const profiles = await ctx.db.query("profiles").collect();
     const matches = await ctx.db.query("matches").collect();
     const messages = await ctx.db.query("messages").collect();
-    const payments = await ctx.db
-      .query("payments")
-      .collect();
+    const payments = await ctx.db.query("payments").collect();
 
     const completedPayments = payments.filter((p) => p.status === "completed");
     const revenue = completedPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -131,6 +126,7 @@ export const getStats = query({
       revenue,
       pendingApproval: profiles.filter((p) => !p.approved).length,
       bannedUsers: profiles.filter((p) => p.banned).length,
+      isOwner: isOwnerRole(caller.role),
     };
   },
 });
@@ -185,6 +181,12 @@ export const banUser = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     await requireAdmin(ctx, userId);
+
+    const target = await ctx.db.get(args.profileId);
+    if (target && isOwnerRole(target.role)) {
+      throw new Error("Cannot ban the owner account.");
+    }
+
     await ctx.db.patch(args.profileId, { banned: args.banned });
   },
 });
@@ -199,8 +201,8 @@ export const deleteUser = mutation({
     const profile = await ctx.db.get(args.profileId);
     if (!profile) return;
 
-    if (profile.role === "admin") {
-      throw new Error("Cannot delete an admin account. Remove admin access first.");
+    if (isStaffRole(profile.role)) {
+      throw new Error("Cannot delete an admin or owner account. Remove their role first.");
     }
 
     const targetUserId = profile.userId;
@@ -317,17 +319,13 @@ export const getAnalytics = query({
       matchRate:
         profiles.length > 0
           ? Math.round(
-              (matches.filter((m) => m.status === "active").length /
-                profiles.length) *
-                100
+              (matches.filter((m) => m.status === "active").length / profiles.length) * 100
             )
           : 0,
       conversionRate:
         profiles.length > 0
           ? Math.round(
-              (payments.filter((p) => p.status === "completed").length /
-                profiles.length) *
-                100
+              (payments.filter((p) => p.status === "completed").length / profiles.length) * 100
             )
           : 0,
     };

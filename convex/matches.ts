@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireActiveProfile, requireAuthUserId } from "./lib/access";
+import { hasPaidAccess } from "./lib/roles";
 
 export const getMatches = query({
   args: {
@@ -26,7 +27,7 @@ export const getMatches = query({
       .unique();
 
     if (!myProfile?.questionnaireComplete) return [];
-    if (!myProfile.hasPaid) return [];
+    if (!hasPaidAccess(myProfile)) return [];
 
     const scores = await ctx.db
       .query("compatibilityScores")
@@ -106,7 +107,7 @@ export const likeUser = mutation({
     if (!myProfile.questionnaireComplete) {
       throw new Error("Complete your questionnaire first");
     }
-    if (!myProfile.hasPaid) {
+    if (!hasPaidAccess(myProfile)) {
       throw new Error("Complete payment to like profiles");
     }
 

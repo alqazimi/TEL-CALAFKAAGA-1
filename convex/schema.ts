@@ -35,7 +35,7 @@ export default defineSchema({
     bio: v.string(),
     profileImageId: v.optional(v.id("_storage")),
     verified: v.boolean(),
-    role: v.union(v.literal("user"), v.literal("admin")),
+    role: v.union(v.literal("user"), v.literal("admin"), v.literal("owner")),
     phone: v.optional(v.string()),
     prayerFrequency: v.string(),
     spousePrayerImportance: v.optional(v.string()),

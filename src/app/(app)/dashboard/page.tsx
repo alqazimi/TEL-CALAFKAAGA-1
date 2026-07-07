@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
+import { hasPaidAccess } from "@/lib/access";
 
 export default function DashboardPage() {
   const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
@@ -40,7 +41,7 @@ export default function DashboardPage() {
   const profile = user?.profile;
   const firstName = profile?.name?.split(" ")[0] ?? "there";
   const isComplete = profile?.questionnaireComplete ?? false;
-  const hasPaid = profile?.hasPaid ?? false;
+  const hasPaid = hasPaidAccess(profile);
 
   return (
     <DashboardLayout>

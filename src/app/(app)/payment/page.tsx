@@ -9,6 +9,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import { useTranslation } from "@/lib/i18n/context";
+import { hasPaidAccess } from "@/lib/access";
 import { toast } from "sonner";
 
 export default function PaymentPage() {
@@ -30,12 +31,12 @@ export default function PaymentPage() {
       router.replace("/register/details");
       return;
     }
-    if (profile?.hasPaid) {
+    if (profile && hasPaidAccess(profile)) {
       router.replace(
         profile.questionnaireComplete ? "/dashboard" : "/questionnaire"
       );
     }
-  }, [profile?.registrationComplete, profile?.hasPaid, profile?.questionnaireComplete, router]);
+  }, [profile?.registrationComplete, profile?.hasPaid, profile?.role, profile?.questionnaireComplete, router]);
 
   if (profile === undefined) {
     return (
@@ -56,7 +57,7 @@ export default function PaymentPage() {
     );
   }
 
-  if (profile.hasPaid) {
+  if (hasPaidAccess(profile)) {
     return (
       <DashboardLayout>
         <div className="max-w-lg mx-auto text-center py-16">

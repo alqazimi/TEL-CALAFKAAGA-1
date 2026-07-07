@@ -9,6 +9,7 @@ import {
   PERSONAL_SUPPORT_AMOUNT_CENTS,
   REGISTRATION_AMOUNT_CENTS,
 } from "./payments";
+import { hasPaidAccess } from "./lib/roles";
 
 const registrationTierValidator = v.union(
   v.literal("basic"),
@@ -50,7 +51,7 @@ export const createRegistrationCheckout = action({
 
     if (!profile) throw new Error("Profile not found");
     if (profile.banned) throw new Error("Account suspended");
-    if (profile.hasPaid) {
+    if (hasPaidAccess(profile)) {
       throw new Error("Already paid");
     }
 

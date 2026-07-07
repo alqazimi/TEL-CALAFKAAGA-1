@@ -27,6 +27,7 @@ import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
+import { hasPaidAccess } from "@/lib/access";
 
 export default function MatchesPage() {
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -80,7 +81,7 @@ export default function MatchesPage() {
     );
   }
 
-  if (profile && !profile.hasPaid) {
+  if (profile && !hasPaidAccess(profile)) {
     return (
       <DashboardLayout>
         <PaymentGate />

@@ -21,6 +21,7 @@ import { api } from "../../../convex/_generated/api";
 import type { CurrentUser } from "@/types";
 import { useNavLinks } from "@/lib/i18n/hooks";
 import { useTranslation } from "@/lib/i18n/context";
+import { isStaffRole } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -164,7 +165,7 @@ export function AppShellHeader() {
                     <User className="h-4 w-4" />
                     {t("app.myProfile")}
                   </Link>
-                  {user?.profile?.role === "admin" && (
+                  {isStaffRole(user?.profile?.role) && (
                     <Link
                       href="/admin"
                       onClick={() => setAccountOpen(false)}

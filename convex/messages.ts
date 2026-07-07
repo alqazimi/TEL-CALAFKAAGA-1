@@ -7,6 +7,7 @@ import {
   requireAuthUserId,
   requireConversationParticipant,
 } from "./lib/access";
+import { hasPaidAccess } from "./lib/roles";
 
 export const getConversations = query({
   args: {},
@@ -33,7 +34,7 @@ export const getConversations = query({
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .unique();
 
-    const hasPaid = myProfile?.hasPaid ?? false;
+    const paid = myProfile ? hasPaidAccess(myProfile) : false;
 
     return await Promise.all(
       activeMatches.map(async (m) => {
@@ -77,7 +78,7 @@ export const getConversations = query({
         return {
           matchId: m._id,
           conversationId: conversation?._id,
-          chatUnlocked: hasPaid || m.chatUnlocked,
+          chatUnlocked: paid || m.chatUnlocked,
           profile: profile
             ? { name: profile.name, imageUrl, userId: otherId }
             : null,
@@ -141,7 +142,7 @@ export const sendMessage = mutation({
       .unique();
 
     const match = await ctx.db.get(conversation.matchId);
-    if (!myProfile?.hasPaid && !match?.chatUnlocked) {
+    if (myProfile && !hasPaidAccess(myProfile) && !match?.chatUnlocked) {
       throw new Error("Please complete payment to unlock chat.");
     }
 

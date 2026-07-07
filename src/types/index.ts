@@ -27,7 +27,7 @@ export interface Profile {
   marriageTimeline?: string;
   marrySomeoneWithChildren?: string;
   verified: boolean;
-  role: "user" | "admin";
+  role: "user" | "admin" | "owner";
   phone?: string;
   qualities: string[];
   hobbies: string[];
@@ -102,6 +102,7 @@ export interface AdminStats {
   revenue: number;
   pendingApproval: number;
   bannedUsers: number;
+  isOwner: boolean;
 }
 
 export interface AdminAnalytics {
