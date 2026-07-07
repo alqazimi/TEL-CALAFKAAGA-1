@@ -19,6 +19,7 @@ import { Progress } from "@/components/ui/progress";
 import { QuestionnaireStep } from "@/components/questionnaire/questionnaire-step";
 import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-review";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
+import { PaymentGate } from "@/components/payment/payment-gate";
 import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX } from "@/components/questionnaire/steps";
 
 const REVIEW_STEP_INDEX = STEPS.length;
@@ -134,6 +135,17 @@ export default function QuestionnairePage() {
             Go to Dashboard
           </Button>
         </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!profile.hasPaid && !isEditMode) {
+    return (
+      <DashboardLayout>
+        <PaymentGate
+          title="Complete payment first"
+          description="Pay the registration fee to unlock your profile questionnaire."
+        />
       </DashboardLayout>
     );
   }

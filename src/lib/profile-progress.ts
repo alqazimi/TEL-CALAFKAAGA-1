@@ -64,7 +64,13 @@ export function isLifestyleComplete(profile: Profile): boolean {
 }
 
 export function isAboutYouComplete(profile: Profile): boolean {
-  return !!profile.readyToRelocate && !!profile.marriageTimeline;
+  return (
+    !!profile.readyToRelocate &&
+    !!profile.marriageTimeline &&
+    !!profile.bio?.trim() &&
+    (profile.qualities?.length ?? 0) > 0 &&
+    (profile.hobbies?.length ?? 0) > 0
+  );
 }
 
 export function isPreferencesComplete(
@@ -86,6 +92,7 @@ export function isPreferencesComplete(
     !!prefs.religiousLevel &&
     !!prefs.acceptChildren &&
     !!prefs.maxDistance &&
+    (prefs.preferredCountries?.length ?? 0) > 0 &&
     divorceeOk &&
     widowOk
   );
@@ -139,11 +146,12 @@ export function getSectionStatus(
     education: !!profile.education || !!profile.occupation,
     marriage: !!profile.maritalStatus,
     lifestyle: !!profile.smokes || !!profile.drinksAlcohol,
-    about: !!profile.readyToRelocate || !!profile.marriageTimeline,
+    about: !!profile.readyToRelocate || !!profile.marriageTimeline || !!profile.bio?.trim(),
     preferences:
       !!profile.spousePrayerImportance ||
       !!prefs?.educationLevel ||
-      !!prefs?.religiousLevel,
+      !!prefs?.religiousLevel ||
+      (prefs?.preferredCountries?.length ?? 0) > 0,
   };
 
   if (partialChecks[sectionId] || step >= sectionStep) return "in_progress";

@@ -21,6 +21,7 @@ import type * as migrations from "../migrations.js";
 import type * as notifications from "../notifications.js";
 import type * as payments from "../payments.js";
 import type * as profiles from "../profiles.js";
+import type * as stripeActions from "../stripeActions.js";
 import type * as users from "../users.js";
 
 import type {
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   notifications: typeof notifications;
   payments: typeof payments;
   profiles: typeof profiles;
+  stripeActions: typeof stripeActions;
   users: typeof users;
 }>;
 

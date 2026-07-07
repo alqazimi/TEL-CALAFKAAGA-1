@@ -24,7 +24,7 @@ export default function TermsPage() {
         </section>
         <section>
           <h2 className="text-xl font-bold text-foreground">4. Payments</h2>
-          <p>Chat unlock requires a one-time payment of $15. All payments are processed securely through Stripe. Refunds are handled on a case-by-case basis.</p>
+          <p>Registration requires a one-time payment of $15. This unlocks full access to matching and messaging. All payments are processed securely through Stripe. Refunds are handled on a case-by-case basis.</p>
         </section>
         <section>
           <h2 className="text-xl font-bold text-foreground">5. Account Termination</h2>

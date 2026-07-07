@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MatchFilters } from "@/components/matches/match-filters";
 import { MatchProfileModal } from "@/components/matches/match-profile-modal";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
+import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 
@@ -75,6 +76,14 @@ export default function MatchesPage() {
             <Skeleton key={i} className="h-80" />
           ))}
         </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (profile && !profile.hasPaid) {
+    return (
+      <DashboardLayout>
+        <PaymentGate />
       </DashboardLayout>
     );
   }

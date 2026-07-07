@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   User,
@@ -21,6 +20,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { AuthRegisterCta } from "@/components/auth/auth-register-cta";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { REGISTRATION_PRICE, WHATSAPP_CALL_PRICE } from "@/lib/constants";
 
 const fadeUp = {
@@ -66,8 +66,8 @@ const whyPayReasons = [
 const steps = [
   {
     icon: UserPlus,
-    title: "Join & Register",
-    desc: "Is diiwaangeli oo buuxi profile-kaaga.",
+    title: "Join & Pay",
+    desc: "Is diiwaangeli oo bixi lacagta diiwaangelinta.",
   },
   {
     icon: Search,
@@ -98,22 +98,19 @@ const stories = [
     names: "Ayaan & Farhan",
     quote:
       "Alhamdulillah, waxaan ku helay lammaanaha noloshayda CALAF. Adeegga waa mid aad u wanaagsan.",
-    image:
-      "https://images.unsplash.com/photo-1522673603000-1dd8f1319273?w=200&h=200&fit=crop&crop=faces",
+    initials: "AF",
   },
   {
     names: "Halima & Yusuf",
     quote:
       "CALAF waxay naga caawisay inaan helno qof ku habboon diinta iyo dhaqankeena.",
-    image:
-      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=200&h=200&fit=crop&crop=faces",
+    initials: "HY",
   },
   {
     names: "Sahra & Ahmed",
     quote:
       "Adeeg xirfad leh oo ixtiraam leh. Waxaan ku talin lahaa qof kasta oo doonaya guur.",
-    image:
-      "https://images.unsplash.com/photo-1516589178581-6d7833a4d266?w=200&h=200&fit=crop&crop=faces",
+    initials: "SA",
   },
 ];
 
@@ -121,17 +118,9 @@ export function LandingPage() {
   return (
     <div className="overflow-hidden">
       {/* Hero */}
-      <section className="relative min-h-[600px] flex items-center">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1516589178581-6d7833a4d266?w=1920&h=1080&fit=crop"
-            alt="Couple looking at each other"
-            fill
-            className="object-cover object-center"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/70 to-navy/40 dark:from-black/90 dark:via-black/75 dark:to-black/50" />
-        </div>
+      <section className="relative min-h-[600px] flex items-center bg-gradient-to-br from-navy via-[#1a2744] to-primary/40 dark:from-black dark:via-navy dark:to-primary/20">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/70 to-navy/40 dark:from-black/90 dark:via-black/75 dark:to-black/50" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 w-full">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -356,14 +345,11 @@ export function LandingPage() {
                 className="rounded-2xl border border-border bg-card p-6 shadow-md text-left"
               >
                 <div className="flex items-center gap-4">
-                  <div className="relative h-16 w-16 overflow-hidden rounded-full">
-                    <Image
-                      src={story.image}
-                      alt={story.names}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
+                  <Avatar className="h-16 w-16 border-2 border-primary/20">
+                    <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+                      {story.initials}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <div className="flex gap-0.5">
                       {Array.from({ length: 5 }).map((_, i) => (

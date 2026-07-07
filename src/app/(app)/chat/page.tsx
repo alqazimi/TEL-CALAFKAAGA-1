@@ -17,6 +17,7 @@ import {
 import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 import { api } from "../../../../convex/_generated/api";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
+import { PaymentGate } from "@/components/payment/payment-gate";
 import type { Conversation, ChatMessage, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -28,7 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/utils";
-import { CHAT_UNLOCK_PRICE } from "@/lib/constants";
+import { REGISTRATION_PRICE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 function MessagesEmptyState() {
@@ -91,8 +92,6 @@ export default function ChatPage() {
   const markAsRead = useMutation(api.messages.markAsRead);
   const setTyping = useMutation(api.messages.setTyping);
   const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
-  const createCheckout = useMutation(api.payments.createCheckoutSession);
-  const completePayment = useMutation(api.payments.completePayment);
 
   const activeConv = conversations?.find((c) => c.conversationId === activeConversation);
   const myUserId = currentUser?.userId;
@@ -115,8 +114,8 @@ export default function ChatPage() {
       setMessage("");
       setShowEmoji(false);
     } catch (error) {
-      if (error instanceof Error && error.message.includes("not unlocked")) {
-        toast.error(`Chat requires a $${CHAT_UNLOCK_PRICE} payment to unlock.`);
+      if (error instanceof Error && error.message.includes("payment")) {
+        toast.error(`Complete your $${REGISTRATION_PRICE} registration to unlock chat.`);
       } else {
         toast.error("Failed to send message");
       }
@@ -131,23 +130,6 @@ export default function ChatPage() {
     typingTimeoutRef.current = setTimeout(() => {
       setTyping({ conversationId: activeConversation, isTyping: false });
     }, 2000);
-  };
-
-  const handleUnlockChat = async (matchId: Id<"matches">) => {
-    try {
-      const result = await createCheckout({ matchId });
-      if (result.alreadyPaid) {
-        toast.success("Chat unlocked!");
-        return;
-      }
-      await completePayment({
-        stripeSessionId: result.sessionId!,
-        matchId,
-      });
-      toast.success("Chat unlocked! Start messaging.");
-    } catch {
-      toast.error("Payment failed. Please try again.");
-    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,6 +165,14 @@ export default function ChatPage() {
         <ChatShell>
           <Skeleton className="flex-1 w-full rounded-none sm:rounded-2xl" />
         </ChatShell>
+      </DashboardLayout>
+    );
+  }
+
+  if (profile && !profile.hasPaid) {
+    return (
+      <DashboardLayout>
+        <PaymentGate />
       </DashboardLayout>
     );
   }
@@ -327,11 +317,12 @@ export default function ChatPage() {
                       </div>
                       <h3 className="text-lg font-semibold mb-2">Unlock chat</h3>
                       <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-                        Pay ${CHAT_UNLOCK_PRICE} once to message{" "}
-                        {activeConv.profile?.name?.split(" ")[0] ?? "your match"}.
+                        {`Complete your $${REGISTRATION_PRICE} registration to message ${
+                          activeConv.profile?.name?.split(" ")[0] ?? "your match"
+                        }.`}
                       </p>
-                      <Button onClick={() => handleUnlockChat(activeConv.matchId)}>
-                        Unlock for ${CHAT_UNLOCK_PRICE}
+                      <Button asChild>
+                        <Link href="/payment">{`Pay $${REGISTRATION_PRICE}`}</Link>
                       </Button>
                     </div>
                   </div>

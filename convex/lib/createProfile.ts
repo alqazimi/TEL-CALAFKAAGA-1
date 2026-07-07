@@ -45,6 +45,7 @@ export async function createUserProfile(
     questionnaireComplete: false,
     questionnaireStep: 1,
     lastSavedAt: undefined,
+    registrationComplete: false,
     hasPaid: false,
     banned: false,
     approved: true,
@@ -85,6 +86,9 @@ export async function ensureUserProfile(
     const backfill: Record<string, unknown> = {};
     if (existing.spousePrayerImportance === undefined) {
       backfill.spousePrayerImportance = PROFILE_DEFAULTS.spousePrayerImportance;
+    }
+    if (existing.registrationComplete === undefined) {
+      backfill.registrationComplete = true;
     }
     if (existing.questionnaireStep === undefined) {
       backfill.questionnaireStep = existing.questionnaireComplete

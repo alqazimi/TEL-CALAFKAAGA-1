@@ -178,6 +178,56 @@ export const completeQuestionnaire = mutation({
   },
 });
 
+export const completeRegistrationDetails = mutation({
+  args: {
+    name: v.string(),
+    gender: v.union(v.literal("male"), v.literal("female")),
+    phone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const trimmedName = args.name.trim();
+    const trimmedPhone = args.phone.trim();
+
+    if (trimmedName.length < 2) {
+      throw new Error("Full name is required");
+    }
+    if (trimmedPhone.length < 8) {
+      throw new Error("A valid phone number is required");
+    }
+
+    const profile = await ensureUserProfile(ctx, userId);
+
+    await ctx.db.patch(userId, {
+      name: trimmedName,
+      gender: args.gender,
+      phone: trimmedPhone,
+    });
+
+    await ctx.db.patch(profile._id, {
+      name: trimmedName,
+      gender: args.gender,
+      phone: trimmedPhone,
+      registrationComplete: true,
+    });
+
+    const prefs = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+
+    if (prefs) {
+      await ctx.db.patch(prefs._id, {
+        preferredGender: args.gender === "male" ? "female" : "male",
+      });
+    }
+
+    return profile._id;
+  },
+});
+
 export const updateProfile = mutation({
   args: {
     name: v.optional(v.string()),

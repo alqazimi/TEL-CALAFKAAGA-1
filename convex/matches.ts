@@ -25,6 +25,7 @@ export const getMatches = query({
       .unique();
 
     if (!myProfile?.questionnaireComplete) return [];
+    if (!myProfile.hasPaid) return [];
 
     const scores = await ctx.db
       .query("compatibilityScores")

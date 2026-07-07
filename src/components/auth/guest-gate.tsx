@@ -16,7 +16,11 @@ export function GuestGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace(getAuthenticatedHomeRoute(user?.profile ?? undefined));
+      if (user?.profile?.registrationComplete === false) {
+        router.replace("/register/details");
+      } else {
+        router.replace(getAuthenticatedHomeRoute(user?.profile ?? undefined));
+      }
     }
   }, [isAuthenticated, isLoading, router, user?.profile]);
 

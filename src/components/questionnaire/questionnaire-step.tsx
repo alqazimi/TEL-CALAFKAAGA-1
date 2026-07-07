@@ -24,7 +24,9 @@ import {
   buildStepData,
   initFormState,
   isFieldVisible,
+  validateStepFields,
 } from "@/lib/questionnaire-form";
+import { toast } from "sonner";
 import type { Preferences } from "@/lib/profile-progress";
 import type { Profile } from "@/types";
 import { CITIES } from "@/lib/constants";
@@ -54,6 +56,7 @@ export function QuestionnaireStep({
   const [multiSelects, setMultiSelects] = useState(initial.multiSelects);
   const [selects, setSelects] = useState(initial.selects);
   const [radios, setRadios] = useState(initial.radios);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const skipAutoSaveRef = useRef(true);
@@ -70,6 +73,7 @@ export function QuestionnaireStep({
     setSelects(state.selects);
     setRadios(state.radios);
     setValue("bio", state.bio);
+    setFieldErrors({});
     skipAutoSaveRef.current = true;
   }, [profileId, preferences, step.id, setValue]);
 
@@ -104,6 +108,13 @@ export function QuestionnaireStep({
   }, [triggerAutoSave]);
 
   const handleFormSubmit = () => {
+    const errors = validateStepFields(step, profile, formState);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      toast.error("Please answer all required questions before continuing.");
+      return;
+    }
+    setFieldErrors({});
     const data = buildStepData(step, profile, formState);
     onSubmit(data);
   };
@@ -161,12 +172,25 @@ export function QuestionnaireStep({
       <CardContent className="space-y-6">
         {visibleFields.map((field) => (
           <div key={field.name} className="space-y-3">
-            <Label className="text-sm font-medium">{field.label}</Label>
+            <Label className="text-sm font-medium">
+              {field.label}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
+            </Label>
+            {fieldErrors[field.name] && (
+              <p className="text-sm text-destructive">{fieldErrors[field.name]}</p>
+            )}
 
             {field.type === "radio" && (
               <RadioGroup
                 value={radios[field.name] ?? ""}
-                onValueChange={(v) => setRadios((prev) => ({ ...prev, [field.name]: v }))}
+                onValueChange={(v) => {
+                  setRadios((prev) => ({ ...prev, [field.name]: v }));
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[field.name];
+                    return next;
+                  });
+                }}
                 className="grid grid-cols-1 sm:grid-cols-2 gap-3"
               >
                 {field.options?.map((option) => (
@@ -195,6 +219,12 @@ export function QuestionnaireStep({
                     setSelectedCountry(v);
                     setSelects((prev) => ({ ...prev, city: "" }));
                   }
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[field.name];
+                    delete next.city;
+                    return next;
+                  });
                 }}
               />
             )}
@@ -202,9 +232,14 @@ export function QuestionnaireStep({
             {field.type === "country-multi" && (
               <CountryMultiCombobox
                 value={multiSelects[field.name] ?? []}
-                onChange={(v) =>
-                  setMultiSelects((prev) => ({ ...prev, [field.name]: v }))
-                }
+                onChange={(v) => {
+                  setMultiSelects((prev) => ({ ...prev, [field.name]: v }));
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[field.name];
+                    return next;
+                  });
+                }}
               />
             )}
 
@@ -212,9 +247,14 @@ export function QuestionnaireStep({
               CITIES[selectedCountry]?.length ? (
                 <Select
                   value={selects[field.name] ?? ""}
-                  onValueChange={(v) =>
-                    setSelects((prev) => ({ ...prev, [field.name]: v }))
-                  }
+                  onValueChange={(v) => {
+                    setSelects((prev) => ({ ...prev, [field.name]: v }));
+                    setFieldErrors((prev) => {
+                      const next = { ...prev };
+                      delete next[field.name];
+                      return next;
+                    });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select city" />
@@ -230,9 +270,14 @@ export function QuestionnaireStep({
               ) : (
                 <Input
                   value={selects[field.name] ?? ""}
-                  onChange={(e) =>
-                    setSelects((prev) => ({ ...prev, [field.name]: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    setSelects((prev) => ({ ...prev, [field.name]: e.target.value }));
+                    setFieldErrors((prev) => {
+                      const next = { ...prev };
+                      delete next[field.name];
+                      return next;
+                    });
+                  }}
                   placeholder="Enter your city"
                 />
               )
@@ -244,6 +289,11 @@ export function QuestionnaireStep({
                 onValueChange={(v) => {
                   setSelects((prev) => ({ ...prev, [field.name]: v }));
                   if (field.name === "country") setSelectedCountry(v);
+                  setFieldErrors((prev) => {
+                    const next = { ...prev };
+                    delete next[field.name];
+                    return next;
+                  });
                 }}
               >
                 <SelectTrigger>
@@ -266,6 +316,14 @@ export function QuestionnaireStep({
                   placeholder="Tell us about yourself..."
                   rows={4}
                   maxLength={500}
+                  onChange={(e) => {
+                    setValue("bio", e.target.value);
+                    setFieldErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.bio;
+                      return next;
+                    });
+                  }}
                 />
                 <p className="text-xs text-muted-foreground mt-1 text-right">
                   {(bio?.length ?? 0)}/500
@@ -289,9 +347,14 @@ export function QuestionnaireStep({
                     >
                       <Checkbox
                         checked={selected}
-                        onCheckedChange={() =>
-                          toggleMultiSelect(field.name, String(option), field.maxSelect)
-                        }
+                        onCheckedChange={() => {
+                          toggleMultiSelect(field.name, String(option), field.maxSelect);
+                          setFieldErrors((prev) => {
+                            const next = { ...prev };
+                            delete next[field.name];
+                            return next;
+                          });
+                        }}
                       />
                       {String(option)}
                     </label>

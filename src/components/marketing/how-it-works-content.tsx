@@ -10,27 +10,27 @@ import { Card, CardContent } from "@/components/ui/card";
 const steps = [
   {
     icon: UserPlus,
-    title: "Create Your Account",
+    title: "Register & Pay",
     description:
-      "Sign up with your email, verify your account, and set up your basic profile with name and gender.",
+      `Create your account, complete your details, and pay the one-time $15 registration fee.`,
   },
   {
     icon: ClipboardList,
     title: "Complete the Questionnaire",
     description:
-      "Answer our comprehensive 7-step questionnaire covering religion, education, lifestyle, and preferences.",
+      "Answer our comprehensive questionnaire covering religion, education, lifestyle, and partner preferences.",
   },
   {
     icon: Heart,
     title: "Discover Matches",
     description:
-      "Our compatibility algorithm finds your best matches above 70%. Browse profiles, view compatibility scores, and like the ones that interest you.",
+      "Our compatibility algorithm finds your best matches above 70%. View scores and like the profiles that interest you.",
   },
   {
     icon: MessageCircle,
     title: "Connect & Chat",
     description:
-      "When you both like each other, it's a match! Unlock chat with a one-time $15 payment and start your conversation.",
+      "When you both like each other, it's a match! Message your matches directly on the platform.",
   },
   {
     icon: Shield,

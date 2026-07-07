@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
+import { PaymentCheckoutButton } from "@/components/payment/payment-gate";
+import { REGISTRATION_PRICE } from "@/lib/constants";
 
 export default function DashboardPage() {
   const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
@@ -39,6 +41,7 @@ export default function DashboardPage() {
   const profile = user?.profile;
   const firstName = profile?.name?.split(" ")[0] ?? "there";
   const isComplete = profile?.questionnaireComplete ?? false;
+  const hasPaid = profile?.hasPaid ?? false;
 
   return (
     <DashboardLayout>
@@ -49,19 +52,35 @@ export default function DashboardPage() {
             Hello, {firstName}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {isComplete
-              ? "Here is a quick overview of your account."
-              : "Finish your profile to unlock matches and messaging."}
+            {!hasPaid
+              ? `Complete your $${REGISTRATION_PRICE} registration to continue.`
+              : isComplete
+                ? "Here is a quick overview of your account."
+                : "Finish your profile questionnaire to unlock matches."}
           </p>
         </div>
 
-        {/* Setup flow — incomplete only */}
-        {profile && !isComplete && (
+        {profile && !hasPaid && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p className="font-semibold">Step 1: Complete payment</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {`Pay $${REGISTRATION_PRICE} once to activate your account.`}
+                </p>
+              </div>
+              <PaymentCheckoutButton className="shrink-0" />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Setup flow — paid but questionnaire incomplete */}
+        {profile && hasPaid && !isComplete && (
           <ProfileCompletionCard profile={profile} preferences={preferences} />
         )}
 
         {/* Stats — complete only */}
-        {isComplete && (
+        {isComplete && hasPaid && (
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: "Matches", value: matches?.length ?? 0 },
@@ -79,7 +98,7 @@ export default function DashboardPage() {
         )}
 
         {/* Top matches */}
-        {isComplete && matches && matches.length > 0 && (
+        {isComplete && hasPaid && matches && matches.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Suggested for you</h2>
@@ -119,7 +138,7 @@ export default function DashboardPage() {
         )}
 
         {/* Empty state when complete but no matches */}
-        {isComplete && matches && matches.length === 0 && (
+        {isComplete && hasPaid && matches && matches.length === 0 && (
           <Card className="border-border border-dashed">
             <CardContent className="p-8 text-center">
               <p className="font-medium">No matches yet</p>

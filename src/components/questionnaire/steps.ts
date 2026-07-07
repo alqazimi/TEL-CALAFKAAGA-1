@@ -79,6 +79,7 @@ const ABOUT_YOU_STEPS: StepConfig[] = [
         type: "radio",
         options: ["Yes", "No"],
         condition: { field: "gender", value: "female" },
+        required: true,
       },
     ],
   },
@@ -142,9 +143,9 @@ const ABOUT_YOU_STEPS: StepConfig[] = [
     fields: [
       { name: "readyToRelocate", label: "Ready to relocate?", type: "radio", options: YES_NO_MAYBE, required: true },
       { name: "marriageTimeline", label: "Marriage Timeline", type: "radio", options: MARRIAGE_TIMELINE, required: true },
-      { name: "bio", label: "Tell us about yourself (max 500 characters)", type: "textarea", max: 500 },
-      { name: "qualities", label: "Choose up to 10 qualities that describe you", type: "multi-select", options: QUALITIES, maxSelect: 10 },
-      { name: "hobbies", label: "Choose your hobbies", type: "multi-select", options: HOBBIES },
+      { name: "bio", label: "Tell us about yourself (max 500 characters)", type: "textarea", max: 500, required: true },
+      { name: "qualities", label: "Choose up to 10 qualities that describe you", type: "multi-select", options: QUALITIES, maxSelect: 10, required: true },
+      { name: "hobbies", label: "Choose your hobbies", type: "multi-select", options: HOBBIES, required: true },
     ],
   },
 ];
@@ -175,7 +176,7 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
       { name: "pref_maxAge", label: "Preferred Max Age", type: "select", options: AGE_OPTIONS, preferences: true, required: true },
       { name: "pref_minHeight", label: "Preferred Min Height", type: "select", options: HEIGHT_OPTIONS, preferences: true, required: true },
       { name: "pref_maxHeight", label: "Preferred Max Height", type: "select", options: HEIGHT_OPTIONS, preferences: true, required: true },
-      { name: "pref_preferredCountries", label: "Preferred Countries", type: "country-multi", preferences: true },
+      { name: "pref_preferredCountries", label: "Preferred Countries", type: "country-multi", preferences: true, required: true },
       { name: "pref_educationLevel", label: "Preferred Education", type: "radio", options: EDUCATION_LEVELS, preferences: true, required: true },
       { name: "pref_religiousLevel", label: "Preferred Religious Level", type: "radio", options: RELIGIOUS_LEVELS, preferences: true, required: true },
       {
@@ -185,6 +186,7 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
         options: YES_NO_DEPENDS,
         preferences: true,
         hideWhen: { field: "maritalStatus", values: ["Divorced"] },
+        required: true,
       },
       {
         name: "pref_acceptWidow",
@@ -193,6 +195,7 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
         options: YES_NO_DEPENDS,
         preferences: true,
         hideWhen: { field: "maritalStatus", values: ["Widowed"] },
+        required: true,
       },
       { name: "pref_acceptChildren", label: "Accept someone with children?", type: "radio", options: YES_NO, preferences: true, required: true },
       { name: "pref_maxDistance", label: "Maximum Distance", type: "radio", options: MAX_DISTANCE, preferences: true, required: true },

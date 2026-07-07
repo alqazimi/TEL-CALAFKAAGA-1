@@ -176,3 +176,51 @@ export function buildStepData(
 
   return data;
 }
+
+export function validateStepFields(
+  step: StepConfig,
+  profile: { gender?: string; maritalStatus?: string; children?: number } | null | undefined,
+  state: {
+    radios: Record<string, string>;
+    selects: Record<string, string>;
+    multiSelects: Record<string, string[]>;
+    bio: string;
+  }
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  for (const field of step.fields) {
+    if (!isFieldVisible(field, profile, state.radios)) continue;
+    if (!field.required) continue;
+
+    if (field.type === "textarea") {
+      if (!state.bio.trim()) {
+        errors[field.name] = "This field is required";
+      }
+      continue;
+    }
+
+    if (field.type === "multi-select" || field.type === "country-multi") {
+      const values = state.multiSelects[field.name] ?? [];
+      if (values.length === 0) {
+        errors[field.name] = "Please select at least one option";
+      }
+      continue;
+    }
+
+    if (field.type === "radio") {
+      if (!state.radios[field.name]) {
+        errors[field.name] = "Please select an option";
+      }
+      continue;
+    }
+
+    if (field.type === "country-search" || field.type === "select") {
+      if (!state.selects[field.name]?.trim()) {
+        errors[field.name] = "This field is required";
+      }
+    }
+  }
+
+  return errors;
+}

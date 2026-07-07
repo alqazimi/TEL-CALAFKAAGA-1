@@ -22,6 +22,13 @@ export const getConversations = query({
       (m) => m.status === "active"
     );
 
+    const myProfile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+
+    const hasPaid = myProfile?.hasPaid ?? false;
+
     return await Promise.all(
       activeMatches.map(async (m) => {
         const otherId = m.userA === userId ? m.userB : m.userA;
@@ -64,7 +71,7 @@ export const getConversations = query({
         return {
           matchId: m._id,
           conversationId: conversation?._id,
-          chatUnlocked: m.chatUnlocked,
+          chatUnlocked: hasPaid || m.chatUnlocked,
           profile: profile
             ? { name: profile.name, imageUrl, userId: otherId }
             : null,
@@ -121,9 +128,14 @@ export const sendMessage = mutation({
       throw new Error("Not authorized");
     }
 
+    const myProfile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+
     const match = await ctx.db.get(conversation.matchId);
-    if (!match?.chatUnlocked) {
-      throw new Error("Chat not unlocked. Please complete payment.");
+    if (!myProfile?.hasPaid && !match?.chatUnlocked) {
+      throw new Error("Please complete payment to unlock chat.");
     }
 
     const messageId = await ctx.db.insert("messages", {

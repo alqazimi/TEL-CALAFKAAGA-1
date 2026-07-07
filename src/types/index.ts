@@ -34,6 +34,7 @@ export interface Profile {
   questionnaireComplete: boolean;
   questionnaireStep?: number;
   lastSavedAt?: number;
+  registrationComplete?: boolean;
   hasPaid: boolean;
   banned: boolean;
   approved: boolean;

@@ -52,6 +52,7 @@ export default defineSchema({
     questionnaireComplete: v.boolean(),
     questionnaireStep: v.optional(v.number()),
     lastSavedAt: v.optional(v.number()),
+    registrationComplete: v.optional(v.boolean()),
     hasPaid: v.boolean(),
     banned: v.boolean(),
     approved: v.boolean(),
@@ -152,6 +153,10 @@ export default defineSchema({
     userId: v.id("users"),
     stripeSessionId: v.string(),
     amount: v.number(),
+    paymentType: v.optional(
+      v.union(v.literal("registration"), v.literal("chat"))
+    ),
+    matchId: v.optional(v.id("matches")),
     status: v.union(
       v.literal("pending"),
       v.literal("completed"),

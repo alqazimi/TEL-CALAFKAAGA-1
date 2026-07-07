@@ -5,11 +5,18 @@ export const APP_SHELL_ROUTES = [
   "/matches",
   "/chat",
   "/questionnaire",
+  "/payment",
   "/notifications",
   "/admin",
 ] as const;
 
-export const AUTH_ROUTES = ["/login", "/register", "/forgot-password"] as const;
+export const AUTH_ROUTES = [
+  "/login",
+  "/register",
+  "/forgot-password",
+] as const;
+
+export const REGISTRATION_ROUTES = ["/register/details"] as const;
 
 export function isAppShellRoute(pathname: string): boolean {
   return APP_SHELL_ROUTES.some(
@@ -18,8 +25,13 @@ export function isAppShellRoute(pathname: string): boolean {
 }
 
 export function isAuthRoute(pathname: string): boolean {
-  return AUTH_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  return (
+    AUTH_ROUTES.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    ) ||
+    REGISTRATION_ROUTES.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    )
   );
 }
 
@@ -29,8 +41,21 @@ export function isMarketingRoute(pathname: string): boolean {
 
 /** Where signed-in users should land instead of the marketing homepage. */
 export function getAuthenticatedHomeRoute(
-  profile: { questionnaireComplete?: boolean } | null | undefined
+  profile:
+    | {
+        registrationComplete?: boolean;
+        questionnaireComplete?: boolean;
+        hasPaid?: boolean;
+      }
+    | null
+    | undefined
 ): string {
+  if (profile?.registrationComplete === false) {
+    return "/register/details";
+  }
+  if (!profile?.hasPaid) {
+    return "/payment";
+  }
   if (!profile?.questionnaireComplete) {
     return "/questionnaire";
   }

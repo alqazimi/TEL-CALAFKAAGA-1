@@ -7,7 +7,6 @@ export const BRAND_NAVY = "#0B132B";
 export const WHATSAPP_GREEN = "#25D366";
 export const REGISTRATION_PRICE = 15;
 export const WHATSAPP_CALL_PRICE = 20;
-export const CHAT_UNLOCK_PRICE = 15;
 export const MIN_COMPATIBILITY_SCORE = 70;
 
 export const GENDERS = ["male", "female"] as const;
@@ -195,9 +194,9 @@ export const FAQ_ITEMS = [
       "Our compatibility algorithm analyzes religion, age, location, education, lifestyle, and personality traits to find your best matches above 70% compatibility.",
   },
   {
-    question: "Is browsing free?",
+    question: "How much does Calaf cost?",
     answer:
-      "Yes, you can browse profiles and see matches for free. Chat is unlocked with a one-time $15 payment when you match with someone.",
+      "Registration is a one-time $15 fee via Stripe. This unlocks full access to matches and messaging.",
   },
   {
     question: "How is my data protected?",
