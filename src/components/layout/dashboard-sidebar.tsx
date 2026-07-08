@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Megaphone,
   Flag,
+  Home,
 } from "lucide-react";
 import type { TranslationPath } from "@/lib/i18n/translations";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -159,6 +160,18 @@ export function DashboardSidebar() {
               >
                 <User className="h-5 w-5 shrink-0" />
                 {t("app.myProfile")}
+              </Link>
+              <Link
+                href="/"
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all",
+                  pathname === "/"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Home className="h-5 w-5 shrink-0" />
+                {t("nav.home")}
               </Link>
             </>
           )}

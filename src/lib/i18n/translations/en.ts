@@ -16,6 +16,7 @@ export const en = {
     terms: "Terms of Service",
     dashboard: "Dashboard",
     memberLogin: "Member Login",
+    websiteSection: "Website",
   },
   app: {
     dashboard: "Dashboard",

@@ -5,10 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { isStandaloneDisplay } from "@/lib/pwa";
-import { getAuthenticatedHomeRoute, isMarketingRoute } from "@/lib/routes";
+import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import type { CurrentUser } from "@/types";
 
-/** Open installed PWA on the member app, not the marketing homepage. */
+/**
+ * Installed PWA cold-opens on `/` should land in the app, not marketing.
+ * Do not redirect other marketing pages — staff and members must browse freely.
+ */
 export function PwaStandaloneRedirect() {
   const pathname = usePathname();
   const router = useRouter();
@@ -24,16 +27,9 @@ export function PwaStandaloneRedirect() {
       return;
     }
 
-    const target = getAuthenticatedHomeRoute(user.profile);
+    if (pathname !== "/") return;
 
-    if (pathname === "/" || isMarketingRoute(pathname)) {
-      router.replace(target);
-      return;
-    }
-
-    if (pathname === "/dashboard" && target !== "/dashboard") {
-      router.replace(target);
-    }
+    router.replace(getAuthenticatedHomeRoute(user.profile));
   }, [pathname, router, user]);
 
   return null;

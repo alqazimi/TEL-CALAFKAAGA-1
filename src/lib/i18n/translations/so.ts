@@ -18,6 +18,7 @@ export const so: Translations = {
     terms: "Shuruudaha Adeegga",
     dashboard: "Dashboard",
     memberLogin: "Gal Akoonka",
+    websiteSection: "Website-ka",
   },
   app: {
     dashboard: "Dashboard",

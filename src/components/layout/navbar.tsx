@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LayoutDashboard, User } from "lucide-react";
-import { useConvexAuth } from "convex/react";
+import { Menu, X, LayoutDashboard, User, Home } from "lucide-react";
+import { useConvexAuth, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { isAppShellRoute } from "@/lib/routes";
+import { isAppShellRoute, getAuthenticatedHomeRoute } from "@/lib/routes";
+import { isStaffRole } from "@/lib/access";
 import { useNavLinks } from "@/lib/i18n/hooks";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
@@ -19,6 +21,11 @@ export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const user = useQuery(api.users.currentUser);
+  const isStaff = isStaffRole(user?.profile?.role);
+  const consoleHref = user
+    ? getAuthenticatedHomeRoute(user.profile)
+    : "/dashboard";
 
   useEffect(() => {
     setOpen(false);
@@ -72,12 +79,22 @@ export function Navbar() {
             {isLoading ? (
               <div className="h-10 w-32 rounded-xl bg-muted animate-pulse" aria-hidden />
             ) : isAuthenticated ? (
-              <Button asChild>
-                <Link href="/dashboard">
-                  <LayoutDashboard className="h-4 w-4" />
-                  {t("nav.dashboard")}
-                </Link>
-              </Button>
+              <>
+                {isStaff && (
+                  <Button variant="outline" asChild className="border-border">
+                    <Link href="/">
+                      <Home className="h-4 w-4" />
+                      {t("nav.home")}
+                    </Link>
+                  </Button>
+                )}
+                <Button asChild>
+                  <Link href={consoleHref}>
+                    <LayoutDashboard className="h-4 w-4" />
+                    {isStaff ? t("app.admin") : t("nav.dashboard")}
+                  </Link>
+                </Button>
+              </>
             ) : (
               <Button variant="outline" asChild className="border-primary text-primary hover:bg-accent">
                 <Link href="/login">
@@ -129,12 +146,22 @@ export function Navbar() {
                 {isLoading ? (
                   <div className="h-10 w-full rounded-xl bg-muted animate-pulse" aria-hidden />
                 ) : isAuthenticated ? (
-                  <Button asChild className="w-full">
-                    <Link href="/dashboard" onClick={() => setOpen(false)}>
-                      <LayoutDashboard className="h-4 w-4" />
-                      {t("nav.dashboard")}
-                    </Link>
-                  </Button>
+                  <>
+                    {isStaff && (
+                      <Button variant="outline" asChild className="w-full border-border">
+                        <Link href="/" onClick={() => setOpen(false)}>
+                          <Home className="h-4 w-4" />
+                          {t("nav.home")}
+                        </Link>
+                      </Button>
+                    )}
+                    <Button asChild className="w-full">
+                      <Link href={consoleHref} onClick={() => setOpen(false)}>
+                        <LayoutDashboard className="h-4 w-4" />
+                        {isStaff ? t("app.admin") : t("nav.dashboard")}
+                      </Link>
+                    </Button>
+                  </>
                 ) : (
                   <Button variant="outline" asChild className="w-full border-primary text-primary">
                     <Link href="/login" onClick={() => setOpen(false)}>

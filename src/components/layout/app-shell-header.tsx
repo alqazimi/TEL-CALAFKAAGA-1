@@ -11,6 +11,7 @@ import {
   Shield,
   Menu,
   X,
+  Home,
 } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
@@ -153,6 +154,17 @@ export function AppShellHeader() {
                     <User className="h-4 w-4" />
                     {t("app.myProfile")}
                   </Link>
+                  <Link
+                    href="/"
+                    onClick={() => setAccountOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted transition-colors",
+                      pathname === "/" && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <Home className="h-4 w-4" />
+                    {t("nav.home")}
+                  </Link>
                   {isStaffRole(user?.profile?.role) && (
                     <Link
                       href="/admin"
@@ -213,6 +225,9 @@ export function AppShellHeader() {
                 </Button>
               </div>
               <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+                <p className="px-3 pt-1 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("nav.websiteSection")}
+                </p>
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
