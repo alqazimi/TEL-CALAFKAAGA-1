@@ -45,7 +45,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
@@ -102,11 +101,6 @@ export default function AdminPage() {
     ? (tabParam as AdminTab)
     : "users";
 
-  const handleTabChange = (value: string) => {
-    const params = new URLSearchParams(Array.from(searchParams.entries()));
-    params.set("tab", value);
-    router.replace(`/admin?${params.toString()}`, { scroll: false });
-  };
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
@@ -242,64 +236,53 @@ export default function AdminPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 sm:space-y-8">
-        <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-8">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                <Sparkles className="h-3.5 w-3.5" />
-                {stats.isOwner ? t("adminPage.ownerConsole") : t("adminPage.adminConsole")}
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                {t(heading.title)}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {t(heading.desc)}
-              </p>
-            </div>
-            <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/70 px-5 py-3 backdrop-blur">
-              <div className="text-center">
-                <p className="text-xl font-bold leading-none">{stats.totalUsers}</p>
-                <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">{t("adminPage.members")}</p>
-              </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="text-center">
-                <p className="text-xl font-bold leading-none text-emerald-600 dark:text-emerald-400">
-                  ${(stats.revenue / 100).toFixed(0)}
-                </p>
-                <p className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">{t("adminPage.revenue")}</p>
-              </div>
-            </div>
+      <div className="space-y-5 sm:space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary w-fit">
+            <Sparkles className="h-3.5 w-3.5" />
+            {stats.isOwner ? t("adminPage.ownerConsole") : t("adminPage.adminConsole")}
+          </div>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span>
+              <span className="font-semibold text-foreground">{stats.totalUsers}</span>{" "}
+              {t("adminPage.members")}
+            </span>
+            <span className="text-border">·</span>
+            <span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                ${(stats.revenue / 100).toFixed(0)}
+              </span>{" "}
+              {t("adminPage.revenue")}
+            </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {statCards.map((stat) => (
-            <Card
-              key={stat.label}
-              className="group border-border/70 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-            >
-              <CardContent className="p-4">
-                <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl ${stat.chipClass}`}>
-                  <stat.icon className={`h-5 w-5 ${stat.iconClass}`} />
-                </div>
-                <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
-                <p className="mt-0.5 text-xs text-muted-foreground">{stat.label}</p>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-1">
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+            {t(heading.title)}
+          </h1>
+          <p className="text-sm text-muted-foreground">{t(heading.desc)}</p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="h-auto flex-wrap gap-1 rounded-2xl bg-muted/60 p-1.5">
-            <TabsTrigger value="users" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.users")}</TabsTrigger>
-            <TabsTrigger value="payments" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.payments")}</TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.analytics")}</TabsTrigger>
-            <TabsTrigger value="announcements" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.announcements")}</TabsTrigger>
-          </TabsList>
+        {activeTab === "users" && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {statCards.map((stat) => (
+                <Card
+                  key={stat.label}
+                  className="group border-border/70 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                >
+                  <CardContent className="p-4">
+                    <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl ${stat.chipClass}`}>
+                      <stat.icon className={`h-5 w-5 ${stat.iconClass}`} />
+                    </div>
+                    <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{stat.label}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-          <TabsContent value="users" className="space-y-4 pt-2">
             {canManageRoles && <AdminStaffInvitesPanel />}
 
             <Card className="border-border/70">
@@ -491,9 +474,11 @@ export default function AdminPage() {
                 </Card>
               ))}
             </div>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="payments" className="space-y-2.5 pt-2">
+        {activeTab === "payments" && (
+          <div className="space-y-2.5">
             <p className="text-sm text-muted-foreground">
               {t("adminPage.paymentsShowingCompleted")}
             </p>
@@ -545,9 +530,11 @@ export default function AdminPage() {
                 </Card>
               ))}
             </div>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="analytics" className="pt-2">
+        {activeTab === "analytics" && (
+          <div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Card className="border-border/70">
                 <CardContent className="p-5">
@@ -607,9 +594,11 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="announcements" className="pt-2">
+        {activeTab === "announcements" && (
+          <div>
             <Card className="border-border/70">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -642,8 +631,8 @@ export default function AdminPage() {
                 </Button>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
 
         {selectedProfileId && (
           <AdminUserDetailPanel
