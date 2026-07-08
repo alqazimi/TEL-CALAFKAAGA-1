@@ -89,7 +89,12 @@ export const so: Translations = {
       'Hoos u dhaqaaq oo taabo "Add to Home Screen", ka dibna taabo Add.',
     installSuccess: "App-ka waa la rakibay",
     androidHomeScreenHint:
-      "Fur liiska app-yada (kor u jiid) si aad u hesho Hel Calafkaaga. Haddii aanu shaashadda guriga ku jirin, taabo oo hay → “Add to Home screen”.",
+      "Ka eeg calaamadda Hel Calafkaaga shaashadda guriga. Haddii ay ku jirto liiska app-yada oo keliya, taabo oo hay → “Add to Home screen”.",
+    iosInstalledHint:
+      "Ka fur Hel Calafkaaga shaashadda guriga — wuxuu u shaqeeyaa sida app dhab ah.",
+    androidStep1: "Isticmaal Chrome (ma aha browser-ka Instagram ama Facebook).",
+    androidStep2: "Taabo menu-ga ⋮ ee kore ee Chrome.",
+    androidStep3: 'Taabo "Install app" ama "Add to Home screen", ka dibna xaqiiji.',
     iosNoAutoInstall:
       "iPhone-ka ma jiro badhan Install — waa inaad isticmaashaa Safari Share → Add to Home Screen.",
   },

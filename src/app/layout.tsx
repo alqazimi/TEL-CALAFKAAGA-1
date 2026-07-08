@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { PwaInstallCapture } from "@/components/pwa/pwa-install-capture";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { WhatsAppButton } from "@/components/layout/whatsapp-button";
@@ -83,8 +84,9 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: SITE_BRAND_NAME,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
   },
+  manifest: "/manifest.webmanifest",
   formatDetection: {
     telephone: false,
   },
@@ -98,6 +100,7 @@ export default function RootLayout({
   return (
     <html lang="so" suppressHydrationWarning className={`${inter.variable} ${cormorant.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased font-sans">
+        <PwaInstallCapture />
         <Providers>
           <Navbar />
           <main className="flex-1">{children}</main>

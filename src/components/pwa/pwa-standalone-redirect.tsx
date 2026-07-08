@@ -15,18 +15,25 @@ export function PwaStandaloneRedirect() {
   const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
 
   useEffect(() => {
-    if (!isStandaloneDisplay() || !pathname || !isMarketingRoute(pathname)) {
-      return;
-    }
-
-    if (user === undefined) return;
+    if (!isStandaloneDisplay() || !pathname || user === undefined) return;
 
     if (user === null) {
-      router.replace("/login");
+      if (!pathname.startsWith("/login")) {
+        router.replace("/login?source=pwa");
+      }
       return;
     }
 
-    router.replace(getAuthenticatedHomeRoute(user.profile));
+    const target = getAuthenticatedHomeRoute(user.profile);
+
+    if (pathname === "/" || isMarketingRoute(pathname)) {
+      router.replace(target);
+      return;
+    }
+
+    if (pathname === "/dashboard" && target !== "/dashboard") {
+      router.replace(target);
+    }
   }, [pathname, router, user]);
 
   return null;

@@ -4,10 +4,17 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, Share, Smartphone, X } from "lucide-react";
+import { Download, MoreVertical, Share, Smartphone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n/context";
+import {
+  clearDeferredInstallPrompt,
+  getDeferredInstallPrompt,
+  PWA_INSTALLED_EVENT,
+  PWA_INSTALLABLE_EVENT,
+  type BeforeInstallPromptEvent,
+} from "@/lib/pwa-install";
 import {
   dismissInstallPrompt,
   isAndroidDevice,
@@ -16,11 +23,6 @@ import {
   wasInstallDismissed,
 } from "@/lib/pwa";
 import { cn } from "@/lib/utils";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
 
 const APP_ROUTE_PREFIXES = [
   "/dashboard",
@@ -36,7 +38,7 @@ export function InstallPrompt() {
   const pathname = usePathname();
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
-  const [showIosSteps, setShowIosSteps] = useState(false);
+  const [showManualSteps, setShowManualSteps] = useState(false);
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [installing, setInstalling] = useState(false);
@@ -44,63 +46,94 @@ export function InstallPrompt() {
   const isAppArea = APP_ROUTE_PREFIXES.some((route) =>
     pathname?.startsWith(route)
   );
+  const isIos = isIosDevice();
+  const isAndroid = isAndroidDevice();
+
+  const showInstallSuccess = useCallback(() => {
+    toast.success(t("pwa.installSuccess"), {
+      description: isIos
+        ? t("pwa.iosInstalledHint")
+        : t("pwa.androidHomeScreenHint"),
+      duration: 10000,
+    });
+  }, [isIos, t]);
 
   useEffect(() => {
     if (isStandaloneDisplay() || wasInstallDismissed()) return;
 
     const isMobile =
-      isIosDevice() ||
-      isAndroidDevice() ||
+      isIos ||
+      isAndroid ||
       window.matchMedia("(max-width: 768px)").matches;
 
     if (!isMobile) return;
 
-    if (isIosDevice()) {
-      const timer = window.setTimeout(() => setVisible(true), 2500);
-      return () => window.clearTimeout(timer);
+    const syncPrompt = () => {
+      const prompt = getDeferredInstallPrompt();
+      if (prompt) {
+        setDeferredPrompt(prompt);
+        setVisible(true);
+      }
+    };
+
+    syncPrompt();
+
+    const onInstallable = () => syncPrompt();
+    const onInstalled = () => {
+      clearDeferredInstallPrompt();
+      setDeferredPrompt(null);
+      setVisible(false);
+      showInstallSuccess();
+    };
+
+    window.addEventListener(PWA_INSTALLABLE_EVENT, onInstallable);
+    window.addEventListener(PWA_INSTALLED_EVENT, onInstalled);
+
+    let timer: number | undefined;
+    if (isIos) {
+      timer = window.setTimeout(() => setVisible(true), 2000);
+    } else if (isAndroid && !getDeferredInstallPrompt()) {
+      // Chrome may not fire beforeinstallprompt immediately — show manual steps fallback.
+      timer = window.setTimeout(() => setVisible(true), 4000);
     }
 
-    const onBeforeInstall = (event: Event) => {
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-      setVisible(true);
-    };
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstall);
     return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener(PWA_INSTALLABLE_EVENT, onInstallable);
+      window.removeEventListener(PWA_INSTALLED_EVENT, onInstalled);
+      if (timer) window.clearTimeout(timer);
     };
-  }, []);
+  }, [isAndroid, isIos, showInstallSuccess]);
 
   const handleDismiss = useCallback(() => {
     dismissInstallPrompt();
     setVisible(false);
-    setShowIosSteps(false);
+    setShowManualSteps(false);
   }, []);
 
   const handleAndroidInstall = useCallback(async () => {
-    if (!deferredPrompt) return;
+    const prompt = deferredPrompt ?? getDeferredInstallPrompt();
+    if (!prompt) {
+      setShowManualSteps(true);
+      return;
+    }
     setInstalling(true);
     try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+      await prompt.prompt();
+      const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") {
         setVisible(false);
-        toast.success(t("pwa.installSuccess"), {
-          description: t("pwa.androidHomeScreenHint"),
-          duration: 8000,
-        });
+        showInstallSuccess();
       }
+      clearDeferredInstallPrompt();
       setDeferredPrompt(null);
     } catch {
-      // ignore
+      setShowManualSteps(true);
     } finally {
       setInstalling(false);
     }
-  }, [deferredPrompt, t]);
+  }, [deferredPrompt, showInstallSuccess]);
 
-  const isIos = isIosDevice();
-  const canAndroidInstall = !!deferredPrompt;
+  const canAndroidInstall = !!(deferredPrompt ?? getDeferredInstallPrompt());
 
   if (!visible || isStandaloneDisplay()) return null;
 
@@ -113,7 +146,7 @@ export function InstallPrompt() {
         className={cn(
           "fixed z-[60] px-4 left-0 right-0 max-w-lg mx-auto",
           isAppArea
-            ? "bottom-[calc(var(--app-tabbar,4rem)+0.75rem)]"
+            ? "bottom-[calc(var(--app-tabbar,3.5rem)+0.75rem+env(safe-area-inset-bottom))]"
             : "bottom-4 sm:bottom-6"
         )}
       >
@@ -145,7 +178,7 @@ export function InstallPrompt() {
               </Button>
             </div>
 
-            {isIos && showIosSteps && (
+            {isIos && showManualSteps && (
               <ol className="mt-4 space-y-2.5 text-sm text-muted-foreground border-t border-border pt-4">
                 <li className="flex gap-2">
                   <span className="font-semibold text-primary shrink-0">1.</span>
@@ -162,24 +195,48 @@ export function InstallPrompt() {
               </ol>
             )}
 
+            {isAndroid && showManualSteps && (
+              <ol className="mt-4 space-y-2.5 text-sm text-muted-foreground border-t border-border pt-4">
+                <li className="flex gap-2">
+                  <span className="font-semibold text-primary shrink-0">1.</span>
+                  <span>{t("pwa.androidStep1")}</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-semibold text-primary shrink-0">2.</span>
+                  <span className="flex items-start gap-1.5">
+                    <MoreVertical className="h-4 w-4 shrink-0 mt-0.5" />
+                    {t("pwa.androidStep2")}
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-semibold text-primary shrink-0">3.</span>
+                  <span>{t("pwa.androidStep3")}</span>
+                </li>
+              </ol>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
-              {canAndroidInstall ? (
+              {isAndroid ? (
                 <Button
                   className="flex-1 rounded-xl h-11"
                   onClick={() => void handleAndroidInstall()}
                   disabled={installing}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  {installing ? t("pwa.installing") : t("pwa.install")}
+                  {installing
+                    ? t("pwa.installing")
+                    : canAndroidInstall
+                      ? t("pwa.install")
+                      : t("pwa.showSteps")}
                 </Button>
               ) : isIos ? (
                 <Button
                   className="flex-1 rounded-xl h-11"
-                  variant={showIosSteps ? "secondary" : "default"}
-                  onClick={() => setShowIosSteps((value) => !value)}
+                  variant={showManualSteps ? "secondary" : "default"}
+                  onClick={() => setShowManualSteps((value) => !value)}
                 >
                   <Share className="h-4 w-4 mr-2" />
-                  {showIosSteps ? t("pwa.hideSteps") : t("pwa.showSteps")}
+                  {showManualSteps ? t("pwa.hideSteps") : t("pwa.showSteps")}
                 </Button>
               ) : null}
               <Button
