@@ -247,6 +247,7 @@ export const en = {
     resendVerifyCode: "Resend verification code",
     resendingVerify: "Sending code...",
     resendVerifyFailed: "Could not resend the code. Please try again.",
+    emailAlreadyVerified: "This email already has an account. Please sign in instead.",
     emailPlaceholder: "you@email.com",
     passwordPlaceholder: "Enter your password",
     passwordNewPlaceholder: "Min. 8 characters",

@@ -249,6 +249,7 @@ export const so: Translations = {
     resendVerifyCode: "Dib u dir koodhka xaqiijinta",
     resendingVerify: "Waa la dirayaa koodhka...",
     resendVerifyFailed: "Koodhka lama diri karin. Fadlan mar kale isku day.",
+    emailAlreadyVerified: "Emailkan hore ayaa loo isticmaalay akoon. Fadlan gal halkii aad iska diiwaangelin lahayd.",
     emailPlaceholder: "you@email.com",
     passwordPlaceholder: "Geli eraygaaga sirta ah",
     passwordNewPlaceholder: "Ugu yaraan 8 xaraf",

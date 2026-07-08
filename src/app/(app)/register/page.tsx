@@ -39,6 +39,13 @@ export default function RegisterPage() {
     resolver: zodResolver(accountSchema),
   });
 
+  const goToVerify = (email: string, password: string) => {
+    setPendingEmail(email);
+    setPendingPassword(password);
+    setStep("verify");
+    toast.success(t("auth.verifyCodeSent"));
+  };
+
   const onSubmitAccount = async (data: AccountForm) => {
     setLoading(true);
     try {
@@ -47,11 +54,32 @@ export default function RegisterPage() {
         password: data.password,
         flow: "signUp",
       });
-      setPendingEmail(data.email);
-      setPendingPassword(data.password);
-      setStep("verify");
-      toast.success(t("auth.verifyCodeSent"));
+      goToVerify(data.email, data.password);
     } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+
+      // Email already registered. If it's an unverified account with the same
+      // password, resend a fresh code and continue to verification. If it's a
+      // fully verified account, tell the user to sign in instead.
+      if (message.includes("already exists") || message.includes("already in use")) {
+        try {
+          const result = await signIn("password", {
+            email: data.email,
+            password: data.password,
+            flow: "signIn",
+          });
+          if (!result.signingIn) {
+            goToVerify(data.email, data.password);
+            return;
+          }
+          toast.error(t("auth.emailAlreadyVerified"));
+          return;
+        } catch {
+          toast.error(t("auth.emailAlreadyVerified"));
+          return;
+        }
+      }
+
       toast.error(
         getAuthErrorMessage(error, t("validation.registrationFailed"))
       );
