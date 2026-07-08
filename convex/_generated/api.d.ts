@@ -16,6 +16,7 @@ import type * as contact from "../contact.js";
 import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_adminAuth from "../lib/adminAuth.js";
+import type * as lib_constants from "../lib/constants.js";
 import type * as lib_createProfile from "../lib/createProfile.js";
 import type * as lib_profileEnrichment from "../lib/profileEnrichment.js";
 import type * as lib_questionnaire from "../lib/questionnaire.js";
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "lib/access": typeof lib_access;
   "lib/adminAuth": typeof lib_adminAuth;
+  "lib/constants": typeof lib_constants;
   "lib/createProfile": typeof lib_createProfile;
   "lib/profileEnrichment": typeof lib_profileEnrichment;
   "lib/questionnaire": typeof lib_questionnaire;

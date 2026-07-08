@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { Mail, Lock } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { GuestGate } from "@/components/auth/guest-gate";
-import { EmailVerificationStep } from "@/components/auth/email-verification-step";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
@@ -30,11 +29,6 @@ export default function LoginPage() {
   const convex = useConvex();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [step, setStep] = useState<"credentials" | "verify">("credentials");
-  const [pendingEmail, setPendingEmail] = useState("");
-  const [pendingPassword, setPendingPassword] = useState("");
   const { t } = useTranslation();
   const loginSchema = useMemo(() => createLoginSchema(t), [t]);
 
@@ -55,19 +49,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      const result = await signIn("password", {
+      await signIn("password", {
         email: data.email,
         password: data.password,
         flow: "signIn",
       });
-
-      if (!result.signingIn) {
-        setPendingEmail(data.email);
-        setPendingPassword(data.password);
-        setStep("verify");
-        toast.success(t("auth.verifyCodeSent"));
-        return;
-      }
 
       await completeSignIn();
     } catch (error) {
@@ -77,58 +63,11 @@ export default function LoginPage() {
     }
   };
 
-  const onVerifyEmail = async (code: string) => {
-    setVerifying(true);
-    try {
-      const result = await signIn("password", {
-        email: pendingEmail,
-        code,
-        flow: "email-verification",
-      });
-
-      if (!result.signingIn) {
-        toast.error(t("auth.verifyFailed"));
-        return;
-      }
-
-      await completeSignIn();
-    } catch (error) {
-      toast.error(getAuthErrorMessage(error, t("auth.verifyFailed")));
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  const onResendCode = async () => {
-    if (!pendingEmail || !pendingPassword) return;
-    setResending(true);
-    try {
-      await signIn("password", {
-        email: pendingEmail,
-        password: pendingPassword,
-        flow: "signIn",
-      });
-      toast.success(t("auth.verifyCodeSent"));
-    } catch (error) {
-      toast.error(getAuthErrorMessage(error, t("auth.resendVerifyFailed")));
-    } finally {
-      setResending(false);
-    }
-  };
-
   return (
     <GuestGate>
       <AuthShell
-        title={
-          step === "credentials"
-            ? t("auth.welcomeBack")
-            : t("auth.verifyEmailTitle")
-        }
-        description={
-          step === "credentials"
-            ? t("auth.signInDesc", { name: APP_NAME })
-            : t("auth.loginVerifyDesc", { email: pendingEmail })
-        }
+        title={t("auth.welcomeBack")}
+        description={t("auth.signInDesc", { name: APP_NAME })}
         footer={
           <p className="text-center text-sm text-muted-foreground">
             {t("auth.noAccount")}{" "}
@@ -138,8 +77,7 @@ export default function LoginPage() {
           </p>
         }
       >
-        {step === "credentials" ? (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <FormField label={t("auth.email")} htmlFor="email" error={errors.email?.message}>
               <InputIconWrapper icon={<Mail className="h-4 w-4" />}>
                 <Input
@@ -182,16 +120,6 @@ export default function LoginPage() {
               {loading ? t("auth.signingIn") : t("auth.signIn")}
             </Button>
           </form>
-        ) : (
-          <EmailVerificationStep
-            verifying={verifying}
-            resending={resending}
-            onSubmit={onVerifyEmail}
-            onResend={onResendCode}
-            onBack={() => setStep("credentials")}
-            backLabel={t("auth.backToSignIn")}
-          />
-        )}
       </AuthShell>
     </GuestGate>
   );
