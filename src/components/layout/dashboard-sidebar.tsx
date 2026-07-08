@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   User,
@@ -11,7 +11,12 @@ import {
   Bell,
   Shield,
   LogOut,
+  Users,
+  CreditCard,
+  TrendingUp,
+  Megaphone,
 } from "lucide-react";
+import type { TranslationPath } from "@/lib/i18n/translations";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -35,8 +40,20 @@ const iconMap = {
   Bell,
 };
 
+const STAFF_NAV: {
+  tab: string;
+  labelKey: TranslationPath;
+  icon: typeof Users;
+}[] = [
+  { tab: "users", labelKey: "adminPage.users", icon: Users },
+  { tab: "payments", labelKey: "adminPage.payments", icon: CreditCard },
+  { tab: "analytics", labelKey: "adminPage.analytics", icon: TrendingUp },
+  { tab: "announcements", labelKey: "adminPage.announcements", icon: Megaphone },
+];
+
 export function DashboardSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { signOut } = useAuthActions();
   const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
   const preferences = useQuery(api.profiles.getPreferences);
@@ -99,18 +116,35 @@ export function DashboardSidebar() {
             })}
 
           {isStaff && (
-            <Link
-              href="/admin"
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all",
-                pathname.startsWith("/admin")
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <Shield className="h-5 w-5" />
-              {t("app.admin")}
-            </Link>
+            <>
+              <div className="flex items-center gap-2 px-4 pb-2 pt-1">
+                <Shield className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("app.admin")}
+                </span>
+              </div>
+              {STAFF_NAV.map((item) => {
+                const Icon = item.icon;
+                const onAdmin = pathname.startsWith("/admin");
+                const currentTab = searchParams.get("tab") ?? "users";
+                const isActive = onAdmin && currentTab === item.tab;
+                return (
+                  <Link
+                    key={item.tab}
+                    href={`/admin?tab=${item.tab}`}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    {t(item.labelKey)}
+                  </Link>
+                );
+              })}
+            </>
           )}
         </nav>
 

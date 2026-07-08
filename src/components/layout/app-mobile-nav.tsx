@@ -1,16 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   Heart,
   MessageCircle,
   ClipboardList,
+  Users,
+  CreditCard,
+  TrendingUp,
+  Megaphone,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAppNavLinks } from "@/lib/i18n/hooks";
+import { useTranslation } from "@/lib/i18n/context";
+import type { TranslationPath } from "@/lib/i18n/translations";
 import { isStaffRole } from "@/lib/access";
 import { cn } from "@/lib/utils";
 
@@ -23,14 +29,51 @@ const iconMap = {
 
 type TabIcon = keyof typeof iconMap;
 
+const STAFF_TABS: { tab: string; labelKey: TranslationPath; icon: typeof Users }[] = [
+  { tab: "users", labelKey: "adminPage.users", icon: Users },
+  { tab: "payments", labelKey: "adminPage.payments", icon: CreditCard },
+  { tab: "analytics", labelKey: "adminPage.analytics", icon: TrendingUp },
+  { tab: "announcements", labelKey: "adminPage.announcements", icon: Megaphone },
+];
+
 export function AppMobileNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const user = useQuery(api.users.currentUser);
   const profileComplete = user?.profile?.questionnaireComplete ?? false;
   const appNavLinks = useAppNavLinks().filter((l) => l.tab);
 
-  // Admins and owners don't use the member bottom navigation.
-  if (isStaffRole(user?.profile?.role)) return null;
+  // Admins and owners get admin-section navigation instead of member tabs.
+  if (isStaffRole(user?.profile?.role)) {
+    const onAdmin = pathname.startsWith("/admin");
+    const currentTab = searchParams.get("tab") ?? "users";
+    return (
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-stretch justify-around px-1">
+          {STAFF_TABS.map((item) => {
+            const Icon = item.icon;
+            const isActive = onAdmin && currentTab === item.tab;
+            return (
+              <Link
+                key={item.tab}
+                href={`/admin?tab=${item.tab}`}
+                className={cn(
+                  "flex flex-1 flex-col items-center justify-center gap-1 py-2.5 min-h-[3.25rem] transition-colors",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+                <span className="text-[11px] font-medium leading-none">
+                  {t(item.labelKey)}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">

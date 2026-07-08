@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import {
@@ -89,9 +89,24 @@ function formatPaymentLabel(
   return `$${(payment.amount / 100).toFixed(0)}`;
 }
 
+const ADMIN_TABS = ["users", "payments", "analytics", "announcements"] as const;
+type AdminTab = (typeof ADMIN_TABS)[number];
+
 export default function AdminPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useTranslation();
+
+  const tabParam = searchParams.get("tab");
+  const activeTab: AdminTab = ADMIN_TABS.includes(tabParam as AdminTab)
+    ? (tabParam as AdminTab)
+    : "users";
+
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    params.set("tab", value);
+    router.replace(`/admin?${params.toString()}`, { scroll: false });
+  };
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
@@ -267,7 +282,7 @@ export default function AdminPage() {
           ))}
         </div>
 
-        <Tabs defaultValue="users">
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="h-auto flex-wrap gap-1 rounded-2xl bg-muted/60 p-1.5">
             <TabsTrigger value="users" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.users")}</TabsTrigger>
             <TabsTrigger value="payments" className="rounded-xl data-[state=active]:shadow-sm">{t("adminPage.payments")}</TabsTrigger>
