@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, MoreVertical, Share, Smartphone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import { useTranslation } from "@/lib/i18n/context";
 import {
   clearDeferredInstallPrompt,
   getDeferredInstallPrompt,
-  PWA_INSTALLED_EVENT,
   PWA_INSTALLABLE_EVENT,
   type BeforeInstallPromptEvent,
 } from "@/lib/pwa-install";
@@ -49,15 +47,6 @@ export function InstallPrompt() {
   const isIos = isIosDevice();
   const isAndroid = isAndroidDevice();
 
-  const showInstallSuccess = useCallback(() => {
-    toast.success(t("pwa.installSuccess"), {
-      description: isIos
-        ? t("pwa.iosInstalledHint")
-        : t("pwa.androidHomeScreenHint"),
-      duration: 10000,
-    });
-  }, [isIos, t]);
-
   useEffect(() => {
     if (isStandaloneDisplay() || wasInstallDismissed()) return;
 
@@ -79,30 +68,21 @@ export function InstallPrompt() {
     syncPrompt();
 
     const onInstallable = () => syncPrompt();
-    const onInstalled = () => {
-      clearDeferredInstallPrompt();
-      setDeferredPrompt(null);
-      setVisible(false);
-      showInstallSuccess();
-    };
 
     window.addEventListener(PWA_INSTALLABLE_EVENT, onInstallable);
-    window.addEventListener(PWA_INSTALLED_EVENT, onInstalled);
 
     let timer: number | undefined;
     if (isIos) {
       timer = window.setTimeout(() => setVisible(true), 2000);
     } else if (isAndroid && !getDeferredInstallPrompt()) {
-      // Chrome may not fire beforeinstallprompt immediately — show manual steps fallback.
       timer = window.setTimeout(() => setVisible(true), 4000);
     }
 
     return () => {
       window.removeEventListener(PWA_INSTALLABLE_EVENT, onInstallable);
-      window.removeEventListener(PWA_INSTALLED_EVENT, onInstalled);
       if (timer) window.clearTimeout(timer);
     };
-  }, [isAndroid, isIos, showInstallSuccess]);
+  }, [isAndroid, isIos]);
 
   const handleDismiss = useCallback(() => {
     dismissInstallPrompt();
@@ -122,7 +102,6 @@ export function InstallPrompt() {
       const { outcome } = await prompt.userChoice;
       if (outcome === "accepted") {
         setVisible(false);
-        showInstallSuccess();
       }
       clearDeferredInstallPrompt();
       setDeferredPrompt(null);
@@ -131,7 +110,7 @@ export function InstallPrompt() {
     } finally {
       setInstalling(false);
     }
-  }, [deferredPrompt, showInstallSuccess]);
+  }, [deferredPrompt]);
 
   const canAndroidInstall = !!(deferredPrompt ?? getDeferredInstallPrompt());
 

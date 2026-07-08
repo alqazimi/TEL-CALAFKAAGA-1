@@ -10,7 +10,7 @@ import { ConvexAuthStatus } from "@/components/auth/convex-auth-status";
 import { LanguageProvider } from "@/lib/i18n/context";
 import { RegisterServiceWorker } from "@/components/pwa/register-service-worker";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
-import { PwaStandaloneRedirect } from "@/components/pwa/pwa-standalone-redirect";
+import { PwaStandaloneNav } from "@/components/pwa/pwa-standalone-nav";
 
 export function Providers({ children }: { children: ReactNode }) {
   const convex = useMemo(() => getConvexClient(), []);
@@ -33,7 +33,7 @@ export function Providers({ children }: { children: ReactNode }) {
         >
           <ConvexAuthStatus>{children}</ConvexAuthStatus>
           <RegisterServiceWorker />
-          <PwaStandaloneRedirect />
+          <PwaStandaloneNav />
           <InstallPrompt />
           <Toaster position="top-right" richColors />
         </ThemeProvider>

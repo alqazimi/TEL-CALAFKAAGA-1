@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isAppShellRoute } from "@/lib/routes";
+import { isStandaloneDisplay } from "@/lib/pwa";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -75,7 +76,7 @@ export function AppShellHeader() {
     };
   }, [siteMenuOpen]);
 
-  if (!isAppShellRoute(pathname)) return null;
+  if (!isAppShellRoute(pathname) && !isStandaloneDisplay()) return null;
 
   return (
     <>
