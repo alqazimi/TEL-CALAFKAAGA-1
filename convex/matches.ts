@@ -55,6 +55,9 @@ export const getMatches = query({
             .unique();
 
           if (!profile || profile.banned || !profile.approved) return null;
+          // Safety guard: never surface same-gender profiles, even if a stale
+          // compatibility score exists from before the gender filter.
+          if (profile.gender === myProfile.gender) return null;
           if (!profile.profileImageId) return null;
 
           if (args.country && profile.country !== args.country) return null;

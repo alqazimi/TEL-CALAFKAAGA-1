@@ -188,4 +188,24 @@ export default defineSchema({
     storageId: v.id("_storage"),
     createdAt: v.number(),
   }).index("by_storage", ["storageId"]),
+
+  staffInvites: defineTable({
+    email: v.string(),
+    token: v.string(),
+    role: v.literal("admin"),
+    invitedBy: v.id("users"),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("revoked"),
+      v.literal("expired")
+    ),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    acceptedAt: v.optional(v.number()),
+    acceptedByUserId: v.optional(v.id("users")),
+  })
+    .index("by_token", ["token"])
+    .index("by_email", ["email"])
+    .index("by_status", ["status"]),
 });

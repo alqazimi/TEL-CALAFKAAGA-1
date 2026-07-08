@@ -14,7 +14,6 @@ import {
   CheckCircle,
   Trash2,
   Megaphone,
-  Shield,
   ShieldOff,
   Crown,
   Mail,
@@ -37,6 +36,7 @@ import type {
   CurrentUser,
 } from "@/types";
 import { AdminBootstrapPanel } from "@/components/admin/admin-bootstrap-panel";
+import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -291,6 +291,8 @@ export default function AdminPage() {
           </TabsList>
 
           <TabsContent value="users" className="space-y-4 pt-2">
+            {canManageRoles && <AdminStaffInvitesPanel />}
+
             <Card className="border-border/70">
               <CardContent className="space-y-4 p-4 sm:p-5">
                 <div className="relative">
@@ -436,8 +438,7 @@ export default function AdminPage() {
                           </a>
                         </Button>
                       )}
-                      {canManageRoles && !isOwnerRole(user.role) && (
-                        user.role === "admin" ? (
+                      {canManageRoles && user.role === "admin" && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -446,16 +447,6 @@ export default function AdminPage() {
                           >
                             <ShieldOff className="h-4 w-4 text-amber-600" />
                           </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title={t("adminPage.makeAdmin")}
-                            onClick={() => void handleRoleChange(user._id, "admin")}
-                          >
-                            <Shield className="h-4 w-4 text-primary" />
-                          </Button>
-                        )
                       )}
                       {!user.approved && (
                         <Button

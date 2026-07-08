@@ -14,6 +14,7 @@ export const AUTH_ROUTES = [
   "/login",
   "/register",
   "/forgot-password",
+  "/admin/invite",
 ] as const;
 
 export const REGISTRATION_ROUTES = ["/register/details"] as const;

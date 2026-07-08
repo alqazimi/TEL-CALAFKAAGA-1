@@ -111,8 +111,8 @@ export default function DashboardPage() {
         {isComplete && hasPaid && isApproved && (
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: t("dashboard.matches"), value: matches?.length ?? 0 },
-              { label: t("dashboard.mutual"), value: myMatches?.length ?? 0 },
+              { label: t("dashboard.suggestedShort"), value: matches?.length ?? 0 },
+              { label: t("dashboard.matches"), value: myMatches?.length ?? 0 },
             ].map((stat) => (
               <div
                 key={stat.label}

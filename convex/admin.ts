@@ -125,11 +125,14 @@ export const setUserRole = mutation({
       throw new Error("The owner role cannot be changed.");
     }
 
+    if (args.role === "admin") {
+      throw new Error("Admins must be invited. Use Invite admin on the Users tab.");
+    }
+
     if (targetProfile.role === args.role) return;
 
     await ctx.db.patch(args.profileId, {
       role: args.role,
-      ...(args.role === "admin" ? { approved: true, verified: true } : {}),
     });
   },
 });
