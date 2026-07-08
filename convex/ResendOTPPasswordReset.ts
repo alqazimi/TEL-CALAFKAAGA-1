@@ -1,4 +1,4 @@
-import Resend from "@auth/core/providers/resend";
+import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend as ResendAPI } from "resend";
 import {
   generateEmailOtp,
@@ -6,20 +6,34 @@ import {
   requireResendApiKey,
 } from "./lib/resendOtp";
 
-export const ResendOTPPasswordReset = Resend({
+/** Reset codes stay valid for 15 minutes. */
+const RESET_CODE_MAX_AGE_S = 15 * 60;
+
+export const ResendOTPPasswordReset = Email({
   id: "resend-otp",
+  name: "Resend OTP",
+  from: getResendFromAddress(),
+  maxAge: RESET_CODE_MAX_AGE_S,
   apiKey: process.env.AUTH_RESEND_KEY,
   async generateVerificationToken() {
     return generateEmailOtp(6);
   },
-  async sendVerificationRequest({ identifier: email, provider, token }) {
-    const apiKey = requireResendApiKey(provider.apiKey);
+  async sendVerificationRequest({
+    identifier: email,
+    provider,
+    token,
+  }: {
+    identifier: string;
+    provider: { apiKey?: string };
+    token: string;
+  }) {
+    const apiKey = requireResendApiKey(provider.apiKey ?? process.env.AUTH_RESEND_KEY);
     const resend = new ResendAPI(apiKey);
     const { error } = await resend.emails.send({
       from: getResendFromAddress(),
       to: [email],
       subject: "Reset your Hel Calafkaaga password",
-      text: `Your Hel Calafkaaga password reset code is: ${token}\n\nThis 6-digit code expires soon. If you did not request a reset, you can ignore this email.`,
+      text: `Your Hel Calafkaaga password reset code is: ${token}\n\nThis code expires in 15 minutes. If you did not request a reset, you can ignore this email.`,
     });
 
     if (error) {

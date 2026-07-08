@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -27,6 +27,8 @@ type CodeForm = z.infer<ReturnType<typeof createResetCodeSchema>>;
 type ResetForm = z.infer<ReturnType<typeof createResetPasswordSchema>>;
 type Step = "email" | "code" | "password";
 
+const RESEND_COOLDOWN_S = 15;
+
 export default function ForgotPasswordPage() {
   const { signIn } = useAuthActions();
   const router = useRouter();
@@ -39,8 +41,25 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [verifiedCode, setVerifiedCode] = useState("");
   const [sending, setSending] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [checkingCode, setCheckingCode] = useState(false);
   const [resetting, setResetting] = useState(false);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setResendCooldown((seconds) => (seconds <= 1 ? 0 : seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
+  const requestResetCode = async (address: string) => {
+    await signIn("password", {
+      email: address,
+      flow: "reset",
+    });
+  };
 
   const emailForm = useForm<EmailForm>({
     resolver: zodResolver(emailSchema),
@@ -72,20 +91,33 @@ export default function ForgotPasswordPage() {
   const onRequestReset = async (data: EmailForm) => {
     setSending(true);
     try {
-      await signIn("password", {
-        email: data.email,
-        flow: "reset",
-      });
+      await requestResetCode(data.email);
       setEmail(data.email);
       setVerifiedCode("");
       codeForm.reset({ code: "" });
       resetForm.reset();
+      setResendCooldown(RESEND_COOLDOWN_S);
       setStep("code");
       toast.success(t("auth.resetCodeSent"));
     } catch (error) {
       toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed")));
     } finally {
       setSending(false);
+    }
+  };
+
+  const onResendCode = async () => {
+    if (!email || resendCooldown > 0 || resending) return;
+
+    setResending(true);
+    try {
+      await requestResetCode(email);
+      setResendCooldown(RESEND_COOLDOWN_S);
+      toast.success(t("auth.resetCodeResent"));
+    } catch (error) {
+      toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed")));
+    } finally {
+      setResending(false);
     }
   };
 
@@ -231,6 +263,22 @@ export default function ForgotPasswordPage() {
             >
               {checkingCode ? t("auth.verifyingCode") : t("auth.verifyResetCode")}
             </Button>
+
+            <div className="text-center">
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-sm font-semibold"
+                disabled={resending || resendCooldown > 0}
+                onClick={onResendCode}
+              >
+                {resending
+                  ? t("auth.sendingReset")
+                  : resendCooldown > 0
+                    ? t("auth.resendResetCodeIn", { seconds: resendCooldown })
+                    : t("auth.resendResetCode")}
+              </Button>
+            </div>
           </form>
         )}
 

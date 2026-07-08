@@ -29,6 +29,10 @@ export const backfillProfileFields = internalMutation({
       if (!profile.religiousLevel?.trim() && profile.prayerFrequency?.trim()) {
         patch.religiousLevel = religiousLevelFromPrayer(profile.prayerFrequency);
       }
+      if (profile.questionnaireComplete && !profile.approved) {
+        patch.approved = true;
+        patch.verified = true;
+      }
       if ("dealBreakers" in legacyProfile) {
         needsReplace = true;
       }
