@@ -32,6 +32,7 @@ export const so: Translations = {
     logOut: "Ka bax",
     account: "Akoon",
     completeProfile: "Dhammaystir profile-kaaga",
+    completeProfileShort: "Dhammaystir",
     profileSetup: "Dejinta profile-ka",
   },
   common: {

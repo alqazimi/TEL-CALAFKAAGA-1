@@ -29,15 +29,43 @@ export function useFooterLinks() {
   ];
 }
 
-export function useAppNavLinks() {
+export function useAppNavLinks(profileComplete = true) {
   const { t } = useTranslation();
   return [
-    { href: "/dashboard", label: t("app.dashboard"), mobileLabel: t("app.home"), icon: "LayoutDashboard" as const, tab: true },
-    { href: "/matches", label: t("app.matches"), icon: "Heart" as const, tab: true, locked: true },
-    { href: "/chat", label: t("app.messages"), icon: "MessageCircle" as const, tab: true, locked: true },
-    { href: "/questionnaire", label: t("app.questionnaire"), icon: "ClipboardList" as const, tab: true },
-    { href: "/profile", label: t("app.profile"), icon: "User" as const, tab: false },
-    { href: "/notifications", label: t("app.notifications"), icon: "Bell" as const, tab: false },
+    {
+      href: "/dashboard",
+      label: t("app.dashboard"),
+      mobileLabel: t("app.home"),
+      icon: "LayoutDashboard" as const,
+      tab: true,
+    },
+    {
+      href: "/matches",
+      label: t("app.matches"),
+      icon: "Heart" as const,
+      tab: true,
+      locked: true,
+    },
+    {
+      href: "/chat",
+      label: t("app.messages"),
+      icon: "MessageCircle" as const,
+      tab: true,
+      locked: true,
+    },
+    {
+      href: profileComplete ? "/profile" : "/questionnaire",
+      label: profileComplete ? t("app.profile") : t("app.completeProfile"),
+      mobileLabel: profileComplete ? t("app.profile") : t("app.completeProfileShort"),
+      icon: (profileComplete ? "User" : "ClipboardList") as "User" | "ClipboardList",
+      tab: true,
+    },
+    {
+      href: "/notifications",
+      label: t("app.notifications"),
+      icon: "Bell" as const,
+      tab: false,
+    },
   ];
 }
 

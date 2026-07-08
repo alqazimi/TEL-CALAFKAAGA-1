@@ -27,6 +27,7 @@ const iconMap = {
   Heart,
   MessageCircle,
   ClipboardList,
+  User,
 };
 
 type TabIcon = keyof typeof iconMap;
@@ -45,7 +46,7 @@ export function AppMobileNav() {
   const { t } = useTranslation();
   const user = useQuery(api.users.currentUser);
   const profileComplete = user?.profile?.questionnaireComplete ?? false;
-  const appNavLinks = useAppNavLinks().filter((l) => l.tab);
+  const appNavLinks = useAppNavLinks(profileComplete).filter((l) => l.tab);
 
   // Admins and owners get admin-section navigation instead of member tabs.
   if (isStaffRole(user?.profile?.role)) {
@@ -92,10 +93,11 @@ export function AppMobileNav() {
       <div className="flex items-stretch justify-around px-1">
         {appNavLinks.map((link) => {
           const Icon = iconMap[link.icon as TabIcon];
-          const isActive = pathname === link.href;
+          const isActive =
+            pathname === link.href ||
+            (!profileComplete && link.href === "/questionnaire" && pathname.startsWith("/questionnaire"));
           const isLocked = "locked" in link && link.locked && !profileComplete;
-          const href =
-            isLocked && !profileComplete ? "/questionnaire" : link.href;
+          const href = isLocked ? "/questionnaire" : link.href;
 
           return (
             <Link

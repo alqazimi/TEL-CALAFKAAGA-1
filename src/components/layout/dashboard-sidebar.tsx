@@ -66,7 +66,7 @@ export function DashboardSidebar() {
   const progress = user?.profile
     ? calculateProfileProgress(user.profile, preferences ?? undefined)
     : 0;
-  const appNavLinks = useAppNavLinks();
+  const appNavLinks = useAppNavLinks(profileComplete);
   const { t } = useTranslation();
 
   return (
@@ -92,7 +92,9 @@ export function DashboardSidebar() {
           {!isStaff &&
             appNavLinks.map((link) => {
               const Icon = iconMap[link.icon as AppNavIcon];
-              const isActive = pathname === link.href;
+              const isActive =
+                pathname === link.href ||
+                (!profileComplete && link.href === "/questionnaire" && pathname.startsWith("/questionnaire"));
               const isLocked = "locked" in link && link.locked && !profileComplete;
               const href = isLocked ? "/questionnaire" : link.href;
 

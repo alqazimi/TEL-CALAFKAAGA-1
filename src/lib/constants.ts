@@ -257,16 +257,24 @@ export type AppNavIcon =
   | "MessageCircle"
   | "Bell";
 
-/** App navigation — single source for sidebar and mobile tabs. */
-export const APP_NAV_LINKS = [
-  { href: "/dashboard", label: "Dashboard", mobileLabel: "Home", icon: "LayoutDashboard" as AppNavIcon, tab: true },
-  { href: "/matches", label: "Matches", icon: "Heart" as AppNavIcon, tab: true, locked: true },
-  { href: "/chat", label: "Messages", icon: "MessageCircle" as AppNavIcon, tab: true, locked: true },
-  { href: "/questionnaire", label: "Questionnaire", icon: "ClipboardList" as AppNavIcon, tab: true },
-  { href: "/profile", label: "Profile", icon: "User" as AppNavIcon, tab: false },
-  { href: "/notifications", label: "Notifications", icon: "Bell" as AppNavIcon, tab: false },
-] as const;
+/** App navigation — Muzz-style: Home, Matches, Messages, Profile (4 tabs). */
+export function getAppNavLinks(profileComplete = true) {
+  return [
+    { href: "/dashboard", label: "Dashboard", mobileLabel: "Home", icon: "LayoutDashboard" as AppNavIcon, tab: true },
+    { href: "/matches", label: "Matches", icon: "Heart" as AppNavIcon, tab: true, locked: true },
+    { href: "/chat", label: "Messages", icon: "MessageCircle" as AppNavIcon, tab: true, locked: true },
+    {
+      href: profileComplete ? "/profile" : "/questionnaire",
+      label: profileComplete ? "Profile" : "Complete profile",
+      mobileLabel: profileComplete ? "Profile" : "Complete",
+      icon: (profileComplete ? "User" : "ClipboardList") as AppNavIcon,
+      tab: true,
+    },
+    { href: "/notifications", label: "Notifications", icon: "Bell" as AppNavIcon, tab: false },
+  ] as const;
+}
 
+export const APP_NAV_LINKS = getAppNavLinks(true);
 export const APP_MOBILE_TABS = APP_NAV_LINKS.filter((l) => l.tab);
 
 export const FAQ_ITEMS = [

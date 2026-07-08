@@ -30,6 +30,7 @@ export const en = {
     logOut: "Log out",
     account: "Account",
     completeProfile: "Complete your profile",
+    completeProfileShort: "Complete",
     profileSetup: "Profile setup",
   },
   common: {
