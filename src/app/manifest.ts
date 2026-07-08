@@ -23,8 +23,8 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["lifestyle", "social"],
     icons: [
       {
-        src: "/icon",
-        sizes: "48x48",
+        src: "/logo",
+        sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
@@ -32,12 +32,19 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/logo",
         sizes: "512x512",
         type: "image/png",
+        purpose: "maskable",
+      },
+      {
+        src: "/logo",
+        sizes: "192x192",
+        type: "image/png",
         purpose: "any",
       },
       {
         src: "/apple-icon",
         sizes: "180x180",
         type: "image/png",
+        purpose: "any",
       },
     ],
   };

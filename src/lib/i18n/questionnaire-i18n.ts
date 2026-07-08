@@ -525,6 +525,10 @@ const UI_TEXT = {
   },
   autoSaveOn: { en: "Auto-save on", so: "Kaydinta tooska ah" },
   questionOf: { en: "Question {current} of {total}", so: "Su'aal {current} / {total}" },
+  selectUpTo: {
+    en: "Choose up to {count}",
+    so: "Dooro ilaa {count}",
+  },
   nextQuestion: { en: "Next question", so: "Su'aasha xigta" },
   continueFlow: { en: "Continue", so: "Sii wad" },
   previousQuestion: { en: "Previous", so: "Dib u noqo" },
@@ -636,6 +640,10 @@ const UI_TEXT = {
   welcomeQuestionnaireTitle: {
     en: "Welcome! Let's build your profile",
     so: "Ku soo dhawoow! Aan dhisno profile-kaaga",
+  },
+  welcomeQuestionnaireSub: {
+    en: "Answer one question at a time. Your progress saves automatically — you can leave and come back anytime.",
+    so: "Hal su'aal marba ka jawaab. Horumarkaaga si toos ah ayaa loo kaydiyaa — waad ka bixi kartaa oo dib ugu soo noqon kartaa.",
   },
   viewMatches: { en: "View Matches", so: "Eeg Kuwa Ku Habboon" },
   myProfile: { en: "My Profile", so: "Profile-kayga" },

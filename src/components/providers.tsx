@@ -8,6 +8,8 @@ import { Toaster } from "sonner";
 import { getConvexClient, isConvexConfigured } from "@/lib/convex-client";
 import { ConvexAuthStatus } from "@/components/auth/convex-auth-status";
 import { LanguageProvider } from "@/lib/i18n/context";
+import { RegisterServiceWorker } from "@/components/pwa/register-service-worker";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 
 export function Providers({ children }: { children: ReactNode }) {
   const convex = useMemo(() => getConvexClient(), []);
@@ -29,6 +31,8 @@ export function Providers({ children }: { children: ReactNode }) {
           enableSystem
         >
           <ConvexAuthStatus>{children}</ConvexAuthStatus>
+          <RegisterServiceWorker />
+          <InstallPrompt />
           <Toaster position="top-right" richColors />
         </ThemeProvider>
       </LanguageProvider>

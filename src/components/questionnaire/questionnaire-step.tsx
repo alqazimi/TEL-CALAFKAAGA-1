@@ -3,21 +3,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { Check, Cloud, CloudOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CountryCombobox } from "@/components/ui/country-combobox";
 import { CountryMultiCombobox } from "@/components/ui/country-multi-combobox";
 import { cn } from "@/lib/utils";
@@ -37,9 +26,10 @@ import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
 import type { FieldConfig, StepConfig } from "./steps";
 
-const AUTO_ADVANCE_MS = 450;
+const AUTO_ADVANCE_MS = 380;
 const AUTO_SAVE_MS = 1000;
 const AUTO_ADVANCE_TYPES = new Set(["radio", "select", "country-search"]);
+const SCROLLABLE_SELECT_MIN = 8;
 
 type FormState = {
   radios: Record<string, string>;
@@ -49,7 +39,6 @@ type FormState = {
   bio: string;
 };
 
-/** Maps English validation strings from validateStepFields to translatable UI keys. */
 const ERROR_KEY_MAP: Record<string, QuestionnaireUiKey> = {
   "Please select an option": "selectOption",
   "This field is required": "requiredField",
@@ -70,6 +59,36 @@ function fieldNeedsManualAdvance(field: FieldConfig, selectedCountry: string): b
     return true;
   }
   return false;
+}
+
+function OptionButton({
+  selected,
+  label,
+  onClick,
+  disabled,
+}: {
+  selected: boolean;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center justify-between gap-4 rounded-2xl border-2 px-5 py-4 text-left transition-all duration-200 active:scale-[0.99]",
+        selected
+          ? "border-primary bg-primary/[0.07] shadow-sm"
+          : "border-border bg-card hover:border-primary/30 hover:bg-muted/40",
+        disabled && "opacity-60 pointer-events-none"
+      )}
+    >
+      <span className="text-base font-medium leading-snug">{label}</span>
+      {selected && <Check className="h-5 w-5 shrink-0 text-primary" strokeWidth={2.5} />}
+    </button>
+  );
 }
 
 interface QuestionnaireStepProps {
@@ -106,7 +125,7 @@ export function QuestionnaireStep({
   const selectedCountryRef = useRef(initial.selectedCountry);
   const { register, watch, setValue } = useForm({ defaultValues: { bio: initial.bio } });
   const bio = watch("bio", initial.bio);
-  const { stepTitle, stepDescription, fieldLabel, optionLabel, ui } = useQuestionnaireI18n();
+  const { fieldLabel, optionLabel, ui } = useQuestionnaireI18n();
 
   const profileId = profile?._id ?? null;
   const stepId = step.id;
@@ -133,9 +152,7 @@ export function QuestionnaireStep({
   );
   const currentField = visibleFields[safeFieldIndex];
   const isLastField = safeFieldIndex >= visibleFields.length - 1;
-  const fieldsToRender = currentField ? [currentField] : [];
 
-  // Load form state only when switching users or steps — not on auto-save profile updates.
   useEffect(() => {
     const state = initFormState(profileRef.current, preferencesRef.current);
     setSelectedCountry(state.selectedCountry);
@@ -151,7 +168,6 @@ export function QuestionnaireStep({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
   }, [profileId, stepId, setValue, step]);
 
-  // Keep index in range when conditional questions hide/show — never jump to Q1.
   useEffect(() => {
     setFieldIndex((i) => {
       if (visibleFields.length === 0) return 0;
@@ -233,30 +249,27 @@ export function QuestionnaireStep({
   const completeStepRef = useRef(completeCurrentStep);
   completeStepRef.current = completeCurrentStep;
 
-  const scheduleAutoAdvance = useCallback((field: FieldConfig) => {
-    if (fieldNeedsManualAdvance(field, selectedCountryRef.current)) return;
-    if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
-    autoAdvanceRef.current = setTimeout(() => {
-      const idx = fieldIndexRef.current;
-      const count = getVisibleFields(
-        step,
-        profile,
-        formStateRef.current.radios,
-        formStateRef.current.selects
-      ).length;
-      if (idx >= count - 1) {
-        void completeStepRef.current();
-      } else {
-        setFieldIndex(idx + 1);
-      }
-    }, AUTO_ADVANCE_MS);
-  }, [step, profile]);
-
-  const goToPreviousField = () => {
-    if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
-    setFieldIndex((i) => Math.max(0, i - 1));
-    setFieldErrors({});
-  };
+  const scheduleAutoAdvance = useCallback(
+    (field: FieldConfig) => {
+      if (fieldNeedsManualAdvance(field, selectedCountryRef.current)) return;
+      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+      autoAdvanceRef.current = setTimeout(() => {
+        const idx = fieldIndexRef.current;
+        const count = getVisibleFields(
+          step,
+          profile,
+          formStateRef.current.radios,
+          formStateRef.current.selects
+        ).length;
+        if (idx >= count - 1) {
+          void completeStepRef.current();
+        } else {
+          setFieldIndex(idx + 1);
+        }
+      }, AUTO_ADVANCE_MS);
+    },
+    [step, profile]
+  );
 
   const goToNextField = () => {
     if (!currentField) return;
@@ -295,49 +308,79 @@ export function QuestionnaireStep({
   const showManualNext =
     currentField && fieldNeedsManualAdvance(currentField, selectedCountry);
 
-  const renderFieldInput = (field: FieldConfig) => (
-    <>
-      {field.type === "radio" && (
-        <RadioGroup
-          value={radios[field.name] ?? ""}
-          onValueChange={(v) => {
-            setRadios((prev) => {
-              const next = { ...prev, [field.name]: v };
-              if (field.name === "maritalStatus" && v === "Never married") {
-                delete next.hasChildren;
-              }
-              if (field.name === "substanceUse" && v === "No") {
-                setTextFields((tf) => {
-                  const updated = { ...tf };
-                  delete updated.substanceDetails;
-                  return updated;
-                });
-              }
-              return next;
-            });
-            clearFieldError(field.name);
-            scheduleAutoAdvance(field);
-          }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-        >
-          {field.options?.map((option) => (
-            <label
-              key={String(option)}
-              className={cn(
-                "flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-all duration-200 active:scale-[0.98]",
-                radios[field.name] === String(option)
-                  ? "border-primary bg-accent text-accent-foreground shadow-sm ring-1 ring-primary/30"
-                  : "border-border bg-input hover:border-primary/40 hover:bg-muted/50 hover:shadow-sm"
-              )}
-            >
-              <RadioGroupItem value={String(option)} />
-              <span className="text-sm font-semibold">{optionLabel(String(option))}</span>
-            </label>
+  const renderSelectOptions = (
+    field: FieldConfig,
+    value: string,
+    onSelect: (v: string) => void
+  ) => {
+    const options = (field.options ?? []).map(String);
+    if (options.length >= SCROLLABLE_SELECT_MIN) {
+      return (
+        <div className="max-h-[min(22rem,50dvh)] overflow-y-auto space-y-2 pr-1 -mr-1">
+          {options.map((option) => (
+            <OptionButton
+              key={option}
+              selected={value === option}
+              label={optionLabel(option)}
+              onClick={() => onSelect(option)}
+            />
           ))}
-        </RadioGroup>
-      )}
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-2.5">
+        {options.map((option) => (
+          <OptionButton
+            key={option}
+            selected={value === option}
+            label={optionLabel(option)}
+            onClick={() => onSelect(option)}
+          />
+        ))}
+      </div>
+    );
+  };
 
-      {field.type === "country-search" && (
+  const renderFieldInput = (field: FieldConfig) => {
+    if (field.type === "radio") {
+      return (
+        <div className="space-y-2.5" role="radiogroup">
+          {field.options?.map((option) => {
+            const value = String(option);
+            const selected = radios[field.name] === value;
+            return (
+              <OptionButton
+                key={value}
+                selected={selected}
+                label={optionLabel(value)}
+                onClick={() => {
+                  setRadios((prev) => {
+                    const next = { ...prev, [field.name]: value };
+                    if (field.name === "maritalStatus" && value === "Never married") {
+                      delete next.hasChildren;
+                    }
+                    if (field.name === "substanceUse" && value === "No") {
+                      setTextFields((tf) => {
+                        const updated = { ...tf };
+                        delete updated.substanceDetails;
+                        return updated;
+                      });
+                    }
+                    return next;
+                  });
+                  clearFieldError(field.name);
+                  scheduleAutoAdvance(field);
+                }}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+
+    if (field.type === "country-search") {
+      return (
         <CountryCombobox
           value={selects[field.name] ?? ""}
           onChange={(v) => {
@@ -362,9 +405,11 @@ export function QuestionnaireStep({
             scheduleAutoAdvance(field);
           }}
         />
-      )}
+      );
+    }
 
-      {field.type === "country-multi" && (
+    if (field.type === "country-multi") {
+      return (
         <CountryMultiCombobox
           value={multiSelects[field.name] ?? []}
           onChange={(v) => {
@@ -372,255 +417,211 @@ export function QuestionnaireStep({
             clearFieldError(field.name);
           }}
         />
-      )}
+      );
+    }
 
-      {field.type === "select" && field.name === "city" && (
-        CITIES[selectedCountry]?.length ? (
-          <Select
-            value={selects[field.name] ?? ""}
-            onValueChange={(v) => {
-              setSelects((prev) => ({ ...prev, [field.name]: v }));
-              clearFieldError(field.name);
-              scheduleAutoAdvance(field);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={ui("selectCity")} />
-            </SelectTrigger>
-            <SelectContent>
-              {CITIES[selectedCountry].map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            value={selects[field.name] ?? ""}
-            onChange={(e) => {
-              setSelects((prev) => ({ ...prev, [field.name]: e.target.value }));
-              clearFieldError(field.name);
-            }}
-            placeholder={ui("enterCity")}
-          />
-        )
-      )}
-
-      {field.type === "select" && field.name !== "city" && (
-        <Select
+    if (field.type === "select" && field.name === "city") {
+      if (CITIES[selectedCountry]?.length) {
+        return renderSelectOptions(field, selects[field.name] ?? "", (v) => {
+          setSelects((prev) => ({ ...prev, [field.name]: v }));
+          clearFieldError(field.name);
+          scheduleAutoAdvance(field);
+        });
+      }
+      return (
+        <Input
           value={selects[field.name] ?? ""}
-          onValueChange={(v) => {
-            setSelects((prev) => ({ ...prev, [field.name]: v }));
-            if (field.name === "country") setSelectedCountry(v);
+          onChange={(e) => {
+            setSelects((prev) => ({ ...prev, [field.name]: e.target.value }));
             clearFieldError(field.name);
-            scheduleAutoAdvance(field);
           }}
-        >
-          <SelectTrigger>
-            <SelectValue
-              placeholder={`${ui("selectPlaceholder")} ${fieldLabel(field.name, field.label).toLowerCase()}`}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {(field.options ?? []).map((option) => (
-              <SelectItem key={String(option)} value={String(option)}>
-                {optionLabel(String(option))}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
+          placeholder={ui("enterCity")}
+          className="h-14 rounded-2xl text-base px-5"
+        />
+      );
+    }
 
-      {field.type === "textarea" && field.name === "bio" && (
+    if (field.type === "select" && field.name !== "city") {
+      return renderSelectOptions(field, selects[field.name] ?? "", (v) => {
+        setSelects((prev) => ({ ...prev, [field.name]: v }));
+        if (field.name === "country") setSelectedCountry(v);
+        clearFieldError(field.name);
+        scheduleAutoAdvance(field);
+      });
+    }
+
+    if (field.type === "textarea" && field.name === "bio") {
+      return (
         <div>
           <Textarea
             {...register("bio")}
             placeholder={ui("bioPlaceholder")}
-            rows={4}
+            rows={6}
             maxLength={500}
+            className="rounded-2xl text-base leading-relaxed resize-none min-h-[10rem]"
             onChange={(e) => {
               setValue("bio", e.target.value);
               clearFieldError("bio");
             }}
           />
-          <p className="text-xs text-muted-foreground mt-1 text-right">
+          <p className="text-xs text-muted-foreground mt-2 text-right">
             {(bio?.length ?? 0)}/500
           </p>
         </div>
-      )}
+      );
+    }
 
-      {field.type === "textarea" && field.name !== "bio" && (
+    if (field.type === "textarea" && field.name !== "bio") {
+      return (
         <Textarea
           value={textFields[field.name] ?? ""}
           placeholder={ui("substanceDetailsPlaceholder")}
-          rows={4}
+          rows={5}
           maxLength={500}
+          className="rounded-2xl text-base leading-relaxed resize-none"
           onChange={(e) => {
             setTextFields((prev) => ({ ...prev, [field.name]: e.target.value }));
             clearFieldError(field.name);
           }}
         />
-      )}
+      );
+    }
 
-      {field.type === "multi-select" && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+    if (field.type === "multi-select") {
+      return (
+        <div className="space-y-2.5">
           {field.options?.map((option) => {
-            const selected = (multiSelects[field.name] ?? []).includes(String(option));
+            const value = String(option);
+            const selected = (multiSelects[field.name] ?? []).includes(value);
             return (
-              <label
-                key={String(option)}
-                className={cn(
-                  "flex items-center gap-2 rounded-xl border p-3 cursor-pointer transition-all duration-200 text-sm font-semibold active:scale-[0.98]",
-                  selected
-                    ? "border-primary bg-accent text-accent-foreground shadow-sm ring-1 ring-primary/30"
-                    : "border-border bg-input hover:border-primary/40 hover:bg-muted/50 hover:shadow-sm"
-                )}
-              >
-                <Checkbox
-                  checked={selected}
-                  onCheckedChange={() => {
-                    toggleMultiSelect(field.name, String(option), field.maxSelect);
-                    clearFieldError(field.name);
-                  }}
-                />
-                {optionLabel(String(option))}
-              </label>
+              <OptionButton
+                key={value}
+                selected={selected}
+                label={optionLabel(value)}
+                onClick={() => {
+                  toggleMultiSelect(field.name, value, field.maxSelect);
+                  clearFieldError(field.name);
+                }}
+              />
             );
           })}
         </div>
-      )}
-    </>
-  );
+      );
+    }
+
+    return null;
+  };
+
+  if (!currentField) return null;
 
   return (
-    <Card className="shadow-lg shadow-primary/5 overflow-hidden">
-      <CardHeader className="border-b border-border bg-gradient-to-r from-accent/50 to-transparent">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <CardTitle className="text-xl sm:text-2xl font-bold">
-              {stepTitle(step.id, step.title)}
-            </CardTitle>
-            <CardDescription className="text-sm sm:text-base mt-1">
-              {stepDescription(step.id, step.description)}
-            </CardDescription>
-            {visibleFields.length > 0 && (
-              <p className="text-xs font-semibold text-primary mt-2">
-                {ui("questionOf")
-                  .replace("{current}", String(safeFieldIndex + 1))
-                  .replace("{total}", String(visibleFields.length))}
-              </p>
+    <div className="flex flex-col pb-28">
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <p className="text-sm font-medium text-muted-foreground">
+          {ui("questionOf")
+            .replace("{current}", String(safeFieldIndex + 1))
+            .replace("{total}", String(visibleFields.length))}
+        </p>
+        {onAutoSave && saveStatus !== "idle" && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {saveStatus === "saving" && (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>{ui("saving")}</span>
+              </>
+            )}
+            {saveStatus === "saved" && (
+              <>
+                <Cloud className="h-3.5 w-3.5 text-primary" />
+                <span className="text-primary">{ui("saved")}</span>
+              </>
+            )}
+            {saveStatus === "error" && (
+              <>
+                <CloudOff className="h-3.5 w-3.5 text-destructive" />
+                <span className="text-destructive">{ui("saveFailed")}</span>
+              </>
             )}
           </div>
-          {onAutoSave && saveStatus !== "idle" && (
-            <div className="flex items-center gap-1.5 text-xs shrink-0 rounded-full bg-card px-2.5 py-1 border border-border">
-              {saveStatus === "saving" && (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                  <span className="text-muted-foreground">{ui("saving")}</span>
-                </>
-              )}
-              {saveStatus === "saved" && (
-                <>
-                  <Cloud className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-primary">{ui("saved")}</span>
-                </>
-              )}
-              {saveStatus === "error" && (
-                <>
-                  <CloudOff className="h-3.5 w-3.5 text-destructive" />
-                  <span className="text-destructive">{ui("saveFailed")}</span>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-        {visibleFields.length > 1 && (
-          <div className="flex gap-1.5 mt-4">
-            {visibleFields.map((field, i) => (
-              <div
-                key={field.name}
-                className={cn(
-                  "h-1 flex-1 rounded-full transition-colors duration-300",
-                  i < safeFieldIndex
-                    ? "bg-primary"
-                    : i === safeFieldIndex
-                      ? "bg-primary/60"
-                      : "bg-muted"
-                )}
-              />
-            ))}
-          </div>
         )}
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-8 pt-8">
-        <AnimatePresence mode="wait">
-          {fieldsToRender.map((field) => (
-            <motion.div
-              key={`${step.id}-${field.name}-${safeFieldIndex}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className="space-y-4"
-            >
-              <Label className="text-lg sm:text-xl font-bold text-foreground leading-snug block">
-                {fieldLabel(field.name, field.label)}
-                {field.required && <span className="text-destructive ml-0.5">*</span>}
-              </Label>
-              {fieldErrors[field.name] && (
-                <p className="text-sm text-destructive font-medium">
-                  {translateError(fieldErrors[field.name], ui)}
-                </p>
+      {visibleFields.length > 1 && (
+        <div className="flex gap-1 mb-8">
+          {visibleFields.map((field, i) => (
+            <div
+              key={field.name}
+              className={cn(
+                "h-1 flex-1 rounded-full transition-colors duration-300",
+                i <= safeFieldIndex ? "bg-primary" : "bg-muted"
               )}
-              {renderFieldInput(field)}
-            </motion.div>
+            />
           ))}
-        </AnimatePresence>
-
-        <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 pt-2">
-          {safeFieldIndex > 0 && (
-            <Button
-              variant="ghost"
-              onClick={goToPreviousField}
-              className="sm:mr-auto"
-              disabled={isAdvancing}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              {ui("previousQuestion")}
-            </Button>
-          )}
-
-          {showManualNext && (
-            <Button
-              onClick={goToNextField}
-              className="w-full sm:w-auto sm:ml-auto text-base font-semibold"
-              size="lg"
-              disabled={isAdvancing}
-            >
-              {isAdvancing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {ui("saving")}
-                </>
-              ) : (
-                <>
-                  {isLastField ? ui("continueFlow") : ui("nextQuestion")}
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          )}
-
-          {isAdvancing && !showManualNext && (
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground sm:ml-auto py-2">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              {ui("saving")}
-            </div>
-          )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${step.id}-${currentField.name}-${safeFieldIndex}`}
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+          className="space-y-6"
+        >
+          <h2 className="text-2xl sm:text-[1.75rem] font-semibold tracking-tight leading-snug text-foreground">
+            {fieldLabel(currentField.name, currentField.label)}
+            {currentField.required && (
+              <span className="text-destructive ml-0.5">*</span>
+            )}
+          </h2>
+
+          {currentField.type === "multi-select" && currentField.maxSelect && (
+            <p className="text-sm text-muted-foreground -mt-2">
+              {ui("selectUpTo").replace("{count}", String(currentField.maxSelect))}
+            </p>
+          )}
+
+          {fieldErrors[currentField.name] && (
+            <p className="text-sm text-destructive font-medium -mt-2">
+              {translateError(fieldErrors[currentField.name], ui)}
+            </p>
+          )}
+
+          {renderFieldInput(currentField)}
+        </motion.div>
+      </AnimatePresence>
+
+      {(showManualNext || (isAdvancing && !showManualNext)) && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/95 backdrop-blur-md px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto max-w-xl">
+            {showManualNext ? (
+              <Button
+                onClick={goToNextField}
+                className="w-full h-12 rounded-2xl text-base font-semibold"
+                size="lg"
+                disabled={isAdvancing}
+              >
+                {isAdvancing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {ui("saving")}
+                  </>
+                ) : isLastField ? (
+                  ui("continueFlow")
+                ) : (
+                  ui("nextQuestion")
+                )}
+              </Button>
+            ) : (
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-3">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                {ui("saving")}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

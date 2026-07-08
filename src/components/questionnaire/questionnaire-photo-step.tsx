@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
-import { Camera, ChevronRight, Loader2, User } from "lucide-react";
+import { Camera, Loader2, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import type { Profile } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 
@@ -70,72 +69,70 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
   };
 
   return (
-    <Card className="shadow-lg shadow-primary/5">
-      <CardHeader className="border-b border-border bg-gradient-to-r from-accent/50 to-transparent">
-        <CardTitle className="text-xl sm:text-2xl font-bold">{ui("photoTitle")}</CardTitle>
-        <CardDescription className="text-sm sm:text-base mt-1">
-          {ui("photoStepDesc")}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-8 py-8">
-        <div className="flex flex-col items-center text-center">
-          <div className="relative">
-            <Avatar className="h-36 w-36 sm:h-44 sm:w-44 border-4 border-background shadow-xl">
-              <AvatarImage src={previewUrl ?? undefined} alt={profile.name} />
-              <AvatarFallback className="text-4xl bg-muted">
-                <User className="h-16 w-16 text-muted-foreground" />
-              </AvatarFallback>
-            </Avatar>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="absolute -bottom-1 -right-1 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
-              aria-label={ui("uploadPhotoAria")}
-            >
-              {uploading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Camera className="h-5 w-5" />
-              )}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-            />
-          </div>
+    <div className="flex flex-col items-center text-center pb-28">
+      <h2 className="text-2xl sm:text-[1.75rem] font-semibold tracking-tight leading-snug mb-3 w-full text-left">
+        {ui("photoTitle")}
+      </h2>
+      <p className="text-sm text-muted-foreground mb-10 w-full text-left leading-relaxed">
+        {ui("photoStepDesc")}
+      </p>
 
-          <p className="mt-6 text-base font-bold text-foreground">
-            {ui("uploadYourPhoto")}
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground max-w-sm leading-relaxed">
-            {ui("photoHelp")}
-          </p>
+      <div className="relative mb-8">
+        <Avatar className="h-40 w-40 sm:h-48 sm:w-48 border-4 border-background shadow-xl ring-2 ring-border">
+          <AvatarImage src={previewUrl ?? undefined} alt={profile.name} />
+          <AvatarFallback className="text-4xl bg-muted">
+            <User className="h-16 w-16 text-muted-foreground" />
+          </AvatarFallback>
+        </Avatar>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="absolute -bottom-1 -right-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
+          aria-label={ui("uploadPhotoAria")}
+        >
+          {uploading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Camera className="h-5 w-5" />
+          )}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageUpload}
+        />
+      </div>
 
+      <p className="text-base font-medium text-foreground mb-2">{ui("uploadYourPhoto")}</p>
+      <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-6">
+        {ui("photoHelp")}
+      </p>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="rounded-2xl h-11 px-6"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={uploading}
+      >
+        {uploading ? ui("uploading") : hasPhoto ? ui("changePhoto") : ui("choosePhoto")}
+      </Button>
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/95 backdrop-blur-md px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-xl">
           <Button
-            type="button"
-            variant="outline"
-            className="mt-4"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleContinue}
+            className="w-full h-12 rounded-2xl text-base font-semibold"
+            size="lg"
             disabled={uploading}
           >
-            {uploading ? ui("uploading") : hasPhoto ? ui("changePhoto") : ui("choosePhoto")}
+            {ui("submitAndReview")}
           </Button>
         </div>
-
-        <Button
-          onClick={handleContinue}
-          className="w-full sm:w-auto text-base font-semibold"
-          size="lg"
-          disabled={uploading}
-        >
-          {ui("submitAndReview")}
-          <ChevronRight className="ml-2 h-4 w-4" />
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

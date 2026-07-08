@@ -5,23 +5,20 @@ import { useMutation, useQuery } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ChevronLeft, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import {
-  calculateProfileProgress,
   getResumeStepIndex,
 } from "@/lib/profile-progress";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { QuestionnaireStep } from "@/components/questionnaire/questionnaire-step";
 import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-review";
 import { QuestionnairePhaseComplete } from "@/components/questionnaire/questionnaire-phase-complete";
-import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { QuestionnairePhotoStep } from "@/components/questionnaire/questionnaire-photo-step";
-import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX, PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
+import { QuestionnaireShell } from "@/components/questionnaire/questionnaire-shell";
+import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX } from "@/components/questionnaire/steps";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
@@ -40,7 +37,7 @@ export default function QuestionnairePage() {
   const updateQuestionnaire = useMutation(api.profiles.updateQuestionnaire);
   const autoSaveProfile = useMutation(api.profiles.autoSaveProfile);
   const saveProfileEdits = useMutation(api.profiles.saveProfileEdits);
-  const { stepTitle, ui } = useQuestionnaireI18n();
+  const { ui } = useQuestionnaireI18n();
   const { t } = useTranslation();
   const welcome = searchParams.get("welcome") === "true";
 
@@ -159,28 +156,35 @@ export default function QuestionnairePage() {
     }
   }, [isStaff, router]);
 
+  const phaseLabel = useMemo(() => {
+    if (isReviewStep) return ui("badgeReview");
+    if (!currentStep && currentStep !== 0) return ui("badgeQuestionnaire");
+    const stepConfig = STEPS[currentStep!];
+    if (!stepConfig) return ui("badgeQuestionnaire");
+    if (stepConfig.phase === "photo") return ui("badgePhoto");
+    if (stepConfig.phase === "partner") return ui("badgePart2");
+    return `${ui("part1AboutPrefix")} · ${ui("stepWord")} ${currentStep! + 1}/${ABOUT_YOU_STEP_COUNT}`;
+  }, [currentStep, isReviewStep, ui]);
+
   if (profile === undefined || isStaff) {
     return (
-      <DashboardLayout>
-        <div className="max-w-2xl mx-auto space-y-4">
-          <Skeleton className="h-8 w-1/2" />
-          <Skeleton className="h-2 w-full" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
-        </div>
-      </DashboardLayout>
+      <QuestionnaireShell progress={0} phaseLabel={ui("badgeQuestionnaire")}>
+        <Skeleton className="h-10 w-full mb-6" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </QuestionnaireShell>
     );
   }
 
   if (!profile) {
     return (
-      <DashboardLayout>
-        <div className="max-w-lg mx-auto text-center py-16">
+      <QuestionnaireShell progress={0} phaseLabel={ui("badgeQuestionnaire")}>
+        <div className="text-center py-16">
           <p className="text-muted-foreground">{ui("profileNotFound")}</p>
           <Button className="mt-4" onClick={() => router.push("/dashboard")}>
             {ui("goToDashboard")}
           </Button>
         </div>
-      </DashboardLayout>
+      </QuestionnaireShell>
     );
   }
 
@@ -188,181 +192,111 @@ export default function QuestionnairePage() {
     const paid = hasPaidAccess(profile);
 
     return (
-      <DashboardLayout>
-        <div className="max-w-lg mx-auto text-center py-16">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-primary mx-auto mb-4">
-            <Check className="h-8 w-8" />
+      <QuestionnaireShell progress={100} phaseLabel={ui("profileCompleteTitle")}>
+        <div className="text-center py-12 sm:py-16">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto mb-5">
+            <Check className="h-8 w-8" strokeWidth={2.5} />
           </div>
-          <h1 className="text-2xl font-bold mb-2">{ui("profileCompleteTitle")}</h1>
-          <p className="text-muted-foreground mb-6">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
+            {ui("profileCompleteTitle")}
+          </h1>
+          <p className="text-muted-foreground mb-8 max-w-sm mx-auto leading-relaxed">
             {paid ? ui("profileReadySub") : ui("profileReadyPaySub")}
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col gap-3 max-w-xs mx-auto">
             {paid ? (
-              <Button asChild>
+              <Button className="h-12 rounded-2xl" asChild>
                 <a href="/matches">{ui("viewMatches")}</a>
               </Button>
             ) : (
-              <Button asChild>
+              <Button className="h-12 rounded-2xl" asChild>
                 <a href="/payment">{t("dashboard.choosePlan")}</a>
               </Button>
             )}
-            <Button variant="outline" asChild>
+            <Button variant="outline" className="h-12 rounded-2xl" asChild>
               <a href="/profile">{ui("myProfile")}</a>
             </Button>
           </div>
         </div>
-      </DashboardLayout>
+      </QuestionnaireShell>
     );
   }
 
   if (currentStep === null) {
     return (
-      <DashboardLayout>
-        <div className="max-w-2xl mx-auto space-y-4">
-          <Skeleton className="h-8 w-1/2" />
-          <Skeleton className="h-2 w-full" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
-        </div>
-      </DashboardLayout>
+      <QuestionnaireShell progress={0} phaseLabel={ui("badgeQuestionnaire")}>
+        <Skeleton className="h-10 w-full mb-6" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </QuestionnaireShell>
     );
   }
 
-  const completionPercent = calculateProfileProgress(profile, preferences);
   const currentStepConfig = !isReviewStep ? STEPS[currentStep] : null;
-  const isPartnerPhase = currentStepConfig?.phase === "partner";
   const isPhotoPhase = currentStepConfig?.phase === "photo";
-  const aboutStepNumber =
-    !isReviewStep && currentStepConfig?.phase === "about" ? currentStep + 1 : null;
+  const showWelcome =
+    welcome && currentStep === 0 && !isReviewStep && !phaseComplete && !isEditMode;
 
   return (
-    <DashboardLayout>
-      <div className="max-w-4xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-sm p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">
-                    {isEditMode
-                      ? ui("editProfileDetails")
-                      : welcome
-                        ? ui("welcomeQuestionnaireTitle")
-                        : ui("profileQuestionnaire")}
-                  </h1>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {phaseComplete === "about"
-                      ? ui("part1CompleteSub")
-                      : isReviewStep
-                      ? isEditMode
-                        ? ui("reviewUpdateSub")
-                        : ui("reviewAnswersSub")
-                      : isPhotoPhase
-                        ? ui("finalStepPhotoSub")
-                      : isPartnerPhase
-                        ? ui("part2Sub")
-                        : `${ui("part1AboutPrefix")} · ${stepTitle(STEPS[currentStep]?.id, STEPS[currentStep]?.title)}`}
-                  </p>
-                </div>
-                <span className="text-sm font-medium text-primary bg-accent dark:bg-primary/20 px-3 py-1 rounded-full">
-                  {isReviewStep
-                    ? ui("badgeReview")
-                    : isPhotoPhase
-                      ? ui("badgePhoto")
-                    : isPartnerPhase
-                      ? ui("badgePart2")
-                      : aboutStepNumber
-                        ? `${ui("stepWord")} ${aboutStepNumber}/${ABOUT_YOU_STEP_COUNT}`
-                        : ui("badgeQuestionnaire")}
-                </span>
-              </div>
-              <Progress value={progress} className="h-2.5" />
-              <p className="text-xs text-muted-foreground mt-2">
-                {ui("profileCompleteFooter").replace("{p}", String(completionPercent))}
-              </p>
-            </div>
+    <QuestionnaireShell
+      progress={progress}
+      phaseLabel={phaseLabel}
+      onBack={
+        currentStep > 0 && !isReviewStep && !phaseComplete ? handleBack : undefined
+      }
+    >
+      {showWelcome && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 rounded-2xl border border-primary/15 bg-primary/[0.04] px-5 py-4"
+        >
+          <p className="text-sm font-semibold text-primary">
+            {ui("welcomeQuestionnaireTitle")}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+            {ui("welcomeQuestionnaireSub")}
+          </p>
+        </motion.div>
+      )}
 
-            <div className="lg:hidden">
-              <ProfileCompletionCard
-                profile={profile}
-                preferences={preferences}
-                showContinue={false}
-                compact
-              />
-            </div>
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={phaseComplete ?? currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {phaseComplete ? (
-                  <QuestionnairePhaseComplete
-                    phase={phaseComplete}
-                    onContinue={handlePhaseContinue}
-                  />
-                ) : isReviewStep ? (
-                  <QuestionnaireReview
-                    profile={profile}
-                    preferences={preferences}
-                    onEditStep={handleEditStep}
-                    onComplete={handleComplete}
-                    isEditMode={isEditMode}
-                  />
-                ) : isPhotoPhase ? (
-                  <QuestionnairePhotoStep
-                    profile={profile}
-                    onSubmit={() => void handlePhotoContinue()}
-                  />
-                ) : (
-                  <>
-                    {isPartnerPhase && (
-                      <div className="mb-4 rounded-2xl border border-primary/20 bg-accent/80 dark:bg-primary/10 px-5 py-4">
-                        <p className="text-base font-bold text-accent-foreground dark:text-primary">
-                          {ui("part2CalloutTitle")}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
-                          {ui("part2CalloutDesc")}
-                        </p>
-                      </div>
-                    )}
-                    <QuestionnaireStep
-                      key={`step-${currentStep}-${profile._id}`}
-                      step={STEPS[currentStep]}
-                      profile={profile}
-                      preferences={preferences}
-                      onSubmit={handleNext}
-                      onAutoSave={handleAutoSave}
-                      isLastFormStep={false}
-                      isLastAboutStep={currentStep === ABOUT_YOU_STEP_COUNT - 1}
-                    />
-                  </>
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            {currentStep > 0 && !isReviewStep && !phaseComplete && (
-              <Button variant="ghost" onClick={handleBack}>
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                {ui("back")}
-              </Button>
-            )}
-          </div>
-
-          <div className="hidden lg:block">
-            <div className="sticky top-24">
-              <ProfileCompletionCard
-                profile={profile}
-                preferences={preferences}
-                showContinue={false}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </DashboardLayout>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={phaseComplete ?? currentStep}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {phaseComplete ? (
+            <QuestionnairePhaseComplete
+              phase={phaseComplete}
+              onContinue={handlePhaseContinue}
+            />
+          ) : isReviewStep ? (
+            <QuestionnaireReview
+              profile={profile}
+              preferences={preferences}
+              onEditStep={handleEditStep}
+              onComplete={handleComplete}
+              isEditMode={isEditMode}
+            />
+          ) : isPhotoPhase ? (
+            <QuestionnairePhotoStep
+              profile={profile}
+              onSubmit={() => void handlePhotoContinue()}
+            />
+          ) : (
+            <QuestionnaireStep
+              key={`step-${currentStep}-${profile._id}`}
+              step={STEPS[currentStep]}
+              profile={profile}
+              preferences={preferences}
+              onSubmit={handleNext}
+              onAutoSave={handleAutoSave}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </QuestionnaireShell>
   );
 }

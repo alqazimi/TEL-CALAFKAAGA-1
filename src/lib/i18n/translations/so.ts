@@ -62,6 +62,23 @@ export const so: Translations = {
     a11yAccountMenu: "Menu-ga akoonka",
     a11yClose: "Xir",
   },
+  pwa: {
+    title: "Ku rakib Hel Calafkaaga",
+    androidDesc:
+      "Ku dar app-ka shaashadda guriga si aad si dhakhso leh ugu gasho isbarbardhigga iyo fariimaha.",
+    iosDesc:
+      "Ku dar Hel Calafkaaga shaashadda guriga — waxay u shaqaysaa sida app iPhone-ka.",
+    install: "Rakib app-ka",
+    installing: "Waa la rakibayaa...",
+    notNow: "Hadda ma aha",
+    showSteps: "I tus sida loo sameeyo",
+    hideSteps: "Qari tallaabooyinka",
+    iosStep1:
+      "Fur goobtan Safari (ma aha browser-ka Instagram ama Facebook).",
+    iosStep2: "Taabo badhanka Share ee hoose ee Safari.",
+    iosStep3:
+      'Hoos u dhaqaaq oo taabo "Add to Home Screen", ka dibna taabo Add.',
+  },
   notFound: {
     title: "Bogga lama helin",
     subtitle: "Bogga aad raadinayso ma jiro ama waa la raray.",
