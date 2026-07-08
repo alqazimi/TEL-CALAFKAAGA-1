@@ -11,4 +11,11 @@ crons.interval(
   {}
 );
 
+crons.interval(
+  "member email reminders",
+  { hours: 24 },
+  internal.memberEmailReminders.run,
+  {}
+);
+
 export default crons;

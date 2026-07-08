@@ -4,9 +4,12 @@ import {
   EDUCATION_LEVELS,
   RELIGIOUS_LEVELS,
   OCCUPATIONS,
+  MARITAL_STATUS,
+  MARRIAGE_TIMELINE,
 } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -51,6 +54,14 @@ export function MatchFilters({ filters, onChange }: MatchFiltersProps) {
             )}
           </div>
           <div className="space-y-2">
+            <Label>{t("matchesPage.city")}</Label>
+            <Input
+              value={filters.city ?? ""}
+              onChange={(e) => update("city", e.target.value)}
+              placeholder={t("matchesPage.cityPlaceholder")}
+            />
+          </div>
+          <div className="space-y-2">
             <Label>{t("matchesPage.minAge")}</Label>
             <Select value={filters.minAge ?? ""} onValueChange={(v) => update("minAge", v)}>
               <SelectTrigger><SelectValue placeholder={t("matchesPage.any")} /></SelectTrigger>
@@ -79,6 +90,28 @@ export function MatchFilters({ filters, onChange }: MatchFiltersProps) {
               <SelectContent>
                 {RELIGIOUS_LEVELS.map((r) => (
                   <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("matchesPage.maritalStatus")}</Label>
+            <Select value={filters.maritalStatus ?? ""} onValueChange={(v) => update("maritalStatus", v)}>
+              <SelectTrigger><SelectValue placeholder={t("matchesPage.any")} /></SelectTrigger>
+              <SelectContent>
+                {MARITAL_STATUS.map((status) => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("matchesPage.marriageTimeline")}</Label>
+            <Select value={filters.marriageTimeline ?? ""} onValueChange={(v) => update("marriageTimeline", v)}>
+              <SelectTrigger><SelectValue placeholder={t("matchesPage.any")} /></SelectTrigger>
+              <SelectContent>
+                {MARRIAGE_TIMELINE.map((timeline) => (
+                  <SelectItem key={timeline} value={timeline}>{timeline}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

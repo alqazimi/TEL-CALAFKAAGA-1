@@ -176,8 +176,6 @@ export const completeQuestionnaire = mutation({
     await ctx.db.patch(profile._id, {
       questionnaireComplete: true,
       questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
-      approved: true,
-      verified: true,
       lastSavedAt: Date.now(),
     });
 

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import { TrustBadges } from "@/components/profile/trust-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -166,6 +167,7 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                     </p>
                   )}
                   <div className="flex flex-wrap gap-2 pt-1">
+                    <TrustBadges profile={detail.profile} size="sm" />
                     <Badge variant={detail.profile.questionnaireComplete ? "default" : "secondary"}>
                       {detail.profile.questionnaireComplete
                         ? t("adminDetail.profileComplete")

@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { hasPaidAccess, isStaffRole } from "./lib/roles";
 
 export const getNotifications = query({
   args: {},
@@ -29,6 +30,35 @@ export const getNotifications = query({
         return { ...n, relatedImageUrl };
       })
     );
+  },
+});
+
+export const getMemberReminders = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+
+    if (!profile || isStaffRole(profile.role)) return [];
+
+    if (!profile.questionnaireComplete) {
+      return [{ id: "complete-profile" as const, href: "/questionnaire" }];
+    }
+
+    if (!hasPaidAccess(profile)) {
+      return [{ id: "complete-payment" as const, href: "/payment" }];
+    }
+
+    if (!profile.approved) {
+      return [{ id: "pending-approval" as const, href: "/dashboard" }];
+    }
+
+    return [];
   },
 });
 

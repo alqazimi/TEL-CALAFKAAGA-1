@@ -61,11 +61,11 @@ export function getAuthenticatedHomeRoute(
   if (profile?.registrationComplete === false) {
     return "/register/details";
   }
-  if (!hasPaidAccess(profile)) {
-    return "/payment";
-  }
   if (!profile?.questionnaireComplete) {
     return "/questionnaire";
+  }
+  if (!hasPaidAccess(profile)) {
+    return "/payment";
   }
   return "/dashboard";
 }

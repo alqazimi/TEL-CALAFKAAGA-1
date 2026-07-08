@@ -1,37 +1,100 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { internal } from "./_generated/api";
 import { requireActiveProfile, requireAuthUserId } from "./lib/access";
 import { hasPaidAccess, isStaffRole } from "./lib/roles";
-import { effectiveReligiousLevel } from "./lib/profileEnrichment";
 import { getBlockedUserIds, isEitherBlocked } from "./lib/moderation";
+import {
+  buildMatchResult,
+  hasActiveMatch,
+  type MatchFilterArgs,
+  profilePassesMatchFilters,
+} from "./lib/matchPresentation";
+import { sendNotification } from "./lib/sendNotification";
+
+const matchFilterArgs = {
+  country: v.optional(v.string()),
+  city: v.optional(v.string()),
+  minAge: v.optional(v.number()),
+  maxAge: v.optional(v.number()),
+  minHeight: v.optional(v.number()),
+  maxHeight: v.optional(v.number()),
+  religiousLevel: v.optional(v.string()),
+  education: v.optional(v.string()),
+  occupation: v.optional(v.string()),
+  children: v.optional(v.number()),
+  maritalStatus: v.optional(v.string()),
+  marriageTimeline: v.optional(v.string()),
+};
+
+async function getMatchAccessProfile(ctx: QueryCtx) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) return null;
+
+  const myProfile = await ctx.db
+    .query("profiles")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+
+  if (!myProfile?.questionnaireComplete) return null;
+  if (!hasPaidAccess(myProfile)) return null;
+  if (!isStaffRole(myProfile.role) && !myProfile.approved) return null;
+
+  return { userId, myProfile };
+}
+
+async function loadProfilesForUserIds(
+  ctx: QueryCtx,
+  userIds: Id<"users">[],
+  myProfile: Doc<"profiles">,
+  args: MatchFilterArgs,
+  myLikes: Doc<"likes">[],
+  blockedIds: Set<Id<"users">>
+) {
+  const scoreMap = new Map(
+    (
+      await ctx.db
+        .query("compatibilityScores")
+        .withIndex("by_userA", (q) => q.eq("userA", myProfile.userId))
+        .collect()
+    ).map((s) => [s.userB, s.score])
+  );
+
+  const results = await Promise.all(
+    userIds.map(async (targetUserId) => {
+      if (blockedIds.has(targetUserId)) return null;
+
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_userId", (q) => q.eq("userId", targetUserId))
+        .unique();
+
+      if (!profile || profile.banned || !profile.approved) return null;
+      if (profile.gender === myProfile.gender) return null;
+      if (!profile.profileImageId) return null;
+      if (!profilePassesMatchFilters(profile, args)) return null;
+
+      const score = scoreMap.get(targetUserId) ?? 0;
+      const interaction = myLikes.find((l) => l.toUserId === targetUserId);
+
+      return buildMatchResult(ctx, profile, targetUserId, score, interaction);
+    })
+  );
+
+  return results
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .sort((a, b) => b.score - a.score);
+}
 
 export const getMatches = query({
-  args: {
-    country: v.optional(v.string()),
-    minAge: v.optional(v.number()),
-    maxAge: v.optional(v.number()),
-    minHeight: v.optional(v.number()),
-    maxHeight: v.optional(v.number()),
-    religiousLevel: v.optional(v.string()),
-    education: v.optional(v.string()),
-    occupation: v.optional(v.string()),
-    children: v.optional(v.number()),
-  },
+  args: matchFilterArgs,
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
+    const access = await getMatchAccessProfile(ctx);
+    if (!access) return [];
 
-    const myProfile = await ctx.db
-      .query("profiles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .unique();
-
-    if (!myProfile?.questionnaireComplete) return [];
-    if (!hasPaidAccess(myProfile)) return [];
-    if (!isStaffRole(myProfile.role) && !myProfile.approved) return [];
-
+    const { userId, myProfile } = access;
     const scores = await ctx.db
       .query("compatibilityScores")
       .withIndex("by_userA", (q) => q.eq("userA", userId))
@@ -42,73 +105,89 @@ export const getMatches = query({
       .withIndex("by_from", (q) => q.eq("fromUserId", userId))
       .collect();
 
-    const passedIds = new Set(
-      myLikes.filter((l) => l.action === "pass").map((l) => l.toUserId)
-    );
+    const interactedIds = new Set(myLikes.map((l) => l.toUserId));
     const blockedIds = await getBlockedUserIds(ctx, userId);
 
-    const results = await Promise.all(
-      scores
-        .filter((s) => s.score >= 70 && !passedIds.has(s.userB) && !blockedIds.has(s.userB))
-        .map(async (s) => {
-          const profile = await ctx.db
-            .query("profiles")
-            .withIndex("by_userId", (q) => q.eq("userId", s.userB))
-            .unique();
+    const discoverIds = scores
+      .filter((s) => s.score >= 70 && !interactedIds.has(s.userB))
+      .map((s) => s.userB);
 
-          if (!profile || profile.banned || !profile.approved) return null;
-          // Safety guard: never surface same-gender profiles, even if a stale
-          // compatibility score exists from before the gender filter.
-          if (profile.gender === myProfile.gender) return null;
-          if (!profile.profileImageId) return null;
-
-          if (args.country && profile.country !== args.country) return null;
-          if (args.minAge && profile.age < args.minAge) return null;
-          if (args.maxAge && profile.age > args.maxAge) return null;
-          if (args.minHeight && profile.height < args.minHeight) return null;
-          if (args.maxHeight && profile.height > args.maxHeight) return null;
-          if (args.religiousLevel && effectiveReligiousLevel(profile) !== args.religiousLevel) {
-            return null;
-          }
-          if (args.education && profile.education !== args.education) return null;
-          if (args.occupation && profile.occupation !== args.occupation) return null;
-          if (args.children !== undefined && profile.children !== args.children) return null;
-
-          let imageUrl = null;
-          if (profile.profileImageId) {
-            imageUrl = await ctx.storage.getUrl(profile.profileImageId);
-          }
-
-          const existingLike = myLikes.find((l) => l.toUserId === s.userB);
-
-          return {
-            userId: s.userB,
-            name: profile.name,
-            age: profile.age,
-            country: profile.country,
-            city: profile.city,
-            height: profile.height,
-            education: profile.education,
-            occupation: profile.occupation,
-            religiousLevel: effectiveReligiousLevel(profile),
-            prayerFrequency: profile.prayerFrequency ?? "",
-            imageUrl,
-            score: s.score,
-            liked: existingLike?.action === "like",
-          };
-        })
+    return loadProfilesForUserIds(
+      ctx,
+      discoverIds,
+      myProfile,
+      args,
+      myLikes,
+      blockedIds
     );
+  },
+});
 
-    return results
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-      .sort((a, b) => b.score - a.score);
+export const getShortlistedProfiles = query({
+  args: matchFilterArgs,
+  handler: async (ctx, args) => {
+    const access = await getMatchAccessProfile(ctx);
+    if (!access) return [];
+
+    const { userId, myProfile } = access;
+    const myLikes = await ctx.db
+      .query("likes")
+      .withIndex("by_from", (q) => q.eq("fromUserId", userId))
+      .collect();
+
+    const shortlistIds = myLikes
+      .filter((l) => l.action === "shortlist")
+      .map((l) => l.toUserId);
+
+    const blockedIds = await getBlockedUserIds(ctx, userId);
+
+    return loadProfilesForUserIds(
+      ctx,
+      shortlistIds,
+      myProfile,
+      args,
+      myLikes,
+      blockedIds
+    );
+  },
+});
+
+export const getSentLikes = query({
+  args: matchFilterArgs,
+  handler: async (ctx, args) => {
+    const access = await getMatchAccessProfile(ctx);
+    if (!access) return [];
+
+    const { userId, myProfile } = access;
+    const myLikes = await ctx.db
+      .query("likes")
+      .withIndex("by_from", (q) => q.eq("fromUserId", userId))
+      .collect();
+
+    const likedIds: Id<"users">[] = [];
+    for (const like of myLikes.filter((l) => l.action === "like")) {
+      if (!(await hasActiveMatch(ctx, userId, like.toUserId))) {
+        likedIds.push(like.toUserId);
+      }
+    }
+
+    const blockedIds = await getBlockedUserIds(ctx, userId);
+
+    return loadProfilesForUserIds(
+      ctx,
+      likedIds,
+      myProfile,
+      args,
+      myLikes,
+      blockedIds
+    );
   },
 });
 
 export const likeUser = mutation({
   args: {
     toUserId: v.id("users"),
-    action: v.union(v.literal("like"), v.literal("pass")),
+    action: v.union(v.literal("like"), v.literal("pass"), v.literal("shortlist")),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuthUserId(ctx);
@@ -145,70 +224,65 @@ export const likeUser = mutation({
       });
     }
 
-    if (args.action === "like") {
-      const reverseLike = await ctx.db
-        .query("likes")
+    if (args.action === "shortlist" || args.action === "pass") {
+      return { matched: false };
+    }
+
+    const reverseLike = await ctx.db
+      .query("likes")
+      .withIndex("by_pair", (q) =>
+        q.eq("fromUserId", args.toUserId).eq("toUserId", userId)
+      )
+      .unique();
+
+    await sendNotification(ctx, {
+      userId: args.toUserId,
+      type: "like",
+      title: "Someone liked you!",
+      body: `${myProfile.name} liked your profile.`,
+      relatedUserId: userId,
+      sendEmail: true,
+    });
+
+    if (reverseLike?.action === "like") {
+      const score = await ctx.db
+        .query("compatibilityScores")
         .withIndex("by_pair", (q) =>
-          q.eq("fromUserId", args.toUserId).eq("toUserId", userId)
+          q.eq("userA", userId).eq("userB", args.toUserId)
         )
         .unique();
 
-      const myProfile = await ctx.db
-        .query("profiles")
-        .withIndex("by_userId", (q) => q.eq("userId", userId))
-        .unique();
-
-      await ctx.db.insert("notifications", {
-        userId: args.toUserId,
-        type: "like",
-        title: "Someone liked you!",
-        body: `${myProfile?.name ?? "Someone"} liked your profile.`,
-        read: false,
-        relatedUserId: userId,
-        createdAt: Date.now(),
+      const matchId = await ctx.db.insert("matches", {
+        userA: userId,
+        userB: args.toUserId,
+        score: score?.score ?? 0,
+        status: "active",
+        chatUnlocked: false,
       });
 
-      if (reverseLike?.action === "like") {
-        const score = await ctx.db
-          .query("compatibilityScores")
-          .withIndex("by_pair", (q) =>
-            q.eq("userA", userId).eq("userB", args.toUserId)
-          )
-          .unique();
+      const convId = await ctx.db.insert("conversations", {
+        matchId,
+        participants: [userId, args.toUserId],
+        lastMessageAt: Date.now(),
+      });
 
-        const matchId = await ctx.db.insert("matches", {
-          userA: userId,
-          userB: args.toUserId,
-          score: score?.score ?? 0,
-          status: "active",
-          chatUnlocked: false,
+      const otherProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_userId", (q) => q.eq("userId", args.toUserId))
+        .unique();
+
+      for (const uid of [userId, args.toUserId]) {
+        await sendNotification(ctx, {
+          userId: uid,
+          type: "match",
+          title: "New Match!",
+          body: `You matched with ${uid === userId ? otherProfile?.name : myProfile.name}!`,
+          relatedUserId: uid === userId ? args.toUserId : userId,
+          sendEmail: true,
         });
-
-        const convId = await ctx.db.insert("conversations", {
-          matchId,
-          participants: [userId, args.toUserId],
-          lastMessageAt: Date.now(),
-        });
-
-        const otherProfile = await ctx.db
-          .query("profiles")
-          .withIndex("by_userId", (q) => q.eq("userId", args.toUserId))
-          .unique();
-
-        for (const uid of [userId, args.toUserId]) {
-          await ctx.db.insert("notifications", {
-            userId: uid,
-            type: "match",
-            title: "New Match!",
-            body: `You matched with ${uid === userId ? otherProfile?.name : myProfile?.name}!`,
-            read: false,
-            relatedUserId: uid === userId ? args.toUserId : userId,
-            createdAt: Date.now(),
-          });
-        }
-
-        return { matched: true, matchId, conversationId: convId };
       }
+
+      return { matched: true, matchId, conversationId: convId };
     }
 
     return { matched: false };

@@ -67,6 +67,14 @@ export interface MatchResult {
   imageUrl: string | null;
   score: number;
   liked?: boolean;
+  shortlisted?: boolean;
+  verified?: boolean;
+  hasPaid?: boolean;
+  questionnaireComplete?: boolean;
+  bio?: string;
+  maritalStatus?: string;
+  marriageTimeline?: string;
+  wantChildren?: string;
 }
 
 export interface Conversation {
@@ -77,6 +85,9 @@ export interface Conversation {
     name: string;
     imageUrl: string | null;
     userId: Id<"users">;
+    verified?: boolean;
+    hasPaid?: boolean;
+    questionnaireComplete?: boolean;
   } | null;
   lastMessage: string | null;
   lastMessageAt: number;
@@ -95,13 +106,24 @@ export interface ChatMessage {
 
 export interface Notification {
   _id: Id<"notifications">;
-  type: "like" | "match" | "message" | "announcement";
+  type: "like" | "match" | "message" | "announcement" | "approval" | "payment";
   title: string;
   body: string;
   read: boolean;
   relatedUserId?: Id<"users">;
   relatedImageUrl?: string | null;
   createdAt: number;
+}
+
+export type MemberReminderId =
+  | "complete-profile"
+  | "complete-payment"
+  | "pending-approval"
+  | "browse-matches";
+
+export interface MemberReminder {
+  id: MemberReminderId;
+  href: string;
 }
 
 export interface AdminStats {

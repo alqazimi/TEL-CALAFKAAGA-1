@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
-import { PendingApprovalCard } from "@/components/profile/pending-approval-card";
+import { MemberRemindersCard } from "@/components/notifications/member-reminders-card";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
@@ -70,42 +70,23 @@ export default function DashboardPage() {
             {t("dashboard.hello", { name: firstName })}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {!hasPaid
-              ? t("dashboard.payToContinue", {
-                  basic: REGISTRATION_PRICE,
-                  premium: PERSONAL_SUPPORT_PRICE,
-                })
-              : isComplete
-                ? t("dashboard.overview")
-                : t("dashboard.finishQuestionnaire")}
+            {!isComplete
+              ? t("dashboard.finishQuestionnaire")
+              : !hasPaid
+                ? t("dashboard.payToContinue", {
+                    basic: REGISTRATION_PRICE,
+                    premium: PERSONAL_SUPPORT_PRICE,
+                  })
+                : !isApproved
+                  ? t("dashboard.pendingApprovalDesc")
+                  : t("dashboard.overview")}
           </p>
         </div>
 
-        {profile && !hasPaid && (
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <p className="font-semibold">{t("dashboard.step1Payment")}</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {t("dashboard.step1PaymentDesc", {
-                    basic: REGISTRATION_PRICE,
-                    premium: PERSONAL_SUPPORT_PRICE,
-                  })}
-                </p>
-              </div>
-              <Button className="shrink-0" asChild>
-                <Link href="/payment">{t("dashboard.choosePlan")}</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <MemberRemindersCard />
 
-        {profile && hasPaid && !isComplete && (
+        {profile && !isComplete && (
           <ProfileCompletionCard profile={profile} preferences={preferences} />
-        )}
-
-        {profile && hasPaid && isComplete && !isApproved && (
-          <PendingApprovalCard />
         )}
 
         {isComplete && hasPaid && isApproved && (

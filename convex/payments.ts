@@ -8,6 +8,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import { sendNotification } from "./lib/sendNotification";
 
 export const REGISTRATION_AMOUNT_CENTS = 1000;
 export const PERSONAL_SUPPORT_AMOUNT_CENTS = 2000;
@@ -66,6 +67,22 @@ async function applyPaymentCompletion(
       hasPaid: true,
       ...(isPremium ? { hasPersonalSupport: true } : {}),
     });
+
+    if (
+      payment.paymentType === "registration" ||
+      payment.paymentType === "registration_premium" ||
+      payment.paymentType === undefined
+    ) {
+      await sendNotification(ctx, {
+        userId: payment.userId,
+        type: "payment",
+        title: "Payment successful",
+        body: isPremium
+          ? "Your registration and personal support plan are active. Browse matches when your profile is approved."
+          : "Your registration is complete. Browse matches when your profile is approved.",
+        sendEmail: true,
+      });
+    }
   }
 
   if (

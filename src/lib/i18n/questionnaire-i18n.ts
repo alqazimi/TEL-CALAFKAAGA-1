@@ -629,6 +629,14 @@ const UI_TEXT = {
     en: "Your profile is ready. Start browsing your matches!",
     so: "Profile-kaagu waa diyaar. Bilow inaad eegto kuwa ku habboon!",
   },
+  profileReadyPaySub: {
+    en: "Your profile is ready. Choose a plan to unlock matches. An admin will verify your profile before you can browse members.",
+    so: "Profile-kaagu waa diyaar. Dooro qorshe si aad u furto isbarbardhigga. Maamuluhu wuu xaqiijin doonaa profile-kaaga ka hor intaadan eegin xubnaha.",
+  },
+  welcomeQuestionnaireTitle: {
+    en: "Welcome! Let's build your profile",
+    so: "Ku soo dhawoow! Aan dhisno profile-kaaga",
+  },
   viewMatches: { en: "View Matches", so: "Eeg Kuwa Ku Habboon" },
   myProfile: { en: "My Profile", so: "Profile-kayga" },
   profileNotFound: {

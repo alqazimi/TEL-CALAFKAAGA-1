@@ -81,7 +81,7 @@ function PaymentProgress() {
   const { t } = useTranslation();
   const steps = [
     { label: t("payment.stepAccount"), done: true },
-    { label: t("payment.stepDetails"), done: true },
+    { label: t("payment.stepProfile"), done: true },
     { label: t("payment.stepPayment"), done: false },
   ];
 
@@ -168,7 +168,7 @@ export function PaymentGate({ title, description, showProgress = true }: Payment
               </li>
               <li className="flex items-center gap-2.5">
                 <Sparkles className="h-4 w-4 text-primary shrink-0" />
-                <span className="font-medium text-foreground/80">{t("payment.completeQuestionnaire")}</span>
+                <span className="font-medium text-foreground/80">{t("payment.profileSaved")}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Sparkles className="h-4 w-4 text-primary shrink-0" />

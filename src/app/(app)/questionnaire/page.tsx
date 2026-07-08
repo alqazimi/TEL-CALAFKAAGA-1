@@ -20,10 +20,10 @@ import { QuestionnaireStep } from "@/components/questionnaire/questionnaire-step
 import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-review";
 import { QuestionnairePhaseComplete } from "@/components/questionnaire/questionnaire-phase-complete";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
-import { PaymentGate } from "@/components/payment/payment-gate";
 import { QuestionnairePhotoStep } from "@/components/questionnaire/questionnaire-photo-step";
 import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX, PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
+import { useTranslation } from "@/lib/i18n/context";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,6 +41,8 @@ export default function QuestionnairePage() {
   const autoSaveProfile = useMutation(api.profiles.autoSaveProfile);
   const saveProfileEdits = useMutation(api.profiles.saveProfileEdits);
   const { stepTitle, ui } = useQuestionnaireI18n();
+  const { t } = useTranslation();
+  const welcome = searchParams.get("welcome") === "true";
 
   const [stepOverride, setStepOverride] = useState<number | null>(
     isEditMode ? REVIEW_STEP_INDEX : null
@@ -144,7 +146,11 @@ export default function QuestionnairePage() {
       router.push("/profile");
       return;
     }
-    router.push("/dashboard");
+    if (profile && hasPaidAccess(profile)) {
+      router.push("/dashboard");
+      return;
+    }
+    router.push("/payment");
   };
 
   useEffect(() => {
@@ -178,18 +184,9 @@ export default function QuestionnairePage() {
     );
   }
 
-  if (!hasPaidAccess(profile) && !isEditMode) {
-    return (
-      <DashboardLayout>
-        <PaymentGate
-          title={ui("completePaymentFirst")}
-          description={ui("payToUnlock")}
-        />
-      </DashboardLayout>
-    );
-  }
-
   if (profile.questionnaireComplete && !isEditMode) {
+    const paid = hasPaidAccess(profile);
+
     return (
       <DashboardLayout>
         <div className="max-w-lg mx-auto text-center py-16">
@@ -198,12 +195,18 @@ export default function QuestionnairePage() {
           </div>
           <h1 className="text-2xl font-bold mb-2">{ui("profileCompleteTitle")}</h1>
           <p className="text-muted-foreground mb-6">
-            {ui("profileReadySub")}
+            {paid ? ui("profileReadySub") : ui("profileReadyPaySub")}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild>
-              <a href="/matches">{ui("viewMatches")}</a>
-            </Button>
+            {paid ? (
+              <Button asChild>
+                <a href="/matches">{ui("viewMatches")}</a>
+              </Button>
+            ) : (
+              <Button asChild>
+                <a href="/payment">{t("dashboard.choosePlan")}</a>
+              </Button>
+            )}
             <Button variant="outline" asChild>
               <a href="/profile">{ui("myProfile")}</a>
             </Button>
@@ -241,7 +244,11 @@ export default function QuestionnairePage() {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">
-                    {isEditMode ? ui("editProfileDetails") : ui("profileQuestionnaire")}
+                    {isEditMode
+                      ? ui("editProfileDetails")
+                      : welcome
+                        ? ui("welcomeQuestionnaireTitle")
+                        : ui("profileQuestionnaire")}
                   </h1>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {phaseComplete === "about"

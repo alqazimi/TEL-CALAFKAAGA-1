@@ -11,6 +11,7 @@ import {
   verifyBootstrapCredentials,
 } from "./lib/adminAuth";
 import { isOwnerRole, isStaffRole } from "./lib/roles";
+import { sendNotification } from "./lib/sendNotification";
 import {
   PERSONAL_SUPPORT_AMOUNT_CENTS,
 } from "./payments";
@@ -366,7 +367,22 @@ export const approveUser = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     await requireAdmin(ctx, userId);
+
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) throw new Error("Profile not found");
+    if (profile.approved && profile.verified) {
+      return;
+    }
+
     await ctx.db.patch(args.profileId, { approved: true, verified: true });
+
+    await sendNotification(ctx, {
+      userId: profile.userId,
+      type: "approval",
+      title: "Profile approved",
+      body: "Your profile is verified. You can now browse matches and connect with members.",
+      sendEmail: true,
+    });
   },
 });
 

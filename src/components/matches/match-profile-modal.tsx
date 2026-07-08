@@ -1,12 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { X, Heart, MapPin, GraduationCap, Briefcase } from "lucide-react";
+import { X, Heart, MapPin, GraduationCap, Briefcase, Bookmark, CalendarHeart, Baby } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
+import { TrustBadges } from "@/components/profile/trust-badges";
+import type { TrustBadgeProfile } from "@/components/profile/trust-badges";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -22,15 +24,22 @@ interface MatchProfileModalProps {
     occupation: string;
     religiousLevel: string;
     prayerFrequency?: string;
+    bio?: string;
+    maritalStatus?: string;
+    marriageTimeline?: string;
+    wantChildren?: string;
     imageUrl: string | null;
     score: number;
-  };
+    shortlisted?: boolean;
+    liked?: boolean;
+  } & TrustBadgeProfile;
   onClose: () => void;
-  onLike: (action: "like" | "pass") => void;
+  onLike: (action: "like" | "pass" | "shortlist") => void;
 }
 
 export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalProps) {
   const { t } = useTranslation();
+  const location = [match.city, match.country].filter(Boolean).join(", ");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -67,15 +76,49 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
             <h2 className="text-2xl font-bold">{match.name}, {match.age}</h2>
             <p className="text-muted-foreground flex items-center gap-1 mt-1">
               <MapPin className="h-4 w-4" />
-              {match.city ? `${match.city}, ` : ""}{match.country}
+              {location}
             </p>
+            <TrustBadges profile={match} className="mt-3" />
           </div>
+
+          {match.bio && (
+            <div className="rounded-2xl bg-muted/50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                {t("matchesPage.about")}
+              </p>
+              <p className="text-sm leading-relaxed">{match.bio}</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3 text-sm">
             {match.religiousLevel && (
               <div className="rounded-xl bg-muted p-3">
                 <p className="text-muted-foreground text-xs font-medium">{t("matchesPage.religion")}</p>
                 <p className="font-semibold mt-0.5">{match.religiousLevel}</p>
+              </div>
+            )}
+            {match.maritalStatus && (
+              <div className="rounded-xl bg-muted p-3">
+                <p className="text-muted-foreground text-xs font-medium">{t("matchesPage.maritalStatus")}</p>
+                <p className="font-semibold mt-0.5">{match.maritalStatus}</p>
+              </div>
+            )}
+            {match.marriageTimeline && (
+              <div className="rounded-xl bg-muted p-3">
+                <p className="text-muted-foreground text-xs font-medium flex items-center gap-1">
+                  <CalendarHeart className="h-3.5 w-3.5" />
+                  {t("matchesPage.marriageTimeline")}
+                </p>
+                <p className="font-semibold mt-0.5">{match.marriageTimeline}</p>
+              </div>
+            )}
+            {match.wantChildren && (
+              <div className="rounded-xl bg-muted p-3">
+                <p className="text-muted-foreground text-xs font-medium flex items-center gap-1">
+                  <Baby className="h-3.5 w-3.5" />
+                  {t("matchesPage.wantChildren")}
+                </p>
+                <p className="font-semibold mt-0.5">{match.wantChildren}</p>
               </div>
             )}
             <div className="rounded-xl bg-muted p-3">
@@ -101,9 +144,18 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button className="flex-1 font-semibold" onClick={() => onLike("like")}>
+            <Button
+              variant="outline"
+              className="font-semibold"
+              onClick={() => onLike("shortlist")}
+              disabled={match.shortlisted}
+            >
+              <Bookmark className="h-4 w-4 mr-2" />
+              {match.shortlisted ? t("matchesPage.shortlisted") : t("matchesPage.shortlist")}
+            </Button>
+            <Button className="flex-1 font-semibold" onClick={() => onLike("like")} disabled={match.liked}>
               <Heart className="h-4 w-4 mr-2" />
-              {t("matchesPage.like")}
+              {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
             </Button>
             <Button variant="outline" className="flex-1 font-semibold" onClick={() => onLike("pass")}>
               {t("matchesPage.pass")}
@@ -114,6 +166,7 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
             <ReportBlockMenu
               userId={match.userId}
               userName={match.name}
+              reportContext={t("safety.reportFromMatches", { name: match.name })}
               onDone={onClose}
             />
           </div>

@@ -34,6 +34,7 @@ interface ReportBlockMenuProps {
   userName: string;
   onDone?: () => void;
   compact?: boolean;
+  reportContext?: string;
 }
 
 export function ReportBlockMenu({
@@ -41,6 +42,7 @@ export function ReportBlockMenu({
   userName,
   onDone,
   compact = false,
+  reportContext,
 }: ReportBlockMenuProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -90,7 +92,7 @@ export function ReportBlockMenu({
           | "harassment"
           | "spam"
           | "other",
-        details: details.trim() || undefined,
+        details: [reportContext, details.trim()].filter(Boolean).join("\n\n") || undefined,
         alsoBlock,
       });
       toast.success(

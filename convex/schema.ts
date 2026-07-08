@@ -105,7 +105,7 @@ export default defineSchema({
   likes: defineTable({
     fromUserId: v.id("users"),
     toUserId: v.id("users"),
-    action: v.union(v.literal("like"), v.literal("pass")),
+    action: v.union(v.literal("like"), v.literal("pass"), v.literal("shortlist")),
   })
     .index("by_from", ["fromUserId"])
     .index("by_to", ["toUserId"])
@@ -150,7 +150,9 @@ export default defineSchema({
       v.literal("like"),
       v.literal("match"),
       v.literal("message"),
-      v.literal("announcement")
+      v.literal("announcement"),
+      v.literal("approval"),
+      v.literal("payment")
     ),
     title: v.string(),
     body: v.string(),
@@ -246,4 +248,13 @@ export default defineSchema({
     .index("by_reported", ["reportedUserId"])
     .index("by_status", ["status"])
     .index("by_pair", ["reporterId", "reportedUserId"]),
+
+  memberEmailLog: defineTable({
+    userId: v.id("users"),
+    kind: v.union(
+      v.literal("reminder_profile"),
+      v.literal("reminder_payment")
+    ),
+    sentAt: v.number(),
+  }).index("by_user_kind", ["userId", "kind"]),
 });

@@ -32,11 +32,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/utils";
-import { REGISTRATION_PRICE } from "@/lib/constants";
+import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
+import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
+import { TrustBadges } from "@/components/profile/trust-badges";
 
 function MessagesEmptyState() {
   const { t } = useTranslation();
@@ -180,14 +182,6 @@ export default function ChatPage() {
     );
   }
 
-  if (profile && !hasPaidAccess(profile)) {
-    return (
-      <DashboardLayout>
-        <PaymentGate />
-      </DashboardLayout>
-    );
-  }
-
   if (profile && !profile.questionnaireComplete) {
     return (
       <DashboardLayout>
@@ -196,6 +190,20 @@ export default function ChatPage() {
           preferences={preferences}
           title={t("chatPage.completeProfileTitle")}
           description={t("chatPage.completeProfileDesc")}
+        />
+      </DashboardLayout>
+    );
+  }
+
+  if (profile && !hasPaidAccess(profile)) {
+    return (
+      <DashboardLayout>
+        <PaymentGate
+          title={t("payment.profileReadyTitle")}
+          description={t("payment.profileReadyDesc", {
+            basic: REGISTRATION_PRICE,
+            premium: PERSONAL_SUPPORT_PRICE,
+          })}
         />
       </DashboardLayout>
     );
@@ -323,19 +331,23 @@ export default function ChatPage() {
                     <p className="font-bold text-sm truncate">
                       {activeConv.profile?.name}
                     </p>
-                    {!activeConv.chatUnlocked ? (
-                      <p className="text-xs text-muted-foreground">{t("chatPage.locked")}</p>
-                    ) : isTyping ? (
-                      <p className="text-xs text-primary">{t("chatPage.typing")}</p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">{t("chatPage.activeNow")}</p>
+                    {activeConv.profile && (
+                      <TrustBadges profile={activeConv.profile} size="sm" className="mt-1" />
                     )}
+                    {!activeConv.chatUnlocked ? (
+                      <p className="text-xs text-muted-foreground mt-1">{t("chatPage.locked")}</p>
+                    ) : isTyping ? (
+                      <p className="text-xs text-primary mt-1">{t("chatPage.typing")}</p>
+                    ) : null}
                   </div>
                   {activeConv.profile?.userId && (
                     <ReportBlockMenu
                       compact
                       userId={activeConv.profile.userId}
                       userName={activeConv.profile.name}
+                      reportContext={t("safety.reportFromChat", {
+                        name: activeConv.profile.name,
+                      })}
                       onDone={() => setActiveConversation(null)}
                     />
                   )}
@@ -363,6 +375,7 @@ export default function ChatPage() {
                   </div>
                 ) : (
                   <>
+                    <ChatSafetyBanner />
                     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
                       {messages?.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-full py-12 text-center">
@@ -374,6 +387,9 @@ export default function ChatPage() {
                             {t("chatPage.sayHelloTo", {
                               name: activeConv.profile?.name?.split(" ")[0] ?? "",
                             })}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-4 max-w-xs leading-relaxed">
+                            {t("chatPage.safetyReminder")}
                           </p>
                         </div>
                       )}

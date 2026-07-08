@@ -80,7 +80,7 @@ export default function RegisterDetailsPage() {
         phone: data.phone,
       });
       toast.success(t("auth.registerDetailsSuccess"));
-      router.push("/payment?welcome=true");
+      router.push("/questionnaire?welcome=true");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : t("validation.saveDetailsFailed")

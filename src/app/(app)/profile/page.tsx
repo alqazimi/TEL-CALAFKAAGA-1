@@ -17,9 +17,11 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { TrustBadges } from "@/components/profile/trust-badges";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { ChangePasswordCard } from "@/components/profile/change-password-card";
+import { BlockedUsersCard } from "@/components/safety/blocked-users-card";
 import type { Preferences } from "@/lib/profile-progress";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
@@ -167,14 +169,9 @@ export default function ProfilePage() {
                 ) : (
                   <>
                     <p className="text-muted-foreground capitalize">{profile?.gender}</p>
-                    <div className="flex gap-2 mt-2 flex-wrap">
-                      {profile?.verified && (
-                        <Badge variant="success">{t("dashboard.verified")}</Badge>
-                      )}
-                      {profile?.questionnaireComplete && (
-                        <Badge variant="secondary">{t("dashboard.profileComplete")}</Badge>
-                      )}
-                    </div>
+                    {profile && (
+                      <TrustBadges profile={profile} className="mt-2" />
+                    )}
                   </>
                 )}
               </div>
@@ -242,6 +239,8 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         )}
+
+        {!isStaff && <BlockedUsersCard />}
       </div>
     </DashboardLayout>
   );

@@ -104,16 +104,18 @@ export default function PaymentSuccessPage() {
                     {t("payment.nextSteps")}
                   </p>
                   <ol className="space-y-2.5 text-sm text-muted-foreground">
-                    <li className="flex items-center gap-2.5">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-                      <span className="font-medium text-foreground/90">{t("payment.nextStep1")}</span>
-                    </li>
                     {isPremium && (
                       <li className="flex items-center gap-2.5">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
                         <span className="font-medium text-foreground/90">{t("payment.nextStepPremium")}</span>
                       </li>
                     )}
+                    <li className="flex items-center gap-2.5">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">
+                        {isPremium ? "2" : "1"}
+                      </span>
+                      <span className="font-medium text-foreground/90">{t("payment.nextStep1")}</span>
+                    </li>
                     <li className="flex items-center gap-2.5">
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-bold">
                         {isPremium ? "3" : "2"}
@@ -135,10 +137,10 @@ export default function PaymentSuccessPage() {
                   <Button
                     variant={isPremium ? "outline" : "default"}
                     className="font-semibold"
-                    onClick={() => router.push("/questionnaire")}
+                    onClick={() => router.push("/matches")}
                   >
                     <ClipboardList className="h-4 w-4 mr-2" />
-                    {t("payment.continueSetup")}
+                    {t("payment.viewMatches")}
                   </Button>
                 </div>
               </CardContent>

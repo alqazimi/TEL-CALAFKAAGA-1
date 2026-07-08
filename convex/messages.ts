@@ -9,6 +9,7 @@ import {
 } from "./lib/access";
 import { hasPaidAccess } from "./lib/roles";
 import { getBlockedUserIds, isEitherBlocked } from "./lib/moderation";
+import { sendNotification } from "./lib/sendNotification";
 
 export const getConversations = query({
   args: {},
@@ -85,7 +86,14 @@ export const getConversations = query({
             conversationId: conversation?._id,
             chatUnlocked: paid || m.chatUnlocked,
             profile: profile
-              ? { name: profile.name, imageUrl, userId: otherId }
+              ? {
+                  name: profile.name,
+                  imageUrl,
+                  userId: otherId,
+                  verified: profile.verified,
+                  hasPaid: profile.hasPaid,
+                  questionnaireComplete: profile.questionnaireComplete,
+                }
               : null,
             lastMessage: lastMessage?.message ?? null,
             lastMessageAt: conversation?.lastMessageAt ?? 0,
@@ -188,14 +196,13 @@ export const sendMessage = mutation({
         .withIndex("by_userId", (q) => q.eq("userId", userId))
         .unique();
 
-      await ctx.db.insert("notifications", {
+      await sendNotification(ctx, {
         userId: otherId,
         type: "message",
         title: "New Message",
         body: `${senderProfile?.name ?? "Someone"} sent you a message.`,
-        read: false,
         relatedUserId: userId,
-        createdAt: Date.now(),
+        sendEmail: true,
       });
     }
 
