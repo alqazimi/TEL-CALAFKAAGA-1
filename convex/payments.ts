@@ -9,7 +9,7 @@ import {
   query,
 } from "./_generated/server";
 
-export const REGISTRATION_AMOUNT_CENTS = 1500;
+export const REGISTRATION_AMOUNT_CENTS = 1000;
 export const PERSONAL_SUPPORT_AMOUNT_CENTS = 2000;
 
 const registrationTierValidator = v.union(

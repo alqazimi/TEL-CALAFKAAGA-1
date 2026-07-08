@@ -100,7 +100,7 @@ convex/
 - **Like System** — Mutual likes create matches
 - **Real-time Chat** — Messages, typing indicators, read receipts, images, emoji
 - **Notifications** — Likes, matches, messages, announcements
-- **Stripe Payments** — $15 standard or $20 with personal support (one-time)
+- **Stripe Payments** — $10 standard or $20 with personal support (one-time)
 - **Admin Dashboard** — User management, analytics, announcements
 - **Dark Mode** — System-aware theme switching
 
