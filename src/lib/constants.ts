@@ -1,4 +1,4 @@
-export const APP_NAME = "Calaf";
+export const APP_NAME = "Hel Calafkaaga";
 /** Full brand / business name — used for Google site name & Organization schema. */
 export const SITE_BRAND_NAME = "Hel Calafkaaga";
 export const PRODUCTION_SITE_URL = "https://helcalafkaaga.com";
@@ -269,9 +269,9 @@ export const APP_MOBILE_TABS = APP_NAV_LINKS.filter((l) => l.tab);
 
 export const FAQ_ITEMS = [
   {
-    question: "Is Calaf halal?",
+    question: "Is Hel Calafkaaga halal?",
     answer:
-      "Yes. Calaf is designed for Muslims seeking marriage in a respectful, halal manner. We prioritize privacy, family values, and Islamic principles.",
+      "Yes. Hel Calafkaaga is designed for Muslims seeking marriage in a respectful, halal manner. We prioritize privacy, family values, and Islamic principles.",
   },
   {
     question: "How does matching work?",
@@ -279,7 +279,7 @@ export const FAQ_ITEMS = [
       "Our compatibility algorithm analyzes religion, age, location, education, lifestyle, and personality traits to find your best matches above 70% compatibility.",
   },
   {
-    question: "How much does Calaf cost?",
+    question: "How much does Hel Calafkaaga cost?",
     answer:
       "Standard registration is a one-time $10 fee. For $20, you also get personal support from trained experts. Both plans unlock full access to matches and messaging.",
   },

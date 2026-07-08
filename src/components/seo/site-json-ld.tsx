@@ -17,7 +17,7 @@ export function SiteJsonLd() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: SITE_BRAND_NAME,
-    alternateName: [APP_NAME, "Calaf Matchmaking"],
+    alternateName: ["Hel Calafkaaga Matchmaking"],
     url: siteUrl,
     logo: {
       "@type": "ImageObject",

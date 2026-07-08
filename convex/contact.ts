@@ -33,7 +33,7 @@ export const sendContactMessage = action({
       from: getResendFromAddress(),
       to: [SUPPORT_INBOX],
       replyTo: email,
-      subject: `[Calaf Contact] ${subject}`,
+      subject: `[Hel Calafkaaga Contact] ${subject}`,
       text: [
         `Name: ${name}`,
         `Email: ${email}`,

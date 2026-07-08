@@ -11,7 +11,7 @@ export function generateEmailOtp(length = 8): string {
 }
 
 export function getResendFromAddress(): string {
-  return process.env.AUTH_EMAIL_FROM ?? "Calaf <onboarding@resend.dev>";
+  return process.env.AUTH_EMAIL_FROM ?? "Hel Calafkaaga <onboarding@resend.dev>";
 }
 
 export function requireResendApiKey(apiKey: string | undefined): string {

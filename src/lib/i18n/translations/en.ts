@@ -116,7 +116,7 @@ export const en = {
     findMatchSearch: "Search",
     quote:
       "The right partner is not just about love, it's about building a beautiful future together.",
-    quoteAuthor: "CALAF Member",
+    quoteAuthor: "HEL CALAFKAAGA Member",
     pricingTitle: "Choose Your Plan",
     pricingSubtitle:
       "Both plans unlock full access. The ${{premium}} plan adds personal guidance from trained relationship advisors.",
@@ -149,7 +149,7 @@ export const en = {
     previewProfile: "Complete your profile questionnaire",
     previewMatches: "Discover compatible matches with scores",
     previewChat: "Message matches securely in-app",
-    howWorks: "How CALAF Works",
+    howWorks: "How HEL CALAFKAAGA Works",
     step1Title: "Register & Choose Plan",
     step1Desc: "Create your account and pick standard ($10) or personal support ($20).",
     step2Title: "Complete Questionnaire",
@@ -172,9 +172,9 @@ export const en = {
     story2Location: "London, UK",
     story3Location: "Minneapolis, USA",
     story1Quote:
-      "Alhamdulillah, I found my life partner through CALAF. The questionnaire helped us align on faith and family values.",
+      "Alhamdulillah, I found my life partner through HEL CALAFKAAGA. The questionnaire helped us align on faith and family values.",
     story2Quote:
-      "CALAF helped us find someone who matches our faith and culture. The process felt respectful from start to finish.",
+      "HEL CALAFKAAGA helped us find someone who matches our faith and culture. The process felt respectful from start to finish.",
     story3Quote:
       "Professional and dignified service. I recommend it to anyone serious about marriage.",
     faqTitle: "Common Questions",
@@ -206,7 +206,7 @@ export const en = {
     feature2: "Verified Muslim profiles",
     feature3: "Compatibility-based matching",
     testimonialQuote:
-      "We matched on Calaf and were married within the year, alhamdulillah. The process felt respectful and serious from day one.",
+      "We matched on Hel Calafkaaga and were married within the year, alhamdulillah. The process felt respectful and serious from day one.",
     testimonialAuthor: "Aisha & Yusuf — married couple",
     joinNowPrice: "Join Now – ${{price}}",
     registerTitle: "Join {{name}}",
@@ -262,7 +262,7 @@ export const en = {
   aboutPage: {
     title: "About {{name}}",
     subtitle: "Building meaningful connections in the Muslim community.",
-    p1: "Calaf was founded with a simple mission: to help Muslims find their halal life partner in a modern, respectful, and secure environment. We understand that marriage is one of the most important decisions in life, and we are committed to making that journey as smooth and meaningful as possible.",
+    p1: "Hel Calafkaaga was founded with a simple mission: to help Muslims find their halal life partner in a modern, respectful, and secure environment. We understand that marriage is one of the most important decisions in life, and we are committed to making that journey as smooth and meaningful as possible.",
     p2: "Our platform combines thoughtful technology with Islamic values. Every feature — from our compatibility algorithm to our privacy controls — is designed with the Muslim community in mind. We believe that finding a spouse should be dignified, intentional, and guided by faith.",
     valuesTitle: "Our Values",
     valueHalalTitle: "Halal:",
@@ -342,11 +342,11 @@ export const en = {
   },
   payment: {
     completeRegistration: "Complete Your Registration",
-    welcome: "Welcome to Calaf!",
+    welcome: "Welcome to Hel Calafkaaga!",
     welcomeDesc:
       "Your account is created. Choose a registration plan to activate your account, then complete your profile questionnaire.",
     choosePlan:
-      "Choose the plan that fits you. Both options include full access to Calaf — the ${{premium}} plan adds personal guidance from trained relationship experts.",
+      "Choose the plan that fits you. Both options include full access to Hel Calafkaaga — the ${{premium}} plan adds personal guidance from trained relationship experts.",
     defaultDesc:
       "Choose your registration plan to activate your account. After payment, you'll complete your profile questionnaire.",
     basicPlan: "Standard Registration",
@@ -359,7 +359,7 @@ export const en = {
     expertSupport: "Expert support for relationship questions",
     relationshipCoaching: "Help building the right marriage mindset",
     recommended: "Recommended",
-    activate: "Activate your Calaf account",
+    activate: "Activate your Hel Calafkaaga account",
     completeQuestionnaire: "Complete your profile questionnaire",
     browseMatches: "Browse matches and message",
     secureStripe: "Secure payment via Stripe",
@@ -389,12 +389,12 @@ export const en = {
   },
   faq: {
     title: "Frequently Asked Questions",
-    subtitle: "Everything you need to know about Calaf.",
-    q1: "Is Calaf halal?",
-    a1: "Yes. Calaf is designed for Muslims seeking marriage in a respectful, halal manner. We prioritize privacy, family values, and Islamic principles.",
+    subtitle: "Everything you need to know about Hel Calafkaaga.",
+    q1: "Is Hel Calafkaaga halal?",
+    a1: "Yes. Hel Calafkaaga is designed for Muslims seeking marriage in a respectful, halal manner. We prioritize privacy, family values, and Islamic principles.",
     q2: "How does matching work?",
     a2: "Our compatibility algorithm analyzes religion, age, location, education, lifestyle, and personality traits to find your best matches above 70% compatibility.",
-    q3: "How much does Calaf cost?",
+    q3: "How much does Hel Calafkaaga cost?",
     a3: "Standard registration is a one-time $10 fee. For $20, you also get personal support from trained experts to help you build a healthy marriage relationship. Both plans unlock full access to matches and messaging.",
     q4: "How is my data protected?",
     a4: "We use industry-standard encryption and never share your personal data with third parties. Your privacy is our priority.",
@@ -410,7 +410,7 @@ export const en = {
     title: "Simple, Transparent Pricing",
     subtitle: "Choose standard registration or add personal support from trained experts.",
     membership: "Standard Registration",
-    basicDesc: "Full access to Calaf — pay once when you join.",
+    basicDesc: "Full access to Hel Calafkaaga — pay once when you join.",
     premiumMembership: "Registration + Personal Support",
     premiumDesc:
       "Full platform access plus one-on-one guidance to build a correct marriage relationship.",
@@ -432,7 +432,7 @@ export const en = {
   },
   howItWorks: {
     title: "How It Works",
-    subtitle: "Your journey to finding a life partner on Calaf.",
+    subtitle: "Your journey to finding a life partner on Hel Calafkaaga.",
     step1: "Register & Pay",
     step1Desc:
       "Create your account, complete your details, and choose standard registration ($10) or registration with personal support ($20).",

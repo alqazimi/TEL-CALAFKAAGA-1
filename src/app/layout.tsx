@@ -38,8 +38,8 @@ export const metadata: Metadata = {
     "matchmaking",
     "muslim",
     "islamic",
-    "calaf",
     "hel calafkaaga",
+    "hel calafkaaga matchmaking",
   ],
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? PRODUCTION_SITE_URL
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: `${SITE_BRAND_NAME} — ${APP_NAME} Islamic Matchmaking`,
+        alt: `${SITE_BRAND_NAME} — Islamic Matchmaking`,
       },
     ],
   },

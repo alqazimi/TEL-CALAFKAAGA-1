@@ -428,7 +428,7 @@ export default function AdminPage() {
                         >
                           <a
                             href={`${WHATSAPP_URL}?text=${encodeURIComponent(
-                              `Hi, I'm ${user.name} — I registered for Calaf with personal support.`
+                              `Hi, I'm ${user.name} — I registered for Hel Calafkaaga with personal support.`
                             )}`}
                             target="_blank"
                             rel="noopener noreferrer"

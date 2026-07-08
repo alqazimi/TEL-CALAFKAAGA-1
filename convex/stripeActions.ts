@@ -22,7 +22,7 @@ function getRegistrationCheckoutDetails(tier: "basic" | "premium") {
       amount: PERSONAL_SUPPORT_AMOUNT_CENTS,
       paymentType: "registration_premium" as const,
       registrationTier: "premium" as const,
-      productName: "Calaf Registration + Personal Support",
+      productName: "Hel Calafkaaga Registration + Personal Support",
       productDescription:
         "Registration plus one-on-one guidance from trained experts to build a healthy marriage relationship",
     };
@@ -32,8 +32,8 @@ function getRegistrationCheckoutDetails(tier: "basic" | "premium") {
     amount: REGISTRATION_AMOUNT_CENTS,
     paymentType: "registration" as const,
     registrationTier: "basic" as const,
-    productName: "Calaf Registration",
-    productDescription: "One-time registration — lifetime access to Calaf",
+    productName: "Hel Calafkaaga Registration",
+    productDescription: "One-time registration — lifetime access to Hel Calafkaaga",
   };
 }
 

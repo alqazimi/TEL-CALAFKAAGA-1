@@ -118,7 +118,7 @@ export const so: Translations = {
     findMatchSearch: "Raadi",
     quote:
       "Lammaanaha saxda ah ma aha oo kaliya jacayl, waa in la dhiso mustaqbal qurux badan oo wadajir ah.",
-    quoteAuthor: "Xubin CALAF",
+    quoteAuthor: "Xubin HEL CALAFKAAGA",
     pricingTitle: "Dooro Qorshahaaga",
     pricingSubtitle:
       "Labada qorshe waxay fureysaa helitaan buuxa. Qorshaha ${{premium}} wuxuu ku darayaa hagitaan shakhsi ah oo ka timid lataliyeyaal xirfad leh.",
@@ -151,7 +151,7 @@ export const so: Translations = {
     previewProfile: "Dhammaystir su'aalaha profile-kaaga",
     previewMatches: "Hel isbarbardhigyo iswaafajin leh oo dhibco leh",
     previewChat: "U dir lammaanayaashaada fariimo ammaan ah",
-    howWorks: "Sida CALAF U Shaqeyso",
+    howWorks: "Sida HEL CALAFKAAGA U Shaqeyso",
     step1Title: "Is Diiwaangeli & Dooro Qorshe",
     step1Desc: "Abuur akoonkaaga oo dooro caadiga ah ($10) ama taageero shakhsi ah ($20).",
     step2Title: "Dhammaystir Su'aalaha",
@@ -174,9 +174,9 @@ export const so: Translations = {
     story2Location: "London, UK",
     story3Location: "Minneapolis, USA",
     story1Quote:
-      "Alhamdulillah, waxaan ku helay lammaanaha noloshayda CALAF. Su'aaluhu waxay naga caawiyeen inaan iswaafajinno diinta iyo qiyamka qoyska.",
+      "Alhamdulillah, waxaan ku helay lammaanaha noloshayda HEL CALAFKAAGA. Su'aaluhu waxay naga caawiyeen inaan iswaafajinno diinta iyo qiyamka qoyska.",
     story2Quote:
-      "CALAF waxay naga caawisay inaan helno qof ku habboon diinta iyo dhaqankeena. Hawshu waxay dareemaysay ixtiraam leh bilow ilaa dhammaad.",
+      "HEL CALAFKAAGA waxay naga caawisay inaan helno qof ku habboon diinta iyo dhaqankeena. Hawshu waxay dareemaysay ixtiraam leh bilow ilaa dhammaad.",
     story3Quote:
       "Adeeg xirfad leh oo sharaf leh. Waxaan ku talin lahaa qof kasta oo dhab ah oo doonaya guur.",
     faqTitle: "Su'aalaha Caadiga ah",
@@ -208,7 +208,7 @@ export const so: Translations = {
     feature2: "Profile-yo Muslim ah oo la xaqiijiyay",
     feature3: "Isbarbardhig ku salaysan iswaafajin",
     testimonialQuote:
-      "Waxaan ku kulanay Calaf waxaanan is guursanay isla sanadkaas, alxamdulillah. Habka wuxuu ahaa mid ixtiraam iyo dhab ah maalintii ugu horreysay.",
+      "Waxaan ku kulanay Hel Calafkaaga waxaanan is guursanay isla sanadkaas, alxamdulillah. Habka wuxuu ahaa mid ixtiraam iyo dhab ah maalintii ugu horreysay.",
     testimonialAuthor: "Aisha & Yusuf — lammaane is guursaday",
     joinNowPrice: "Ku Biir Hadda – ${{price}}",
     registerTitle: "Ku biir {{name}}",
@@ -264,7 +264,7 @@ export const so: Translations = {
   aboutPage: {
     title: "Ku saabsan {{name}}",
     subtitle: "Dhisidda xiriir macno leh bulshada Muslimka ah.",
-    p1: "Calaf waxaa la aasaasay ujeeddo fudud: in Muslimiinta lagu caawiyo helitaanka lammaanaha nolosha ee xalaal ah jawi casri ah, ixtiraam leh, oo ammaan ah. Waxaan fahamsanahay in guurku yahay mid ka mid ah go'aamada ugu muhiimsan nolosha, waxaana ka go'an inaan safarkaas ka dhigno mid fudud oo macno leh.",
+    p1: "Hel Calafkaaga waxaa la aasaasay ujeeddo fudud: in Muslimiinta lagu caawiyo helitaanka lammaanaha nolosha ee xalaal ah jawi casri ah, ixtiraam leh, oo ammaan ah. Waxaan fahamsanahay in guurku yahay mid ka mid ah go'aamada ugu muhiimsan nolosha, waxaana ka go'an inaan safarkaas ka dhigno mid fudud oo macno leh.",
     p2: "Platform-kayagu wuxuu isku daraa tiknoolajiyad taxaddar leh iyo qiyamka Islaamka. Muuqaal kasta — laga bilaabo algorithm-kayaga iswaafajinta ilaa kontaroolada qarsoodiga — waxaa loogu talagalay bulshada Muslimka ah. Waxaan aaminsanahay in helitaanka lammaane ay tahay inay ahaato mid sharaf leh, ujeeddo leh, oo diintu hagto.",
     valuesTitle: "Qiyamkayaga",
     valueHalalTitle: "Xalaal:",
@@ -344,11 +344,11 @@ export const so: Translations = {
   },
   payment: {
     completeRegistration: "Dhammaystir Diiwaangelintaada",
-    welcome: "Ku soo dhawoow Calaf!",
+    welcome: "Ku soo dhawoow Hel Calafkaaga!",
     welcomeDesc:
       "Akoonkaaga waa la abuuray. Dooro qorshaha diiwaangelinta si aad u hawlgeliso akoonkaaga, ka dibna dhammaystir su'aalaha profile-kaaga.",
     choosePlan:
-      "Dooro qorshaha kugu habboon. Labada qorshe waxay ku siinayaan helitaan buuxa Calaf — qorshaha ${{premium}} wuxuu ku darayaa hagitaan shakhsi ah oo ka timid khabiiro xirfad leh.",
+      "Dooro qorshaha kugu habboon. Labada qorshe waxay ku siinayaan helitaan buuxa Hel Calafkaaga — qorshaha ${{premium}} wuxuu ku darayaa hagitaan shakhsi ah oo ka timid khabiiro xirfad leh.",
     defaultDesc:
       "Dooro qorshaha diiwaangelinta si aad u hawlgeliso akoonkaaga. Ka dib waxaad dhammayn doontaa su'aalaha profile-kaaga.",
     basicPlan: "Diiwaangelinta Caadiga ah",
@@ -361,7 +361,7 @@ export const so: Translations = {
     expertSupport: "Taageero khabiir ah su'aalaha xiriirka",
     relationshipCoaching: "Caawin lagu dhiso fikirka guurka saxda ah",
     recommended: "La taliyay",
-    activate: "Hawlgeli akoonkaaga Calaf",
+    activate: "Hawlgeli akoonkaaga Hel Calafkaaga",
     completeQuestionnaire: "Dhammaystir su'aalaha profile-kaaga",
     browseMatches: "Baadh lammaanayaasha oo fariin dir",
     secureStripe: "Lacag bixin ammaan ah Stripe",
@@ -391,12 +391,12 @@ export const so: Translations = {
   },
   faq: {
     title: "Su'aalaha Inta Badan La Isweydiiyo",
-    subtitle: "Wax kasta oo aad u baahan tahay inaad ka ogaato Calaf.",
-    q1: "Calaf ma xalaal baa?",
-    a1: "Haa. Calaf waxaa loogu talagalay Muslimiinta doonaya guur si ixtiraam leh oo xalaal ah. Waxaan mudnaanta siinaa qarsoodiga, qiyamka qoyska, iyo mabaadi'da Islaamka.",
+    subtitle: "Wax kasta oo aad u baahan tahay inaad ka ogaato Hel Calafkaaga.",
+    q1: "Hel Calafkaaga ma xalaal baa?",
+    a1: "Haa. Hel Calafkaaga waxaa loogu talagalay Muslimiinta doonaya guur si ixtiraam leh oo xalaal ah. Waxaan mudnaanta siinaa qarsoodiga, qiyamka qoyska, iyo mabaadi'da Islaamka.",
     q2: "Isbarbardhiggu sidee u shaqeeyaa?",
     a2: "Algorithm-kayagu wuxuu falanqeeyaa diinta, da'da, goobta, waxbarashada, qaab nololeedka, iyo astaamaha shakhsiyadda si uu kuu helo isbarbardhigyada ugu fiican ee ka sarreeya 70%.",
-    q3: "Calaf intee bay ku kacaysaa?",
+    q3: "Hel Calafkaaga intee bay ku kacaysaa?",
     a3: "Diiwaangelinta caadiga ah waa $10 hal mar. $20 waxaad sidoo kale heleysaa taageero shakhsi ah oo ka timid khabiiro xirfad leh si ay kaaga caawiyaan inaad dhisto xiriir guur oo caafimaad qaba. Labada qorshe waxay fureysaa helitaanka buuxa ee isbarbardhigga iyo fariimaha.",
     q4: "Xogtayda sidee loo ilaaliyaa?",
     a4: "Waxaan isticmaalnaa sir-qarin heer caalami ah oo aanan waligaa la wadaagin xogtaada shakhsi ahaaneed dhinacyada saddexaad. Qarsoodigaaga waa mudnaantayada.",
@@ -412,7 +412,7 @@ export const so: Translations = {
     title: "Qiimo Fudud oo Cad",
     subtitle: "Dooro diiwaangelinta caadiga ah ama ku dar taageero shakhsi ah oo ka timid khabiiro xirfad leh.",
     membership: "Diiwaangelinta Caadiga ah",
-    basicDesc: "Helitaan buuxa Calaf — bixi hal mar markaad ku biirto.",
+    basicDesc: "Helitaan buuxa Hel Calafkaaga — bixi hal mar markaad ku biirto.",
     premiumMembership: "Diiwaangelin + Taageero Shakhsi ah",
     premiumDesc:
       "Helitaan buuxa oo platform ah iyo hagitaan shakhsi ah oo lagu dhiso xiriir guur oo sax ah.",
@@ -434,7 +434,7 @@ export const so: Translations = {
   },
   howItWorks: {
     title: "Sida Uu U Shaqeeyo",
-    subtitle: "Safarkaaga helitaanka lammaanaha noloshaada Calaf.",
+    subtitle: "Safarkaaga helitaanka lammaanaha noloshaada Hel Calafkaaga.",
     step1: "Is Diiwaangeli & Bixi",
     step1Desc:
       "Abuur akoonkaaga, buuxi faahfaahintaada, oo dooro diiwaangelinta caadiga ah ($10) ama diiwaangelinta taageerada shakhsi ah ($20).",

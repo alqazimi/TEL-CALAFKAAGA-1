@@ -1,4 +1,4 @@
-# Calaf — Halal Marriage Matchmaking Platform
+# Hel Calafkaaga — Halal Marriage Matchmaking Platform
 
 Find your halal life partner with confidence.
 
@@ -133,7 +133,7 @@ npm run setup:stripe:prod -- sk_live_...
 npx convex env set STRIPE_WEBHOOK_SECRET whsec_... --prod
 
 # Password reset & contact form (Resend)
-AUTH_EMAIL_FROM="Calaf <hello@helcalafkaaga.com>" SUPPORT_EMAIL=hello@helcalafkaaga.com \
+AUTH_EMAIL_FROM="Hel Calafkaaga <hello@helcalafkaaga.com>" SUPPORT_EMAIL=hello@helcalafkaaga.com \
   npm run setup:resend:prod -- re_...
 
 # Admin bootstrap (one-time)

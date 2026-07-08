@@ -26,9 +26,9 @@ export const send = internalAction({
     const { error } = await resend.emails.send({
       from: getResendFromAddress(),
       to: [args.email],
-      subject: "You've been invited to Calaf admin",
+      subject: "You've been invited to Hel Calafkaaga admin",
       text: [
-        "You've been invited to join Calaf as an admin.",
+        "You've been invited to join Hel Calafkaaga as an admin.",
         "",
         "Open this link to set your password and accept the invite:",
         inviteUrl,
