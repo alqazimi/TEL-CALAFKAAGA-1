@@ -8,6 +8,7 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
@@ -97,7 +98,6 @@ export function QuestionnaireReview({
 
   const religiousItems = [
     { label: "Prayer Frequency", value: profile.prayerFrequency || "—" },
-    { label: "Madhhab", value: profile.madhhab || "—" },
     ...(profile.gender === "female"
       ? [{ label: "Wears Hijab", value: profile.wearsHijab !== undefined ? (profile.wearsHijab ? "Yes" : "No") : "—" }]
       : []),
@@ -111,25 +111,39 @@ export function QuestionnaireReview({
 
   const marriageItems = [
     { label: "Marital Status", value: profile.maritalStatus || "—" },
-    { label: "Children", value: profile.children > 0 ? "Yes" : "No" },
+    ...(profile.maritalStatus !== "Never married"
+      ? [{ label: "Children", value: profile.children > 0 ? "Yes" : "No" }]
+      : []),
     { label: "Want Children", value: profile.wantChildren || "—" },
     { label: "Family Involvement", value: profile.familyInvolvement || "—" },
     { label: "Polygyny Openness", value: profile.polygynyOpenness || "—" },
   ];
 
   const lifestyleItems = [
-    { label: "Smokes", value: profile.smokes || "—" },
+    {
+      label: "Substance Use",
+      value:
+        profile.smokes === "Yes"
+          ? `Yes${profile.substanceDetails ? ` — ${profile.substanceDetails}` : ""}`
+          : profile.smokes === "No"
+            ? "No"
+            : profile.smokes || "—",
+    },
     { label: "Exercise", value: profile.exercise || "—" },
   ];
 
   const aboutItems = [
-    { label: "Citizenship / Visa", value: profile.citizenshipStatus || "—" },
+    ...(profile.country &&
+    !CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
+      profile.country as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
+    )
+      ? [{ label: "Citizenship / Visa", value: profile.citizenshipStatus || "—" }]
+      : []),
     { label: "Languages", value: translateList(profile.languagesSpoken) },
     { label: "Ready to Relocate", value: profile.readyToRelocate || "—" },
     { label: "Living Situation", value: profile.livingSituation || "—" },
     { label: "Marriage Timeline", value: profile.marriageTimeline || "—" },
     { label: "Love Language", value: profile.loveLanguage ? optionLabel(profile.loveLanguage) : "—" },
-    { label: "Deal-breakers", value: translateList(profile.dealBreakers) },
     { label: "Qualities", value: translateList(profile.qualities) },
     { label: "Hobbies", value: translateList(profile.hobbies) },
   ];

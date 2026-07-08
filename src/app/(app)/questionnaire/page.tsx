@@ -94,11 +94,6 @@ export default function QuestionnairePage() {
       }
 
       if (currentStep < REVIEW_STEP_INDEX) {
-        if (!isEditMode && currentStep === ABOUT_YOU_STEP_COUNT - 1) {
-          setPhaseComplete("about");
-          return;
-        }
-
         const nextStep = currentStep + 1;
         setPhaseComplete(null);
         setStepOverride(nextStep);

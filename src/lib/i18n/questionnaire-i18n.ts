@@ -74,7 +74,14 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   occupation: { en: "Employment Status", so: "Xaaladda Shaqo" },
   maritalStatus: { en: "Have you ever been married?", so: "Weligaa ma guursatay?" },
   hasChildren: { en: "Do you have children?", so: "Carruur ma leedahay?" },
-  smokes: { en: "Do you smoke?", so: "Ma cabtaa sigaar?" },
+  substanceUse: {
+    en: "Do you use any substances (smoking, drugs, etc.)?",
+    so: "Ma isticmaashaa waxyaabo (sigaar, daroogo, iwm.)?",
+  },
+  substanceDetails: {
+    en: "Please describe what you use",
+    so: "Fadlan sheeg waxa aad isticmaasho",
+  },
   exercise: {
     en: "How often do you exercise?",
     so: "Immisa jeer ayaad jimicsi samaysaa?",
@@ -109,10 +116,6 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     en: "Preferred living situation after marriage?",
     so: "Habka nololeed ee aad doorbidayso guurka ka dib?",
   },
-  madhhab: {
-    en: "Sect / madhhab preference",
-    so: "Doorbidka madhhab / dariiqada",
-  },
   polygynyOpenness: {
     en: "Are you open to polygyny / a second marriage?",
     so: "Ma u furan tahay guur labaad / laba xaas?",
@@ -128,10 +131,6 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   financialReadiness: {
     en: "Financial readiness for marriage",
     so: "Diyaargarowga dhaqaale ee guurka",
-  },
-  dealBreakers: {
-    en: "Your deal-breakers (optional)",
-    so: "Waxyaabaha aad diidayso (ikhtiyaari)",
   },
   pref_partnerBeard: {
     en: "Beard preference for your spouse",
@@ -244,7 +243,6 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   "Acts of Service": { en: "Acts of Service", so: "Ficilada Adeegga" },
   "Receiving Gifts": { en: "Receiving Gifts", so: "Helida Hadiyadaha" },
   "Quality Time": { en: "Quality Time", so: "Waqtiga Tayada Leh" },
-  "Physical Touch": { en: "Physical Touch", so: "Taabashada Jirka" },
   // Want children
   "Already have and open to more": {
     en: "Already have and open to more",
@@ -258,15 +256,6 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   "Open to abroad": { en: "Open to abroad", so: "U furan dibadda" },
   "With family": { en: "With family", so: "Lala noolaado qoyska" },
   "Own home": { en: "Own home", so: "Gurigeyga gaarka ah" },
-  // Madhhab
-  "Sunni - no preference": {
-    en: "Sunni - no preference",
-    so: "Sunni - doorbid ma jiro",
-  },
-  "Shafi'i": { en: "Shafi'i", so: "Shaafici" },
-  Hanafi: { en: "Hanafi", so: "Xanafi" },
-  Maliki: { en: "Maliki", so: "Maaliki" },
-  Hanbali: { en: "Hanbali", so: "Xanbali" },
   "Prefer not to say": { en: "Prefer not to say", so: "Ma doonayo inaan sheego" },
   // Beard / hijab preferences
   "Beard preferred": { en: "Beard preferred", so: "Gar la doorbido" },
@@ -314,36 +303,6 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   "Still building financially": {
     en: "Still building financially",
     so: "Weli dhaqaale ahaan waan dhismayaa",
-  },
-  // Deal-breakers
-  Smoking: { en: "Smoking", so: "Sigaar cabista" },
-  "Does not pray regularly": {
-    en: "Does not pray regularly",
-    so: "Si joogto ah uma tukado",
-  },
-  "Already has children": {
-    en: "Already has children",
-    so: "Horey u leeyahay carruur",
-  },
-  "Does not want children": {
-    en: "Does not want children",
-    so: "Ma doonayo carruur",
-  },
-  "Lives in a different country": {
-    en: "Lives in a different country",
-    so: "Wuxuu ku nool yahay waddan kale",
-  },
-  "Not willing to relocate": {
-    en: "Not willing to relocate",
-    so: "Ma doonayo inuu guuro",
-  },
-  "Wants second marriage / polygyny": {
-    en: "Wants second marriage / polygyny",
-    so: "Wuxuu doonayaa guur labaad",
-  },
-  "No family involvement": {
-    en: "No family involvement",
-    so: "Qoysku ku lug ma laha",
   },
   // Max distance
   "Same City": { en: "Same City", so: "Isla Magaalada" },
@@ -567,6 +526,7 @@ const UI_TEXT = {
   autoSaveOn: { en: "Auto-save on", so: "Kaydinta tooska ah" },
   questionOf: { en: "Question {current} of {total}", so: "Su'aal {current} / {total}" },
   nextQuestion: { en: "Next question", so: "Su'aasha xigta" },
+  continueFlow: { en: "Continue", so: "Sii wad" },
   previousQuestion: { en: "Previous", so: "Dib u noqo" },
   saving: { en: "Saving...", so: "Waa la kaydinayaa..." },
   saved: { en: "Saved", so: "La kaydiyay" },
@@ -584,6 +544,10 @@ const UI_TEXT = {
   bioPlaceholder: {
     en: "Tell us about yourself...",
     so: "Noo sheeg wax kugu saabsan...",
+  },
+  substanceDetailsPlaceholder: {
+    en: "e.g. smoking, cannabis, other — please be honest",
+    so: "tusaale: sigaar, cannabis, kale — fadlan si daacad ah u sheeg",
   },
   selectPlaceholder: { en: "Select", so: "Dooro" },
   selectCity: { en: "Select city", so: "Dooro magaalada" },

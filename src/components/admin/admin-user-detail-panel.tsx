@@ -17,6 +17,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -237,10 +238,17 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                   emptyLabel={t("adminDetail.notProvided")}
                   items={[
                     { label: t("profilePage.maritalStatus"), value: detail.profile.maritalStatus || "—" },
-                    {
-                      label: t("adminDetail.children"),
-                      value: detail.profile.children > 0 ? t("adminDetail.yes") : t("adminDetail.no"),
-                    },
+                    ...(detail.profile.maritalStatus !== "Never married"
+                      ? [
+                          {
+                            label: t("adminDetail.children"),
+                            value:
+                              detail.profile.children > 0
+                                ? t("adminDetail.yes")
+                                : t("adminDetail.no"),
+                          },
+                        ]
+                      : []),
                     { label: t("adminDetail.wantChildren"), value: detail.profile.wantChildren || "—" },
                     {
                       label: t("adminDetail.familyInvolvement"),
@@ -262,7 +270,17 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                 <DetailGrid
                   emptyLabel={t("adminDetail.notProvided")}
                   items={[
-                    { label: "Smokes", value: detail.profile.smokes || "—" },
+                    {
+                      label: t("adminDetail.substanceUse"),
+                      value:
+                        detail.profile.smokes === "Yes"
+                          ? detail.profile.substanceDetails
+                            ? `Yes — ${detail.profile.substanceDetails}`
+                            : "Yes"
+                          : detail.profile.smokes === "No"
+                            ? t("adminDetail.no")
+                            : detail.profile.smokes || "—",
+                    },
                     { label: "Exercise", value: detail.profile.exercise || "—" },
                   ]}
                 />
@@ -272,11 +290,17 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                 <DetailGrid
                   emptyLabel={t("adminDetail.notProvided")}
                   items={[
-                    { label: t("adminDetail.madhhab"), value: detail.profile.madhhab || "—" },
-                    {
-                      label: t("adminDetail.citizenship"),
-                      value: detail.profile.citizenshipStatus || "—",
-                    },
+                    ...(detail.profile.country &&
+                    !CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
+                      detail.profile.country as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
+                    )
+                      ? [
+                          {
+                            label: t("adminDetail.citizenship"),
+                            value: detail.profile.citizenshipStatus || "—",
+                          },
+                        ]
+                      : []),
                     {
                       label: t("adminDetail.languages"),
                       value: detail.profile.languagesSpoken?.length
@@ -294,12 +318,6 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                     },
                     { label: t("adminDetail.marriageTimeline"), value: detail.profile.marriageTimeline || "—" },
                     { label: t("profilePage.loveLanguage"), value: detail.profile.loveLanguage || "—" },
-                    {
-                      label: t("adminDetail.dealBreakers"),
-                      value: detail.profile.dealBreakers?.length
-                        ? detail.profile.dealBreakers.join(", ")
-                        : "—",
-                    },
                     {
                       label: t("profilePage.qualities"),
                       value: detail.profile.qualities?.length

@@ -98,7 +98,6 @@ export const LOVE_LANGUAGES = [
   "Acts of Service",
   "Receiving Gifts",
   "Quality Time",
-  "Physical Touch",
 ] as const;
 
 export const WANT_CHILDREN = [
@@ -116,15 +115,6 @@ export const LIVING_SITUATION = [
   "Open to abroad",
   "With family",
   "Own home",
-] as const;
-
-export const MADHHAB_OPTIONS = [
-  "Sunni - no preference",
-  "Shafi'i",
-  "Hanafi",
-  "Maliki",
-  "Hanbali",
-  "Prefer not to say",
 ] as const;
 
 export const BEARD_PREFERENCE = [
@@ -156,6 +146,14 @@ export const LANGUAGES_SPOKEN = [
   "Other",
 ] as const;
 
+/** Countries where citizenship/visa status is usually not relevant. */
+export const CITIZENSHIP_NOT_REQUIRED_COUNTRIES = [
+  "Somalia",
+  "Djibouti",
+  "Ethiopia",
+  "Kenya",
+] as const;
+
 export const CITIZENSHIP_STATUS = [
   "Citizen of country I live in",
   "Permanent resident",
@@ -169,17 +167,6 @@ export const FINANCIAL_READINESS = [
   "We should both work",
   "Still building financially",
   "Prefer not to say",
-] as const;
-
-export const DEAL_BREAKERS = [
-  "Smoking",
-  "Does not pray regularly",
-  "Already has children",
-  "Does not want children",
-  "Lives in a different country",
-  "Not willing to relocate",
-  "Wants second marriage / polygyny",
-  "No family involvement",
 ] as const;
 
 export const MAX_DISTANCE = [

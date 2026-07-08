@@ -13,7 +13,11 @@ export const backfillProfileFields = internalMutation({
     let updated = 0;
 
     for (const profile of profiles) {
+      const legacyProfile = profile as typeof profile & {
+        dealBreakers?: string[];
+      };
       const patch: Record<string, unknown> = {};
+      let needsReplace = false;
       if (profile.spousePrayerImportance === undefined) {
         patch.spousePrayerImportance = PROFILE_DEFAULTS.spousePrayerImportance;
       }
@@ -25,6 +29,20 @@ export const backfillProfileFields = internalMutation({
       if (!profile.religiousLevel?.trim() && profile.prayerFrequency?.trim()) {
         patch.religiousLevel = religiousLevelFromPrayer(profile.prayerFrequency);
       }
+      if ("dealBreakers" in legacyProfile) {
+        needsReplace = true;
+      }
+
+      if (needsReplace) {
+        const { _id, _creationTime, dealBreakers: _dealBreakers, ...rest } = legacyProfile;
+        await ctx.db.replace(_id, {
+          ...rest,
+          ...patch,
+        });
+        updated++;
+        continue;
+      }
+
       if (Object.keys(patch).length > 0) {
         await ctx.db.patch(profile._id, patch);
         updated++;

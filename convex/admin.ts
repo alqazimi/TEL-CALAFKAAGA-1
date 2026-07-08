@@ -527,7 +527,7 @@ export const getAnalytics = query({
   },
 });
 
-/** Owner-only: backfill religiousLevel, questionnaireStep, and related fields. */
+/** Owner-only: backfill profile defaults and remove deprecated legacy fields. */
 export const runProfileBackfill = mutation({
   args: {},
   handler: async (ctx): Promise<{ updated: number; total: number }> => {

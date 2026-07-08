@@ -1,6 +1,8 @@
 import type { Profile } from "@/types";
 import { ABOUT_YOU_STEP_COUNT, STEPS } from "@/components/questionnaire/steps";
 
+import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
+
 export interface Preferences {
   minAge?: number;
   maxAge?: number;
@@ -50,19 +52,24 @@ export function isEducationComplete(profile: Profile): boolean {
 }
 
 export function isBasicComplete(profile: Profile): boolean {
+  const needsCitizenship =
+    !!profile.country &&
+    !CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
+      profile.country as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
+    );
   return (
     profile.age > 0 &&
     !!profile.country &&
     !!profile.city &&
     profile.height > 0 &&
     profile.weight > 0 &&
-    !!profile.citizenshipStatus &&
+    (!needsCitizenship || !!profile.citizenshipStatus) &&
     (profile.languagesSpoken?.length ?? 0) > 0
   );
 }
 
 export function isReligiousComplete(profile: Profile): boolean {
-  const base = !!profile.prayerFrequency && !!profile.madhhab;
+  const base = !!profile.prayerFrequency;
   if (profile.gender === "female") {
     return base && profile.wearsHijab !== undefined;
   }
@@ -81,7 +88,10 @@ export function isAboutYouComplete(profile: Profile): boolean {
 }
 
 export function isLifestyleComplete(profile: Profile): boolean {
-  return !!profile.smokes && !!profile.exercise;
+  const substanceOk =
+    profile.smokes === "No" ||
+    (profile.smokes === "Yes" && !!profile.substanceDetails?.trim());
+  return substanceOk && !!profile.exercise;
 }
 
 export function isPhotoComplete(profile: Profile): boolean {
@@ -172,14 +182,14 @@ export function getSectionStatus(
       !!profile.city ||
       !!profile.citizenshipStatus ||
       (profile.languagesSpoken?.length ?? 0) > 0,
-    religious: !!profile.prayerFrequency || !!profile.madhhab,
+    religious: !!profile.prayerFrequency,
     education: !!profile.education || !!profile.occupation || !!profile.financialReadiness,
     marriage:
       !!profile.maritalStatus ||
       !!profile.wantChildren ||
       !!profile.familyInvolvement ||
       !!profile.polygynyOpenness,
-    lifestyle: !!profile.smokes,
+    lifestyle: profile.smokes === "Yes" || profile.smokes === "No",
     about:
       !!profile.readyToRelocate ||
       !!profile.livingSituation ||

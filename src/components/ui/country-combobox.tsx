@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { filterCountries } from "@/lib/country-search";
 import { ALL_COUNTRIES } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,11 +23,7 @@ export function CountryCombobox({
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return ALL_COUNTRIES;
-    return ALL_COUNTRIES.filter((c) => c.toLowerCase().includes(q));
-  }, [search]);
+  const filtered = useMemo(() => filterCountries(ALL_COUNTRIES, search), [search]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

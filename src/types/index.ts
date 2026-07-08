@@ -21,17 +21,16 @@ export interface Profile {
   spousePrayerImportance?: string;
   wearsHijab?: boolean;
   smokes?: string;
+  substanceDetails?: string;
   drinksAlcohol?: string;
   exercise?: string;
   wantChildren?: string;
   familyInvolvement?: string;
   livingSituation?: string;
-  madhhab?: string;
   polygynyOpenness?: string;
   languagesSpoken?: string[];
   citizenshipStatus?: string;
   financialReadiness?: string;
-  dealBreakers?: string[];
   readyToRelocate?: string;
   marriageTimeline?: string;
   loveLanguage?: string;

@@ -1,4 +1,5 @@
 import type { FieldConfig, StepConfig } from "@/components/questionnaire/steps";
+import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 
@@ -7,17 +8,33 @@ function formatHeightWeight(value: number, plus: string): string {
   return String(value);
 }
 
+function legacySubstanceUse(smokes?: string): string | undefined {
+  if (!smokes) return undefined;
+  if (smokes === "Never") return "No";
+  if (smokes === "Sometimes" || smokes === "Yes") return "Yes";
+  if (smokes === "No") return "No";
+  return smokes;
+}
+
 export function initFormState(
   profile: Profile | null | undefined,
   preferences: Preferences | null | undefined
 ) {
   if (!profile) {
-    return { selects: {}, radios: {}, multiSelects: {}, bio: "", selectedCountry: "" };
+    return {
+      selects: {},
+      radios: {},
+      multiSelects: {},
+      textFields: {},
+      bio: "",
+      selectedCountry: "",
+    };
   }
 
   const selects: Record<string, string> = {};
   const radios: Record<string, string> = {};
   const multiSelects: Record<string, string[]> = {};
+  const textFields: Record<string, string> = {};
 
   if (profile.age > 0) selects.age = String(profile.age);
   if (profile.country) selects.country = profile.country;
@@ -34,24 +51,22 @@ export function initFormState(
   if (profile.occupation) radios.occupation = profile.occupation;
 
   if (profile.maritalStatus) radios.maritalStatus = profile.maritalStatus;
-  // Only pre-select "has children" when the user has actually answered the
-  // marriage step (marital status set) or has children on record. A brand-new
-  // profile defaults children to 0, so we must NOT auto-tick "No".
   if (profile.children > 0) {
     radios.hasChildren = "Yes";
-  } else if (profile.maritalStatus) {
+  } else if (profile.maritalStatus && profile.maritalStatus !== "Never married") {
     radios.hasChildren = "No";
   }
   if (profile.marrySomeoneWithChildren) {
     radios.marrySomeoneWithChildren = profile.marrySomeoneWithChildren;
   }
 
-  if (profile.smokes) radios.smokes = profile.smokes;
+  const substanceUse = legacySubstanceUse(profile.smokes);
+  if (substanceUse) radios.substanceUse = substanceUse;
+  if (profile.substanceDetails) textFields.substanceDetails = profile.substanceDetails;
   if (profile.exercise) radios.exercise = profile.exercise;
   if (profile.wantChildren) radios.wantChildren = profile.wantChildren;
   if (profile.familyInvolvement) radios.familyInvolvement = profile.familyInvolvement;
   if (profile.livingSituation) radios.livingSituation = profile.livingSituation;
-  if (profile.madhhab) radios.madhhab = profile.madhhab;
   if (profile.polygynyOpenness) radios.polygynyOpenness = profile.polygynyOpenness;
   if (profile.citizenshipStatus) radios.citizenshipStatus = profile.citizenshipStatus;
   if (profile.financialReadiness) radios.financialReadiness = profile.financialReadiness;
@@ -81,12 +96,12 @@ export function initFormState(
   multiSelects.qualities = profile.qualities ?? [];
   multiSelects.hobbies = profile.hobbies ?? [];
   multiSelects.languagesSpoken = profile.languagesSpoken ?? [];
-  multiSelects.dealBreakers = profile.dealBreakers ?? [];
 
   return {
     selects,
     radios,
     multiSelects,
+    textFields,
     bio: profile.bio ?? "",
     selectedCountry: profile.country ?? "",
   };
@@ -94,12 +109,15 @@ export function initFormState(
 
 export function getFieldValue(
   fieldName: string,
-  profile: { gender?: string; maritalStatus?: string; children?: number } | null | undefined,
-  radios: Record<string, string>
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  radios: Record<string, string>,
+  selects?: Record<string, string>
 ): string | undefined {
   if (fieldName === "gender") return profile?.gender;
   if (radios[fieldName]) return radios[fieldName];
+  if (selects?.[fieldName]) return selects[fieldName];
   if (fieldName === "maritalStatus") return profile?.maritalStatus;
+  if (fieldName === "country") return selects?.country ?? profile?.country;
   if (fieldName === "hasChildren" && profile?.children !== undefined) {
     return profile.children > 0 ? "Yes" : "No";
   }
@@ -108,15 +126,16 @@ export function getFieldValue(
 
 export function isFieldVisible(
   field: FieldConfig,
-  profile: { gender?: string; maritalStatus?: string; children?: number } | null | undefined,
-  radios: Record<string, string>
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  radios: Record<string, string>,
+  selects?: Record<string, string>
 ): boolean {
   if (field.condition) {
-    const condValue = getFieldValue(field.condition.field, profile, radios);
+    const condValue = getFieldValue(field.condition.field, profile, radios, selects);
     if (condValue !== field.condition.value) return false;
   }
   if (field.hideWhen) {
-    const value = getFieldValue(field.hideWhen.field, profile, radios);
+    const value = getFieldValue(field.hideWhen.field, profile, radios, selects);
     if (value && field.hideWhen.values.includes(value)) return false;
   }
   return true;
@@ -124,24 +143,36 @@ export function isFieldVisible(
 
 export function buildStepData(
   step: StepConfig,
-  profile: { gender?: string; maritalStatus?: string; children?: number } | null | undefined,
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
   state: {
     radios: Record<string, string>;
     selects: Record<string, string>;
     multiSelects: Record<string, string[]>;
+    textFields: Record<string, string>;
     bio: string;
   }
 ): Record<string, unknown> {
-  const { radios, selects, multiSelects, bio } = state;
+  const { radios, selects, multiSelects, textFields, bio } = state;
   const data: Record<string, unknown> = {};
   const preferences: Record<string, unknown> = {};
 
   for (const field of step.fields) {
-    if (!isFieldVisible(field, profile, radios)) continue;
+    if (!isFieldVisible(field, profile, radios, selects)) continue;
     if (field.uiOnly) continue;
 
-    if (field.type === "textarea") {
+    if (field.name === "substanceUse") {
+      data.smokes = radios.substanceUse ?? "";
+      continue;
+    }
+    if (field.name === "substanceDetails") {
+      data.substanceDetails = textFields.substanceDetails?.trim() ?? "";
+      continue;
+    }
+
+    if (field.type === "textarea" && field.name === "bio") {
       data[field.name] = bio;
+    } else if (field.type === "textarea") {
+      data[field.name] = textFields[field.name]?.trim() ?? "";
     } else if (field.type === "multi-select" || field.type === "country-multi") {
       const values = multiSelects[field.name] ?? [];
       if (field.preferences) {
@@ -184,12 +215,24 @@ export function buildStepData(
   }
 
   if (step.fields.some((f) => f.name === "hasChildren")) {
-    const hasChildren = radios.hasChildren ?? getFieldValue("hasChildren", profile, radios);
-    data.children = hasChildren === "Yes" ? 1 : 0;
+    const maritalStatus = radios.maritalStatus ?? profile?.maritalStatus;
+    if (maritalStatus === "Never married") {
+      data.children = 0;
+    } else {
+      const hasChildren = radios.hasChildren ?? getFieldValue("hasChildren", profile, radios, selects);
+      data.children = hasChildren === "Yes" ? 1 : 0;
+    }
   }
 
-  // When the user won't marry someone with children, the "accept children"
-  // question is hidden — keep the stored preference consistent as "No".
+  const country = selects.country ?? profile?.country ?? "";
+  if (
+    CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
+      country as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
+    )
+  ) {
+    data.citizenshipStatus = "";
+  }
+
   if (
     step.fields.some((f) => f.name === "pref_acceptChildren") &&
     radios.marrySomeoneWithChildren === "No"
@@ -206,19 +249,21 @@ export function buildStepData(
 
 export function validateField(
   field: FieldConfig,
-  profile: { gender?: string; maritalStatus?: string; children?: number } | null | undefined,
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
   state: {
     radios: Record<string, string>;
     selects: Record<string, string>;
     multiSelects: Record<string, string[]>;
+    textFields: Record<string, string>;
     bio: string;
   }
 ): string | null {
-  if (!isFieldVisible(field, profile, state.radios)) return null;
+  if (!isFieldVisible(field, profile, state.radios, state.selects)) return null;
   if (!field.required) return null;
 
   if (field.type === "textarea") {
-    return state.bio.trim() ? null : "This field is required";
+    const value = field.name === "bio" ? state.bio : state.textFields[field.name] ?? "";
+    return value.trim() ? null : "This field is required";
   }
 
   if (field.type === "multi-select" || field.type === "country-multi") {
@@ -227,7 +272,8 @@ export function validateField(
   }
 
   if (field.type === "radio") {
-    return state.radios[field.name] ? null : "Please select an option";
+    const radioKey = field.name === "substanceUse" ? "substanceUse" : field.name;
+    return state.radios[radioKey] ? null : "Please select an option";
   }
 
   if (field.type === "country-search" || field.type === "select") {
@@ -237,24 +283,70 @@ export function validateField(
   return null;
 }
 
-export function validateStepFields(
+export function getVisibleFields(
   step: StepConfig,
-  profile: { gender?: string; maritalStatus?: string; children?: number } | null | undefined,
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  radios: Record<string, string>,
+  selects?: Record<string, string>
+): FieldConfig[] {
+  return step.fields.filter((field) => isFieldVisible(field, profile, radios, selects));
+}
+
+export function isFieldAnswered(
+  field: FieldConfig,
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
   state: {
     radios: Record<string, string>;
     selects: Record<string, string>;
     multiSelects: Record<string, string[]>;
+    textFields: Record<string, string>;
+    bio: string;
+  }
+): boolean {
+  if (!isFieldVisible(field, profile, state.radios, state.selects)) return true;
+  return validateField(field, profile, state) === null;
+}
+
+/** First unanswered visible question, or the last question if all are answered. */
+export function getResumeFieldIndex(
+  step: StepConfig,
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  state: {
+    radios: Record<string, string>;
+    selects: Record<string, string>;
+    multiSelects: Record<string, string[]>;
+    textFields: Record<string, string>;
+    bio: string;
+  }
+): number {
+  const visible = getVisibleFields(step, profile, state.radios, state.selects);
+  if (visible.length === 0) return 0;
+  for (let i = 0; i < visible.length; i++) {
+    if (!isFieldAnswered(visible[i], profile, state)) return i;
+  }
+  return visible.length - 1;
+}
+
+export function validateStepFields(
+  step: StepConfig,
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  state: {
+    radios: Record<string, string>;
+    selects: Record<string, string>;
+    multiSelects: Record<string, string[]>;
+    textFields: Record<string, string>;
     bio: string;
   }
 ): Record<string, string> {
   const errors: Record<string, string> = {};
 
   for (const field of step.fields) {
-    if (!isFieldVisible(field, profile, state.radios)) continue;
+    if (!isFieldVisible(field, profile, state.radios, state.selects)) continue;
     if (!field.required) continue;
 
     if (field.type === "textarea") {
-      if (!state.bio.trim()) {
+      const value = field.name === "bio" ? state.bio : state.textFields[field.name] ?? "";
+      if (!value.trim()) {
         errors[field.name] = "This field is required";
       }
       continue;
@@ -269,7 +361,8 @@ export function validateStepFields(
     }
 
     if (field.type === "radio") {
-      if (!state.radios[field.name]) {
+      const radioKey = field.name === "substanceUse" ? "substanceUse" : field.name;
+      if (!state.radios[radioKey]) {
         errors[field.name] = "Please select an option";
       }
       continue;

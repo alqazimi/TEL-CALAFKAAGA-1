@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Cloud, CloudOff, Loader2 } from "lucide-react";
@@ -23,21 +23,31 @@ import { CountryMultiCombobox } from "@/components/ui/country-multi-combobox";
 import { cn } from "@/lib/utils";
 import {
   buildStepData,
+  getResumeFieldIndex,
+  getVisibleFields,
   initFormState,
-  isFieldVisible,
   validateField,
   validateStepFields,
 } from "@/lib/questionnaire-form";
 import { toast } from "sonner";
 import type { Preferences } from "@/lib/profile-progress";
 import type { Profile } from "@/types";
-import { CITIES } from "@/lib/constants";
+import { CITIES, CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
 import type { FieldConfig, StepConfig } from "./steps";
 
 const AUTO_ADVANCE_MS = 450;
+const AUTO_SAVE_MS = 1000;
 const AUTO_ADVANCE_TYPES = new Set(["radio", "select", "country-search"]);
+
+type FormState = {
+  radios: Record<string, string>;
+  selects: Record<string, string>;
+  multiSelects: Record<string, string[]>;
+  textFields: Record<string, string>;
+  bio: string;
+};
 
 /** Maps English validation strings from validateStepFields to translatable UI keys. */
 const ERROR_KEY_MAP: Record<string, QuestionnaireUiKey> = {
@@ -54,11 +64,19 @@ function translateError(
   return key ? ui(key) : error;
 }
 
+function fieldNeedsManualAdvance(field: FieldConfig, selectedCountry: string): boolean {
+  if (!AUTO_ADVANCE_TYPES.has(field.type)) return true;
+  if (field.type === "select" && field.name === "city" && !CITIES[selectedCountry]?.length) {
+    return true;
+  }
+  return false;
+}
+
 interface QuestionnaireStepProps {
   step: StepConfig;
   profile: Profile | null | undefined;
   preferences?: Preferences | null;
-  onSubmit: (data: Record<string, unknown>) => void;
+  onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
   onAutoSave?: (data: Record<string, unknown>) => Promise<void>;
   isLastFormStep?: boolean;
   isLastAboutStep?: boolean;
@@ -70,90 +88,169 @@ export function QuestionnaireStep({
   preferences,
   onSubmit,
   onAutoSave,
-  isLastFormStep = false,
-  isLastAboutStep = false,
 }: QuestionnaireStepProps) {
   const initial = initFormState(profile, preferences);
   const [selectedCountry, setSelectedCountry] = useState(initial.selectedCountry);
   const [multiSelects, setMultiSelects] = useState(initial.multiSelects);
   const [selects, setSelects] = useState(initial.selects);
   const [radios, setRadios] = useState(initial.radios);
+  const [textFields, setTextFields] = useState(initial.textFields);
   const [fieldIndex, setFieldIndex] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [isAdvancing, setIsAdvancing] = useState(false);
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null);
   const skipAutoSaveRef = useRef(true);
+  const fieldIndexRef = useRef(0);
+  const selectedCountryRef = useRef(initial.selectedCountry);
   const { register, watch, setValue } = useForm({ defaultValues: { bio: initial.bio } });
   const bio = watch("bio", initial.bio);
   const { stepTitle, stepDescription, fieldLabel, optionLabel, ui } = useQuestionnaireI18n();
 
   const profileId = profile?._id ?? null;
+  const stepId = step.id;
+  const profileRef = useRef(profile);
+  const preferencesRef = useRef(preferences);
+  profileRef.current = profile;
+  preferencesRef.current = preferences;
 
+  const formState: FormState = { radios, selects, multiSelects, textFields, bio };
+  const formStateRef = useRef(formState);
+  formStateRef.current = formState;
+  fieldIndexRef.current = fieldIndex;
+  selectedCountryRef.current = selectedCountry;
+
+  const visibleFields = useMemo(
+    () => getVisibleFields(step, profile, radios, selects),
+    [step, profile, radios, selects]
+  );
+  const visibleFieldKey = visibleFields.map((f) => f.name).join("|");
+
+  const safeFieldIndex = Math.min(
+    fieldIndex,
+    Math.max(0, visibleFields.length - 1)
+  );
+  const currentField = visibleFields[safeFieldIndex];
+  const isLastField = safeFieldIndex >= visibleFields.length - 1;
+  const fieldsToRender = currentField ? [currentField] : [];
+
+  // Load form state only when switching users or steps — not on auto-save profile updates.
   useEffect(() => {
-    const state = initFormState(profile, preferences);
+    const state = initFormState(profileRef.current, preferencesRef.current);
     setSelectedCountry(state.selectedCountry);
     setMultiSelects(state.multiSelects);
     setSelects(state.selects);
     setRadios(state.radios);
+    setTextFields(state.textFields);
     setValue("bio", state.bio);
     setFieldErrors({});
-    setFieldIndex(0);
+    setFieldIndex(getResumeFieldIndex(step, profileRef.current, state));
     skipAutoSaveRef.current = true;
-  }, [profileId, preferences, step.id, setValue]);
+    if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+  }, [profileId, stepId, setValue, step]);
 
-  const formState = { radios, selects, multiSelects, bio };
+  // Keep index in range when conditional questions hide/show — never jump to Q1.
+  useEffect(() => {
+    setFieldIndex((i) => {
+      if (visibleFields.length === 0) return 0;
+      return Math.min(i, visibleFields.length - 1);
+    });
+  }, [visibleFieldKey, visibleFields.length]);
 
-  const visibleFields = step.fields.filter((field) =>
-    isFieldVisible(field, profile, radios)
-  );
-  const focusMode = visibleFields.length > 1;
-  const currentField = visibleFields[fieldIndex] ?? visibleFields[0];
-  const isLastField = fieldIndex >= visibleFields.length - 1;
-  const isPartnerStep = step.phase === "partner";
-  const fieldsToRender = focusMode && currentField ? [currentField] : visibleFields;
+  const flushAutoSave = useCallback(async () => {
+    if (!onAutoSave) return;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const data = buildStepData(step, profile, formStateRef.current);
+    if (Object.keys(data).length === 0) return;
+    setSaveStatus("saving");
+    try {
+      await onAutoSave(data);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 2000);
+    } catch {
+      setSaveStatus("error");
+    }
+  }, [onAutoSave, step, profile]);
 
-  const triggerAutoSave = useCallback(() => {
+  const scheduleAutoSave = useCallback(() => {
     if (!onAutoSave) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(async () => {
-      const data = buildStepData(step, profile, formState);
-      if (Object.keys(data).length === 0) return;
-      setSaveStatus("saving");
-      try {
-        await onAutoSave(data);
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
-      } catch {
-        setSaveStatus("error");
-      }
-    }, 800);
-  }, [onAutoSave, step, profile, radios, selects, multiSelects, bio]);
+    saveTimerRef.current = setTimeout(() => {
+      void flushAutoSave();
+    }, AUTO_SAVE_MS);
+  }, [onAutoSave, flushAutoSave]);
 
   useEffect(() => {
     if (skipAutoSaveRef.current) {
       skipAutoSaveRef.current = false;
       return;
     }
-    triggerAutoSave();
+    scheduleAutoSave();
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [triggerAutoSave]);
+  }, [radios, selects, multiSelects, textFields, bio, scheduleAutoSave]);
 
   useEffect(() => {
     return () => {
       if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, []);
 
-  const scheduleAutoAdvance = (field: FieldConfig) => {
-    if (!focusMode || isLastField || !AUTO_ADVANCE_TYPES.has(field.type)) return;
+  const completeCurrentStep = useCallback(async () => {
+    if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+    const state = formStateRef.current;
+    const visible = getVisibleFields(step, profile, state.radios, state.selects);
+    const errors = validateStepFields(step, profile, state);
+    if (Object.keys(errors).length > 0) {
+      const firstErrorField = visible.find((f) => errors[f.name]);
+      if (firstErrorField) {
+        setFieldIndex(visible.indexOf(firstErrorField));
+        setFieldErrors(errors);
+      }
+      toast.error(ui("answerAllRequired"));
+      return;
+    }
+    setFieldErrors({});
+    setIsAdvancing(true);
+    try {
+      await flushAutoSave();
+      const data = buildStepData(step, profile, state);
+      await onSubmit(data);
+    } catch {
+      toast.error(ui("saveFailed"));
+    } finally {
+      setIsAdvancing(false);
+    }
+  }, [step, profile, onSubmit, flushAutoSave, ui]);
+
+  const completeStepRef = useRef(completeCurrentStep);
+  completeStepRef.current = completeCurrentStep;
+
+  const scheduleAutoAdvance = useCallback((field: FieldConfig) => {
+    if (fieldNeedsManualAdvance(field, selectedCountryRef.current)) return;
     if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
     autoAdvanceRef.current = setTimeout(() => {
-      setFieldIndex((i) => Math.min(i + 1, visibleFields.length - 1));
+      const idx = fieldIndexRef.current;
+      const count = getVisibleFields(
+        step,
+        profile,
+        formStateRef.current.radios,
+        formStateRef.current.selects
+      ).length;
+      if (idx >= count - 1) {
+        void completeStepRef.current();
+      } else {
+        setFieldIndex(idx + 1);
+      }
     }, AUTO_ADVANCE_MS);
-  };
+  }, [step, profile]);
 
   const goToPreviousField = () => {
     if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
@@ -169,23 +266,11 @@ export function QuestionnaireStep({
       return;
     }
     setFieldErrors({});
-    setFieldIndex((i) => Math.min(i + 1, visibleFields.length - 1));
-  };
-
-  const handleFormSubmit = () => {
-    const errors = validateStepFields(step, profile, formState);
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
-      const firstErrorField = visibleFields.find((f) => errors[f.name]);
-      if (firstErrorField && focusMode) {
-        setFieldIndex(visibleFields.indexOf(firstErrorField));
-      }
-      toast.error(ui("answerAllRequired"));
-      return;
+    if (isLastField) {
+      void completeCurrentStep();
+    } else {
+      setFieldIndex((i) => i + 1);
     }
-    setFieldErrors({});
-    const data = buildStepData(step, profile, formState);
-    onSubmit(data);
   };
 
   const toggleMultiSelect = (fieldName: string, value: string, maxSelect?: number) => {
@@ -207,13 +292,29 @@ export function QuestionnaireStep({
     });
   };
 
+  const showManualNext =
+    currentField && fieldNeedsManualAdvance(currentField, selectedCountry);
+
   const renderFieldInput = (field: FieldConfig) => (
     <>
       {field.type === "radio" && (
         <RadioGroup
           value={radios[field.name] ?? ""}
           onValueChange={(v) => {
-            setRadios((prev) => ({ ...prev, [field.name]: v }));
+            setRadios((prev) => {
+              const next = { ...prev, [field.name]: v };
+              if (field.name === "maritalStatus" && v === "Never married") {
+                delete next.hasChildren;
+              }
+              if (field.name === "substanceUse" && v === "No") {
+                setTextFields((tf) => {
+                  const updated = { ...tf };
+                  delete updated.substanceDetails;
+                  return updated;
+                });
+              }
+              return next;
+            });
             clearFieldError(field.name);
             scheduleAutoAdvance(field);
           }}
@@ -244,6 +345,17 @@ export function QuestionnaireStep({
             if (field.name === "country") {
               setSelectedCountry(v);
               setSelects((prev) => ({ ...prev, city: "" }));
+              if (
+                CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
+                  v as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
+                )
+              ) {
+                setRadios((prev) => {
+                  const next = { ...prev };
+                  delete next.citizenshipStatus;
+                  return next;
+                });
+              }
             }
             clearFieldError(field.name);
             clearFieldError("city");
@@ -320,7 +432,7 @@ export function QuestionnaireStep({
         </Select>
       )}
 
-      {field.type === "textarea" && (
+      {field.type === "textarea" && field.name === "bio" && (
         <div>
           <Textarea
             {...register("bio")}
@@ -336,6 +448,19 @@ export function QuestionnaireStep({
             {(bio?.length ?? 0)}/500
           </p>
         </div>
+      )}
+
+      {field.type === "textarea" && field.name !== "bio" && (
+        <Textarea
+          value={textFields[field.name] ?? ""}
+          placeholder={ui("substanceDetailsPlaceholder")}
+          rows={4}
+          maxLength={500}
+          onChange={(e) => {
+            setTextFields((prev) => ({ ...prev, [field.name]: e.target.value }));
+            clearFieldError(field.name);
+          }}
+        />
       )}
 
       {field.type === "multi-select" && (
@@ -379,10 +504,10 @@ export function QuestionnaireStep({
             <CardDescription className="text-sm sm:text-base mt-1">
               {stepDescription(step.id, step.description)}
             </CardDescription>
-            {focusMode && (
+            {visibleFields.length > 0 && (
               <p className="text-xs font-semibold text-primary mt-2">
                 {ui("questionOf")
-                  .replace("{current}", String(fieldIndex + 1))
+                  .replace("{current}", String(safeFieldIndex + 1))
                   .replace("{total}", String(visibleFields.length))}
               </p>
             )}
@@ -410,16 +535,16 @@ export function QuestionnaireStep({
             </div>
           )}
         </div>
-        {focusMode && (
+        {visibleFields.length > 1 && (
           <div className="flex gap-1.5 mt-4">
             {visibleFields.map((field, i) => (
               <div
                 key={field.name}
                 className={cn(
                   "h-1 flex-1 rounded-full transition-colors duration-300",
-                  i < fieldIndex
+                  i < safeFieldIndex
                     ? "bg-primary"
-                    : i === fieldIndex
+                    : i === safeFieldIndex
                       ? "bg-primary/60"
                       : "bg-muted"
                 )}
@@ -433,7 +558,7 @@ export function QuestionnaireStep({
         <AnimatePresence mode="wait">
           {fieldsToRender.map((field) => (
             <motion.div
-              key={`${step.id}-${field.name}-${fieldIndex}`}
+              key={`${step.id}-${field.name}-${safeFieldIndex}`}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -455,33 +580,44 @@ export function QuestionnaireStep({
         </AnimatePresence>
 
         <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 pt-2">
-          {focusMode && fieldIndex > 0 && (
-            <Button variant="ghost" onClick={goToPreviousField} className="sm:mr-auto">
+          {safeFieldIndex > 0 && (
+            <Button
+              variant="ghost"
+              onClick={goToPreviousField}
+              className="sm:mr-auto"
+              disabled={isAdvancing}
+            >
               <ChevronLeft className="h-4 w-4 mr-1" />
               {ui("previousQuestion")}
             </Button>
           )}
 
-          {focusMode && !isLastField ? (
-            <Button onClick={goToNextField} className="w-full sm:w-auto text-base font-semibold" size="lg">
-              {ui("nextQuestion")}
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
-          ) : (
+          {showManualNext && (
             <Button
-              onClick={handleFormSubmit}
+              onClick={goToNextField}
               className="w-full sm:w-auto sm:ml-auto text-base font-semibold"
               size="lg"
+              disabled={isAdvancing}
             >
-              {isLastFormStep
-                ? ui("submitAndReview")
-                : isLastAboutStep
-                  ? ui("submitAndContinue")
-                  : isPartnerStep
-                    ? ui("saveAndContinueToPhoto")
-                    : ui("saveAndContinue")}
-              <ChevronRight className="ml-2 h-4 w-4" />
+              {isAdvancing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {ui("saving")}
+                </>
+              ) : (
+                <>
+                  {isLastField ? ui("continueFlow") : ui("nextQuestion")}
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </>
+              )}
             </Button>
+          )}
+
+          {isAdvancing && !showManualNext && (
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground sm:ml-auto py-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              {ui("saving")}
+            </div>
           )}
         </div>
       </CardContent>
