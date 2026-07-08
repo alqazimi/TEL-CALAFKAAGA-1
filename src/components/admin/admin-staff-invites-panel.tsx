@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import { Mail, RefreshCw, UserPlus, XCircle } from "lucide-react";
+import { Copy, Mail, RefreshCw, UserPlus, XCircle } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,36 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
   return "outline";
 }
 
+function buildInviteLink(token: string): string {
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/admin/invite?token=${encodeURIComponent(token)}`;
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fall through to legacy approach
+  }
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function AdminStaffInvitesPanel() {
   const { t } = useTranslation();
   const invites = useQuery(api.staffInvites.list);
@@ -64,15 +94,29 @@ export function AdminStaffInvitesPanel() {
 
     setSubmitting(true);
     try {
-      await createInvite({ email: trimmed });
-      toast.success(t("adminInvites.sent"));
+      const result = await createInvite({ email: trimmed });
       setEmail("");
+      const link = buildInviteLink(result.token);
+      const copied = await copyToClipboard(link);
+      toast.success(
+        copied ? t("adminInvites.createdCopied") : t("adminInvites.created")
+      );
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : t("adminInvites.sendFailed")
       );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleCopyLink = async (token: string | undefined) => {
+    if (!token) return;
+    const copied = await copyToClipboard(buildInviteLink(token));
+    if (copied) {
+      toast.success(t("adminInvites.linkCopied"));
+    } else {
+      toast.error(t("adminInvites.linkCopyFailed"));
     }
   };
 
@@ -112,6 +156,9 @@ export function AdminStaffInvitesPanel() {
           {t("adminInvites.title")}
         </CardTitle>
         <CardDescription>{t("adminInvites.description")}</CardDescription>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("adminInvites.noEmailHint")}
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -165,7 +212,15 @@ export function AdminStaffInvitesPanel() {
                     </div>
                   </div>
                   {invite.status === "pending" && (
-                    <div className="flex gap-1.5 shrink-0">
+                    <div className="flex flex-wrap gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleCopyLink(invite.token)}
+                      >
+                        <Copy className="mr-1.5 h-3.5 w-3.5" />
+                        {t("adminInvites.copyLink")}
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"

@@ -71,18 +71,24 @@ export const list = query({
     const invites = await ctx.db.query("staffInvites").order("desc").collect();
     const now = Date.now();
 
-    return invites.map((invite) => ({
-      _id: invite._id,
-      email: invite.email,
-      role: invite.role,
-      status:
+    return invites.map((invite) => {
+      const status =
         invite.status === "pending" && invite.expiresAt <= now
           ? ("expired" as const)
-          : invite.status,
-      createdAt: invite.createdAt,
-      expiresAt: invite.expiresAt,
-      acceptedAt: invite.acceptedAt,
-    }));
+          : invite.status;
+      return {
+        _id: invite._id,
+        email: invite.email,
+        role: invite.role,
+        status,
+        // Only share the token for still-usable invites so the owner can copy
+        // the link manually (works without Resend email delivery).
+        token: status === "pending" ? invite.token : undefined,
+        createdAt: invite.createdAt,
+        expiresAt: invite.expiresAt,
+        acceptedAt: invite.acceptedAt,
+      };
+    });
   },
 });
 
@@ -152,7 +158,7 @@ export const create = mutation({
       token,
     });
 
-    return { inviteId, email };
+    return { inviteId, email, token };
   },
 });
 
