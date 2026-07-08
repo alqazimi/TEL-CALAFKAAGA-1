@@ -188,7 +188,129 @@ export function calculateCompatibility(
   // Relocation compatibility — 3 points
   score += relocateScore(user, candidate);
 
-  return Math.round(Math.min(100, score));
+  // Want children alignment — 4 points
+  score += wantChildrenScore(user.wantChildren, candidate.wantChildren);
+
+  // Family involvement — 2 points
+  if (user.familyInvolvement && candidate.familyInvolvement) {
+    score += user.familyInvolvement === candidate.familyInvolvement ? 2 : 1;
+  }
+
+  // Living situation — 2 points
+  if (user.livingSituation && candidate.livingSituation) {
+    score += user.livingSituation === candidate.livingSituation ? 2 : 1;
+  }
+
+  // Madhhab soft match — 2 points
+  if (user.madhhab && candidate.madhhab) {
+    if (
+      user.madhhab === "Prefer not to say" ||
+      candidate.madhhab === "Prefer not to say" ||
+      user.madhhab === "Sunni - no preference" ||
+      candidate.madhhab === "Sunni - no preference" ||
+      user.madhhab === candidate.madhhab
+    ) {
+      score += 2;
+    }
+  }
+
+  // Languages overlap — 2 points
+  if (user.languagesSpoken?.length && candidate.languagesSpoken?.length) {
+    const sharedLang = user.languagesSpoken.filter((l) =>
+      candidate.languagesSpoken!.includes(l)
+    );
+    score += Math.min(2, sharedLang.length);
+  }
+
+  // Partner appearance preference — 3 points
+  score += appearancePrefScore(user, userPrefs, candidate);
+
+  // Polygyny alignment — 2 points
+  score += polygynyScore(user.polygynyOpenness, candidate.polygynyOpenness);
+
+  // Deal-breakers soft penalty — up to -4 points recovered as 0–2 bonus if clear
+  score += dealBreakerScore(user.dealBreakers, candidate);
+
+  return Math.round(Math.min(100, Math.max(0, score)));
+}
+
+function wantChildrenScore(userWant?: string, candWant?: string): number {
+  if (!userWant || !candWant) return 2;
+  if (userWant === candWant) return 4;
+  if (userWant === "Maybe" || candWant === "Maybe") return 3;
+  if (
+    (userWant === "Yes" || userWant === "Already have and open to more") &&
+    (candWant === "Yes" || candWant === "Already have and open to more")
+  ) {
+    return 4;
+  }
+  if (userWant === "No" && candWant === "No") return 4;
+  if (userWant === "No" || candWant === "No") return 0;
+  return 2;
+}
+
+function appearancePrefScore(
+  user: Profile,
+  prefs: Preferences,
+  candidate: Profile
+): number {
+  if (user.gender === "female") {
+    const pref = prefs.partnerBeard;
+    if (!pref || pref === "No preference") return 3;
+    // Soft points — we don't store whether men have a beard yet.
+    return pref === "Beard required" ? 2 : 3;
+  }
+  if (user.gender === "male") {
+    const pref = prefs.partnerHijabLevel;
+    if (!pref || pref === "No preference") return 3;
+    if (candidate.wearsHijab === true) return 3;
+    if (candidate.wearsHijab === false) return pref === "No preference" ? 3 : 1;
+    return 2;
+  }
+  return 2;
+}
+
+function polygynyScore(userVal?: string, candVal?: string): number {
+  if (!userVal || !candVal) return 1;
+  if (userVal === candVal) return 2;
+  if (userVal === "Maybe" || candVal === "Maybe") return 1;
+  return 0;
+}
+
+function dealBreakerScore(
+  dealBreakers: string[] | undefined,
+  candidate: Profile
+): number {
+  if (!dealBreakers?.length) return 2;
+  let hits = 0;
+  for (const db of dealBreakers) {
+    if (db === "Smoking" && candidate.smokes && candidate.smokes !== "Never") hits++;
+    if (
+      db === "Does not pray regularly" &&
+      candidate.prayerFrequency &&
+      (candidate.prayerFrequency === "Rarely" || candidate.prayerFrequency === "Sometimes")
+    ) {
+      hits++;
+    }
+    if (db === "Already has children" && candidate.children > 0) hits++;
+    if (
+      db === "Does not want children" &&
+      (candidate.wantChildren === "No")
+    ) {
+      hits++;
+    }
+    if (db === "Not willing to relocate" && candidate.readyToRelocate === "No") hits++;
+    if (
+      db === "Wants second marriage / polygyny" &&
+      candidate.polygynyOpenness === "Yes"
+    ) {
+      hits++;
+    }
+    if (db === "No family involvement" && candidate.familyInvolvement === "No") hits++;
+  }
+  if (hits === 0) return 2;
+  if (hits === 1) return 1;
+  return 0;
 }
 
 export interface Profile {
@@ -208,6 +330,17 @@ export interface Profile {
   marriageTimeline: string;
   marrySomeoneWithChildren?: string;
   gender: "male" | "female";
+  wantChildren?: string;
+  familyInvolvement?: string;
+  livingSituation?: string;
+  madhhab?: string;
+  polygynyOpenness?: string;
+  languagesSpoken?: string[];
+  citizenshipStatus?: string;
+  financialReadiness?: string;
+  dealBreakers?: string[];
+  wearsHijab?: boolean;
+  smokes?: string;
 }
 
 export interface Preferences {
@@ -225,6 +358,8 @@ export interface Preferences {
   preferredGender: "male" | "female";
   qualities: string[];
   hobbies: string[];
+  partnerBeard?: string;
+  partnerHijabLevel?: string;
 }
 
 export { effectiveReligiousLevel };

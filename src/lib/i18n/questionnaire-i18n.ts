@@ -97,6 +97,50 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     so: "Dooro ilaa 10 sifo oo ku qeexaya",
   },
   hobbies: { en: "Choose your hobbies", so: "Dooro hiwaayadahaaga" },
+  wantChildren: {
+    en: "Do you want children?",
+    so: "Ma doonaysaa carruur?",
+  },
+  familyInvolvement: {
+    en: "Will family be involved in the process?",
+    so: "Qoyska ma ku lug yeelanayaa howshan?",
+  },
+  livingSituation: {
+    en: "Preferred living situation after marriage?",
+    so: "Habka nololeed ee aad doorbidayso guurka ka dib?",
+  },
+  madhhab: {
+    en: "Sect / madhhab preference",
+    so: "Doorbidka madhhab / dariiqada",
+  },
+  polygynyOpenness: {
+    en: "Are you open to polygyny / a second marriage?",
+    so: "Ma u furan tahay guur labaad / laba xaas?",
+  },
+  languagesSpoken: {
+    en: "Languages you speak",
+    so: "Luuqadaha aad ku hadasho",
+  },
+  citizenshipStatus: {
+    en: "Citizenship / visa situation",
+    so: "Xaaladda jinsiyadda / fiisaha",
+  },
+  financialReadiness: {
+    en: "Financial readiness for marriage",
+    so: "Diyaargarowga dhaqaale ee guurka",
+  },
+  dealBreakers: {
+    en: "Your deal-breakers (optional)",
+    so: "Waxyaabaha aad diidayso (ikhtiyaari)",
+  },
+  pref_partnerBeard: {
+    en: "Beard preference for your spouse",
+    so: "Doorbidka garka ee xaaskaaga",
+  },
+  pref_partnerHijabLevel: {
+    en: "Hijab / niqab preference for your spouse",
+    so: "Doorbidka xijaab / niqaab ee xaaskaaga",
+  },
   spousePrayerImportance: {
     en: "How important is it that your spouse prays regularly?",
     so: "Intee ayay muhiim u tahay in xaaskaagu si joogto ah u tukado?",
@@ -201,6 +245,106 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   "Receiving Gifts": { en: "Receiving Gifts", so: "Helida Hadiyadaha" },
   "Quality Time": { en: "Quality Time", so: "Waqtiga Tayada Leh" },
   "Physical Touch": { en: "Physical Touch", so: "Taabashada Jirka" },
+  // Want children
+  "Already have and open to more": {
+    en: "Already have and open to more",
+    so: "Horaan u leeyahay oo waan u furanahay in badan",
+  },
+  // Family involvement
+  Somewhat: { en: "Somewhat", so: "Wax yar" },
+  // Living situation
+  "Same city": { en: "Same city", so: "Isla magaalada" },
+  "Same country": { en: "Same country", so: "Isla dalka" },
+  "Open to abroad": { en: "Open to abroad", so: "U furan dibadda" },
+  "With family": { en: "With family", so: "Lala noolaado qoyska" },
+  "Own home": { en: "Own home", so: "Gurigeyga gaarka ah" },
+  // Madhhab
+  "Sunni - no preference": {
+    en: "Sunni - no preference",
+    so: "Sunni - doorbid ma jiro",
+  },
+  "Shafi'i": { en: "Shafi'i", so: "Shaafici" },
+  Hanafi: { en: "Hanafi", so: "Xanafi" },
+  Maliki: { en: "Maliki", so: "Maaliki" },
+  Hanbali: { en: "Hanbali", so: "Xanbali" },
+  "Prefer not to say": { en: "Prefer not to say", so: "Ma doonayo inaan sheego" },
+  // Beard / hijab preferences
+  "Beard preferred": { en: "Beard preferred", so: "Gar la doorbido" },
+  "Beard required": { en: "Beard required", so: "Gar waa loo baahan yahay" },
+  "No beard preferred": { en: "No beard preferred", so: "Gar la'aan la doorbido" },
+  "Hijab preferred": { en: "Hijab preferred", so: "Xijaab la doorbido" },
+  "Niqab preferred": { en: "Niqab preferred", so: "Niqaab la doorbido" },
+  "Hijab or niqab preferred": {
+    en: "Hijab or niqab preferred",
+    so: "Xijaab ama niqaab la doorbido",
+  },
+  // Languages
+  Somali: { en: "Somali", so: "Soomaali" },
+  English: { en: "English", so: "Ingiriisi" },
+  Arabic: { en: "Arabic", so: "Carabi" },
+  Swahili: { en: "Swahili", so: "Sawaaxiili" },
+  French: { en: "French", so: "Faransiis" },
+  Dutch: { en: "Dutch", so: "Hollandays" },
+  Swedish: { en: "Swedish", so: "Isweden" },
+  Norwegian: { en: "Norwegian", so: "Norwiiji" },
+  German: { en: "German", so: "Jarmal" },
+  // Citizenship
+  "Citizen of country I live in": {
+    en: "Citizen of country I live in",
+    so: "Muwaadin dalka aan ku noolahay",
+  },
+  "Permanent resident": { en: "Permanent resident", so: "Degganaan joogto ah" },
+  "Temporary visa / student / work": {
+    en: "Temporary visa / student / work",
+    so: "Fiiso ku meel gaar ah / arday / shaqo",
+  },
+  "Seeking visa / sponsorship needed": {
+    en: "Seeking visa / sponsorship needed",
+    so: "Fiiso raadinta / taageero ayaa loo baahan yahay",
+  },
+  // Financial
+  "Ready to support a family": {
+    en: "Ready to support a family",
+    so: "Diyaar u ah inaan qoys quudiyo",
+  },
+  "We should both work": {
+    en: "We should both work",
+    so: "Labadeenaba waa inaan shaqaynaa",
+  },
+  "Still building financially": {
+    en: "Still building financially",
+    so: "Weli dhaqaale ahaan waan dhismayaa",
+  },
+  // Deal-breakers
+  Smoking: { en: "Smoking", so: "Sigaar cabista" },
+  "Does not pray regularly": {
+    en: "Does not pray regularly",
+    so: "Si joogto ah uma tukado",
+  },
+  "Already has children": {
+    en: "Already has children",
+    so: "Horey u leeyahay carruur",
+  },
+  "Does not want children": {
+    en: "Does not want children",
+    so: "Ma doonayo carruur",
+  },
+  "Lives in a different country": {
+    en: "Lives in a different country",
+    so: "Wuxuu ku nool yahay waddan kale",
+  },
+  "Not willing to relocate": {
+    en: "Not willing to relocate",
+    so: "Ma doonayo inuu guuro",
+  },
+  "Wants second marriage / polygyny": {
+    en: "Wants second marriage / polygyny",
+    so: "Wuxuu doonayaa guur labaad",
+  },
+  "No family involvement": {
+    en: "No family involvement",
+    so: "Qoysku ku lug ma laha",
+  },
   // Max distance
   "Same City": { en: "Same City", so: "Isla Magaalada" },
   "Same Country": { en: "Same Country", so: "Isla Dalka" },
@@ -270,6 +414,17 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
   "Ready to Relocate": { en: "Ready to Relocate", so: "Diyaar u ah Guuritaan" },
   "Marriage Timeline": { en: "Marriage Timeline", so: "Wakhtiga Guurka" },
   "Love Language": { en: "Love Language", so: "Luuqadda Jacaylka" },
+  "Want Children": { en: "Want Children", so: "Rabitaanka Carruur" },
+  "Family Involvement": { en: "Family Involvement", so: "Ka qaybgalka Qoyska" },
+  "Living Situation": { en: "Living Situation", so: "Xaaladda Nololeed" },
+  Madhhab: { en: "Madhhab", so: "Madhhab" },
+  "Polygyny Openness": { en: "Polygyny Openness", so: "Furfurnaanta Guur Labaad" },
+  Languages: { en: "Languages", so: "Luuqadaha" },
+  "Citizenship / Visa": { en: "Citizenship / Visa", so: "Jinsiyad / Fiiso" },
+  "Financial Readiness": { en: "Financial Readiness", so: "Diyaargarowga Dhaqaale" },
+  "Deal-breakers": { en: "Deal-breakers", so: "Waxyaabaha Diidmada" },
+  "Partner Beard": { en: "Partner Beard", so: "Garka Lammaanaha" },
+  "Partner Hijab / Niqab": { en: "Partner Hijab / Niqab", so: "Xijaab / Niqaab Lammaanaha" },
   Bio: { en: "Bio", so: "Faahfaahin" },
   Qualities: { en: "Qualities", so: "Sifooyin" },
   Hobbies: { en: "Hobbies", so: "Hiwaayado" },

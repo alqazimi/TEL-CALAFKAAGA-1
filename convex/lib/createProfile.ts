@@ -41,6 +41,14 @@ export async function createUserProfile(
     drinksAlcohol: "",
     exercise: "",
     wantChildren: "",
+    familyInvolvement: "",
+    livingSituation: "",
+    madhhab: "",
+    polygynyOpenness: "",
+    languagesSpoken: [],
+    citizenshipStatus: "",
+    financialReadiness: "",
+    dealBreakers: [],
     readyToRelocate: "",
     marriageTimeline: "",
     loveLanguage: "",
@@ -73,6 +81,8 @@ export async function createUserProfile(
     qualities: [],
     hobbies: [],
     readyToRelocate: "Maybe",
+    partnerBeard: "",
+    partnerHijabLevel: "",
   });
 
   return profileId;

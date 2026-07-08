@@ -13,6 +13,8 @@ export interface Preferences {
   acceptWidow?: string;
   acceptChildren?: string;
   maxDistance?: string;
+  partnerBeard?: string;
+  partnerHijabLevel?: string;
 }
 
 export interface ProfileSection {
@@ -34,44 +36,52 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
 
 export type SectionStatus = "complete" | "in_progress" | "not_started";
 
+export function isMarriageComplete(profile: Profile): boolean {
+  return (
+    !!profile.maritalStatus &&
+    !!profile.wantChildren &&
+    !!profile.familyInvolvement &&
+    !!profile.polygynyOpenness
+  );
+}
+
+export function isEducationComplete(profile: Profile): boolean {
+  return !!profile.education && !!profile.occupation && !!profile.financialReadiness;
+}
+
 export function isBasicComplete(profile: Profile): boolean {
   return (
     profile.age > 0 &&
     !!profile.country &&
     !!profile.city &&
     profile.height > 0 &&
-    profile.weight > 0
+    profile.weight > 0 &&
+    !!profile.citizenshipStatus &&
+    (profile.languagesSpoken?.length ?? 0) > 0
   );
 }
 
 export function isReligiousComplete(profile: Profile): boolean {
-  const base = !!profile.prayerFrequency;
+  const base = !!profile.prayerFrequency && !!profile.madhhab;
   if (profile.gender === "female") {
     return base && profile.wearsHijab !== undefined;
   }
   return base;
 }
 
-export function isEducationComplete(profile: Profile): boolean {
-  return !!profile.education && !!profile.occupation;
-}
-
-export function isMarriageComplete(profile: Profile): boolean {
-  return !!profile.maritalStatus;
-}
-
-export function isLifestyleComplete(profile: Profile): boolean {
-  return !!profile.smokes && !!profile.exercise;
-}
-
 export function isAboutYouComplete(profile: Profile): boolean {
   return (
     !!profile.readyToRelocate &&
+    !!profile.livingSituation &&
     !!profile.marriageTimeline &&
     !!profile.loveLanguage &&
     (profile.qualities?.length ?? 0) > 0 &&
     (profile.hobbies?.length ?? 0) > 0
   );
+}
+
+export function isLifestyleComplete(profile: Profile): boolean {
+  return !!profile.smokes && !!profile.exercise;
 }
 
 export function isPhotoComplete(profile: Profile): boolean {
@@ -88,9 +98,16 @@ export function isPreferencesComplete(
   const widowOk = profile.maritalStatus === "Widowed" || !!prefs.acceptWidow;
   const childrenOk =
     profile.marrySomeoneWithChildren === "No" || !!prefs.acceptChildren;
+  const appearanceOk =
+    profile.gender === "female"
+      ? !!prefs.partnerBeard
+      : profile.gender === "male"
+        ? !!prefs.partnerHijabLevel
+        : true;
   return (
     !!profile.spousePrayerImportance &&
     !!profile.marrySomeoneWithChildren &&
+    appearanceOk &&
     prefs.minAge !== undefined &&
     prefs.maxAge !== undefined &&
     prefs.minHeight !== undefined &&
@@ -149,16 +166,31 @@ export function getSectionStatus(
   const sectionStep = section.stepIndex + 1;
 
   const partialChecks: Record<string, boolean> = {
-    basic: profile.age > 0 || !!profile.country || !!profile.city,
-    religious: !!profile.prayerFrequency,
-    education: !!profile.education || !!profile.occupation,
-    marriage: !!profile.maritalStatus,
+    basic:
+      profile.age > 0 ||
+      !!profile.country ||
+      !!profile.city ||
+      !!profile.citizenshipStatus ||
+      (profile.languagesSpoken?.length ?? 0) > 0,
+    religious: !!profile.prayerFrequency || !!profile.madhhab,
+    education: !!profile.education || !!profile.occupation || !!profile.financialReadiness,
+    marriage:
+      !!profile.maritalStatus ||
+      !!profile.wantChildren ||
+      !!profile.familyInvolvement ||
+      !!profile.polygynyOpenness,
     lifestyle: !!profile.smokes,
-    about: !!profile.readyToRelocate || !!profile.marriageTimeline || !!profile.loveLanguage,
+    about:
+      !!profile.readyToRelocate ||
+      !!profile.livingSituation ||
+      !!profile.marriageTimeline ||
+      !!profile.loveLanguage,
     preferences:
       !!profile.spousePrayerImportance ||
       !!prefs?.educationLevel ||
       !!prefs?.religiousLevel ||
+      !!prefs?.partnerBeard ||
+      !!prefs?.partnerHijabLevel ||
       (prefs?.preferredCountries?.length ?? 0) > 0,
     photo: !!profile.profileImageId,
   };

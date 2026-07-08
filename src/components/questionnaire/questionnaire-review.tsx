@@ -95,16 +95,9 @@ export function QuestionnaireReview({
     }
   };
 
-  const basicItems = [
-    { label: "Age", value: profile.age ? String(profile.age) : "—" },
-    { label: "Country", value: profile.country || "—" },
-    { label: "City", value: profile.city || "—" },
-    { label: "Height", value: profile.height ? `${profile.height} cm` : "—" },
-    { label: "Weight", value: profile.weight ? `${profile.weight} kg` : "—" },
-  ];
-
   const religiousItems = [
     { label: "Prayer Frequency", value: profile.prayerFrequency || "—" },
+    { label: "Madhhab", value: profile.madhhab || "—" },
     ...(profile.gender === "female"
       ? [{ label: "Wears Hijab", value: profile.wearsHijab !== undefined ? (profile.wearsHijab ? "Yes" : "No") : "—" }]
       : []),
@@ -113,11 +106,15 @@ export function QuestionnaireReview({
   const educationItems = [
     { label: "Education", value: profile.education || "—" },
     { label: "Occupation", value: profile.occupation || "—" },
+    { label: "Financial Readiness", value: profile.financialReadiness || "—" },
   ];
 
   const marriageItems = [
     { label: "Marital Status", value: profile.maritalStatus || "—" },
     { label: "Children", value: profile.children > 0 ? "Yes" : "No" },
+    { label: "Want Children", value: profile.wantChildren || "—" },
+    { label: "Family Involvement", value: profile.familyInvolvement || "—" },
+    { label: "Polygyny Openness", value: profile.polygynyOpenness || "—" },
   ];
 
   const lifestyleItems = [
@@ -126,15 +123,25 @@ export function QuestionnaireReview({
   ];
 
   const aboutItems = [
+    { label: "Citizenship / Visa", value: profile.citizenshipStatus || "—" },
+    { label: "Languages", value: translateList(profile.languagesSpoken) },
     { label: "Ready to Relocate", value: profile.readyToRelocate || "—" },
+    { label: "Living Situation", value: profile.livingSituation || "—" },
     { label: "Marriage Timeline", value: profile.marriageTimeline || "—" },
     { label: "Love Language", value: profile.loveLanguage ? optionLabel(profile.loveLanguage) : "—" },
+    { label: "Deal-breakers", value: translateList(profile.dealBreakers) },
     { label: "Qualities", value: translateList(profile.qualities) },
     { label: "Hobbies", value: translateList(profile.hobbies) },
   ];
 
   const prefItems = [
     { label: "Spouse Prayer Importance", value: profile.spousePrayerImportance || "—" },
+    ...(profile.gender === "female"
+      ? [{ label: "Partner Beard", value: preferences?.partnerBeard || "—" }]
+      : []),
+    ...(profile.gender === "male"
+      ? [{ label: "Partner Hijab / Niqab", value: preferences?.partnerHijabLevel || "—" }]
+      : []),
     { label: "Marry Someone With Children", value: profile.marrySomeoneWithChildren || "—" },
     ...(preferences
       ? [
@@ -153,6 +160,13 @@ export function QuestionnaireReview({
       : []),
   ];
 
+  const basicItems = [
+    { label: "Age", value: profile.age ? String(profile.age) : "—" },
+    { label: "Country", value: profile.country || "—" },
+    { label: "City", value: profile.city || "—" },
+    { label: "Height", value: profile.height ? `${profile.height} cm` : "—" },
+    { label: "Weight", value: profile.weight ? `${profile.weight} kg` : "—" },
+  ];
   return (
     <Card className="border-border shadow-lg shadow-primary/5">
       <CardHeader className="border-b border-border bg-gradient-to-r from-accent/50 to-transparent dark:from-primary/10">

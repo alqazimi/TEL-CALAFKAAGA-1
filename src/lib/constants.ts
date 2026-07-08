@@ -101,6 +101,87 @@ export const LOVE_LANGUAGES = [
   "Physical Touch",
 ] as const;
 
+export const WANT_CHILDREN = [
+  "Yes",
+  "No",
+  "Maybe",
+  "Already have and open to more",
+] as const;
+
+export const FAMILY_INVOLVEMENT = ["Yes", "No", "Somewhat"] as const;
+
+export const LIVING_SITUATION = [
+  "Same city",
+  "Same country",
+  "Open to abroad",
+  "With family",
+  "Own home",
+] as const;
+
+export const MADHHAB_OPTIONS = [
+  "Sunni - no preference",
+  "Shafi'i",
+  "Hanafi",
+  "Maliki",
+  "Hanbali",
+  "Prefer not to say",
+] as const;
+
+export const BEARD_PREFERENCE = [
+  "No preference",
+  "Beard preferred",
+  "Beard required",
+  "No beard preferred",
+] as const;
+
+export const HIJAB_LEVEL_PREFERENCE = [
+  "No preference",
+  "Hijab preferred",
+  "Niqab preferred",
+  "Hijab or niqab preferred",
+] as const;
+
+export const POLYGYNY_OPENNESS = ["Yes", "No", "Maybe"] as const;
+
+export const LANGUAGES_SPOKEN = [
+  "Somali",
+  "English",
+  "Arabic",
+  "Swahili",
+  "French",
+  "Dutch",
+  "Swedish",
+  "Norwegian",
+  "German",
+  "Other",
+] as const;
+
+export const CITIZENSHIP_STATUS = [
+  "Citizen of country I live in",
+  "Permanent resident",
+  "Temporary visa / student / work",
+  "Seeking visa / sponsorship needed",
+  "Prefer not to say",
+] as const;
+
+export const FINANCIAL_READINESS = [
+  "Ready to support a family",
+  "We should both work",
+  "Still building financially",
+  "Prefer not to say",
+] as const;
+
+export const DEAL_BREAKERS = [
+  "Smoking",
+  "Does not pray regularly",
+  "Already has children",
+  "Does not want children",
+  "Lives in a different country",
+  "Not willing to relocate",
+  "Wants second marriage / polygyny",
+  "No family involvement",
+] as const;
+
 export const MAX_DISTANCE = [
   "Same City",
   "Same Country",

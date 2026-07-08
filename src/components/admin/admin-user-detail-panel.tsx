@@ -241,6 +241,15 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                       label: t("adminDetail.children"),
                       value: detail.profile.children > 0 ? t("adminDetail.yes") : t("adminDetail.no"),
                     },
+                    { label: t("adminDetail.wantChildren"), value: detail.profile.wantChildren || "—" },
+                    {
+                      label: t("adminDetail.familyInvolvement"),
+                      value: detail.profile.familyInvolvement || "—",
+                    },
+                    {
+                      label: t("adminDetail.polygynyOpenness"),
+                      value: detail.profile.polygynyOpenness || "—",
+                    },
                     {
                       label: t("adminDetail.marryWithChildren"),
                       value: detail.profile.marrySomeoneWithChildren || "—",
@@ -263,9 +272,34 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                 <DetailGrid
                   emptyLabel={t("adminDetail.notProvided")}
                   items={[
+                    { label: t("adminDetail.madhhab"), value: detail.profile.madhhab || "—" },
+                    {
+                      label: t("adminDetail.citizenship"),
+                      value: detail.profile.citizenshipStatus || "—",
+                    },
+                    {
+                      label: t("adminDetail.languages"),
+                      value: detail.profile.languagesSpoken?.length
+                        ? detail.profile.languagesSpoken.join(", ")
+                        : "—",
+                    },
+                    {
+                      label: t("adminDetail.financialReadiness"),
+                      value: detail.profile.financialReadiness || "—",
+                    },
                     { label: t("adminDetail.readyToRelocate"), value: detail.profile.readyToRelocate || "—" },
+                    {
+                      label: t("adminDetail.livingSituation"),
+                      value: detail.profile.livingSituation || "—",
+                    },
                     { label: t("adminDetail.marriageTimeline"), value: detail.profile.marriageTimeline || "—" },
                     { label: t("profilePage.loveLanguage"), value: detail.profile.loveLanguage || "—" },
+                    {
+                      label: t("adminDetail.dealBreakers"),
+                      value: detail.profile.dealBreakers?.length
+                        ? detail.profile.dealBreakers.join(", ")
+                        : "—",
+                    },
                     {
                       label: t("profilePage.qualities"),
                       value: detail.profile.qualities?.length
@@ -309,6 +343,22 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                         label: t("adminDetail.preferredReligiousLevel"),
                         value: detail.preferences.religiousLevel || "—",
                       },
+                      ...(detail.profile.gender === "female"
+                        ? [
+                            {
+                              label: t("adminDetail.partnerBeard"),
+                              value: detail.preferences.partnerBeard || "—",
+                            },
+                          ]
+                        : []),
+                      ...(detail.profile.gender === "male"
+                        ? [
+                            {
+                              label: t("adminDetail.partnerHijabLevel"),
+                              value: detail.preferences.partnerHijabLevel || "—",
+                            },
+                          ]
+                        : []),
                       {
                         label: t("adminDetail.acceptDivorcee"),
                         value: detail.preferences.acceptDivorcee || "—",

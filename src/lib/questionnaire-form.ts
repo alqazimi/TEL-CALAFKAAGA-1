@@ -48,6 +48,13 @@ export function initFormState(
 
   if (profile.smokes) radios.smokes = profile.smokes;
   if (profile.exercise) radios.exercise = profile.exercise;
+  if (profile.wantChildren) radios.wantChildren = profile.wantChildren;
+  if (profile.familyInvolvement) radios.familyInvolvement = profile.familyInvolvement;
+  if (profile.livingSituation) radios.livingSituation = profile.livingSituation;
+  if (profile.madhhab) radios.madhhab = profile.madhhab;
+  if (profile.polygynyOpenness) radios.polygynyOpenness = profile.polygynyOpenness;
+  if (profile.citizenshipStatus) radios.citizenshipStatus = profile.citizenshipStatus;
+  if (profile.financialReadiness) radios.financialReadiness = profile.financialReadiness;
 
   if (profile.readyToRelocate) radios.readyToRelocate = profile.readyToRelocate;
   if (profile.marriageTimeline) radios.marriageTimeline = profile.marriageTimeline;
@@ -64,6 +71,8 @@ export function initFormState(
     if (preferences.acceptWidow) radios.pref_acceptWidow = preferences.acceptWidow;
     if (preferences.acceptChildren) radios.pref_acceptChildren = preferences.acceptChildren;
     if (preferences.maxDistance) radios.pref_maxDistance = preferences.maxDistance;
+    if (preferences.partnerBeard) radios.pref_partnerBeard = preferences.partnerBeard;
+    if (preferences.partnerHijabLevel) radios.pref_partnerHijabLevel = preferences.partnerHijabLevel;
     if (preferences.preferredCountries?.length) {
       multiSelects.pref_preferredCountries = preferences.preferredCountries;
     }
@@ -71,6 +80,8 @@ export function initFormState(
 
   multiSelects.qualities = profile.qualities ?? [];
   multiSelects.hobbies = profile.hobbies ?? [];
+  multiSelects.languagesSpoken = profile.languagesSpoken ?? [];
+  multiSelects.dealBreakers = profile.dealBreakers ?? [];
 
   return {
     selects,
