@@ -26,6 +26,7 @@ export function PricingPageContent() {
     t("pricing.premiumFeature2"),
     t("pricing.premiumFeature3"),
     t("pricing.premiumFeature4"),
+    t("pricing.premiumFeature5"),
   ];
 
   return (

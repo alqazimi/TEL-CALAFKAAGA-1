@@ -14,3 +14,9 @@ export function hasPaidAccess(
   if (!profile) return false;
   return !!profile.hasPaid || isStaffRole(profile.role);
 }
+
+export function isPremiumMember(
+  profile: { hasPersonalSupport?: boolean } | null | undefined
+): boolean {
+  return profile?.hasPersonalSupport === true;
+}

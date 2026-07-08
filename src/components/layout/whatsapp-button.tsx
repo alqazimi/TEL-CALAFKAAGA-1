@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { WHATSAPP_URL } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
+import { isAppShellRoute } from "@/lib/routes";
+import { isStandaloneDisplay } from "@/lib/pwa";
 
 export function WhatsAppButton() {
+  const pathname = usePathname();
   const { t } = useTranslation();
+
+  if (isStandaloneDisplay() || isAppShellRoute(pathname ?? "")) {
+    return null;
+  }
 
   return (
     <Link

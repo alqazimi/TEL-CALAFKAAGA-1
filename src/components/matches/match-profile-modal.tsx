@@ -1,14 +1,19 @@
 "use client";
 
+import { useState } from "react";
+import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
-import { X, Heart, MapPin, GraduationCap, Briefcase, Bookmark, CalendarHeart, Baby } from "lucide-react";
+import { X, Heart, MapPin, GraduationCap, Briefcase, Bookmark, CalendarHeart, Baby, Phone, Users } from "lucide-react";
+import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import type { TrustBadgeProfile } from "@/components/profile/trust-badges";
+import { CompatibilityBreakdown } from "@/components/matches/compatibility-breakdown";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -29,19 +34,39 @@ interface MatchProfileModalProps {
     marriageTimeline?: string;
     wantChildren?: string;
     imageUrl: string | null;
+    additionalImageUrls?: string[];
     score: number;
     shortlisted?: boolean;
     liked?: boolean;
   } & TrustBadgeProfile;
+  isPremium: boolean;
   onClose: () => void;
   onLike: (action: "like" | "pass" | "shortlist") => void;
 }
 
-export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalProps) {
+export function MatchProfileModal({
+  match,
+  isPremium,
+  onClose,
+  onLike,
+}: MatchProfileModalProps) {
   const { t } = useTranslation();
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const location = [match.city, match.country].filter(Boolean).join(", ");
+  const wali = useQuery(api.profiles.getWaliForMatch, { targetUserId: match.userId });
+  const gallery = [match.imageUrl, ...(match.additionalImageUrls ?? [])].filter(
+    (url): url is string => !!url
+  );
+
+  const openGallery = (index: number) => {
+    if (!gallery.length) return;
+    setGalleryIndex(index);
+    setGalleryOpen(true);
+  };
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -49,8 +74,10 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
         className="bg-card text-card-foreground rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-border"
       >
         <div className="relative h-56 bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
-          {match.imageUrl ? (
-            <LazyImage src={match.imageUrl} alt={match.name} className="h-full w-full object-cover" />
+          {gallery[0] ? (
+            <button type="button" className="block h-full w-full" onClick={() => openGallery(0)}>
+              <LazyImage src={gallery[0]} alt={match.name} className="h-full w-full object-cover" />
+            </button>
           ) : (
             <div className="flex h-full items-center justify-center">
               <Avatar className="h-24 w-24">
@@ -71,6 +98,21 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
           </div>
         </div>
 
+        {gallery.length > 1 && (
+          <div className="flex gap-2 px-6 -mt-4 relative z-10 overflow-x-auto pb-1">
+            {gallery.slice(1).map((url, i) => (
+              <button
+                key={url}
+                type="button"
+                onClick={() => openGallery(i + 1)}
+                className="h-16 w-16 shrink-0 rounded-xl overflow-hidden border-2 border-card shadow-md"
+              >
+                <LazyImage src={url} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="p-6 space-y-4">
           <div>
             <h2 className="text-2xl font-bold">{match.name}, {match.age}</h2>
@@ -80,6 +122,26 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
             </p>
             <TrustBadges profile={match} className="mt-3" />
           </div>
+
+          <CompatibilityBreakdown targetUserId={match.userId} isPremium={isPremium} />
+
+          {wali && (wali.waliName || wali.waliPhone) && (
+            <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                {t("premium.waliVisibleTitle")}
+              </p>
+              {wali.waliName && (
+                <p className="text-sm font-medium">{wali.waliName}</p>
+              )}
+              {wali.waliPhone && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5" />
+                  {wali.waliPhone}
+                </p>
+              )}
+            </div>
+          )}
 
           {match.bio && (
             <div className="rounded-2xl bg-muted/50 p-4">
@@ -173,5 +235,14 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
         </div>
       </motion.div>
     </div>
+
+    <PhotoGalleryLightbox
+      images={gallery}
+      initialIndex={galleryIndex}
+      open={galleryOpen}
+      onClose={() => setGalleryOpen(false)}
+      alt={match.name}
+    />
+    </>
   );
 }

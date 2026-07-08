@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
   X,
   Mail,
@@ -77,6 +77,7 @@ function DetailGrid({
 export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPanelProps) {
   const { t } = useTranslation();
   const detail = useQuery(api.admin.getUserDetail, { profileId });
+  const setAdvisorReviewed = useMutation(api.admin.setAdvisorReviewed);
 
   const yesNo = (value: boolean | undefined) => {
     if (value === undefined) return "—";
@@ -181,6 +182,24 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                             ? t("adminPage.badgePaid")
                             : t("adminPage.unpaid")}
                       </Badge>
+                    )}
+                    {detail.profile.hasPersonalSupport && !isStaffRole(detail.profile.role) && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={detail.profile.advisorReviewed ? "secondary" : "outline"}
+                        className="h-7 text-xs rounded-full"
+                        onClick={() =>
+                          void setAdvisorReviewed({
+                            profileId,
+                            advisorReviewed: !detail.profile.advisorReviewed,
+                          })
+                        }
+                      >
+                        {detail.profile.advisorReviewed
+                          ? t("adminDetail.advisorReviewed")
+                          : t("adminDetail.markAdvisorReviewed")}
+                      </Button>
                     )}
                   </div>
                 </div>

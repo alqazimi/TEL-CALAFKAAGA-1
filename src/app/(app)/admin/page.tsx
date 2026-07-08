@@ -82,6 +82,9 @@ function formatPaymentLabel(
   if (payment.registrationTier === "premium" || payment.paymentType === "registration_premium") {
     return t("adminPage.paymentRegistrationPremium");
   }
+  if (payment.paymentType === "premium_upgrade") {
+    return t("adminPage.paymentPremiumUpgrade");
+  }
   if (payment.registrationTier === "basic" || payment.paymentType === "registration") {
     return t("adminPage.paymentRegistrationBasic");
   }

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
@@ -8,13 +7,9 @@ import { api } from "../../../../convex/_generated/api";
 import type { CurrentUser, MatchResult, MutualMatch } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
-import { MemberRemindersCard } from "@/components/notifications/member-reminders-card";
-import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
+import { NextStepCard } from "@/components/dashboard/next-step-card";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -50,7 +45,6 @@ export default function DashboardPage() {
         <div className="space-y-6 max-w-2xl">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-40 w-full rounded-2xl" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
         </div>
       </DashboardLayout>
     );
@@ -59,101 +53,20 @@ export default function DashboardPage() {
   const profile = user?.profile;
   const firstName = profile?.name?.split(" ")[0] ?? "there";
   const isComplete = profile?.questionnaireComplete ?? false;
-  const hasPaid = hasPaidAccess(profile);
-  const isApproved = profile?.approved ?? false;
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-2xl space-y-8">
+      <div className="mx-auto max-w-2xl space-y-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
             {t("dashboard.hello", { name: firstName })}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            {!isComplete
-              ? t("dashboard.finishQuestionnaire")
-              : !hasPaid
-                ? t("dashboard.payToContinue", {
-                    basic: REGISTRATION_PRICE,
-                    premium: PERSONAL_SUPPORT_PRICE,
-                  })
-                : !isApproved
-                  ? t("dashboard.pendingApprovalDesc")
-                  : t("dashboard.overview")}
-          </p>
         </div>
 
-        <MemberRemindersCard />
+        {user && <NextStepCard user={user} matches={matches} mutualCount={myMatches?.length ?? 0} />}
 
         {profile && !isComplete && (
           <ProfileCompletionCard profile={profile} preferences={preferences} />
-        )}
-
-        {isComplete && hasPaid && isApproved && (
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: t("dashboard.suggestedShort"), value: matches?.length ?? 0 },
-              { label: t("dashboard.matches"), value: myMatches?.length ?? 0 },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-border bg-card px-4 py-4 text-center"
-              >
-                <p className="text-2xl font-semibold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {isComplete && hasPaid && isApproved && matches && matches.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{t("dashboard.suggested")}</h2>
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/matches">{t("dashboard.seeAll")}</Link>
-              </Button>
-            </div>
-            <div className="space-y-3">
-              {matches.slice(0, 3).map((match) => (
-                <Link key={match.userId} href="/matches">
-                  <Card className="border-border hover:border-primary/30 hover:shadow-sm transition-all">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <Avatar className="h-14 w-14">
-                        <AvatarImage src={match.imageUrl ?? undefined} alt={match.name} />
-                        <AvatarFallback className="text-lg bg-muted">
-                          {match.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">
-                          {match.name}, {match.age}
-                        </p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {match.country}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold text-primary">{match.score}%</p>
-                        <p className="text-xs text-muted-foreground">{t("dashboard.match")}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {isComplete && hasPaid && isApproved && matches && matches.length === 0 && (
-          <Card className="border-border border-dashed">
-            <CardContent className="p-8 text-center">
-              <p className="font-medium">{t("dashboard.noMatchesYet")}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {t("dashboard.noMatchesDesc")}
-              </p>
-            </CardContent>
-          </Card>
         )}
       </div>
     </DashboardLayout>

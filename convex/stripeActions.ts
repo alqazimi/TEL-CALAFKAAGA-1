@@ -10,6 +10,10 @@ import {
   REGISTRATION_AMOUNT_CENTS,
 } from "./payments";
 import { hasPaidAccess } from "./lib/roles";
+import {
+  isPremiumMember,
+  PREMIUM_UPGRADE_AMOUNT_CENTS,
+} from "./lib/premium";
 
 const registrationTierValidator = v.union(
   v.literal("basic"),
@@ -112,6 +116,70 @@ export const createRegistrationCheckout = action({
   },
 });
 
+export const createPremiumUpgradeCheckout = action({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const profile = await ctx.runQuery(internal.payments.getProfileByUserId, {
+      userId,
+    });
+
+    if (!profile) throw new Error("Profile not found");
+    if (profile.banned) throw new Error("Account suspended");
+    if (!hasPaidAccess(profile)) {
+      throw new Error("Complete basic registration before upgrading");
+    }
+    if (isPremiumMember(profile)) {
+      throw new Error("Already on the premium plan");
+    }
+
+    const stripe = getStripe();
+    const appUrl = getAppUrl();
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Hel Calafkaaga Premium Upgrade",
+              description:
+                "Upgrade to personal support — priority approval, who liked you, extra photos, and advisor guidance",
+            },
+            unit_amount: PREMIUM_UPGRADE_AMOUNT_CENTS,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${appUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/profile?upgrade_canceled=true`,
+      metadata: {
+        userId,
+        type: "premium_upgrade",
+        tier: "premium",
+      },
+    });
+
+    if (!session.url) {
+      throw new Error("Failed to create Stripe checkout session");
+    }
+
+    await ctx.runMutation(internal.payments.recordPendingPayment, {
+      userId,
+      stripeSessionId: session.id,
+      amount: PREMIUM_UPGRADE_AMOUNT_CENTS,
+      paymentType: "premium_upgrade",
+      registrationTier: "premium",
+    });
+
+    return { url: session.url };
+  },
+});
+
 export const verifyCheckoutSession = action({
   args: { sessionId: v.string() },
   handler: async (
@@ -137,12 +205,15 @@ export const verifyCheckoutSession = action({
       : undefined;
 
     const isChat = session.metadata?.type === "chat";
-    const isPremium = session.metadata?.tier === "premium";
+    const isUpgrade = session.metadata?.type === "premium_upgrade";
+    const isPremium = session.metadata?.tier === "premium" || isUpgrade;
     const paymentType = isChat
       ? "chat"
-      : isPremium
-        ? "registration_premium"
-        : "registration";
+      : isUpgrade
+        ? "premium_upgrade"
+        : isPremium
+          ? "registration_premium"
+          : "registration";
 
     const result = await ctx.runMutation(
       internal.payments.fulfillCheckoutSession,
@@ -151,15 +222,13 @@ export const verifyCheckoutSession = action({
         userId,
         amount:
           session.amount_total ??
-          (isPremium
-            ? PERSONAL_SUPPORT_AMOUNT_CENTS
-            : REGISTRATION_AMOUNT_CENTS),
+          (isUpgrade
+            ? PREMIUM_UPGRADE_AMOUNT_CENTS
+            : isPremium
+              ? PERSONAL_SUPPORT_AMOUNT_CENTS
+              : REGISTRATION_AMOUNT_CENTS),
         paymentType,
-        registrationTier: isChat
-          ? undefined
-          : isPremium
-            ? "premium"
-            : "basic",
+        registrationTier: isChat ? undefined : isPremium ? "premium" : "basic",
         matchId,
       }
     );

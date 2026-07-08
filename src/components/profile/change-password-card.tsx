@@ -17,7 +17,7 @@ import { useTranslation } from "@/lib/i18n/context";
 
 type ChangePasswordForm = z.infer<ReturnType<typeof createChangePasswordSchema>>;
 
-export function ChangePasswordCard() {
+export function ChangePasswordCard({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const schema = useMemo(() => createChangePasswordSchema(t), [t]);
   const changePassword = useAction(api.account.changePassword);
@@ -54,12 +54,7 @@ export function ChangePasswordCard() {
     }
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("profilePage.changePassword")}</CardTitle>
-      </CardHeader>
-      <CardContent>
+  const form = (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             label={t("profilePage.currentPassword")}
@@ -110,11 +105,20 @@ export function ChangePasswordCard() {
             </InputIconWrapper>
           </FormField>
 
-          <Button type="submit" disabled={saving}>
+          <Button type="submit" disabled={saving} size={embedded ? "sm" : "default"}>
             {saving ? t("profilePage.updatingPassword") : t("profilePage.updatePassword")}
           </Button>
         </form>
-      </CardContent>
+  );
+
+  if (embedded) return form;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t("profilePage.changePassword")}</CardTitle>
+      </CardHeader>
+      <CardContent>{form}</CardContent>
     </Card>
   );
 }

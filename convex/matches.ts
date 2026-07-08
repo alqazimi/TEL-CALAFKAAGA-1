@@ -13,6 +13,8 @@ import {
   profilePassesMatchFilters,
 } from "./lib/matchPresentation";
 import { sendNotification } from "./lib/sendNotification";
+import { isPremiumMember } from "./lib/premium";
+import { calculateCompatibilityBreakdown } from "./matching";
 
 const matchFilterArgs = {
   country: v.optional(v.string()),
@@ -180,6 +182,82 @@ export const getSentLikes = query({
       args,
       myLikes,
       blockedIds
+    );
+  },
+});
+
+export const getReceivedLikes = query({
+  args: matchFilterArgs,
+  handler: async (ctx, args) => {
+    const access = await getMatchAccessProfile(ctx);
+    if (!access) return [];
+
+    const { userId, myProfile } = access;
+    if (!isPremiumMember(myProfile)) {
+      return [];
+    }
+
+    const incomingLikes = await ctx.db
+      .query("likes")
+      .withIndex("by_to", (q) => q.eq("toUserId", userId))
+      .collect();
+
+    const receivedIds: Id<"users">[] = [];
+    for (const like of incomingLikes.filter((l) => l.action === "like")) {
+      if (!(await hasActiveMatch(ctx, userId, like.fromUserId))) {
+        receivedIds.push(like.fromUserId);
+      }
+    }
+
+    const myLikes = await ctx.db
+      .query("likes")
+      .withIndex("by_from", (q) => q.eq("fromUserId", userId))
+      .collect();
+
+    const blockedIds = await getBlockedUserIds(ctx, userId);
+
+    return loadProfilesForUserIds(
+      ctx,
+      receivedIds,
+      myProfile,
+      args,
+      myLikes,
+      blockedIds
+    );
+  },
+});
+
+export const getCompatibilityBreakdown = query({
+  args: { targetUserId: v.id("users") },
+  handler: async (ctx, args) => {
+    const access = await getMatchAccessProfile(ctx);
+    if (!access) return null;
+    if (!isPremiumMember(access.myProfile)) return null;
+
+    const candidate = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.targetUserId))
+      .unique();
+
+    if (!candidate || candidate.banned || !candidate.approved) return null;
+
+    const myPrefs = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", access.userId))
+      .unique();
+
+    const candidatePrefs = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", args.targetUserId))
+      .unique();
+
+    if (!myPrefs || !candidatePrefs) return null;
+
+    return calculateCompatibilityBreakdown(
+      access.myProfile,
+      myPrefs,
+      candidate,
+      candidatePrefs
     );
   },
 });

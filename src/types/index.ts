@@ -46,6 +46,12 @@ export interface Profile {
   registrationComplete?: boolean;
   hasPaid: boolean;
   hasPersonalSupport?: boolean;
+  advisorReviewed?: boolean;
+  additionalImageIds?: Id<"_storage">[];
+  additionalImageUrls?: string[];
+  waliName?: string;
+  waliPhone?: string;
+  isPremium?: boolean;
   banned: boolean;
   approved: boolean;
   imageUrl?: string | null;
@@ -65,11 +71,14 @@ export interface MatchResult {
   religiousLevel: string;
   prayerFrequency?: string;
   imageUrl: string | null;
+  additionalImageUrls?: string[];
   score: number;
   liked?: boolean;
   shortlisted?: boolean;
   verified?: boolean;
   hasPaid?: boolean;
+  hasPersonalSupport?: boolean;
+  advisorReviewed?: boolean;
   questionnaireComplete?: boolean;
   bio?: string;
   maritalStatus?: string;
@@ -146,7 +155,7 @@ export interface AdminPayment {
   userId: Id<"users">;
   stripeSessionId: string;
   amount: number;
-  paymentType?: "registration" | "registration_premium" | "chat";
+  paymentType?: "registration" | "registration_premium" | "premium_upgrade" | "chat";
   registrationTier?: "basic" | "premium";
   status: "pending" | "completed" | "failed";
   createdAt: number;

@@ -217,6 +217,14 @@ export function PaymentGate({ title, description, showProgress = true }: Payment
                 </span>
               </li>
               <li className="flex items-center gap-2.5">
+                <Sparkles className="h-4 w-4 text-primary shrink-0" />
+                <span className="font-medium text-foreground/80">{t("premium.featurePriority")}</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Sparkles className="h-4 w-4 text-primary shrink-0" />
+                <span className="font-medium text-foreground/80">{t("premium.featureLikedYou")}</span>
+              </li>
+              <li className="flex items-center gap-2.5">
                 <Users className="h-4 w-4 text-primary shrink-0" />
                 <span className="font-medium text-foreground/80">{t("payment.personalGuidance")}</span>
               </li>

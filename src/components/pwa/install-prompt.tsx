@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Share, Smartphone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,10 @@ export function InstallPrompt() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") {
         setVisible(false);
+        toast.success(t("pwa.installSuccess"), {
+          description: t("pwa.androidHomeScreenHint"),
+          duration: 8000,
+        });
       }
       setDeferredPrompt(null);
     } catch {
@@ -92,7 +97,7 @@ export function InstallPrompt() {
     } finally {
       setInstalling(false);
     }
-  }, [deferredPrompt]);
+  }, [deferredPrompt, t]);
 
   const isIos = isIosDevice();
   const canAndroidInstall = !!deferredPrompt;

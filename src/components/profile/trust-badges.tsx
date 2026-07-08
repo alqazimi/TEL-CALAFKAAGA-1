@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, ClipboardCheck, CreditCard } from "lucide-react";
+import { BadgeCheck, ClipboardCheck, CreditCard, Headphones, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,8 @@ export interface TrustBadgeProfile {
   verified?: boolean;
   approved?: boolean;
   hasPaid?: boolean;
+  hasPersonalSupport?: boolean;
+  advisorReviewed?: boolean;
   questionnaireComplete?: boolean;
 }
 
@@ -33,7 +35,25 @@ export function TrustBadges({ profile, size = "md", className }: TrustBadgesProp
             "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/40",
         }
       : null,
-    profile.hasPaid
+    profile.hasPersonalSupport
+      ? {
+          key: "premium",
+          label: t("trustBadges.premium"),
+          icon: Sparkles,
+          className:
+            "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300 border-violet-200/60 dark:border-violet-900/40",
+        }
+      : null,
+    profile.advisorReviewed
+      ? {
+          key: "advisor",
+          label: t("trustBadges.advisorReviewed"),
+          icon: Headphones,
+          className:
+            "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-200/60 dark:border-amber-900/40",
+        }
+      : null,
+    profile.hasPaid && !profile.hasPersonalSupport
       ? {
           key: "paid",
           label: t("trustBadges.paidMember"),

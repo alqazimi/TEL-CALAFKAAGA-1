@@ -12,9 +12,7 @@ import {
 } from "./lib/adminAuth";
 import { isOwnerRole, isStaffRole } from "./lib/roles";
 import { sendNotification } from "./lib/sendNotification";
-import {
-  PERSONAL_SUPPORT_AMOUNT_CENTS,
-} from "./payments";
+import { isPremiumMember, isBasicPaidMember } from "./lib/premium";
 
 function buildPaidByUserMap(
   completedPayments: { userId: string; amount: number }[]
@@ -29,18 +27,12 @@ function buildPaidByUserMap(
   return paidByUser;
 }
 
-function isPremiumMember(
-  profile: { hasPersonalSupport?: boolean },
+function pendingApprovalPriority(
+  profile: { approved: boolean; hasPersonalSupport?: boolean },
   paidCents: number
-) {
-  return profile.hasPersonalSupport === true || paidCents >= PERSONAL_SUPPORT_AMOUNT_CENTS;
-}
-
-function isBasicPaidMember(
-  profile: { hasPaid: boolean; hasPersonalSupport?: boolean },
-  paidCents: number
-) {
-  return profile.hasPaid && !isPremiumMember(profile, paidCents);
+): number {
+  if (profile.approved) return 2;
+  return isPremiumMember(profile, paidCents) ? 0 : 1;
 }
 
 export const hasAnyAdmin = query({
@@ -261,6 +253,15 @@ export const getAllUsers = query({
       });
     }
 
+    profiles.sort((a, b) => {
+      const aCents = paidByUser.get(a.userId) ?? 0;
+      const bCents = paidByUser.get(b.userId) ?? 0;
+      const priorityDiff =
+        pendingApprovalPriority(a, aCents) - pendingApprovalPriority(b, bCents);
+      if (priorityDiff !== 0) return priorityDiff;
+      return a.name.localeCompare(b.name);
+    });
+
     return await Promise.all(
       profiles.map(async (p) => {
         let imageUrl = null;
@@ -358,6 +359,28 @@ export const getUserDetail = query({
       },
       preferences,
     };
+  },
+});
+
+export const setAdvisorReviewed = mutation({
+  args: {
+    profileId: v.id("profiles"),
+    advisorReviewed: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    await requireAdmin(ctx, userId);
+
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) throw new Error("Profile not found");
+    if (!isPremiumMember(profile)) {
+      throw new Error("Advisor review is only for premium members");
+    }
+
+    await ctx.db.patch(args.profileId, {
+      advisorReviewed: args.advisorReviewed,
+    });
   },
 });
 

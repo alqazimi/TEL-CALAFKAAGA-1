@@ -42,6 +42,17 @@ export function profilePassesMatchFilters(
   return true;
 }
 
+async function resolveAdditionalImageUrls(
+  ctx: QueryCtx,
+  profile: Doc<"profiles">
+) {
+  const ids = profile.additionalImageIds ?? [];
+  const urls = await Promise.all(
+    ids.map(async (id) => (await ctx.storage.getUrl(id)) ?? null)
+  );
+  return urls.filter((url): url is string => url !== null);
+}
+
 export async function buildMatchResult(
   ctx: QueryCtx,
   profile: Doc<"profiles">,
@@ -53,6 +64,8 @@ export async function buildMatchResult(
   if (profile.profileImageId) {
     imageUrl = await ctx.storage.getUrl(profile.profileImageId);
   }
+
+  const additionalImageUrls = await resolveAdditionalImageUrls(ctx, profile);
 
   return {
     userId,
@@ -70,11 +83,14 @@ export async function buildMatchResult(
     wantChildren: profile.wantChildren,
     bio: profile.bio,
     imageUrl,
+    additionalImageUrls,
     score,
     liked: interaction?.action === "like",
     shortlisted: interaction?.action === "shortlist",
     verified: profile.verified,
     hasPaid: profile.hasPaid,
+    hasPersonalSupport: profile.hasPersonalSupport ?? false,
+    advisorReviewed: profile.advisorReviewed ?? false,
     questionnaireComplete: profile.questionnaireComplete,
   };
 }

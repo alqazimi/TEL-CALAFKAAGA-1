@@ -80,142 +80,162 @@ function relocateScore(user: Profile, candidate: Profile): number {
   return 1;
 }
 
-export function calculateCompatibility(
+export type CompatibilityBreakdownItem = {
+  key: string;
+  score: number;
+  maxScore: number;
+};
+
+export function calculateCompatibilityBreakdown(
   user: Profile,
   userPrefs: Preferences,
   candidate: Profile,
   _candidatePrefs: Preferences
-): number {
-  let score = 0;
+): { total: number; categories: CompatibilityBreakdownItem[] } {
+  const categories: CompatibilityBreakdownItem[] = [];
+  const push = (key: string, score: number, maxScore: number) => {
+    categories.push({ key, score, maxScore });
+  };
 
-  // Religion alignment — 25 points
   const userRel = RELIGIOUS_SCORES[effectiveReligiousLevel(user)] ?? 2;
   const candRel = RELIGIOUS_SCORES[effectiveReligiousLevel(candidate)] ?? 2;
   const relDiff = Math.abs(userRel - candRel);
-  score += Math.max(0, 25 - relDiff * 8);
+  push("religion", Math.max(0, 25 - relDiff * 8), 25);
 
-  // Preferred religious level — 5 points
   const prefRel = RELIGIOUS_SCORES[userPrefs.religiousLevel] ?? 2;
   const prefDiff = Math.abs(prefRel - candRel);
-  score += Math.max(0, 5 - prefDiff * 2);
+  push("religiousPreference", Math.max(0, 5 - prefDiff * 2), 5);
 
-  // Spouse prayer importance — 5 points
-  score += spousePrayerScore(user.spousePrayerImportance, candidate.prayerFrequency);
+  push(
+    "prayer",
+    spousePrayerScore(user.spousePrayerImportance, candidate.prayerFrequency),
+    5
+  );
 
-  // Age — 15 points
+  let ageScore = 0;
   if (candidate.age >= userPrefs.minAge && candidate.age <= userPrefs.maxAge) {
-    score += 15;
+    ageScore = 15;
   } else {
     const diff = Math.min(
       Math.abs(candidate.age - userPrefs.minAge),
       Math.abs(candidate.age - userPrefs.maxAge)
     );
-    score += Math.max(0, 15 - diff * 3);
+    ageScore = Math.max(0, 15 - diff * 3);
   }
+  push("age", ageScore, 15);
 
-  // Country preference — 8 points
+  let countryScore = 0;
   if (
     userPrefs.preferredCountries.length === 0 ||
     userPrefs.preferredCountries.includes(candidate.country)
   ) {
-    score += 8;
+    countryScore = 8;
   } else if (user.country === candidate.country) {
-    score += 4;
+    countryScore = 4;
   }
+  push("country", countryScore, 8);
 
-  // Distance preference — 5 points
-  score += distanceScore(user, userPrefs, candidate);
+  push("distance", distanceScore(user, userPrefs, candidate), 5);
 
-  // Height — 5 points
+  let heightScore = 0;
   if (candidate.height >= userPrefs.minHeight && candidate.height <= userPrefs.maxHeight) {
-    score += 5;
+    heightScore = 5;
   } else {
     const diff = Math.min(
       Math.abs(candidate.height - userPrefs.minHeight),
       Math.abs(candidate.height - userPrefs.maxHeight)
     );
-    score += Math.max(0, 5 - diff);
+    heightScore = Math.max(0, 5 - diff);
   }
+  push("height", heightScore, 5);
 
-  // Education — 8 points
   const userEdu = EDUCATION_SCORES[userPrefs.educationLevel] ?? 2;
   const candEdu = EDUCATION_SCORES[candidate.education] ?? 2;
   const eduDiff = Math.abs(userEdu - candEdu);
-  score += Math.max(0, 8 - eduDiff * 2);
+  push("education", Math.max(0, 8 - eduDiff * 2), 8);
 
-  // Children — 8 points
+  let childrenScore = 0;
   if (user.marrySomeoneWithChildren === "No") {
-    if (candidate.children === 0) score += 8;
+    if (candidate.children === 0) childrenScore = 8;
   } else if (userPrefs.acceptChildren === "Yes") {
-    score += 8;
+    childrenScore = 8;
   } else if (userPrefs.acceptChildren === "Depends" && candidate.children === 0) {
-    score += 8;
+    childrenScore = 8;
   } else if (userPrefs.acceptChildren === "No" && candidate.children === 0) {
-    score += 8;
+    childrenScore = 8;
   }
+  push("children", childrenScore, 8);
 
-  // Marriage status — 5 points
+  let maritalScore = 0;
   if (candidate.maritalStatus === "Never married" || candidate.maritalStatus === "Never Married") {
-    score += 5;
+    maritalScore = 5;
   } else if (candidate.maritalStatus === "Divorced" && userPrefs.acceptDivorcee === "Yes") {
-    score += 5;
+    maritalScore = 5;
   } else if (candidate.maritalStatus === "Widowed" && userPrefs.acceptWidow === "Yes") {
-    score += 5;
+    maritalScore = 5;
   }
+  push("maritalStatus", maritalScore, 5);
 
-  // Qualities — 8 points
   const sharedQualities = user.qualities.filter((q) => candidate.qualities.includes(q));
-  const qualityScore = Math.min(
-    8,
-    (sharedQualities.length / Math.max(user.qualities.length, 1)) * 8
+  push(
+    "qualities",
+    Math.min(8, (sharedQualities.length / Math.max(user.qualities.length, 1)) * 8),
+    8
   );
-  score += qualityScore;
 
-  // Hobbies — 4 points
   const sharedHobbies = user.hobbies.filter((h) => candidate.hobbies.includes(h));
-  const hobbyScore = Math.min(
-    4,
-    (sharedHobbies.length / Math.max(user.hobbies.length, 1)) * 4
+  push(
+    "hobbies",
+    Math.min(4, (sharedHobbies.length / Math.max(user.hobbies.length, 1)) * 4),
+    4
   );
-  score += hobbyScore;
 
-  // Marriage timeline — 7 points
   const userTimeline = TIMELINE_SCORES[user.marriageTimeline] ?? 2;
   const candTimeline = TIMELINE_SCORES[candidate.marriageTimeline] ?? 2;
   const timelineDiff = Math.abs(userTimeline - candTimeline);
-  score += Math.max(0, 7 - timelineDiff * 2);
+  push("timeline", Math.max(0, 7 - timelineDiff * 2), 7);
 
-  // Relocation compatibility — 3 points
-  score += relocateScore(user, candidate);
+  push("relocation", relocateScore(user, candidate), 3);
+  push("wantChildren", wantChildrenScore(user.wantChildren, candidate.wantChildren), 4);
 
-  // Want children alignment — 4 points
-  score += wantChildrenScore(user.wantChildren, candidate.wantChildren);
-
-  // Family involvement — 2 points
+  let familyScore = 0;
   if (user.familyInvolvement && candidate.familyInvolvement) {
-    score += user.familyInvolvement === candidate.familyInvolvement ? 2 : 1;
+    familyScore = user.familyInvolvement === candidate.familyInvolvement ? 2 : 1;
   }
+  push("familyInvolvement", familyScore, 2);
 
-  // Living situation — 2 points
+  let livingScore = 0;
   if (user.livingSituation && candidate.livingSituation) {
-    score += user.livingSituation === candidate.livingSituation ? 2 : 1;
+    livingScore = user.livingSituation === candidate.livingSituation ? 2 : 1;
   }
+  push("livingSituation", livingScore, 2);
 
-  // Languages overlap — 2 points
+  let languageScore = 0;
   if (user.languagesSpoken?.length && candidate.languagesSpoken?.length) {
     const sharedLang = user.languagesSpoken.filter((l) =>
       candidate.languagesSpoken!.includes(l)
     );
-    score += Math.min(2, sharedLang.length);
+    languageScore = Math.min(2, sharedLang.length);
   }
+  push("languages", languageScore, 2);
 
-  // Partner appearance preference — 3 points
-  score += appearancePrefScore(user, userPrefs, candidate);
+  push("appearance", appearancePrefScore(user, userPrefs, candidate), 3);
+  push("polygyny", polygynyScore(user.polygynyOpenness, candidate.polygynyOpenness), 2);
 
-  // Polygyny alignment — 2 points
-  score += polygynyScore(user.polygynyOpenness, candidate.polygynyOpenness);
+  const rawTotal = categories.reduce((sum, item) => sum + item.score, 0);
+  const total = Math.round(Math.min(100, Math.max(0, rawTotal)));
 
-  return Math.round(Math.min(100, Math.max(0, score)));
+  return { total, categories };
+}
+
+export function calculateCompatibility(
+  user: Profile,
+  userPrefs: Preferences,
+  candidate: Profile,
+  candidatePrefs: Preferences
+): number {
+  return calculateCompatibilityBreakdown(user, userPrefs, candidate, candidatePrefs)
+    .total;
 }
 
 function wantChildrenScore(userWant?: string, candWant?: string): number {

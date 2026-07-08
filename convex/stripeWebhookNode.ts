@@ -9,6 +9,7 @@ import {
   PERSONAL_SUPPORT_AMOUNT_CENTS,
   REGISTRATION_AMOUNT_CENTS,
 } from "./payments";
+import { PREMIUM_UPGRADE_AMOUNT_CENTS } from "./lib/premium";
 
 export const handleStripeEvent = internalAction({
   args: {
@@ -37,12 +38,15 @@ export const handleStripeEvent = internalAction({
       }
 
       const isChat = session.metadata?.type === "chat";
-      const isPremium = session.metadata?.tier === "premium";
+      const isUpgrade = session.metadata?.type === "premium_upgrade";
+      const isPremium = session.metadata?.tier === "premium" || isUpgrade;
       const paymentType = isChat
         ? "chat"
-        : isPremium
-          ? "registration_premium"
-          : "registration";
+        : isUpgrade
+          ? "premium_upgrade"
+          : isPremium
+            ? "registration_premium"
+            : "registration";
       const matchId = session.metadata?.matchId;
 
       await ctx.runMutation(internal.payments.fulfillCheckoutSession, {
@@ -50,9 +54,11 @@ export const handleStripeEvent = internalAction({
         userId: userId as Id<"users">,
         amount:
           session.amount_total ??
-          (isPremium
-            ? PERSONAL_SUPPORT_AMOUNT_CENTS
-            : REGISTRATION_AMOUNT_CENTS),
+          (isUpgrade
+            ? PREMIUM_UPGRADE_AMOUNT_CENTS
+            : isPremium
+              ? PERSONAL_SUPPORT_AMOUNT_CENTS
+              : REGISTRATION_AMOUNT_CENTS),
         paymentType,
         registrationTier: isChat
           ? undefined

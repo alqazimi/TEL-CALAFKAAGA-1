@@ -21,6 +21,7 @@ const registrationTierValidator = v.union(
 const paymentTypeValidator = v.union(
   v.literal("registration"),
   v.literal("registration_premium"),
+  v.literal("premium_upgrade"),
   v.literal("chat")
 );
 
@@ -61,7 +62,8 @@ async function applyPaymentCompletion(
   if (profile) {
     const isPremium =
       payment.registrationTier === "premium" ||
-      payment.paymentType === "registration_premium";
+      payment.paymentType === "registration_premium" ||
+      payment.paymentType === "premium_upgrade";
 
     await ctx.db.patch(profile._id, {
       hasPaid: true,
@@ -71,6 +73,7 @@ async function applyPaymentCompletion(
     if (
       payment.paymentType === "registration" ||
       payment.paymentType === "registration_premium" ||
+      payment.paymentType === "premium_upgrade" ||
       payment.paymentType === undefined
     ) {
       await sendNotification(ctx, {
@@ -78,7 +81,9 @@ async function applyPaymentCompletion(
         type: "payment",
         title: "Payment successful",
         body: isPremium
-          ? "Your registration and personal support plan are active. Browse matches when your profile is approved."
+          ? payment.paymentType === "premium_upgrade"
+            ? "Your premium plan is active. Enjoy priority approval, who liked you, and personal support."
+            : "Your registration and personal support plan are active. Browse matches when your profile is approved."
           : "Your registration is complete. Browse matches when your profile is approved.",
         sendEmail: true,
       });
@@ -88,6 +93,7 @@ async function applyPaymentCompletion(
   if (
     payment.paymentType === "registration" ||
     payment.paymentType === "registration_premium" ||
+    payment.paymentType === "premium_upgrade" ||
     payment.paymentType === undefined
   ) {
     const matchesA = await ctx.db

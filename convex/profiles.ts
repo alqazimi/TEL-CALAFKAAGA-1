@@ -10,6 +10,12 @@ import {
   requireActiveProfile,
   requireAuthUserId,
 } from "./lib/access";
+import {
+  isPremiumMember,
+  MAX_ADDITIONAL_PHOTOS,
+  MAX_PROFILE_PHOTOS,
+} from "./lib/premium";
+import { hasActiveMatch } from "./lib/matchPresentation";
 
 export const getProfile = query({
   args: {},
@@ -29,7 +35,20 @@ export const getProfile = query({
       imageUrl = await ctx.storage.getUrl(profile.profileImageId);
     }
 
-    return { ...profile, imageUrl };
+    const additionalImageUrls = await Promise.all(
+      (profile.additionalImageIds ?? []).map(async (id) => {
+        return (await ctx.storage.getUrl(id)) ?? null;
+      })
+    );
+
+    return {
+      ...profile,
+      imageUrl,
+      additionalImageUrls: additionalImageUrls.filter(
+        (url): url is string => url !== null
+      ),
+      isPremium: isPremiumMember(profile),
+    };
   },
 });
 
@@ -355,5 +374,112 @@ export const getPreferences = query({
       .query("preferences")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
       .unique();
+  },
+});
+
+export const updateWaliContact = mutation({
+  args: {
+    waliName: v.optional(v.string()),
+    waliPhone: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuthUserId(ctx);
+    const profile = await requireActiveProfile(ctx, userId);
+
+    if (!isPremiumMember(profile)) {
+      throw new Error("Wali contact is available on the premium plan");
+    }
+
+    const waliName = args.waliName?.trim() ?? "";
+    const waliPhone = args.waliPhone?.trim() ?? "";
+
+    if (waliName && waliName.length < 2) {
+      throw new Error("Wali name is too short");
+    }
+    if (waliPhone && waliPhone.length < 8) {
+      throw new Error("Wali phone number is invalid");
+    }
+
+    await ctx.db.patch(profile._id, {
+      waliName: waliName || undefined,
+      waliPhone: waliPhone || undefined,
+    });
+
+    return profile._id;
+  },
+});
+
+export const addAdditionalPhoto = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    const userId = await requireAuthUserId(ctx);
+    const profile = await requireActiveProfile(ctx, userId);
+
+    if (!isPremiumMember(profile)) {
+      throw new Error("Extra photos are available on the premium plan");
+    }
+
+    await assertStorageOwnership(ctx, userId, args.storageId);
+
+    const existing = profile.additionalImageIds ?? [];
+    const totalPhotos = (profile.profileImageId ? 1 : 0) + existing.length;
+    if (totalPhotos >= MAX_PROFILE_PHOTOS) {
+      throw new Error(`You can upload up to ${MAX_PROFILE_PHOTOS} photos`);
+    }
+    if (existing.length >= MAX_ADDITIONAL_PHOTOS) {
+      throw new Error(`You can upload up to ${MAX_ADDITIONAL_PHOTOS} extra photos`);
+    }
+
+    await ctx.db.patch(profile._id, {
+      additionalImageIds: [...existing, args.storageId],
+    });
+
+    return profile._id;
+  },
+});
+
+export const removeAdditionalPhoto = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    const userId = await requireAuthUserId(ctx);
+    const profile = await requireActiveProfile(ctx, userId);
+
+    if (!isPremiumMember(profile)) {
+      throw new Error("Extra photos are available on the premium plan");
+    }
+
+    const existing = profile.additionalImageIds ?? [];
+    if (!existing.includes(args.storageId)) {
+      throw new Error("Photo not found");
+    }
+
+    await ctx.db.patch(profile._id, {
+      additionalImageIds: existing.filter((id) => id !== args.storageId),
+    });
+
+    return profile._id;
+  },
+});
+
+export const getWaliForMatch = query({
+  args: { targetUserId: v.id("users") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const isMatch = await hasActiveMatch(ctx, userId, args.targetUserId);
+    if (!isMatch) return null;
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.targetUserId))
+      .unique();
+
+    if (!profile?.waliName && !profile?.waliPhone) return null;
+
+    return {
+      waliName: profile.waliName ?? null,
+      waliPhone: profile.waliPhone ?? null,
+    };
   },
 });

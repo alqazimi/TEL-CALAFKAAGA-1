@@ -64,6 +64,10 @@ export default defineSchema({
     registrationComplete: v.optional(v.boolean()),
     hasPaid: v.boolean(),
     hasPersonalSupport: v.optional(v.boolean()),
+    advisorReviewed: v.optional(v.boolean()),
+    additionalImageIds: v.optional(v.array(v.id("_storage"))),
+    waliName: v.optional(v.string()),
+    waliPhone: v.optional(v.string()),
     banned: v.boolean(),
     approved: v.boolean(),
   })
@@ -171,6 +175,7 @@ export default defineSchema({
       v.union(
         v.literal("registration"),
         v.literal("registration_premium"),
+        v.literal("premium_upgrade"),
         v.literal("chat")
       )
     ),
