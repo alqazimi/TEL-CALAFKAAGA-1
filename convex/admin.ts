@@ -280,22 +280,17 @@ export const getAllUsers = query({
 });
 
 export const getAllPayments = query({
-  args: {
-    includeInProgress: v.optional(v.boolean()),
-  },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
     await requireAdmin(ctx, userId);
 
     const allPayments = await ctx.db.query("payments").collect();
-    allPayments.sort((a, b) => b.createdAt - a.createdAt);
-
-    const includeInProgress = args.includeInProgress ?? false;
-    const payments = includeInProgress
-      ? allPayments.filter((p) => p.status !== "failed")
-      : allPayments.filter((p) => p.status === "completed");
+    const payments = allPayments
+      .filter((p) => p.status === "completed")
+      .sort((a, b) => b.createdAt - a.createdAt);
 
     return await Promise.all(
       payments.map(async (payment) => {
@@ -320,55 +315,6 @@ export const getAllPayments = query({
         };
       })
     );
-  },
-});
-
-/** One-time or occasional cleanup for abandoned checkout rows already in the DB. */
-export const reconcileAbandonedCheckouts = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
-    await requireAdmin(ctx, userId);
-
-    const allPayments = await ctx.db.query("payments").collect();
-    const usersWithCompleted = new Set(
-      allPayments
-        .filter((p) => p.status === "completed")
-        .map((p) => p.userId)
-    );
-
-    let updated = 0;
-
-    for (const payment of allPayments) {
-      if (payment.status !== "pending") continue;
-
-      if (usersWithCompleted.has(payment.userId)) {
-        await ctx.db.patch(payment._id, { status: "failed" });
-        updated++;
-      }
-    }
-
-    const pendingByUser = new Map<string, typeof allPayments>();
-    for (const payment of allPayments) {
-      if (payment.status !== "pending") continue;
-      if (usersWithCompleted.has(payment.userId)) continue;
-
-      const key = payment.userId;
-      const list = pendingByUser.get(key) ?? [];
-      list.push(payment);
-      pendingByUser.set(key, list);
-    }
-
-    for (const pendingList of pendingByUser.values()) {
-      pendingList.sort((a, b) => b.createdAt - a.createdAt);
-      for (const stale of pendingList.slice(1)) {
-        await ctx.db.patch(stale._id, { status: "failed" });
-        updated++;
-      }
-    }
-
-    return { updated };
   },
 });
 

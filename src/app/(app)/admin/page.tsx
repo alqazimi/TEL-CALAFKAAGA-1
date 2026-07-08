@@ -110,7 +110,6 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
-  const [showInProgressPayments, setShowInProgressPayments] = useState(false);
   const [announcement, setAnnouncement] = useState({ title: "", body: "" });
   const [selectedProfileId, setSelectedProfileId] = useState<Id<"profiles"> | null>(null);
 
@@ -130,9 +129,8 @@ export default function AdminPage() {
   ) as AdminAnalytics | undefined;
   const payments = useQuery(
     api.admin.getAllPayments,
-    isStaff ? { includeInProgress: showInProgressPayments } : "skip"
+    isStaff ? {} : "skip"
   ) as AdminPayment[] | undefined;
-  const reconcileCheckouts = useMutation(api.admin.reconcileAbandonedCheckouts);
   const approveUser = useMutation(api.admin.approveUser);
   const banUser = useMutation(api.admin.banUser);
   const deleteUser = useMutation(api.admin.deleteUser);
@@ -185,6 +183,17 @@ export default function AdminPage() {
 
   const currentProfileId = currentUser?.profile?._id;
   const canManageRoles = stats.isOwner;
+
+  const TAB_HEADINGS: Record<AdminTab, { title: TranslationPath; desc: TranslationPath }> = {
+    users: { title: "adminPage.users", desc: "adminPage.usersDesc" },
+    payments: { title: "adminPage.payments", desc: "adminPage.paymentsDesc" },
+    analytics: { title: "adminPage.analytics", desc: "adminPage.analyticsDesc" },
+    announcements: {
+      title: "adminPage.announcements",
+      desc: "adminPage.announcementsDesc",
+    },
+  };
+  const heading = TAB_HEADINGS[activeTab];
 
   const statCards = [
     {
@@ -243,10 +252,10 @@ export default function AdminPage() {
                 {stats.isOwner ? t("adminPage.ownerConsole") : t("adminPage.adminConsole")}
               </div>
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                {t("adminPage.title")}
+                {t(heading.title)}
               </h1>
               <p className="text-sm text-muted-foreground">
-                {stats.isOwner ? t("adminPage.ownerDesc") : t("adminPage.adminDesc")}
+                {t(heading.desc)}
               </p>
             </div>
             <div className="flex items-center gap-4 rounded-2xl border border-border bg-card/70 px-5 py-3 backdrop-blur">
@@ -485,46 +494,9 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="payments" className="space-y-2.5 pt-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <p className="text-sm text-muted-foreground">
-                {showInProgressPayments
-                  ? t("adminPage.paymentsShowingInProgress")
-                  : t("adminPage.paymentsShowingCompleted")}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant={showInProgressPayments ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowInProgressPayments((v) => !v)}
-                >
-                  {showInProgressPayments
-                    ? t("adminPage.hideInProgress")
-                    : t("adminPage.showInProgress")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      const result = await reconcileCheckouts({});
-                      toast.success(
-                        t("adminPage.reconcileDone", { count: result.updated })
-                      );
-                    } catch (error) {
-                      toast.error(
-                        error instanceof Error
-                          ? error.message
-                          : t("adminPage.reconcileFailed")
-                      );
-                    }
-                  }}
-                >
-                  {t("adminPage.reconcileCheckouts")}
-                </Button>
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {t("adminPage.paymentsShowingCompleted")}
+            </p>
             <div className="space-y-2.5">
               {payments?.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-border py-12 text-center">
@@ -542,21 +514,8 @@ export default function AdminPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium">{payment.userName}</p>
-                          <Badge
-                            variant={
-                              payment.status === "completed"
-                                ? "default"
-                                : payment.status === "pending"
-                                  ? "secondary"
-                                  : "outline"
-                            }
-                            className={`text-xs capitalize ${
-                              payment.status === "failed"
-                                ? "border-destructive text-destructive"
-                                : ""
-                            }`}
-                          >
-                            {payment.status}
+                          <Badge variant="default" className="text-xs">
+                            {t("adminPage.paymentPaid")}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {formatPaymentLabel(payment, t)}

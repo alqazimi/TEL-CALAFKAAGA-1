@@ -23,46 +23,52 @@ export const handleStripeEvent = internalAction({
       getStripeWebhookSecret()
     );
 
-    if (event.type !== "checkout.session.completed") {
-      return;
-    }
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
 
-    const session = event.data.object;
+      if (session.payment_status !== "paid") {
+        return;
+      }
 
-    if (session.payment_status !== "paid") {
-      return;
-    }
+      const userId = session.metadata?.userId;
+      if (!userId) {
+        console.error("checkout.session.completed missing metadata.userId");
+        throw new Error("Missing userId metadata");
+      }
 
-    const userId = session.metadata?.userId;
-    if (!userId) {
-      console.error("checkout.session.completed missing metadata.userId");
-      throw new Error("Missing userId metadata");
-    }
-
-    const isChat = session.metadata?.type === "chat";
-    const isPremium = session.metadata?.tier === "premium";
-    const paymentType = isChat
-      ? "chat"
-      : isPremium
-        ? "registration_premium"
-        : "registration";
-    const matchId = session.metadata?.matchId;
-
-    await ctx.runMutation(internal.payments.fulfillCheckoutSession, {
-      stripeSessionId: session.id,
-      userId: userId as Id<"users">,
-      amount:
-        session.amount_total ??
-        (isPremium
-          ? PERSONAL_SUPPORT_AMOUNT_CENTS
-          : REGISTRATION_AMOUNT_CENTS),
-      paymentType,
-      registrationTier: isChat
-        ? undefined
+      const isChat = session.metadata?.type === "chat";
+      const isPremium = session.metadata?.tier === "premium";
+      const paymentType = isChat
+        ? "chat"
         : isPremium
-          ? "premium"
-          : "basic",
-      matchId: matchId ? (matchId as Id<"matches">) : undefined,
-    });
+          ? "registration_premium"
+          : "registration";
+      const matchId = session.metadata?.matchId;
+
+      await ctx.runMutation(internal.payments.fulfillCheckoutSession, {
+        stripeSessionId: session.id,
+        userId: userId as Id<"users">,
+        amount:
+          session.amount_total ??
+          (isPremium
+            ? PERSONAL_SUPPORT_AMOUNT_CENTS
+            : REGISTRATION_AMOUNT_CENTS),
+        paymentType,
+        registrationTier: isChat
+          ? undefined
+          : isPremium
+            ? "premium"
+            : "basic",
+        matchId: matchId ? (matchId as Id<"matches">) : undefined,
+      });
+      return;
+    }
+
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object;
+      await ctx.runMutation(internal.payments.expireCheckoutSession, {
+        stripeSessionId: session.id,
+      });
+    }
   },
 });
