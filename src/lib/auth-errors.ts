@@ -18,11 +18,8 @@ export function getAuthErrorMessage(error: unknown, fallback: string): string {
     ) {
       return "An account with this email already exists. Try signing in instead.";
     }
-    if (
-      msg.includes("Could not send verification email") ||
-      msg.includes("Could not send reset email")
-    ) {
-      return "We could not send the verification email. Please try again later or contact support.";
+    if (msg.includes("Could not send reset email")) {
+      return "We could not send the reset email. Please try again later or contact support.";
     }
     if (msg.includes("TooManyFailedAttempts")) {
       return "Too many failed sign-in attempts. Please wait a few minutes and try again.";

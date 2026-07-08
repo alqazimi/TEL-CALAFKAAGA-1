@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Configure Resend email on Convex (password reset, signup verification, contact form).
+ * Configure Resend email on Convex (password reset & contact form).
  *
  * Usage:
  *   node scripts/setup-resend.mjs re_YOUR_RESEND_KEY

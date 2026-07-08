@@ -17,7 +17,7 @@ const steps = [
     "npx convex env set STRIPE_WEBHOOK_SECRET whsec_... --prod",
   ],
   [
-    "4. Resend (password reset, signup verify, contact)",
+    "4. Resend (password reset & contact form)",
     'AUTH_EMAIL_FROM="Calaf <hello@helcalafkaaga.com>" SUPPORT_EMAIL=hello@helcalafkaaga.com npm run setup:resend:prod -- re_...',
     "Verify helcalafkaaga.com domain in Resend dashboard",
   ],
