@@ -25,6 +25,7 @@ import {
   Wallet,
   ChevronRight,
   Sparkles,
+  Flag,
 } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -88,7 +89,7 @@ function formatPaymentLabel(
   return `$${(payment.amount / 100).toFixed(0)}`;
 }
 
-const ADMIN_TABS = ["users", "payments", "analytics", "announcements"] as const;
+const ADMIN_TABS = ["users", "payments", "analytics", "announcements", "reports"] as const;
 type AdminTab = (typeof ADMIN_TABS)[number];
 
 export default function AdminPage() {
@@ -125,11 +126,16 @@ export default function AdminPage() {
     api.admin.getAllPayments,
     isStaff ? {} : "skip"
   ) as AdminPayment[] | undefined;
+  const reports = useQuery(
+    api.moderation.listReports,
+    isStaff && activeTab === "reports" ? {} : "skip"
+  );
   const approveUser = useMutation(api.admin.approveUser);
   const banUser = useMutation(api.admin.banUser);
   const deleteUser = useMutation(api.admin.deleteUser);
   const setUserRole = useMutation(api.admin.setUserRole);
   const createAnnouncement = useMutation(api.admin.createAnnouncement);
+  const updateReportStatus = useMutation(api.moderation.updateReportStatus);
 
   useEffect(() => {
     if (currentUser !== undefined && !isStaffRole(currentUser?.profile?.role)) {
@@ -186,6 +192,7 @@ export default function AdminPage() {
       title: "adminPage.announcements",
       desc: "adminPage.announcementsDesc",
     },
+    reports: { title: "adminPage.reports", desc: "adminPage.reportsDesc" },
   };
   const heading = TAB_HEADINGS[activeTab];
 
@@ -631,6 +638,110 @@ export default function AdminPage() {
                 </Button>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {activeTab === "reports" && (
+          <div className="space-y-3">
+            {reports === undefined ? (
+              <Skeleton className="h-40 w-full" />
+            ) : reports.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border py-12 text-center">
+                <Flag className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">{t("adminPage.noReports")}</p>
+              </div>
+            ) : (
+              reports.map((report) => (
+                <Card key={report._id} className="border-border/70">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant={report.status === "open" ? "default" : "outline"}
+                        className="capitalize"
+                      >
+                        {report.status === "open"
+                          ? t("adminPage.reportOpen")
+                          : report.status === "reviewed"
+                            ? t("adminPage.reportReviewed")
+                            : t("adminPage.reportDismissed")}
+                      </Badge>
+                      <Badge variant="outline">{report.reason.replaceAll("_", " ")}</Badge>
+                      {report.reportedBanned && (
+                        <Badge className="bg-red-100 text-red-600">{t("adminPage.badgeBanned")}</Badge>
+                      )}
+                    </div>
+                    <div className="grid gap-2 text-sm sm:grid-cols-2">
+                      <p>
+                        <span className="text-muted-foreground">{t("adminPage.reportedUser")}: </span>
+                        <button
+                          type="button"
+                          className="font-semibold text-primary hover:underline"
+                          onClick={() => {
+                            if (report.reportedProfileId) {
+                              setSelectedProfileId(report.reportedProfileId);
+                            }
+                          }}
+                        >
+                          {report.reportedName}
+                        </button>
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">{t("adminPage.reporter")}: </span>
+                        <span className="font-medium">{report.reporterName}</span>
+                      </p>
+                    </div>
+                    {report.details && (
+                      <p className="text-sm text-muted-foreground">{report.details}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(report.createdAt).toLocaleString()}
+                    </p>
+                    {report.status === "open" && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            void updateReportStatus({
+                              reportId: report._id,
+                              status: "reviewed",
+                            })
+                          }
+                        >
+                          {t("adminPage.markReviewed")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            void updateReportStatus({
+                              reportId: report._id,
+                              status: "dismissed",
+                            })
+                          }
+                        >
+                          {t("adminPage.dismissReport")}
+                        </Button>
+                        {report.reportedProfileId && !report.reportedBanned && (
+                          <Button
+                            size="sm"
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() =>
+                              void banUser({
+                                profileId: report.reportedProfileId!,
+                                banned: true,
+                              })
+                            }
+                          >
+                            {t("adminPage.banFromReport")}
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         )}
 

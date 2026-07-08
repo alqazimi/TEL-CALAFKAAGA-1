@@ -208,4 +208,32 @@ export default defineSchema({
     .index("by_token", ["token"])
     .index("by_email", ["email"])
     .index("by_status", ["status"]),
+
+  blocks: defineTable({
+    blockerId: v.id("users"),
+    blockedId: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_blocker", ["blockerId"])
+    .index("by_blocked", ["blockedId"])
+    .index("by_pair", ["blockerId", "blockedId"]),
+
+  reports: defineTable({
+    reporterId: v.id("users"),
+    reportedUserId: v.id("users"),
+    reason: v.string(),
+    details: v.optional(v.string()),
+    status: v.union(
+      v.literal("open"),
+      v.literal("reviewed"),
+      v.literal("dismissed")
+    ),
+    createdAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.id("users")),
+  })
+    .index("by_reporter", ["reporterId"])
+    .index("by_reported", ["reportedUserId"])
+    .index("by_status", ["status"])
+    .index("by_pair", ["reporterId", "reportedUserId"]),
 });

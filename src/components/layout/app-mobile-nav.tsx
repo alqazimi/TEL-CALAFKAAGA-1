@@ -11,6 +11,7 @@ import {
   CreditCard,
   TrendingUp,
   Megaphone,
+  Flag,
   User,
 } from "lucide-react";
 import { useQuery } from "convex/react";
@@ -34,6 +35,7 @@ const STAFF_TABS: { tab: string; labelKey: TranslationPath; icon: typeof Users }
   { tab: "users", labelKey: "adminPage.users", icon: Users },
   { tab: "payments", labelKey: "adminPage.payments", icon: CreditCard },
   { tab: "analytics", labelKey: "adminPage.analytics", icon: TrendingUp },
+  { tab: "reports", labelKey: "adminPage.reports", icon: Flag },
   { tab: "announcements", labelKey: "adminPage.announcements", icon: Megaphone },
 ];
 

@@ -10,7 +10,7 @@ export const ResendOTPPasswordReset = Resend({
   id: "resend-otp",
   apiKey: process.env.AUTH_RESEND_KEY,
   async generateVerificationToken() {
-    return generateEmailOtp();
+    return generateEmailOtp(6);
   },
   async sendVerificationRequest({ identifier: email, provider, token }) {
     const apiKey = requireResendApiKey(provider.apiKey);
@@ -18,8 +18,8 @@ export const ResendOTPPasswordReset = Resend({
     const { error } = await resend.emails.send({
       from: getResendFromAddress(),
       to: [email],
-      subject: "Reset your Calaf password",
-      text: `Your Calaf password reset code is: ${token}\n\nThis code expires soon. If you did not request a reset, you can ignore this email.`,
+      subject: "Reset your Hel Calafkaaga password",
+      text: `Your Hel Calafkaaga password reset code is: ${token}\n\nThis 6-digit code expires soon. If you did not request a reset, you can ignore this email.`,
     });
 
     if (error) {

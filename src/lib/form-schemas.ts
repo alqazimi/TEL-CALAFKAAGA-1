@@ -28,7 +28,9 @@ export function createAccountSchema(t: TranslateFn) {
 
 export function createVerifyCodeSchema(t: TranslateFn) {
   return z.object({
-    code: z.string().min(8, t("validation.codeMin8")),
+    code: z
+      .string()
+      .regex(/^\d{6}$/, t("validation.codeMin6")),
   });
 }
 
@@ -49,10 +51,21 @@ export function createForgotEmailSchema(t: TranslateFn) {
   });
 }
 
+export function createResetCodeSchema(t: TranslateFn) {
+  return z.object({
+    code: z
+      .string()
+      .regex(/^\d{6}$/, t("validation.codeMin6")),
+  });
+}
+
 export function createResetPasswordSchema(t: TranslateFn) {
   return z.object({
-    code: z.string().min(8, t("validation.codeMin8")),
     newPassword: z.string().min(8, t("validation.passwordMin8")),
+    confirmPassword: z.string().min(1, t("validation.confirmPasswordRequired")),
+  }).refine((data) => data.newPassword === data.confirmPassword, {
+    message: t("validation.passwordsMismatch"),
+    path: ["confirmPassword"],
   });
 }
 

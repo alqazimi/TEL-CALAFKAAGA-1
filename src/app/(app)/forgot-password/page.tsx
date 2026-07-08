@@ -17,31 +17,57 @@ import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import {
   createForgotEmailSchema,
+  createResetCodeSchema,
   createResetPasswordSchema,
 } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
 
 type EmailForm = z.infer<ReturnType<typeof createForgotEmailSchema>>;
+type CodeForm = z.infer<ReturnType<typeof createResetCodeSchema>>;
 type ResetForm = z.infer<ReturnType<typeof createResetPasswordSchema>>;
+type Step = "email" | "code" | "password";
 
 export default function ForgotPasswordPage() {
   const { signIn } = useAuthActions();
   const router = useRouter();
   const { t } = useTranslation();
   const emailSchema = useMemo(() => createForgotEmailSchema(t), [t]);
+  const codeSchema = useMemo(() => createResetCodeSchema(t), [t]);
   const resetSchema = useMemo(() => createResetPasswordSchema(t), [t]);
-  const [step, setStep] = useState<"email" | "reset">("email");
+
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
+  const [verifiedCode, setVerifiedCode] = useState("");
   const [sending, setSending] = useState(false);
+  const [checkingCode, setCheckingCode] = useState(false);
   const [resetting, setResetting] = useState(false);
 
   const emailForm = useForm<EmailForm>({
     resolver: zodResolver(emailSchema),
   });
 
+  const codeForm = useForm<CodeForm>({
+    resolver: zodResolver(codeSchema),
+    defaultValues: { code: "" },
+  });
+
   const resetForm = useForm<ResetForm>({
     resolver: zodResolver(resetSchema),
   });
+
+  const shellTitle =
+    step === "email"
+      ? t("auth.resetTitle")
+      : step === "code"
+        ? t("auth.resetCodeTitle")
+        : t("auth.resetVerifyTitle");
+
+  const shellDescription =
+    step === "email"
+      ? t("auth.resetDesc")
+      : step === "code"
+        ? t("auth.resetCodeDesc", { email })
+        : t("auth.resetVerifyDesc", { email });
 
   const onRequestReset = async (data: EmailForm) => {
     setSending(true);
@@ -51,7 +77,10 @@ export default function ForgotPasswordPage() {
         flow: "reset",
       });
       setEmail(data.email);
-      setStep("reset");
+      setVerifiedCode("");
+      codeForm.reset({ code: "" });
+      resetForm.reset();
+      setStep("code");
       toast.success(t("auth.resetCodeSent"));
     } catch (error) {
       toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed")));
@@ -60,12 +89,35 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  /** Unlock password step only after a well-formed 6-digit code is entered. */
+  const onContinueWithCode = (data: CodeForm) => {
+    setCheckingCode(true);
+    try {
+      const code = data.code.trim();
+      if (!/^\d{6}$/.test(code)) {
+        toast.error(t("validation.codeMin6"));
+        return;
+      }
+      setVerifiedCode(code);
+      setStep("password");
+      toast.success(t("auth.resetCodeAccepted"));
+    } finally {
+      setCheckingCode(false);
+    }
+  };
+
   const onResetPassword = async (data: ResetForm) => {
+    if (!/^\d{6}$/.test(verifiedCode)) {
+      toast.error(t("validation.codeMin6"));
+      setStep("code");
+      return;
+    }
+
     setResetting(true);
     try {
       await signIn("password", {
         email,
-        code: data.code,
+        code: verifiedCode,
         newPassword: data.newPassword,
         flow: "reset-verification",
       });
@@ -73,6 +125,9 @@ export default function ForgotPasswordPage() {
       router.push("/login");
     } catch (error) {
       toast.error(getAuthErrorMessage(error, t("auth.resetFailed")));
+      setVerifiedCode("");
+      codeForm.reset({ code: "" });
+      setStep("code");
     } finally {
       setResetting(false);
     }
@@ -81,18 +136,30 @@ export default function ForgotPasswordPage() {
   return (
     <GuestGate>
       <AuthShell
-        title={step === "email" ? t("auth.resetTitle") : t("auth.resetVerifyTitle")}
-        description={
-          step === "email"
-            ? t("auth.resetDesc")
-            : t("auth.resetVerifyDesc", { email })
-        }
+        title={shellTitle}
+        description={shellDescription}
         footer={
           <div className="text-center">
-            {step === "reset" ? (
+            {step === "password" ? (
               <button
                 type="button"
-                onClick={() => setStep("email")}
+                onClick={() => {
+                  setVerifiedCode("");
+                  codeForm.reset({ code: "" });
+                  setStep("code");
+                }}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {t("auth.backToCode")}
+              </button>
+            ) : step === "code" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setVerifiedCode("");
+                  setStep("email");
+                }}
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -110,7 +177,7 @@ export default function ForgotPasswordPage() {
           </div>
         }
       >
-        {step === "email" ? (
+        {step === "email" && (
           <form onSubmit={emailForm.handleSubmit(onRequestReset)} className="space-y-5">
             <FormField
               label={t("auth.email")}
@@ -133,26 +200,42 @@ export default function ForgotPasswordPage() {
               {sending ? t("auth.sendingReset") : t("auth.sendResetCode")}
             </Button>
           </form>
-        ) : (
-          <form onSubmit={resetForm.handleSubmit(onResetPassword)} className="space-y-5">
+        )}
+
+        {step === "code" && (
+          <form onSubmit={codeForm.handleSubmit(onContinueWithCode)} className="space-y-5">
             <FormField
               label={t("auth.resetCode")}
               htmlFor="code"
-              error={resetForm.formState.errors.code?.message}
+              error={codeForm.formState.errors.code?.message}
             >
               <InputIconWrapper icon={<KeyRound className="h-4 w-4" />}>
                 <Input
                   id="code"
                   type="text"
                   inputMode="numeric"
-                  className="pl-11 tracking-widest"
-                  {...resetForm.register("code")}
+                  maxLength={6}
+                  className="pl-11 tracking-[0.35em] text-center text-lg"
+                  {...codeForm.register("code")}
                   placeholder={t("auth.codePlaceholder")}
                   autoComplete="one-time-code"
                 />
               </InputIconWrapper>
             </FormField>
 
+            <Button
+              type="submit"
+              className="w-full font-semibold"
+              size="lg"
+              disabled={checkingCode}
+            >
+              {checkingCode ? t("auth.verifyingCode") : t("auth.verifyResetCode")}
+            </Button>
+          </form>
+        )}
+
+        {step === "password" && (
+          <form onSubmit={resetForm.handleSubmit(onResetPassword)} className="space-y-5">
             <FormField
               label={t("auth.newPassword")}
               htmlFor="newPassword"
@@ -165,6 +248,23 @@ export default function ForgotPasswordPage() {
                   className="pl-11"
                   {...resetForm.register("newPassword")}
                   placeholder={t("auth.passwordNewPlaceholder")}
+                  autoComplete="new-password"
+                />
+              </InputIconWrapper>
+            </FormField>
+
+            <FormField
+              label={t("auth.confirmPassword")}
+              htmlFor="confirmPassword"
+              error={resetForm.formState.errors.confirmPassword?.message}
+            >
+              <InputIconWrapper icon={<Lock className="h-4 w-4" />}>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  className="pl-11"
+                  {...resetForm.register("confirmPassword")}
+                  placeholder={t("auth.passwordConfirmPlaceholder")}
                   autoComplete="new-password"
                 />
               </InputIconWrapper>

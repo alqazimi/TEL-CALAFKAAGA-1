@@ -8,6 +8,7 @@ import {
   requireConversationParticipant,
 } from "./lib/access";
 import { hasPaidAccess } from "./lib/roles";
+import { getBlockedUserIds, isEitherBlocked } from "./lib/moderation";
 
 export const getConversations = query({
   args: {},
@@ -35,59 +36,64 @@ export const getConversations = query({
       .unique();
 
     const paid = myProfile ? hasPaidAccess(myProfile) : false;
+    const blockedIds = await getBlockedUserIds(ctx, userId);
 
-    return await Promise.all(
-      activeMatches.map(async (m) => {
-        const otherId = m.userA === userId ? m.userB : m.userA;
-        const profile = await ctx.db
-          .query("profiles")
-          .withIndex("by_userId", (q) => q.eq("userId", otherId))
-          .unique();
+    return (
+      await Promise.all(
+        activeMatches.map(async (m) => {
+          const otherId = m.userA === userId ? m.userB : m.userA;
+          if (blockedIds.has(otherId)) return null;
 
-        let imageUrl = null;
-        if (profile?.profileImageId) {
-          imageUrl = await ctx.storage.getUrl(profile.profileImageId);
-        }
+          const profile = await ctx.db
+            .query("profiles")
+            .withIndex("by_userId", (q) => q.eq("userId", otherId))
+            .unique();
 
-        const conversation = await ctx.db
-          .query("conversations")
-          .withIndex("by_match", (q) => q.eq("matchId", m._id))
-          .unique();
+          let imageUrl = null;
+          if (profile?.profileImageId) {
+            imageUrl = await ctx.storage.getUrl(profile.profileImageId);
+          }
 
-        const lastMessage = conversation
-          ? await ctx.db
-              .query("messages")
-              .withIndex("by_conversation", (q) =>
-                q.eq("conversationId", conversation._id)
-              )
-              .order("desc")
-              .first()
-          : null;
+          const conversation = await ctx.db
+            .query("conversations")
+            .withIndex("by_match", (q) => q.eq("matchId", m._id))
+            .unique();
 
-        const unreadCount = conversation
-          ? (
-              await ctx.db
+          const lastMessage = conversation
+            ? await ctx.db
                 .query("messages")
                 .withIndex("by_conversation", (q) =>
                   q.eq("conversationId", conversation._id)
                 )
-                .collect()
-            ).filter((msg) => !msg.read && msg.senderId !== userId).length
-          : 0;
+                .order("desc")
+                .first()
+            : null;
 
-        return {
-          matchId: m._id,
-          conversationId: conversation?._id,
-          chatUnlocked: paid || m.chatUnlocked,
-          profile: profile
-            ? { name: profile.name, imageUrl, userId: otherId }
-            : null,
-          lastMessage: lastMessage?.message ?? null,
-          lastMessageAt: conversation?.lastMessageAt ?? 0,
-          unreadCount,
-        };
-      })
-    );
+          const unreadCount = conversation
+            ? (
+                await ctx.db
+                  .query("messages")
+                  .withIndex("by_conversation", (q) =>
+                    q.eq("conversationId", conversation._id)
+                  )
+                  .collect()
+              ).filter((msg) => !msg.read && msg.senderId !== userId).length
+            : 0;
+
+          return {
+            matchId: m._id,
+            conversationId: conversation?._id,
+            chatUnlocked: paid || m.chatUnlocked,
+            profile: profile
+              ? { name: profile.name, imageUrl, userId: otherId }
+              : null,
+            lastMessage: lastMessage?.message ?? null,
+            lastMessageAt: conversation?.lastMessageAt ?? 0,
+            unreadCount,
+          };
+        })
+      )
+    ).filter((c): c is NonNullable<typeof c> => c !== null);
   },
 });
 
@@ -146,6 +152,11 @@ export const sendMessage = mutation({
       throw new Error("Please complete payment to unlock chat.");
     }
 
+    const otherId = conversation.participants.find((p) => p !== userId);
+    if (otherId && (await isEitherBlocked(ctx, userId, otherId))) {
+      throw new Error("You cannot message this user");
+    }
+
     if (args.imageId) {
       await assertStorageOwnership(ctx, userId, args.imageId);
     }
@@ -171,7 +182,6 @@ export const sendMessage = mutation({
       lastMessageAt: Date.now(),
     });
 
-    const otherId = conversation.participants.find((p) => p !== userId);
     if (otherId) {
       const senderProfile = await ctx.db
         .query("profiles")

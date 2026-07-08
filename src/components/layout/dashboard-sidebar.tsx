@@ -15,6 +15,7 @@ import {
   CreditCard,
   TrendingUp,
   Megaphone,
+  Flag,
 } from "lucide-react";
 import type { TranslationPath } from "@/lib/i18n/translations";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -48,6 +49,7 @@ const STAFF_NAV: {
   { tab: "users", labelKey: "adminPage.users", icon: Users },
   { tab: "payments", labelKey: "adminPage.payments", icon: CreditCard },
   { tab: "analytics", labelKey: "adminPage.analytics", icon: TrendingUp },
+  { tab: "reports", labelKey: "adminPage.reports", icon: Flag },
   { tab: "announcements", labelKey: "adminPage.announcements", icon: Megaphone },
 ];
 

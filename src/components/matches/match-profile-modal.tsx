@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -107,6 +108,14 @@ export function MatchProfileModal({ match, onClose, onLike }: MatchProfileModalP
             <Button variant="outline" className="flex-1 font-semibold" onClick={() => onLike("pass")}>
               {t("matchesPage.pass")}
             </Button>
+          </div>
+
+          <div className="pt-1">
+            <ReportBlockMenu
+              userId={match.userId}
+              userName={match.name}
+              onDone={onClose}
+            />
           </div>
         </div>
       </motion.div>

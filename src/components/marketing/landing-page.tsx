@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   User,
   Shield,
   Lock,
   Landmark,
-  Quote,
   UserPlus,
   Search,
   Heart,
@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FAQAccordion } from "@/components/marketing/faq-accordion";
+import { FindYourMatchBar } from "@/components/marketing/find-your-match-bar";
 import {
   MIN_COMPATIBILITY_SCORE,
   PERSONAL_SUPPORT_PRICE,
@@ -32,27 +33,12 @@ import {
   WHATSAPP_URL,
 } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
-import { cn } from "@/lib/utils";
 
 const fadeUp = {
   initial: { opacity: 0, y: 24 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.5 },
 };
-
-function QuoteCard({ className }: { className?: string }) {
-  const { t } = useTranslation();
-
-  return (
-    <div className={cn("glass rounded-2xl p-6 sm:p-8 shadow-2xl", className)}>
-      <Quote className="h-9 w-9 text-primary mb-4" />
-      <p className="text-base sm:text-lg text-foreground italic leading-relaxed">
-        &ldquo;{t("landing.quote")}&rdquo;
-      </p>
-      <p className="mt-4 text-sm text-muted-foreground">— {t("landing.quoteAuthor")}</p>
-    </div>
-  );
-}
 
 function AppPreviewMock() {
   const { t } = useTranslation();
@@ -187,96 +173,88 @@ export function LandingPage() {
   return (
     <div className="overflow-hidden">
       {/* Hero */}
-      <section className="relative min-h-[600px] flex items-center bg-gradient-to-br from-[#4a0d1f] via-[#8a1230] to-primary/50 dark:from-[#2a0512] dark:via-[#4a0d1f] dark:to-primary/30">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/30 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#4a0d1f]/90 via-[#4a0d1f]/70 to-[#4a0d1f]/40 dark:from-black/90 dark:via-black/75 dark:to-black/50" />
+      <section className="relative min-h-[640px] sm:min-h-[720px] flex items-end sm:items-center overflow-hidden bg-[#4a0d1f]">
+        <Image
+          src="/images/hero-couple.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[72%_center] sm:object-center"
+          aria-hidden
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#4a0d1f]/95 via-[#4a0d1f]/75 to-[#4a0d1f]/35 dark:from-black/95 dark:via-black/80 dark:to-black/45" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#4a0d1f]/80 via-transparent to-[#4a0d1f]/40" />
 
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 w-full">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial="initial"
-              animate="animate"
-              variants={{ animate: { transition: { staggerChildren: 0.1 } } }}
-            >
-              <motion.span
-                variants={fadeUp}
-                className="inline-flex items-center rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground mb-6"
-              >
-                {t("landing.badge")}
-              </motion.span>
-
-              <motion.h1
-                variants={fadeUp}
-                className="font-display text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]"
-              >
-                {t("landing.heroTitle")}{" "}
-                <span className="text-primary">{t("landing.heroHighlight")}</span>
-              </motion.h1>
-
-              <motion.p
-                variants={fadeUp}
-                className="mt-6 text-lg text-white/85 max-w-xl leading-relaxed"
-              >
-                {t("landing.heroDesc")}
-              </motion.p>
-
-              <motion.div
-                variants={fadeUp}
-                className="mt-8 flex flex-col sm:flex-row gap-3"
-              >
-                <AuthRegisterCta
-                  registerLabel={t("landing.heroCta", { price: REGISTRATION_PRICE })}
-                  className="text-base px-8"
-                  size="lg"
-                />
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                >
-                  <Link href="/how-it-works">{t("landing.seeHowItWorks")}</Link>
-                </Button>
-              </motion.div>
-
-              <motion.div
-                variants={fadeUp}
-                className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4"
-              >
-                {heroFeatures.map((f) => (
-                  <div key={f.label} className="flex flex-col items-center text-center gap-2">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 text-primary">
-                      <f.icon className="h-5 w-5" />
-                    </div>
-                    <span className="text-xs font-medium text-white/90">{f.label}</span>
-                  </div>
-                ))}
-              </motion.div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              className="hidden lg:block"
-            >
-              <QuoteCard className="max-w-md ml-auto" />
-            </motion.div>
-          </div>
-
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-            className="mt-10 lg:hidden"
+            initial="initial"
+            animate="animate"
+            variants={{ animate: { transition: { staggerChildren: 0.1 } } }}
+            className="max-w-2xl"
           >
-            <QuoteCard />
+            <motion.span
+              variants={fadeUp}
+              className="inline-flex items-center rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground mb-6"
+            >
+              {t("landing.badge")}
+            </motion.span>
+
+            <motion.h1
+              variants={fadeUp}
+              className="font-display text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]"
+            >
+              {t("landing.heroTitle")}{" "}
+              <span className="text-primary">{t("landing.heroHighlight")}</span>
+            </motion.h1>
+
+            <motion.p
+              variants={fadeUp}
+              className="mt-6 text-lg text-white/85 max-w-xl leading-relaxed"
+            >
+              {t("landing.heroDesc")}
+            </motion.p>
+
+            <motion.div
+              variants={fadeUp}
+              className="mt-8 flex flex-col sm:flex-row gap-3"
+            >
+              <AuthRegisterCta
+                registerLabel={t("landing.heroCta", { price: REGISTRATION_PRICE })}
+                className="text-base px-8"
+                size="lg"
+              />
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+              >
+                <Link href="/how-it-works">{t("landing.seeHowItWorks")}</Link>
+              </Button>
+            </motion.div>
+
+            <motion.div
+              variants={fadeUp}
+              className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4"
+            >
+              {heroFeatures.map((f) => (
+                <div key={f.label} className="flex flex-col items-center text-center gap-2">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 text-primary backdrop-blur-sm">
+                    <f.icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-xs font-medium text-white/90">{f.label}</span>
+                </div>
+              ))}
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
+      <FindYourMatchBar />
+
       {/* Pricing */}
-      <section className="relative -mt-16 z-10 px-4 sm:px-6 lg:px-8">
+      <section className="relative z-10 mt-8 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="rounded-3xl bg-card border border-border shadow-xl p-8 lg:p-12 space-y-8">
             <div className="text-center max-w-2xl mx-auto">

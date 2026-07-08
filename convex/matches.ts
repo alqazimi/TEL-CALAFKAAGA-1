@@ -5,6 +5,7 @@ import { internal } from "./_generated/api";
 import { requireActiveProfile, requireAuthUserId } from "./lib/access";
 import { hasPaidAccess, isStaffRole } from "./lib/roles";
 import { effectiveReligiousLevel } from "./lib/profileEnrichment";
+import { getBlockedUserIds, isEitherBlocked } from "./lib/moderation";
 
 export const getMatches = query({
   args: {
@@ -44,10 +45,11 @@ export const getMatches = query({
     const passedIds = new Set(
       myLikes.filter((l) => l.action === "pass").map((l) => l.toUserId)
     );
+    const blockedIds = await getBlockedUserIds(ctx, userId);
 
     const results = await Promise.all(
       scores
-        .filter((s) => s.score >= 70 && !passedIds.has(s.userB))
+        .filter((s) => s.score >= 70 && !passedIds.has(s.userB) && !blockedIds.has(s.userB))
         .map(async (s) => {
           const profile = await ctx.db
             .query("profiles")
@@ -120,6 +122,10 @@ export const likeUser = mutation({
     }
     if (!isStaffRole(myProfile.role) && !myProfile.approved) {
       throw new Error("Your profile is pending admin approval");
+    }
+
+    if (await isEitherBlocked(ctx, userId, args.toUserId)) {
+      throw new Error("You cannot interact with this user");
     }
 
     const existing = await ctx.db
@@ -228,35 +234,40 @@ export const getMyMatches = query({
     const allMatches = [...matchesA, ...matchesB].filter(
       (m) => m.status === "active"
     );
+    const blockedIds = await getBlockedUserIds(ctx, userId);
 
-    return await Promise.all(
-      allMatches.map(async (m) => {
-        const otherId = m.userA === userId ? m.userB : m.userA;
-        const profile = await ctx.db
-          .query("profiles")
-          .withIndex("by_userId", (q) => q.eq("userId", otherId))
-          .unique();
+    return (
+      await Promise.all(
+        allMatches.map(async (m) => {
+          const otherId = m.userA === userId ? m.userB : m.userA;
+          if (blockedIds.has(otherId)) return null;
 
-        let imageUrl = null;
-        if (profile?.profileImageId) {
-          imageUrl = await ctx.storage.getUrl(profile.profileImageId);
-        }
+          const profile = await ctx.db
+            .query("profiles")
+            .withIndex("by_userId", (q) => q.eq("userId", otherId))
+            .unique();
 
-        const conversation = await ctx.db
-          .query("conversations")
-          .withIndex("by_match", (q) => q.eq("matchId", m._id))
-          .unique();
+          let imageUrl = null;
+          if (profile?.profileImageId) {
+            imageUrl = await ctx.storage.getUrl(profile.profileImageId);
+          }
 
-        return {
-          matchId: m._id,
-          conversationId: conversation?._id,
-          score: m.score,
-          chatUnlocked: m.chatUnlocked,
-          profile: profile
-            ? { ...profile, imageUrl, userId: otherId }
-            : null,
-        };
-      })
-    );
+          const conversation = await ctx.db
+            .query("conversations")
+            .withIndex("by_match", (q) => q.eq("matchId", m._id))
+            .unique();
+
+          return {
+            matchId: m._id,
+            conversationId: conversation?._id,
+            score: m.score,
+            chatUnlocked: m.chatUnlocked,
+            profile: profile
+              ? { ...profile, imageUrl, userId: otherId }
+              : null,
+          };
+        })
+      )
+    ).filter((m): m is NonNullable<typeof m> => m !== null);
   },
 });

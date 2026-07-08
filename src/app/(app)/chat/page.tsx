@@ -36,6 +36,7 @@ import { REGISTRATION_PRICE } from "@/lib/constants";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
+import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 
 function MessagesEmptyState() {
   const { t } = useTranslation();
@@ -330,6 +331,14 @@ export default function ChatPage() {
                       <p className="text-xs text-muted-foreground">{t("chatPage.activeNow")}</p>
                     )}
                   </div>
+                  {activeConv.profile?.userId && (
+                    <ReportBlockMenu
+                      compact
+                      userId={activeConv.profile.userId}
+                      userName={activeConv.profile.name}
+                      onDone={() => setActiveConversation(null)}
+                    />
+                  )}
                 </div>
 
                 {!activeConv.chatUnlocked ? (
