@@ -30,6 +30,7 @@ import {
   MIN_COMPATIBILITY_SCORE,
   PERSONAL_SUPPORT_PRICE,
   REGISTRATION_PRICE,
+  SITE_BRAND_NAME,
   WHATSAPP_URL,
 } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
@@ -193,6 +194,13 @@ export function LandingPage() {
             variants={{ animate: { transition: { staggerChildren: 0.1 } } }}
             className="max-w-2xl"
           >
+            <motion.p
+              variants={fadeUp}
+              className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-primary sm:text-base"
+            >
+              {SITE_BRAND_NAME}
+            </motion.p>
+
             <motion.span
               variants={fadeUp}
               className="inline-flex items-center rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground mb-6"
