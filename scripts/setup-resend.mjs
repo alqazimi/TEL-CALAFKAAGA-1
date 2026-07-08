@@ -5,7 +5,7 @@
  * Usage:
  *   node scripts/setup-resend.mjs re_YOUR_RESEND_KEY
  *   node scripts/setup-resend.mjs re_YOUR_RESEND_KEY --prod
- *   AUTH_EMAIL_FROM="Calaf <hello@helcalfkaaga.com>" SUPPORT_EMAIL=hello@helcalfkaaga.com \
+ *   AUTH_EMAIL_FROM="Calaf <hello@helcalafkaaga.com>" SUPPORT_EMAIL=hello@helcalafkaaga.com \
  *     node scripts/setup-resend.mjs re_YOUR_KEY --prod
  */
 import { spawnSync } from "node:child_process";
@@ -49,7 +49,7 @@ if (emailFrom) {
   console.log(`AUTH_EMAIL_FROM set to: ${emailFrom}`);
 } else {
   console.log(
-    "Tip: set AUTH_EMAIL_FROM (e.g. Calaf <hello@helcalfkaaga.com>) after verifying your domain in Resend."
+    "Tip: set AUTH_EMAIL_FROM (e.g. Calaf <hello@helcalafkaaga.com>) after verifying your domain in Resend."
   );
 }
 
@@ -61,6 +61,6 @@ if (supportEmail) {
 console.log("\nResend configured successfully!");
 if (useProd) {
   console.log(
-    "Verify helcalfkaaga.com in Resend so production emails are not sent from onboarding@resend.dev."
+    "Verify helcalafkaaga.com in Resend so production emails are not sent from onboarding@resend.dev."
   );
 }

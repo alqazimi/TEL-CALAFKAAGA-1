@@ -104,7 +104,7 @@ convex/
 - **Admin Dashboard** — User management, analytics, announcements
 - **Dark Mode** — System-aware theme switching
 
-## Deployment (helcalfkaaga.com)
+## Deployment (helcalafkaaga.com)
 
 ### 1. Convex production
 
@@ -119,21 +119,21 @@ Copy the **production** URL (e.g. `https://your-project.convex.cloud`).
 | Variable | Value |
 |----------|-------|
 | `NEXT_PUBLIC_CONVEX_URL` | Production Convex URL from step 1 |
-| `NEXT_PUBLIC_APP_URL` | `https://helcalfkaaga.com` |
+| `NEXT_PUBLIC_APP_URL` | `https://helcalafkaaga.com` |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` |
 
 ### 3. Convex production secrets
 
 ```bash
 # Auth (required)
-SITE_URL=https://helcalfkaaga.com npm run setup:auth:prod
+SITE_URL=https://helcalafkaaga.com npm run setup:auth:prod
 
 # Stripe (required for payments)
 npm run setup:stripe:prod -- sk_live_...
 npx convex env set STRIPE_WEBHOOK_SECRET whsec_... --prod
 
 # Password reset, signup verification & contact form (Resend)
-AUTH_EMAIL_FROM="Calaf <hello@helcalfkaaga.com>" SUPPORT_EMAIL=hello@helcalfkaaga.com \
+AUTH_EMAIL_FROM="Calaf <hello@helcalafkaaga.com>" SUPPORT_EMAIL=hello@helcalafkaaga.com \
   npm run setup:resend:prod -- re_...
 
 # Admin bootstrap (one-time)
@@ -150,13 +150,13 @@ Run `npm run convex:webhook-url` (uses `NEXT_PUBLIC_CONVEX_URL` from `.env.local
 
 ### 5. Google Search Console
 
-Domain `helcalfkaaga.com` — verification file is in `public/googleca20de5c3c61d824.html`.
+Domain `helcalafkaaga.com` — verification file is in `public/googleca20de5c3c61d824.html`.
 
 ### Vercel
 
 1. Push to GitHub and import the repo in Vercel
 2. Add the environment variables from step 2
-3. Point your custom domain `helcalfkaaga.com` to Vercel
+3. Point your custom domain `helcalafkaaga.com` to Vercel
 4. Redeploy after adding variables
 
 ### 6. Verify before launch

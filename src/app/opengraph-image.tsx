@@ -76,7 +76,7 @@ export default function OpenGraphImage() {
             opacity: 0.7,
           }}
         >
-          helcalfkaaga.com
+          helcalafkaaga.com
         </div>
       </div>
     ),

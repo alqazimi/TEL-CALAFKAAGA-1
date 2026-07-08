@@ -107,7 +107,7 @@ if (appUrl) {
   if (useProd && appUrl.includes("localhost")) {
     pass(`NEXT_PUBLIC_APP_URL = ${appUrl} (fine for local dev)`);
     warn(
-      "On Vercel only: set NEXT_PUBLIC_APP_URL=https://helcalfkaaga.com (localhost here is normal)"
+      "On Vercel only: set NEXT_PUBLIC_APP_URL=https://helcalafkaaga.com (localhost here is normal)"
     );
   } else {
     pass(`NEXT_PUBLIC_APP_URL = ${appUrl}`);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Print production deploy checklist for helcalfkaaga.com
+ * Print production deploy checklist for helcalafkaaga.com
  *
  * Usage: npm run deploy:checklist
  */
@@ -9,7 +9,7 @@ const steps = [
   ["1. Convex production deploy", "npx convex deploy"],
   [
     "2. Convex Auth (JWT + SITE_URL)",
-    "SITE_URL=https://helcalfkaaga.com npm run setup:auth:prod",
+    "SITE_URL=https://helcalafkaaga.com npm run setup:auth:prod",
   ],
   [
     "3. Stripe keys on Convex",
@@ -18,8 +18,8 @@ const steps = [
   ],
   [
     "4. Resend (password reset, signup verify, contact)",
-    'AUTH_EMAIL_FROM="Calaf <hello@helcalfkaaga.com>" SUPPORT_EMAIL=hello@helcalfkaaga.com npm run setup:resend:prod -- re_...',
-    "Verify helcalfkaaga.com domain in Resend dashboard",
+    'AUTH_EMAIL_FROM="Calaf <hello@helcalafkaaga.com>" SUPPORT_EMAIL=hello@helcalafkaaga.com npm run setup:resend:prod -- re_...',
+    "Verify helcalafkaaga.com domain in Resend dashboard",
   ],
   [
     "5. Stripe webhook",
@@ -29,7 +29,7 @@ const steps = [
   [
     "6. Vercel",
     "NEXT_PUBLIC_CONVEX_URL = production Convex URL",
-    "Custom domain: helcalfkaaga.com",
+    "Custom domain: helcalafkaaga.com",
   ],
   [
     "7. Admin bootstrap (one-time)",

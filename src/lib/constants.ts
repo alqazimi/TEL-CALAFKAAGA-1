@@ -1,5 +1,5 @@
 export const APP_NAME = "Calaf";
-export const PRODUCTION_SITE_URL = "https://helcalfkaaga.com";
+export const PRODUCTION_SITE_URL = "https://helcalafkaaga.com";
 export const APP_TAGLINE = "Find Your Perfect Match";
 export const APP_DESCRIPTION =
   "We connect serious men and women for marriage based on Islamic values, trust, and respect.";
@@ -9,7 +9,7 @@ export const WHATSAPP_GREEN = "#25D366";
 export const WHATSAPP_NUMBER = "254793692710";
 export const WHATSAPP_DISPLAY = "+254 793 692710";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
-export const SUPPORT_EMAIL = "hello@helcalfkaaga.com";
+export const SUPPORT_EMAIL = "hello@helcalafkaaga.com";
 export const REGISTRATION_PRICE = 15;
 export const PERSONAL_SUPPORT_PRICE = 20;
 /** @deprecated Use PERSONAL_SUPPORT_PRICE */
