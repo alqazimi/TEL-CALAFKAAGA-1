@@ -56,6 +56,19 @@ export function createResetPasswordSchema(t: TranslateFn) {
   });
 }
 
+export function createChangePasswordSchema(t: TranslateFn) {
+  return z
+    .object({
+      currentPassword: z.string().min(1, t("validation.currentPasswordRequired")),
+      newPassword: z.string().min(8, t("validation.passwordMin8")),
+      confirmPassword: z.string().min(1, t("validation.confirmPasswordRequired")),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t("validation.passwordsMismatch"),
+      path: ["confirmPassword"],
+    });
+}
+
 export function createContactSchema(t: TranslateFn) {
   return z.object({
     name: z.string().min(2, t("validation.contactNameRequired")),

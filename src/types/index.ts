@@ -135,6 +135,7 @@ export interface AdminAnalytics {
 
 export interface CurrentUser {
   userId: Id<"users">;
+  email: string | null;
   profile: Profile | null;
 }
 

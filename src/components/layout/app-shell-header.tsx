@@ -90,7 +90,7 @@ export function AppShellHeader() {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <BrandLogo href="/dashboard" size="sm" className="min-w-0" />
+            <BrandLogo href={isStaffRole(user?.profile?.role) ? "/admin" : "/dashboard"} size="sm" className="min-w-0" />
           </div>
 
           <div className="flex items-center gap-1 shrink-0">

@@ -36,11 +36,17 @@ export default function RegisterPage() {
   const onSubmitAccount = async (data: AccountForm) => {
     setLoading(true);
     try {
-      await signIn("password", {
+      const result = await signIn("password", {
         email: data.email,
         password: data.password,
         flow: "signUp",
       });
+
+      if (result.signingIn === false) {
+        toast.error(t("validation.registrationFailed"));
+        return;
+      }
+
       toast.success(t("auth.registerSuccess"));
       router.push("/register/details");
     } catch (error) {

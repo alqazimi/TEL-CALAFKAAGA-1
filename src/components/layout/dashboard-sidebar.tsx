@@ -144,6 +144,18 @@ export function DashboardSidebar() {
                   </Link>
                 );
               })}
+              <Link
+                href="/profile"
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all mt-1",
+                  pathname === "/profile"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <User className="h-5 w-5 shrink-0" />
+                {t("app.myProfile")}
+              </Link>
             </>
           )}
         </nav>

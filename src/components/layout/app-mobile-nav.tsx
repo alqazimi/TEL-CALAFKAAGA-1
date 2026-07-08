@@ -11,6 +11,7 @@ import {
   CreditCard,
   TrendingUp,
   Megaphone,
+  User,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -47,24 +48,33 @@ export function AppMobileNav() {
   // Admins and owners get admin-section navigation instead of member tabs.
   if (isStaffRole(user?.profile?.role)) {
     const onAdmin = pathname.startsWith("/admin");
+    const onProfile = pathname === "/profile";
     const currentTab = searchParams.get("tab") ?? "users";
+    const staffItems = [
+      ...STAFF_TABS,
+      { tab: "profile", labelKey: "app.myProfile" as TranslationPath, icon: User, href: "/profile" },
+    ];
     return (
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
-        <div className="flex items-stretch justify-around px-1">
-          {STAFF_TABS.map((item) => {
+        <div className="flex items-stretch justify-around px-0.5">
+          {staffItems.map((item) => {
             const Icon = item.icon;
-            const isActive = onAdmin && currentTab === item.tab;
+            const isActive =
+              "href" in item
+                ? onProfile
+                : onAdmin && currentTab === item.tab;
+            const href = "href" in item ? item.href : `/admin?tab=${item.tab}`;
             return (
               <Link
                 key={item.tab}
-                href={`/admin?tab=${item.tab}`}
+                href={href}
                 className={cn(
-                  "flex flex-1 flex-col items-center justify-center gap-1 py-2.5 min-h-[3.25rem] transition-colors",
+                  "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 min-h-[3.25rem] px-0.5 transition-colors",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >
                 <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
-                <span className="text-[11px] font-medium leading-none">
+                <span className="text-[10px] font-medium leading-none text-center">
                   {t(item.labelKey)}
                 </span>
               </Link>

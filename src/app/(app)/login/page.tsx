@@ -49,11 +49,16 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      await signIn("password", {
+      const result = await signIn("password", {
         email: data.email,
         password: data.password,
         flow: "signIn",
       });
+
+      if (result.signingIn === false) {
+        toast.error(t("validation.invalidCredentials"));
+        return;
+      }
 
       await completeSignIn();
     } catch (error) {

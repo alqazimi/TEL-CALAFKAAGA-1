@@ -7,9 +7,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Camera, Save, Pencil } from "lucide-react";
+import { Camera, Save, Pencil, Crown, Shield, Mail } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
-import type { Profile } from "@/types";
+import type { CurrentUser, Profile } from "@/types";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
+import { ChangePasswordCard } from "@/components/profile/change-password-card";
 import type { Preferences } from "@/lib/profile-progress";
-import { isStaffRole } from "@/lib/access";
+import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 
 const profileSchema = z.object({
@@ -32,6 +33,7 @@ type ProfileForm = z.infer<typeof profileSchema>;
 
 export default function ProfilePage() {
   const { t } = useTranslation();
+  const currentUser = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
   const profile = useQuery(api.profiles.getProfile, {}) as (Profile & { imageUrl?: string | null }) | null | undefined;
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
   const updateProfile = useMutation(api.profiles.updateProfile);
@@ -83,7 +85,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (profile === undefined) {
+  if (profile === undefined || currentUser === undefined) {
     return (
       <DashboardLayout>
         <Skeleton className="h-96 w-full max-w-2xl" />
@@ -92,6 +94,11 @@ export default function ProfilePage() {
   }
 
   const isStaff = isStaffRole(profile?.role);
+  const roleLabel = isOwnerRole(profile?.role)
+    ? t("profilePage.roleOwner")
+    : profile?.role === "admin"
+      ? t("profilePage.roleAdmin")
+      : t("profilePage.roleMember");
 
   return (
     <DashboardLayout>
@@ -101,59 +108,95 @@ export default function ProfilePage() {
         )}
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <Avatar className="h-24 w-24">
+          <CardContent className={isStaff ? "p-5" : "p-6"}>
+            <div className={`flex items-center gap-4 ${isStaff ? "gap-3" : "gap-6"}`}>
+              <div className="relative shrink-0">
+                <Avatar className={isStaff ? "h-16 w-16" : "h-24 w-24"}>
                   <AvatarImage src={profile?.imageUrl ?? undefined} />
-                  <AvatarFallback className="text-2xl">
+                  <AvatarFallback className={isStaff ? "text-lg" : "text-2xl"}>
                     {profile?.name?.charAt(0) ?? "?"}
                   </AvatarFallback>
                 </Avatar>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
-                >
-                  <Camera className="h-4 w-4" />
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
+                {!isStaff && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </>
+                )}
               </div>
-              <div>
-                <h2 className="text-xl font-bold">{profile?.name}</h2>
-                <p className="text-muted-foreground capitalize">{profile?.gender}</p>
-                <div className="flex gap-2 mt-2">
-                  {profile?.verified && (
-                    <Badge variant="success">{t("dashboard.verified")}</Badge>
-                  )}
-                  {profile?.questionnaireComplete && (
-                    <Badge variant="secondary">{t("dashboard.profileComplete")}</Badge>
-                  )}
-                </div>
+              <div className="min-w-0 flex-1">
+                <h2 className={`font-bold truncate ${isStaff ? "text-lg" : "text-xl"}`}>
+                  {profile?.name}
+                </h2>
+                {isStaff ? (
+                  <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+                    {currentUser?.email && (
+                      <p className="flex items-center gap-1.5 truncate">
+                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{currentUser.email}</span>
+                      </p>
+                    )}
+                    <Badge
+                      className={
+                        isOwnerRole(profile?.role)
+                          ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                          : "bg-primary/10 text-primary"
+                      }
+                    >
+                      {isOwnerRole(profile?.role) ? (
+                        <Crown className="h-3 w-3 mr-1" />
+                      ) : (
+                        <Shield className="h-3 w-3 mr-1" />
+                      )}
+                      {roleLabel}
+                    </Badge>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-muted-foreground capitalize">{profile?.gender}</p>
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {profile?.verified && (
+                        <Badge variant="success">{t("dashboard.verified")}</Badge>
+                      )}
+                      {profile?.questionnaireComplete && (
+                        <Badge variant="secondary">{t("dashboard.profileComplete")}</Badge>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t("profilePage.editProfile")}</CardTitle>
+          <CardHeader className={isStaff ? "pb-3" : undefined}>
+            <CardTitle className="text-base">
+              {isStaff ? t("profilePage.accountSettings") : t("profilePage.editProfile")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <FormField label={t("profilePage.name")} htmlFor="name" error={errors.name?.message} required>
                 <Input id="name" {...register("name")} />
               </FormField>
               <FormField label={t("profilePage.phone")} htmlFor="phone" hint={t("profilePage.phoneHint")}>
                 <Input id="phone" {...register("phone")} placeholder={t("profilePage.phonePlaceholder")} />
               </FormField>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} size={isStaff ? "sm" : "default"}>
                 <Save className="h-4 w-4 mr-2" />
                 {isSubmitting ? t("profilePage.saving") : t("profilePage.saveChanges")}
               </Button>
@@ -161,7 +204,9 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {profile?.questionnaireComplete && (
+        <ChangePasswordCard />
+
+        {!isStaff && profile?.questionnaireComplete && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
               <CardTitle>{t("profilePage.profileDetails")}</CardTitle>
