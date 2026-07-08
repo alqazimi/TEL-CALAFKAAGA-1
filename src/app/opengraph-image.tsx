@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
-import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
+import { APP_DESCRIPTION, APP_NAME, SITE_BRAND_NAME } from "@/lib/constants";
 
-export const alt = `${APP_NAME} — Islamic Matchmaking`;
+export const alt = `${SITE_BRAND_NAME} — ${APP_NAME} Islamic Matchmaking`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -27,7 +27,7 @@ export default function OpenGraphImage() {
             display: "flex",
             alignItems: "center",
             gap: 20,
-            marginBottom: 28,
+            marginBottom: 20,
           }}
         >
           <div
@@ -51,8 +51,13 @@ export default function OpenGraphImage() {
               }}
             />
           </div>
-          <div style={{ fontSize: 72, fontWeight: 700, letterSpacing: -2 }}>
-            {APP_NAME}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: -2 }}>
+              {APP_NAME}
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 500, opacity: 0.9 }}>
+              {SITE_BRAND_NAME}
+            </div>
           </div>
         </div>
         <div style={{ fontSize: 40, fontWeight: 600, opacity: 0.95 }}>

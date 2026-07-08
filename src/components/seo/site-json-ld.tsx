@@ -2,18 +2,30 @@ import {
   APP_DESCRIPTION,
   APP_NAME,
   PRODUCTION_SITE_URL,
+  SITE_BRAND_NAME,
   SUPPORT_EMAIL,
   WHATSAPP_DISPLAY,
 } from "@/lib/constants";
 
 export function SiteJsonLd() {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL ?? PRODUCTION_SITE_URL;
+  const siteUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ?? PRODUCTION_SITE_URL
+  ).replace(/\/$/, "");
+  const logoUrl = `${siteUrl}/logo`;
 
   const organization = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: APP_NAME,
+    name: SITE_BRAND_NAME,
+    alternateName: [APP_NAME, "Calaf Matchmaking"],
     url: siteUrl,
+    logo: {
+      "@type": "ImageObject",
+      url: logoUrl,
+      width: 512,
+      height: 512,
+    },
+    image: logoUrl,
     email: SUPPORT_EMAIL,
     description: APP_DESCRIPTION,
     contactPoint: {
@@ -27,10 +39,19 @@ export function SiteJsonLd() {
   const website = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: APP_NAME,
+    name: SITE_BRAND_NAME,
+    alternateName: APP_NAME,
     url: siteUrl,
     description: APP_DESCRIPTION,
     inLanguage: ["en", "so"],
+    publisher: {
+      "@type": "Organization",
+      name: SITE_BRAND_NAME,
+      logo: {
+        "@type": "ImageObject",
+        url: logoUrl,
+      },
+    },
   };
 
   return (

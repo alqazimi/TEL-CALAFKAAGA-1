@@ -1,4 +1,6 @@
 export const APP_NAME = "Calaf";
+/** Full brand / business name — used for Google site name & Organization schema. */
+export const SITE_BRAND_NAME = "Hel Calafkaaga";
 export const PRODUCTION_SITE_URL = "https://helcalafkaaga.com";
 export const APP_TAGLINE = "Find Your Perfect Match";
 export const APP_DESCRIPTION =

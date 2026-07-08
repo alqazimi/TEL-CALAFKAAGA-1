@@ -4,12 +4,13 @@ import {
   APP_NAME,
   BRAND_NAVY,
   BRAND_PINK,
+  SITE_BRAND_NAME,
 } from "@/lib/constants";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: `${APP_NAME} — Islamic Matchmaking`,
-    short_name: APP_NAME,
+    name: `${SITE_BRAND_NAME} — ${APP_NAME}`,
+    short_name: SITE_BRAND_NAME,
     description: APP_DESCRIPTION,
     start_url: "/",
     scope: "/",
@@ -23,8 +24,15 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       {
         src: "/icon",
-        sizes: "32x32",
+        sizes: "48x48",
         type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/logo",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
       },
       {
         src: "/apple-icon",

@@ -1,10 +1,9 @@
 import { ImageResponse } from "next/og";
 
-/** Google recommends favicons of at least 48×48. */
-export const size = { width: 48, height: 48 };
-export const contentType = "image/png";
+/** Square brand logo for Google Organization schema (min ~112×112). */
+export const runtime = "edge";
 
-export default function Icon() {
+export async function GET() {
   return new ImageResponse(
     (
       <div
@@ -14,14 +13,13 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #4a0d1f, #E91E63)",
-          borderRadius: 10,
+          background: "linear-gradient(135deg, #2a0512 0%, #4a0d1f 45%, #E91E63 100%)",
         }}
       >
         <div
           style={{
-            width: 20,
-            height: 20,
+            width: 220,
+            height: 220,
             background: "#ffffff",
             borderRadius: "50% 50% 50% 0",
             transform: "rotate(-45deg)",
@@ -29,6 +27,12 @@ export default function Icon() {
         />
       </div>
     ),
-    { ...size }
+    {
+      width: 512,
+      height: 512,
+      headers: {
+        "Cache-Control": "public, max-age=86400, immutable",
+      },
+    }
   );
 }
