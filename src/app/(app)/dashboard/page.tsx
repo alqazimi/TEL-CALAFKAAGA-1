@@ -42,16 +42,17 @@ export default function DashboardPage() {
   if (user === undefined || isStaff) {
     return (
       <DashboardLayout>
-        <div className="space-y-6 max-w-2xl">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-40 w-full rounded-2xl" />
+        <div className="space-y-6 max-w-2xl" role="status">
+          <Skeleton className="h-8 w-48" aria-hidden />
+          <Skeleton className="h-40 w-full rounded-2xl" aria-hidden />
+          <p className="text-sm text-muted-foreground">{t("common.loadingData")}</p>
         </div>
       </DashboardLayout>
     );
   }
 
   const profile = user?.profile;
-  const firstName = profile?.name?.split(" ")[0] ?? "there";
+  const firstName = profile?.name?.split(" ")[0] ?? t("dashboard.guestName");
   const isComplete = profile?.questionnaireComplete ?? false;
 
   return (

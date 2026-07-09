@@ -111,7 +111,10 @@ export default function MatchesPage() {
   if (profile === undefined) {
     return (
       <DashboardLayout>
-        <Skeleton className="h-[36rem] w-full max-w-lg mx-auto rounded-2xl" />
+        <div className="w-full max-w-lg mx-auto space-y-4" role="status">
+          <Skeleton className="h-[36rem] w-full rounded-2xl" aria-hidden />
+          <p className="text-center text-sm text-muted-foreground">{t("common.loadingData")}</p>
+        </div>
       </DashboardLayout>
     );
   }

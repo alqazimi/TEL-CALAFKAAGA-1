@@ -62,7 +62,7 @@ export default function LoginPage() {
 
       await completeSignIn();
     } catch (error) {
-      toast.error(getAuthErrorMessage(error, t("validation.invalidCredentials")));
+      toast.error(getAuthErrorMessage(error, t("validation.invalidCredentials"), t));
     } finally {
       setLoading(false);
     }

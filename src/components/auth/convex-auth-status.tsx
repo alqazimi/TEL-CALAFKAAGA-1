@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useConvexAuth } from "convex/react";
 import { isConvexConfigured } from "@/lib/convex-client";
+import { useTranslation } from "@/lib/i18n/context";
 
 const AUTH_TIMEOUT_MS = 12_000;
 
@@ -22,6 +23,7 @@ export function ConvexAuthStatus({ children }: { children: ReactNode }) {
   const { isLoading } = useConvexAuth();
   const [timedOut, setTimedOut] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setMounted(true);
@@ -40,16 +42,17 @@ export function ConvexAuthStatus({ children }: { children: ReactNode }) {
 
   if (!isConvexConfigured()) {
     return (
-      <SetupMessage title="Convex is not configured">
+      <SetupMessage title={t("setup.convexMissingTitle")}>
         <p>
-          <code className="text-foreground">NEXT_PUBLIC_CONVEX_URL</code> is missing on
-          this deployment.
+          {t("setup.convexMissingBody", { envVar: "NEXT_PUBLIC_CONVEX_URL" })}
         </p>
         <ol className="list-decimal list-inside space-y-1">
-          <li>Run <code className="text-foreground">npx convex deploy</code></li>
-          <li>Copy the production URL (ends with <code className="text-foreground">.convex.cloud</code>)</li>
-          <li>Add it in Vercel → Settings → Environment Variables</li>
-          <li>Redeploy Vercel</li>
+          <li>
+            <code className="text-foreground">{t("setup.convexMissingStep1")}</code>
+          </li>
+          <li>{t("setup.convexMissingStep2")}</li>
+          <li>{t("setup.convexMissingStep3")}</li>
+          <li>{t("setup.convexMissingStep4")}</li>
         </ol>
       </SetupMessage>
     );
@@ -57,23 +60,19 @@ export function ConvexAuthStatus({ children }: { children: ReactNode }) {
 
   if (isLoading && timedOut) {
     return (
-      <SetupMessage title="Cannot connect to Convex">
-        <p>Auth is stuck loading. This usually means production Convex auth is not set up yet.</p>
+      <SetupMessage title={t("setup.convexTimeoutTitle")}>
+        <p>{t("setup.convexTimeoutBody")}</p>
         <ol className="list-decimal list-inside space-y-1">
           <li>
-            Deploy backend: <code className="text-foreground">npx convex deploy</code>
+            <code className="text-foreground">{t("setup.convexTimeoutStep1")}</code>
           </li>
+          <li>{t("setup.convexTimeoutStep2")}</li>
           <li>
-            Set Vercel <code className="text-foreground">NEXT_PUBLIC_CONVEX_URL</code> to
-            the <strong>production</strong> URL (not dev)
-          </li>
-          <li>
-            Run:{" "}
             <code className="text-foreground block mt-1 break-all">
-              SITE_URL=https://hel-calafkaaga-d9g4.vercel.app npm run setup:auth:prod
+              {t("setup.convexTimeoutStep3")}
             </code>
           </li>
-          <li>Redeploy Vercel again</li>
+          <li>{t("setup.convexTimeoutStep4")}</li>
         </ol>
       </SetupMessage>
     );

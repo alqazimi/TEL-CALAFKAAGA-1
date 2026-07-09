@@ -7,10 +7,12 @@ import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { AppShellHeader } from "@/components/layout/app-shell-header";
 import { AppMobileNav } from "@/components/layout/app-mobile-nav";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/lib/i18n/context";
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -24,8 +26,11 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         <AppShellHeader />
         <div className="flex flex-1 flex-col lg:pl-64 lg:pt-16">
           <div className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-8 pb-[calc(var(--app-tabbar)+1rem)] lg:pb-8 space-y-4">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-64 w-full max-w-3xl rounded-2xl" />
+            <Skeleton className="h-8 w-48" aria-hidden />
+            <Skeleton className="h-64 w-full max-w-3xl rounded-2xl" aria-hidden />
+            <p className="text-sm text-muted-foreground" role="status">
+              {t("common.loadingData")}
+            </p>
           </div>
         </div>
         <AppMobileNav />

@@ -8,18 +8,24 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface CountryMultiComboboxProps {
   value: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
+  noResultsLabel?: string;
 }
 
 export function CountryMultiCombobox({
   value,
   onChange,
-  placeholder = "Search and select countries...",
+  placeholder,
+  noResultsLabel,
 }: CountryMultiComboboxProps) {
+  const { t } = useTranslation();
+  const searchPlaceholder = placeholder ?? t("common.searchCountriesMulti");
+  const noResults = noResultsLabel ?? t("common.noCountriesFound");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -74,7 +80,7 @@ export function CountryMultiCombobox({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onFocus={() => setOpen(true)}
-            placeholder={placeholder}
+            placeholder={searchPlaceholder}
             className="pl-11 h-12"
           />
         </div>
@@ -84,7 +90,7 @@ export function CountryMultiCombobox({
             <ul className="max-h-60 overflow-y-auto p-1">
               {filtered.length === 0 ? (
                 <li className="px-3 py-6 text-center text-sm text-muted-foreground">
-                  No countries found
+                  {noResults}
                 </li>
               ) : (
                 filtered.map((country) => {

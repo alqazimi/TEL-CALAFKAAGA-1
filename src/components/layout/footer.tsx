@@ -112,7 +112,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2 text-sm text-white/70">
                 <MapPin className="h-4 w-4 text-primary shrink-0" />
-                Somalia
+                {t("common.locationSomalia")}
               </li>
             </ul>
           </div>
@@ -139,7 +139,7 @@ export function Footer() {
               </Link>
             ) : (
               <AuthRegisterCta
-                registerLabel={t("auth.joinNowPrice", { price: REGISTRATION_PRICE })}
+                registerLabel={t("common.joinNow")}
                 className="mt-4 w-full bg-primary-foreground text-primary hover:bg-primary-foreground/90"
                 size="default"
               />

@@ -68,6 +68,8 @@ const STEP_TEXT: Record<number, { title: Bilingual; description: Bilingual }> = 
 /** Question labels keyed by FieldConfig.name. */
 const FIELD_LABELS: Record<string, Bilingual> = {
   gender: { en: "I am a", so: "Waxaan ahay" },
+  name: { en: "Full name", so: "Magaca oo buuxa" },
+  phone: { en: "Phone number", so: "Lambarka taleefanka" },
   age: { en: "Age", so: "Da'da" },
   country: { en: "Country", so: "Dalka" },
   city: { en: "City", so: "Magaalada" },
@@ -78,10 +80,10 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     so: "Ma tukataa shanta salaadood ee maalinlaha ah?",
   },
   wearsHijab: { en: "Do you wear hijab?", so: "Ma xijaabataa?" },
-  hasBeard: { en: "Do you have a beard?", so: "Ma leedahay gadh?" },
+  hasBeard: { en: "Do you have a beard?", so: "Ma leedahay gad?" },
   education: { en: "Education Level", so: "Heerka Waxbarasho" },
   occupation: { en: "Employment Status", so: "Xaaladda Shaqo" },
-  maritalStatus: { en: "Have you ever been married?", so: "Weligaa ma guursatay?" },
+  maritalStatus: { en: "Have you ever been married?", so: "Horay ma guursatay?" },
   hasChildren: { en: "Do you have children?", so: "Carruur ma leedahay?" },
   substanceUse: {
     en: "Do you use any substances (smoking, drugs, etc.)?",
@@ -119,7 +121,7 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   },
   familyInvolvement: {
     en: "Will family be involved in the process?",
-    so: "Qoyska ma ku lug yeelanayaa howshan?",
+    so: "Qoyska ma ku lug yeelan doonaa hawlahan?",
   },
   livingSituation: {
     en: "Preferred living situation after marriage?",
@@ -143,7 +145,7 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   },
   pref_partnerBeard: {
     en: "Beard preference for your spouse",
-    so: "Doorbidka garka ee xaaskaaga",
+    so: "Doorbidka gadka ee xaaskaaga",
   },
   pref_partnerHijabLevel: {
     en: "Hijab / niqab preference for your spouse",
@@ -231,8 +233,8 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   // Yes/No family
   Yes: { en: "Yes", so: "Haa" },
   No: { en: "No", so: "Maya" },
-  Male: { en: "Male", so: "Lab" },
-  Female: { en: "Female", so: "Dhedig" },
+  Male: { en: "Male", so: "Nin" },
+  Female: { en: "Female", so: "Naag" },
   Depends: { en: "Depends", so: "Way ku xiran tahay" },
   Maybe: { en: "Maybe", so: "Waa suurtogal" },
   // Frequency
@@ -269,9 +271,9 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   "Own home": { en: "Own home", so: "Gurigeyga gaarka ah" },
   "Prefer not to say": { en: "Prefer not to say", so: "Ma doonayo inaan sheego" },
   // Beard / hijab preferences
-  "Beard preferred": { en: "Beard preferred", so: "Gar la doorbido" },
-  "Beard required": { en: "Beard required", so: "Gar waa loo baahan yahay" },
-  "No beard preferred": { en: "No beard preferred", so: "Gar la'aan la doorbido" },
+  "Beard preferred": { en: "Beard preferred", so: "Gad la doorbido" },
+  "Beard required": { en: "Beard required", so: "Gad waa loo baahan yahay" },
+  "No beard preferred": { en: "No beard preferred", so: "Gad la'aan la doorbido" },
   "Hijab preferred": { en: "Hijab preferred", so: "Xijaab la doorbido" },
   "Niqab preferred": { en: "Niqab preferred", so: "Niqaab la doorbido" },
   "Hijab or niqab preferred": {
@@ -284,9 +286,9 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   Arabic: { en: "Arabic", so: "Carabi" },
   Swahili: { en: "Swahili", so: "Sawaaxiili" },
   French: { en: "French", so: "Faransiis" },
-  Dutch: { en: "Dutch", so: "Hollandays" },
-  Swedish: { en: "Swedish", so: "Isweden" },
-  Norwegian: { en: "Norwegian", so: "Norwiiji" },
+  Dutch: { en: "Dutch", so: "Holandiis" },
+  Swedish: { en: "Swedish", so: "Iswiidhan" },
+  Norwegian: { en: "Norwegian", so: "Noorweej" },
   German: { en: "German", so: "Jarmal" },
   // Citizenship
   "Citizen of country I live in": {
@@ -376,7 +378,7 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
   Weight: { en: "Weight", so: "Miisaanka" },
   "Prayer Frequency": { en: "Prayer Frequency", so: "Salaadda" },
   "Wears Hijab": { en: "Wears Hijab", so: "Xijaab" },
-  "Has Beard": { en: "Has Beard", so: "Gadh" },
+  "Has Beard": { en: "Has Beard", so: "Gad" },
   Education: { en: "Education", so: "Waxbarasho" },
   Occupation: { en: "Occupation", so: "Shaqo" },
   "Marital Status": { en: "Marital Status", so: "Xaaladda Guur" },
@@ -395,7 +397,7 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
   "Citizenship / Visa": { en: "Citizenship / Visa", so: "Jinsiyad / Fiiso" },
   "Financial Readiness": { en: "Financial Readiness", so: "Diyaargarowga Dhaqaale" },
   "Deal-breakers": { en: "Deal-breakers", so: "Waxyaabaha Diidmada" },
-  "Partner Beard": { en: "Partner Beard", so: "Garka Lammaanaha" },
+  "Partner Beard": { en: "Partner Beard", so: "Gadka Lammaanaha" },
   "Partner Hijab / Niqab": { en: "Partner Hijab / Niqab", so: "Xijaab / Niqaab Lammaanaha" },
   Bio: { en: "Bio", so: "Faahfaahin" },
   Qualities: { en: "Qualities", so: "Sifooyin" },
@@ -558,6 +560,10 @@ const UI_TEXT = {
     en: "Please select at least one option",
     so: "Fadlan dooro ugu yaraan hal xulasho",
   },
+  phoneInvalid: {
+    en: "Please enter a valid phone number",
+    so: "Geli lambar taleefan sax ah",
+  },
   answerAllRequired: {
     en: "Please answer all required questions before continuing.",
     so: "Fadlan ka jawaab dhammaan su'aalaha loo baahan yahay ka hor intaadan sii wadin.",
@@ -668,14 +674,14 @@ const UI_TEXT = {
     en: "Profile not found. Please try refreshing.",
     so: "Profile lama helin. Fadlan dib u cusboonaysii.",
   },
-  goToDashboard: { en: "Go to Dashboard", so: "Aad Dashboard-ka" },
+  goToDashboard: { en: "Go to Dashboard", so: "Tag dashboard-ka" },
   completePaymentFirst: {
     en: "Complete payment first",
     so: "Marka hore dhammaystir lacag bixinta",
   },
   payToUnlock: {
-    en: "Pay the registration fee to unlock your profile questionnaire.",
-    so: "Bixi lacagta diiwaangelinta si aad u furto su'aalaha profile-kaaga.",
+    en: "Complete your profile questionnaire to continue.",
+    so: "Dhammaystir su'aalaha profile-kaaga si aad u sii wadato.",
   },
 } as const;
 

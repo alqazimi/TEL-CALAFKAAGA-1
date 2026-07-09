@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Check, Headphones, ShieldCheck, Sparkles } from "lucide-react";
 import { MarketingPage } from "@/components/marketing/marketing-page";
 import { AuthRegisterCta } from "@/components/auth/auth-register-cta";
+import { PlanChoiceNote } from "@/components/marketing/plan-choice-note";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
@@ -54,7 +55,8 @@ export function PricingPageContent() {
               ))}
             </ul>
             <AuthRegisterCta
-              registerLabel={t("auth.joinNowPrice", { price: REGISTRATION_PRICE })}
+              registerLabel={t("common.joinNow")}
+              plan="basic"
               className="mt-8 w-full"
               size="lg"
               variant="outline"
@@ -89,7 +91,8 @@ export function PricingPageContent() {
               ))}
             </ul>
             <AuthRegisterCta
-              registerLabel={t("auth.joinNowPrice", { price: PERSONAL_SUPPORT_PRICE })}
+              registerLabel={t("common.joinNow")}
+              plan="premium"
               className="mt-8 w-full"
               size="lg"
             />
@@ -97,7 +100,9 @@ export function PricingPageContent() {
         </Card>
       </div>
 
-      <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-muted-foreground leading-relaxed">
+      <PlanChoiceNote className="mx-auto mt-6 max-w-2xl" />
+
+      <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground leading-relaxed">
         {t("pricing.payOnce")}
       </p>
 

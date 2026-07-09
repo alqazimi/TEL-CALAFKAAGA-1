@@ -1,5 +1,5 @@
 import type { Profile } from "@/types";
-import { ABOUT_YOU_STEP_COUNT, STEPS } from "@/components/questionnaire/steps";
+import { ABOUT_YOU_STEP_COUNT, CONTACT_STEP_INDEX, PHOTO_STEP_INDEX, STEPS } from "@/components/questionnaire/steps";
 
 import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 
@@ -26,14 +26,14 @@ export interface ProfileSection {
 }
 
 export const PROFILE_SECTIONS: ProfileSection[] = [
-  { id: "gender", title: "Gender", stepIndex: 0 },
-  { id: "basic", title: "Basic Information", stepIndex: 1 },
-  { id: "religious", title: "Your Religious Practice", stepIndex: 2 },
-  { id: "education", title: "Education & Work", stepIndex: 3 },
-  { id: "marriage", title: "Marriage & Family", stepIndex: 5 },
-  { id: "lifestyle", title: "Lifestyle", stepIndex: 6 },
-  { id: "about", title: "About You", stepIndex: 7 },
-  { id: "preferences", title: "Partner Preferences", stepIndex: 8 },
+  { id: "basic", title: "Basic Information", stepIndex: 0 },
+  { id: "religious", title: "Your Religious Practice", stepIndex: 1 },
+  { id: "education", title: "Education & Work", stepIndex: 2 },
+  { id: "marriage", title: "Marriage & Family", stepIndex: 4 },
+  { id: "lifestyle", title: "Lifestyle", stepIndex: 5 },
+  { id: "about", title: "About You", stepIndex: 6 },
+  { id: "preferences", title: "Partner Preferences", stepIndex: 7 },
+  { id: "contact", title: "Contact Details", stepIndex: 8 },
   { id: "photo", title: "Profile Photo", stepIndex: 9 },
 ];
 
@@ -102,6 +102,12 @@ export function isPhotoComplete(profile: Profile): boolean {
   return !!profile.profileImageId;
 }
 
+export function isContactComplete(profile: Profile): boolean {
+  const name = profile.name?.trim() ?? "";
+  const phone = profile.phone?.trim() ?? "";
+  return name.length >= 2 && name !== "User" && phone.length >= 8;
+}
+
 export function isPreferencesComplete(
   profile: Profile,
   prefs: Preferences | null | undefined
@@ -154,7 +160,6 @@ const sectionCheckers: Record<
   string,
   (profile: Profile, prefs?: Preferences | null) => boolean
 > = {
-  gender: (p) => p.gender === "male" || p.gender === "female",
   basic: (p) => isBasicComplete(p),
   religious: (p) => isReligiousComplete(p),
   education: (p) => isEducationComplete(p),
@@ -162,6 +167,7 @@ const sectionCheckers: Record<
   lifestyle: (p) => isLifestyleComplete(p),
   about: (p) => isAboutYouComplete(p),
   preferences: (p, prefs) => isPreferencesComplete(p, prefs),
+  contact: (p) => isContactComplete(p),
   photo: (p) => isPhotoComplete(p),
 };
 
@@ -181,7 +187,6 @@ export function getSectionStatus(
   const sectionStep = section.stepIndex + 1;
 
   const partialChecks: Record<string, boolean> = {
-    gender: profile.gender === "male" || profile.gender === "female",
     basic:
       profile.age > 0 ||
       !!profile.country ||
@@ -208,6 +213,7 @@ export function getSectionStatus(
       !!prefs?.partnerBeard ||
       !!prefs?.partnerHijabLevel ||
       (prefs?.preferredCountries?.length ?? 0) > 0,
+    contact: !!profile.name?.trim() || !!profile.phone?.trim(),
     photo: !!profile.profileImageId,
   };
 
@@ -244,13 +250,16 @@ export function getResumeStepIndex(
   for (const section of PROFILE_SECTIONS) {
     if (getSectionStatus(section.id, profile, prefs) !== "complete") {
       if (section.id === "education" && isReligiousComplete(profile)) {
-        return profile.education ? 4 : 3;
+        return profile.education ? 3 : 2;
       }
       if (section.id === "preferences" && isAboutYouPhaseComplete(profile, prefs)) {
         return ABOUT_YOU_STEP_COUNT;
       }
-      if (section.id === "photo" && isPreferencesComplete(profile, prefs)) {
-        return STEPS.length - 1;
+      if (section.id === "contact" && isPreferencesComplete(profile, prefs)) {
+        return CONTACT_STEP_INDEX;
+      }
+      if (section.id === "photo" && isContactComplete(profile)) {
+        return PHOTO_STEP_INDEX;
       }
       return section.stepIndex;
     }
@@ -259,26 +268,33 @@ export function getResumeStepIndex(
   return STEPS.length;
 }
 
-export function getEncouragementMessage(
+export type EncouragementKey =
+  | "encourageComplete"
+  | "encourageAboutFirst"
+  | "encourageAlmostDone"
+  | "encourageHalfway"
+  | "encourageDefault";
+
+export function getEncouragementKey(
   profile: Profile,
   prefs?: Preferences | null
-): string {
+): EncouragementKey {
   const progress = calculateProfileProgress(profile, prefs);
   const remaining = getRemainingSections(profile, prefs);
 
   if (progress >= 100) {
-    return "Your profile is complete. Start exploring your matches!";
+    return "encourageComplete";
   }
   if (!isAboutYouPhaseComplete(profile, prefs)) {
-    return "First, tell us about yourself. Partner preferences come next.";
+    return "encourageAboutFirst";
   }
   if (remaining <= 2) {
-    return "Almost done — upload your photo and submit to unlock matches.";
+    return "encourageAlmostDone";
   }
   if (progress >= 50) {
-    return "The more information you provide, the better your matches will be.";
+    return "encourageHalfway";
   }
-  return "Complete your profile to receive accurate matches.";
+  return "encourageDefault";
 }
 
 export const LOCKED_FEATURES = [

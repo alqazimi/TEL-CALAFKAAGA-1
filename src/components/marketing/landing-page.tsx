@@ -20,6 +20,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { AuthRegisterCta } from "@/components/auth/auth-register-cta";
+import { PlanChoiceNote } from "@/components/marketing/plan-choice-note";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -228,7 +229,7 @@ export function LandingPage() {
               className="mt-8 flex flex-col sm:flex-row gap-3"
             >
               <AuthRegisterCta
-                registerLabel={t("landing.heroCta", { price: REGISTRATION_PRICE })}
+                registerLabel={t("common.joinNow")}
                 className="text-base px-8"
                 size="lg"
               />
@@ -292,7 +293,8 @@ export function LandingPage() {
                     </p>
                   </div>
                   <AuthRegisterCta
-                    registerLabel={t("auth.joinNowPrice", { price: REGISTRATION_PRICE })}
+                    registerLabel={t("common.joinNow")}
+                    plan="basic"
                     className="w-full"
                     variant="outline"
                   />
@@ -319,12 +321,15 @@ export function LandingPage() {
                     </p>
                   </div>
                   <AuthRegisterCta
-                    registerLabel={t("auth.joinNowPrice", { price: PERSONAL_SUPPORT_PRICE })}
+                    registerLabel={t("common.joinNow")}
+                    plan="premium"
                     className="w-full"
                   />
                 </CardContent>
               </Card>
             </div>
+
+            <PlanChoiceNote className="max-w-2xl mx-auto" />
 
             <div className="grid lg:grid-cols-2 gap-10 items-start pt-4 border-t border-border">
               <div>
@@ -517,7 +522,7 @@ export function LandingPage() {
           <p className="mt-3 text-white/85 max-w-xl mx-auto">{t("landing.finalCtaDesc")}</p>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <AuthRegisterCta
-              registerLabel={t("landing.heroCta", { price: REGISTRATION_PRICE })}
+              registerLabel={t("common.joinNow")}
               className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
             />
             <Button

@@ -44,6 +44,7 @@ const ERROR_KEY_MAP: Record<string, QuestionnaireUiKey> = {
   "Please select an option": "selectOption",
   "This field is required": "requiredField",
   "Please select at least one option": "selectAtLeastOne",
+  "Please enter a valid phone number": "phoneInvalid",
 };
 
 function translateError(
@@ -174,6 +175,16 @@ export function QuestionnaireStep({
     if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
   }, [profileId, stepId, setValue, step]);
+
+  const prevFieldIndexRef = useRef(fieldIndex);
+  useEffect(() => {
+    if (fieldIndex < prevFieldIndexRef.current && autoAdvanceRef.current) {
+      clearTimeout(autoAdvanceRef.current);
+      autoAdvanceRef.current = null;
+      setIsAdvancing(false);
+    }
+    prevFieldIndexRef.current = fieldIndex;
+  }, [fieldIndex]);
 
   useEffect(() => {
     if (visibleFields.length === 0) return;
@@ -499,6 +510,26 @@ export function QuestionnaireStep({
           rows={5}
           maxLength={500}
           className="rounded-2xl text-lg leading-relaxed resize-none"
+          onChange={(e) => {
+            setTextFields((prev) => ({ ...prev, [field.name]: e.target.value }));
+            clearFieldError(field.name);
+          }}
+        />
+      );
+    }
+
+    if (field.type === "text") {
+      const isPhone = field.name === "phone";
+      return (
+        <Input
+          value={textFields[field.name] ?? ""}
+          type={isPhone ? "tel" : "text"}
+          inputMode={isPhone ? "tel" : undefined}
+          autoComplete={isPhone ? "tel" : field.name === "name" ? "name" : undefined}
+          placeholder={
+            isPhone ? t("auth.phonePlaceholder") : t("auth.namePlaceholder")
+          }
+          className="h-14 rounded-2xl text-lg px-5"
           onChange={(e) => {
             setTextFields((prev) => ({ ...prev, [field.name]: e.target.value }));
             clearFieldError(field.name);

@@ -108,7 +108,7 @@ function AdminInviteContent() {
         setMode("signin");
         return;
       }
-      toast.error(getAuthErrorMessage(error, t("validation.registrationFailed")));
+      toast.error(getAuthErrorMessage(error, t("validation.registrationFailed"), t));
     } finally {
       setLoading(false);
     }
@@ -130,7 +130,7 @@ function AdminInviteContent() {
 
       await finishAcceptance();
     } catch (error) {
-      toast.error(getAuthErrorMessage(error, t("validation.invalidCredentials")));
+      toast.error(getAuthErrorMessage(error, t("validation.invalidCredentials"), t));
     } finally {
       setLoading(false);
     }

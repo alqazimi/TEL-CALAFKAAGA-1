@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   calculateProfileProgress,
-  getEncouragementMessage,
+  getEncouragementKey,
   getRemainingSections,
   type Preferences,
 } from "@/lib/profile-progress";
 import type { Profile } from "@/types";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface ProfileLockedGateProps {
   profile: Profile;
@@ -23,12 +24,15 @@ interface ProfileLockedGateProps {
 export function ProfileLockedGate({
   profile,
   preferences,
-  title = "Find Your Best Match",
-  description = "Before we can recommend compatible people, please complete your profile.",
+  title,
+  description,
 }: ProfileLockedGateProps) {
+  const { t } = useTranslation();
   const progress = calculateProfileProgress(profile, preferences);
   const remaining = getRemainingSections(profile, preferences);
-  const message = getEncouragementMessage(profile, preferences);
+  const encouragementKey = getEncouragementKey(profile, preferences);
+  const heading = title ?? t("profileProgress.lockedTitle");
+  const body = description ?? t("profileProgress.lockedDesc");
 
   return (
     <div className="max-w-lg mx-auto py-8 px-2">
@@ -45,19 +49,21 @@ export function ProfileLockedGate({
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-            <p className="text-muted-foreground leading-relaxed">{description}</p>
+            <h1 className="text-2xl font-bold tracking-tight">{heading}</h1>
+            <p className="text-muted-foreground leading-relaxed">{body}</p>
           </div>
 
           <div className="rounded-2xl bg-muted/50 p-4 space-y-3 text-left">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Profile Completion</span>
+              <span className="text-muted-foreground">{t("profileProgress.completionLabel")}</span>
               <span className="font-bold text-primary">{progress}%</span>
             </div>
             <Progress value={progress} className="h-3" />
             {remaining > 0 && (
               <p className="text-xs text-muted-foreground">
-                {remaining} section{remaining !== 1 ? "s" : ""} remaining
+                {remaining === 1
+                  ? t("profileProgress.sectionRemaining", { count: remaining })
+                  : t("profileProgress.sectionsRemaining", { count: remaining })}
               </p>
             )}
           </div>
@@ -65,12 +71,12 @@ export function ProfileLockedGate({
           <div className="flex items-start gap-2 rounded-xl bg-accent/80 dark:bg-primary/10 p-4 text-left">
             <Sparkles className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <p className="text-sm text-accent-foreground dark:text-primary font-medium leading-relaxed">
-              {message}
+              {t(`profileProgress.${encouragementKey}`)}
             </p>
           </div>
 
           <Button asChild size="lg" className="w-full">
-            <Link href="/questionnaire">Continue Profile</Link>
+            <Link href="/questionnaire">{t("profileProgress.continueProfile")}</Link>
           </Button>
         </CardContent>
       </Card>

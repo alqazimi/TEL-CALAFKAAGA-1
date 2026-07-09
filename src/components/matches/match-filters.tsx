@@ -41,7 +41,6 @@ export function MatchFilters({ filters, onChange }: MatchFiltersProps) {
             <CountryCombobox
               value={filters.country ?? ""}
               onChange={(v) => update("country", v)}
-              placeholder={t("matchesPage.any")}
             />
             {filters.country && (
               <button

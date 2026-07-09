@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Check,
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
+import { getPlanPreference, type PlanPreference } from "@/lib/plan-preference";
 import { cn } from "@/lib/utils";
 
 type RegistrationTier = "basic" | "premium";
@@ -120,6 +121,11 @@ function PaymentProgress() {
 
 export function PaymentGate({ title, description, showProgress = true }: PaymentGateProps) {
   const { t } = useTranslation();
+  const [preferredPlan, setPreferredPlan] = useState<PlanPreference | null>(null);
+
+  useEffect(() => {
+    setPreferredPlan(getPlanPreference());
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto py-6 sm:py-8 px-2">
@@ -144,10 +150,22 @@ export function PaymentGate({ title, description, showProgress = true }: Payment
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="overflow-hidden rounded-3xl border-border shadow-md hover:shadow-lg transition-shadow">
+        <Card
+          className={cn(
+            "overflow-hidden rounded-3xl border-border shadow-md hover:shadow-lg transition-shadow",
+            preferredPlan === "basic" && "ring-2 ring-primary shadow-lg shadow-primary/10"
+          )}
+        >
           <CardContent className="p-6 sm:p-7 space-y-5 flex flex-col h-full">
             <div className="space-y-2">
-              <h2 className="text-xl font-bold">{t("payment.basicPlan")}</h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl font-bold">{t("payment.basicPlan")}</h2>
+                {preferredPlan === "basic" && (
+                  <Badge variant="outline" className="border-primary/40 text-primary">
+                    {t("payment.preselectedPlan")}
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-primary">
                   ${REGISTRATION_PRICE}
@@ -186,7 +204,8 @@ export function PaymentGate({ title, description, showProgress = true }: Payment
 
         <Card
           className={cn(
-            "overflow-hidden rounded-3xl border-primary shadow-xl shadow-primary/10 ring-2 ring-primary/30 hover:shadow-2xl transition-shadow"
+            "overflow-hidden rounded-3xl border-primary shadow-xl shadow-primary/10 ring-2 ring-primary/30 hover:shadow-2xl transition-shadow",
+            preferredPlan === "premium" && "ring-primary shadow-2xl shadow-primary/15"
           )}
         >
           <div className="h-1.5 bg-gradient-to-r from-primary/80 via-primary to-primary/60" />
@@ -195,6 +214,11 @@ export function PaymentGate({ title, description, showProgress = true }: Payment
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-bold">{t("payment.premiumPlan")}</h2>
                 <Badge className="font-semibold">{t("payment.recommended")}</Badge>
+                {preferredPlan === "premium" && (
+                  <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5">
+                    {t("payment.preselectedPlan")}
+                  </Badge>
+                )}
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-primary">

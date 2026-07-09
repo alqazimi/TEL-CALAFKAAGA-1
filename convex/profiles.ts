@@ -19,6 +19,39 @@ import { hasActiveMatch } from "./lib/matchPresentation";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
+async function syncContactDetails(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  name: string,
+  phone: string
+) {
+  const trimmedName = name.trim();
+  const trimmedPhone = phone.trim();
+  if (trimmedName.length < 2) {
+    throw new Error("Full name is required");
+  }
+  if (trimmedPhone.length < 8) {
+    throw new Error("A valid phone number is required");
+  }
+
+  await ctx.db.patch(userId, {
+    name: trimmedName,
+    phone: trimmedPhone,
+  });
+
+  const profile = await ctx.db
+    .query("profiles")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+
+  if (profile) {
+    await ctx.db.patch(profile._id, {
+      name: trimmedName,
+      phone: trimmedPhone,
+    });
+  }
+}
+
 async function syncGenderSideEffects(
   ctx: MutationCtx,
   userId: Id<"users">,
@@ -125,6 +158,26 @@ export const updateQuestionnaire = mutation({
       await syncGenderSideEffects(ctx, userId, genderUpdate);
     }
 
+    const nameUpdate = profileUpdates.name;
+    const phoneUpdate = profileUpdates.phone;
+    if (typeof nameUpdate === "string") {
+      profileUpdates.name = nameUpdate.trim();
+    }
+    if (typeof phoneUpdate === "string") {
+      profileUpdates.phone = phoneUpdate.trim();
+    }
+    if (
+      typeof profileUpdates.name === "string" &&
+      profileUpdates.name.length >= 2 &&
+      typeof profileUpdates.phone === "string" &&
+      profileUpdates.phone.length >= 8
+    ) {
+      await ctx.db.patch(userId, {
+        name: profileUpdates.name,
+        phone: profileUpdates.phone,
+      });
+    }
+
     const updates: Record<string, unknown> = {
       ...profileUpdates,
       questionnaireStep: args.step,
@@ -179,6 +232,26 @@ export const autoSaveProfile = mutation({
       await syncGenderSideEffects(ctx, userId, genderUpdate);
     }
 
+    const nameUpdate = profileUpdates.name;
+    const phoneUpdate = profileUpdates.phone;
+    if (typeof nameUpdate === "string") {
+      profileUpdates.name = nameUpdate.trim();
+    }
+    if (typeof phoneUpdate === "string") {
+      profileUpdates.phone = phoneUpdate.trim();
+    }
+    if (
+      typeof profileUpdates.name === "string" &&
+      profileUpdates.name.length >= 2 &&
+      typeof profileUpdates.phone === "string" &&
+      profileUpdates.phone.length >= 8
+    ) {
+      await ctx.db.patch(userId, {
+        name: profileUpdates.name,
+        phone: profileUpdates.phone,
+      });
+    }
+
     const updates: Record<string, unknown> = {
       ...profileUpdates,
       questionnaireStep: args.step,
@@ -221,6 +294,15 @@ export const completeQuestionnaire = mutation({
       throw new Error("Please upload a profile photo before completing your profile.");
     }
 
+    const trimmedName = profile.name?.trim() ?? "";
+    const trimmedPhone = profile.phone?.trim() ?? "";
+    if (trimmedName.length < 2 || trimmedName === "User") {
+      throw new Error("Please add your full name before completing your profile.");
+    }
+    if (trimmedPhone.length < 8) {
+      throw new Error("Please add your phone number before completing your profile.");
+    }
+
     await ctx.db.patch(profile._id, {
       questionnaireComplete: true,
       questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
@@ -229,6 +311,26 @@ export const completeQuestionnaire = mutation({
 
     await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
       userId,
+    });
+
+    return profile._id;
+  },
+});
+
+export const completeRegistrationGender = mutation({
+  args: {
+    gender: v.union(v.literal("male"), v.literal("female")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
+
+    const profile = await ensureUserProfile(ctx, userId);
+    await syncGenderSideEffects(ctx, userId, args.gender);
+
+    await ctx.db.patch(profile._id, {
+      gender: args.gender,
+      registrationComplete: true,
     });
 
     return profile._id;

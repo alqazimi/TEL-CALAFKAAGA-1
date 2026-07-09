@@ -1,13 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { LOCALE_STORAGE_KEY } from "@/lib/i18n/translations";
+import { en } from "@/lib/i18n/translations/en";
+import { so } from "@/lib/i18n/translations/so";
+
+const copy = { en, so } as const;
+
 export default function GlobalError({
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [locale, setLocale] = useState<"en" | "so">("so");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+    if (stored === "en" || stored === "so") setLocale(stored);
+  }, []);
+
+  const t = copy[locale].errorPage;
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body
         style={{
           margin: 0,
@@ -33,9 +49,9 @@ export default function GlobalError({
           >
             !
           </p>
-          <h1 style={{ fontSize: 28, margin: "16px 0 8px" }}>Something went wrong</h1>
+          <h1 style={{ fontSize: 28, margin: "16px 0 8px" }}>{t.title}</h1>
           <p style={{ color: "#666", lineHeight: 1.6, margin: "0 0 24px" }}>
-            An unexpected error occurred. Please try again or return to the homepage.
+            {t.subtitle}
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             <button
@@ -51,7 +67,7 @@ export default function GlobalError({
                 cursor: "pointer",
               }}
             >
-              Try again
+              {t.tryAgain}
             </button>
             <a
               href="/"
@@ -66,7 +82,7 @@ export default function GlobalError({
                 textDecoration: "none",
               }}
             >
-              Back to home
+              {t.backHome}
             </a>
           </div>
         </div>

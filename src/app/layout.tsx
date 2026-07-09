@@ -4,7 +4,6 @@ import { Providers } from "@/components/providers";
 import { PwaInstallCapture } from "@/components/pwa/pwa-install-capture";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { WhatsAppButton } from "@/components/layout/whatsapp-button";
 import {
   APP_NAME,
   APP_DESCRIPTION,
@@ -105,7 +104,6 @@ export default function RootLayout({
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />
-          <WhatsAppButton />
         </Providers>
       </body>
     </html>

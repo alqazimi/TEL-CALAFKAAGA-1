@@ -51,7 +51,8 @@ export interface FieldConfig {
     | "range"
     | "country-search"
     | "country-multi"
-    | "gender-select";
+    | "gender-select"
+    | "text";
   options?: readonly string[] | number[];
   required?: boolean;
   condition?: { field: string; value: string };
@@ -63,24 +64,8 @@ export interface FieldConfig {
   uiOnly?: boolean;
 }
 
-/** Part 1 — about the user (gender + steps 1–7). */
-const GENDER_STEP: StepConfig = {
-  id: 0,
-  title: "About you",
-  description: "Who is looking for a spouse?",
-  phase: "about",
-  fields: [
-    {
-      name: "gender",
-      label: "I am a",
-      type: "gender-select",
-      required: true,
-    },
-  ],
-};
-
+/** Part 1 — about the user (steps 1–7). Gender is collected during registration. */
 const ABOUT_YOU_STEPS: StepConfig[] = [
-  GENDER_STEP,
   {
     id: 1,
     title: "Basic Information",
@@ -343,8 +328,19 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
   },
 ];
 
-const PROFILE_PHOTO_STEP: StepConfig = {
+const CONTACT_STEP: StepConfig = {
   id: 9,
+  title: "Your contact details",
+  description: "Your name and phone number",
+  phase: "about",
+  fields: [
+    { name: "name", label: "Full name", type: "text", required: true },
+    { name: "phone", label: "Phone number", type: "text", required: true },
+  ],
+};
+
+const PROFILE_PHOTO_STEP: StepConfig = {
+  id: 10,
   title: "Profile Photo",
   description: "Upload a clear photo — matches will see this on your profile",
   phase: "photo",
@@ -354,9 +350,11 @@ const PROFILE_PHOTO_STEP: StepConfig = {
 export const STEPS: StepConfig[] = [
   ...ABOUT_YOU_STEPS,
   ...PARTNER_PREFERENCES_STEPS,
+  CONTACT_STEP,
   PROFILE_PHOTO_STEP,
 ];
 
 export const ABOUT_YOU_STEP_COUNT = ABOUT_YOU_STEPS.length;
 export const PARTNER_PREFERENCES_STEP_INDEX = ABOUT_YOU_STEP_COUNT;
+export const CONTACT_STEP_INDEX = PARTNER_PREFERENCES_STEP_INDEX + 1;
 export const PHOTO_STEP_INDEX = STEPS.length - 1;

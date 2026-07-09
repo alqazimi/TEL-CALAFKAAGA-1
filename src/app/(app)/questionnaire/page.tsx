@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,11 +25,10 @@ import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-re
 import { QuestionnairePhaseComplete } from "@/components/questionnaire/questionnaire-phase-complete";
 import { QuestionnairePhotoStep } from "@/components/questionnaire/questionnaire-photo-step";
 import { QuestionnaireShell } from "@/components/questionnaire/questionnaire-shell";
-import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX, PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
+import { STEPS, ABOUT_YOU_STEP_COUNT, CONTACT_STEP_INDEX, PARTNER_PREFERENCES_STEP_INDEX, PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
-import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const REVIEW_STEP_INDEX = STEPS.length;
@@ -53,7 +52,10 @@ export default function QuestionnairePage() {
   );
   const [phaseComplete, setPhaseComplete] = useState<"about" | "partner" | null>(null);
   const [fieldIndex, setFieldIndex] = useState(0);
-  const [backNavigation, setBackNavigation] = useState(false);
+  const [fieldIndexInitializedForStep, setFieldIndexInitializedForStep] = useState<
+    number | null
+  >(null);
+  const skipFieldResumeRef = useRef(false);
 
   const autoStep = useMemo(() => {
     if (!profile) return null;
@@ -89,14 +91,32 @@ export default function QuestionnairePage() {
 
   useEffect(() => {
     if (currentStep === null || isReviewStep || phaseComplete) return;
-    if (backNavigation) {
-      setBackNavigation(false);
+    if (fieldIndexInitializedForStep === currentStep) return;
+
+    const stepConfig = STEPS[currentStep];
+    if (!stepConfig || stepConfig.phase === "photo") {
+      setFieldIndexInitializedForStep(currentStep);
       return;
     }
-    const stepConfig = STEPS[currentStep];
-    if (!stepConfig || stepConfig.phase === "photo") return;
-    setFieldIndex(getResumeFieldIndex(stepConfig, profile ?? null, formStateForNav));
-  }, [currentStep, profile?._id, isReviewStep, phaseComplete, backNavigation, formStateForNav, profile]);
+
+    if (skipFieldResumeRef.current) {
+      skipFieldResumeRef.current = false;
+      setFieldIndexInitializedForStep(currentStep);
+      return;
+    }
+
+    setFieldIndex(
+      getResumeFieldIndex(stepConfig, profile ?? null, formStateForNav)
+    );
+    setFieldIndexInitializedForStep(currentStep);
+  }, [
+    currentStep,
+    isReviewStep,
+    phaseComplete,
+    fieldIndexInitializedForStep,
+    profile,
+    formStateForNav,
+  ]);
 
   const totalSteps = STEPS.length + 1;
   const progress =
@@ -138,12 +158,14 @@ export default function QuestionnairePage() {
           setPhaseComplete("about");
           return;
         }
-        if (!isEditMode && currentStep === PHOTO_STEP_INDEX - 1) {
+        if (!isEditMode && currentStep === PARTNER_PREFERENCES_STEP_INDEX) {
           setPhaseComplete("partner");
           return;
         }
         setPhaseComplete(null);
+        skipFieldResumeRef.current = true;
         setFieldIndex(0);
+        setFieldIndexInitializedForStep(null);
         setStepOverride(currentStep + 1);
       }
     } catch {
@@ -165,8 +187,9 @@ export default function QuestionnairePage() {
           formStateForNav.radios,
           formStateForNav.selects
         );
-        setBackNavigation(true);
+        skipFieldResumeRef.current = true;
         setFieldIndex(Math.max(0, prevFields.length - 1));
+        setFieldIndexInitializedForStep(null);
         setStepOverride(prevStep);
       }
       return;
@@ -181,8 +204,9 @@ export default function QuestionnairePage() {
       const prevStep = currentStep - 1;
       const prevConfig = STEPS[prevStep];
       if (prevConfig.phase === "photo") {
-        setBackNavigation(true);
+        skipFieldResumeRef.current = true;
         setFieldIndex(0);
+        setFieldIndexInitializedForStep(null);
         setStepOverride(prevStep);
         return;
       }
@@ -192,8 +216,9 @@ export default function QuestionnairePage() {
         formStateForNav.radios,
         formStateForNav.selects
       );
-      setBackNavigation(true);
+      skipFieldResumeRef.current = true;
       setFieldIndex(Math.max(0, prevFields.length - 1));
+      setFieldIndexInitializedForStep(null);
       setStepOverride(prevStep);
     }
   };
@@ -211,22 +236,27 @@ export default function QuestionnairePage() {
       stepConfig && stepConfig.phase !== "photo"
         ? getResumeFieldIndex(stepConfig, profile ?? null, formStateForNav)
         : 0;
-    setBackNavigation(true);
+    skipFieldResumeRef.current = true;
     setFieldIndex(resumeField);
+    setFieldIndexInitializedForStep(null);
     setStepOverride(stepIndex);
   };
 
   const handlePhaseContinue = () => {
     if (phaseComplete === "about") {
       setPhaseComplete(null);
+      skipFieldResumeRef.current = true;
       setFieldIndex(0);
+      setFieldIndexInitializedForStep(null);
       setStepOverride(PARTNER_PREFERENCES_STEP_INDEX);
       return;
     }
     if (phaseComplete === "partner") {
       setPhaseComplete(null);
+      skipFieldResumeRef.current = true;
       setFieldIndex(0);
-      setStepOverride(PHOTO_STEP_INDEX);
+      setFieldIndexInitializedForStep(null);
+      setStepOverride(CONTACT_STEP_INDEX);
     }
   };
 
@@ -279,8 +309,13 @@ export default function QuestionnairePage() {
   if (profile === undefined || isStaff) {
     return (
       <QuestionnaireShell progress={0} phaseLabel={ui("badgeQuestionnaire")}>
-        <Skeleton className="h-10 w-full mb-6" />
-        <Skeleton className="h-64 w-full rounded-2xl" />
+        <div className="space-y-4" role="status" aria-live="polite">
+          <Skeleton className="h-10 w-full mb-6" aria-hidden />
+          <Skeleton className="h-64 w-full rounded-2xl" aria-hidden />
+          <p className="text-center text-sm text-muted-foreground">
+            {t("common.loadingData")}
+          </p>
+        </div>
       </QuestionnaireShell>
     );
   }
@@ -344,7 +379,7 @@ export default function QuestionnairePage() {
   const currentStepConfig = !isReviewStep ? STEPS[currentStep] : null;
   const isPhotoPhase = currentStepConfig?.phase === "photo";
   const showWelcome =
-    welcome && currentStep === 1 && !isReviewStep && !phaseComplete && !isEditMode;
+    welcome && currentStep === 0 && !isReviewStep && !phaseComplete && !isEditMode;
 
   return (
     <QuestionnaireShell

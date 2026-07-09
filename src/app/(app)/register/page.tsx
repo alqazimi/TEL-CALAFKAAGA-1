@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,12 +19,14 @@ import { APP_NAME } from "@/lib/constants";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { createAccountSchema } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
+import { parsePlanPreference, savePlanPreference } from "@/lib/plan-preference";
 
 type AccountForm = z.infer<ReturnType<typeof createAccountSchema>>;
 
 export default function RegisterPage() {
   const { signIn } = useAuthActions();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
   const accountSchema = useMemo(() => createAccountSchema(t), [t]);
@@ -32,6 +34,11 @@ export default function RegisterPage() {
   const accountForm = useForm<AccountForm>({
     resolver: zodResolver(accountSchema),
   });
+
+  useEffect(() => {
+    const plan = parsePlanPreference(searchParams.get("plan"));
+    if (plan) savePlanPreference(plan);
+  }, [searchParams]);
 
   const onSubmitAccount = async (data: AccountForm) => {
     setLoading(true);
@@ -58,7 +65,7 @@ export default function RegisterPage() {
       }
 
       toast.error(
-        getAuthErrorMessage(error, t("validation.registrationFailed"))
+        getAuthErrorMessage(error, t("validation.registrationFailed"), t)
       );
     } finally {
       setLoading(false);

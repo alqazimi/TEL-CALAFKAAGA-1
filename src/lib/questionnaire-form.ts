@@ -99,6 +99,13 @@ export function initFormState(
   multiSelects.hobbies = profile.hobbies ?? [];
   multiSelects.languagesSpoken = profile.languagesSpoken ?? [];
 
+  if (profile.name && profile.name !== "User") {
+    textFields.name = profile.name;
+  }
+  if (profile.phone) {
+    textFields.phone = profile.phone;
+  }
+
   return {
     selects,
     radios,
@@ -213,6 +220,8 @@ export function buildStepData(
       } else {
         data[field.name] = value;
       }
+    } else if (field.type === "text") {
+      data[field.name] = textFields[field.name]?.trim() ?? "";
     }
   }
 
@@ -280,6 +289,17 @@ export function validateField(
 
   if (field.type === "country-search" || field.type === "select") {
     return state.selects[field.name]?.trim() ? null : "This field is required";
+  }
+
+  if (field.type === "text") {
+    const value = state.textFields[field.name]?.trim() ?? "";
+    if (!value) return "This field is required";
+    if (field.name === "name" && value.length < 2) return "This field is required";
+    if (field.name === "phone") {
+      if (value.length < 8) return "This field is required";
+      if (!/^[\d\s+\-()]+$/.test(value)) return "Please enter a valid phone number";
+    }
+    return null;
   }
 
   return null;
@@ -412,6 +432,12 @@ export function validateStepFields(
       if (!state.selects[field.name]?.trim()) {
         errors[field.name] = "This field is required";
       }
+      continue;
+    }
+
+    if (field.type === "text") {
+      const error = validateField(field, profile, state);
+      if (error) errors[field.name] = error;
     }
   }
 

@@ -176,7 +176,12 @@ export default function ChatPage() {
     return (
       <DashboardLayout>
         <ChatShell>
-          <Skeleton className="flex-1 w-full rounded-none sm:rounded-2xl" />
+          <div className="flex flex-1 flex-col gap-4" role="status">
+            <Skeleton className="flex-1 w-full rounded-none sm:rounded-2xl" aria-hidden />
+            <p className="text-center text-sm text-muted-foreground pb-4">
+              {t("common.loadingData")}
+            </p>
+          </div>
         </ChatShell>
       </DashboardLayout>
     );

@@ -7,18 +7,27 @@ import { ALL_COUNTRIES } from "@/lib/countries";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface CountryComboboxProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  emptyLabel?: string;
+  noResultsLabel?: string;
 }
 
 export function CountryCombobox({
   value,
   onChange,
-  placeholder = "Search countries...",
+  placeholder,
+  emptyLabel,
+  noResultsLabel,
 }: CountryComboboxProps) {
+  const { t } = useTranslation();
+  const searchPlaceholder = placeholder ?? t("common.searchCountries");
+  const selectLabel = emptyLabel ?? t("common.selectCountry");
+  const noResults = noResultsLabel ?? t("common.noCountriesFound");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -44,7 +53,7 @@ export function CountryCombobox({
         onClick={() => setOpen((o) => !o)}
       >
         <span className={cn(!value && "text-muted-foreground")}>
-          {value || "Select country"}
+          {value || selectLabel}
         </span>
         <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
       </Button>
@@ -58,7 +67,7 @@ export function CountryCombobox({
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={placeholder}
+                placeholder={searchPlaceholder}
                 className="pl-9 h-10"
               />
             </div>
@@ -66,7 +75,7 @@ export function CountryCombobox({
           <ul className="max-h-60 overflow-y-auto p-1">
             {filtered.length === 0 ? (
               <li className="px-3 py-6 text-center text-sm text-muted-foreground">
-                No countries found
+                {noResults}
               </li>
             ) : (
               filtered.map((country) => (

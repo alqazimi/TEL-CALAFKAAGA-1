@@ -53,9 +53,10 @@ export default function PaymentPage() {
   if (profile === undefined) {
     return (
       <DashboardLayout>
-        <div className="max-w-lg mx-auto space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-72 w-full rounded-2xl" />
+        <div className="max-w-lg mx-auto space-y-4" role="status">
+          <Skeleton className="h-8 w-48" aria-hidden />
+          <Skeleton className="h-72 w-full rounded-2xl" aria-hidden />
+          <p className="text-sm text-muted-foreground">{t("common.loadingData")}</p>
         </div>
       </DashboardLayout>
     );

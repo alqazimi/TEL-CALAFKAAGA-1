@@ -7,6 +7,7 @@ import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LanguageToggle } from "@/components/layout/language-toggle";
+import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 interface QuestionnaireShellProps {
@@ -26,6 +27,7 @@ export function QuestionnaireShell({
 }: QuestionnaireShellProps) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -41,6 +43,9 @@ export function QuestionnaireShell({
           <Skeleton className="h-6 w-32 mx-auto" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-64 w-full rounded-2xl" />
+          <p className="text-center text-sm text-muted-foreground" role="status">
+            {t("common.loadingData")}
+          </p>
         </div>
       </div>
     );
@@ -66,7 +71,7 @@ export function QuestionnaireShell({
               size="icon"
               className="shrink-0 rounded-full"
               onClick={onBack}
-              aria-label="Back"
+              aria-label={t("common.back")}
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>

@@ -100,7 +100,7 @@ export default function ForgotPasswordPage() {
       setStep("code");
       toast.success(t("auth.resetCodeSent"));
     } catch (error) {
-      toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed")));
+      toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed"), t));
     } finally {
       setSending(false);
     }
@@ -115,7 +115,7 @@ export default function ForgotPasswordPage() {
       setResendCooldown(RESEND_COOLDOWN_S);
       toast.success(t("auth.resetCodeResent"));
     } catch (error) {
-      toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed")));
+      toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed"), t));
     } finally {
       setResending(false);
     }
@@ -156,7 +156,7 @@ export default function ForgotPasswordPage() {
       toast.success(t("auth.resetSuccess"));
       router.push("/login");
     } catch (error) {
-      toast.error(getAuthErrorMessage(error, t("auth.resetFailed")));
+      toast.error(getAuthErrorMessage(error, t("auth.resetFailed"), t));
       setVerifiedCode("");
       codeForm.reset({ code: "" });
       setStep("code");

@@ -1,45 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { useMutation, useQuery } from "convex/react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
-import { User, Phone } from "lucide-react";
 import { api } from "../../../../../convex/_generated/api";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { RegisterStepIndicator } from "@/components/auth/register-step-indicator";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  GenderSelectCards,
+  type GenderValue,
+} from "@/components/questionnaire/gender-select-cards";
 import { getAuthenticatedHomeRoute } from "@/lib/routes";
-import { createDetailsSchema } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
-
-type DetailsForm = z.infer<ReturnType<typeof createDetailsSchema>>;
 
 export default function RegisterDetailsPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const detailsSchema = useMemo(() => createDetailsSchema(t), [t]);
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.currentUser);
-  const completeDetails = useMutation(api.profiles.completeRegistrationDetails);
+  const completeGender = useMutation(api.profiles.completeRegistrationGender);
+  const [gender, setGender] = useState<GenderValue | "">("");
   const [loading, setLoading] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<DetailsForm>({
-    resolver: zodResolver(detailsSchema),
-  });
 
   useEffect(() => {
     if (authLoading) return;
@@ -53,25 +39,22 @@ export default function RegisterDetailsPage() {
   }, [authLoading, isAuthenticated, user?.profile, router]);
 
   useEffect(() => {
-    const profile = user?.profile;
-    if (!profile) return;
-
-    if (profile.name && profile.name !== "User") {
-      setValue("name", profile.name);
+    const profileGender = user?.profile?.gender;
+    if (profileGender === "male" || profileGender === "female") {
+      setGender(profileGender);
     }
-    if (profile.phone) {
-      setValue("phone", profile.phone);
-    }
-  }, [user?.profile, setValue]);
+  }, [user?.profile?.gender]);
 
-  const onSubmit = async (data: DetailsForm) => {
+  const onContinue = async () => {
+    if (!gender) {
+      toast.error(t("validation.genderRequired"));
+      return;
+    }
+
     setLoading(true);
     try {
-      await completeDetails({
-        name: data.name,
-        phone: data.phone,
-      });
-      toast.success(t("auth.registerDetailsSuccess"));
+      await completeGender({ gender });
+      toast.success(t("auth.registerGenderSuccess"));
       router.push("/questionnaire?welcome=true");
     } catch (error) {
       toast.error(
@@ -85,7 +68,12 @@ export default function RegisterDetailsPage() {
   if (authLoading || user === undefined || !isAuthenticated) {
     return (
       <div className="auth-bg flex min-h-[calc(100dvh-var(--app-header))] items-center justify-center px-4">
-        <Skeleton className="h-72 w-full max-w-md rounded-2xl" />
+        <div className="w-full max-w-md space-y-4 text-center">
+          <Skeleton className="h-72 w-full rounded-2xl" aria-hidden />
+          <p className="text-sm text-muted-foreground" role="status">
+            {t("common.loadingData")}
+          </p>
+        </div>
       </div>
     );
   }
@@ -93,7 +81,12 @@ export default function RegisterDetailsPage() {
   if (user?.profile?.registrationComplete !== false) {
     return (
       <div className="auth-bg flex min-h-[calc(100dvh-var(--app-header))] items-center justify-center px-4">
-        <Skeleton className="h-72 w-full max-w-md rounded-2xl" />
+        <div className="w-full max-w-md space-y-4 text-center">
+          <Skeleton className="h-72 w-full rounded-2xl" aria-hidden />
+          <p className="text-sm text-muted-foreground" role="status">
+            {t("common.loadingData")}
+          </p>
+        </div>
       </div>
     );
   }
@@ -113,36 +106,25 @@ export default function RegisterDetailsPage() {
     >
       <RegisterStepIndicator step={2} />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <FormField label={t("auth.fullName")} htmlFor="name" error={errors.name?.message} required>
-          <InputIconWrapper icon={<User className="h-4 w-4" />}>
-            <Input
-              id="name"
-              className="pl-11"
-              {...register("name")}
-              placeholder={t("auth.namePlaceholder")}
-              autoComplete="name"
-            />
-          </InputIconWrapper>
-        </FormField>
+      <div className="space-y-6">
+        <GenderSelectCards
+          value={gender}
+          maleLabel={t("auth.male")}
+          femaleLabel={t("auth.female")}
+          disabled={loading}
+          onChange={setGender}
+        />
 
-        <FormField label={t("auth.phoneNumber")} htmlFor="phone" error={errors.phone?.message} required>
-          <InputIconWrapper icon={<Phone className="h-4 w-4" />}>
-            <Input
-              id="phone"
-              type="tel"
-              className="pl-11"
-              {...register("phone")}
-              placeholder={t("auth.phonePlaceholder")}
-              autoComplete="tel"
-            />
-          </InputIconWrapper>
-        </FormField>
-
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+        <Button
+          type="button"
+          className="w-full font-semibold"
+          size="lg"
+          disabled={loading || !gender}
+          onClick={() => void onContinue()}
+        >
           {loading ? t("auth.savingDetails") : t("auth.continueToQuestionnaire")}
         </Button>
-      </form>
+      </div>
     </AuthShell>
   );
 }

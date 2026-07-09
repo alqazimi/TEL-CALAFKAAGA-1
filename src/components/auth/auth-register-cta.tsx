@@ -5,10 +5,16 @@ import { useConvexAuth } from "convex/react";
 import { LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n/context";
+import {
+  type PlanPreference,
+  registerHrefForPlan,
+  savePlanPreference,
+} from "@/lib/plan-preference";
 
 type AuthRegisterCtaProps = {
   registerHref?: string;
   registerLabel: string;
+  plan?: PlanPreference;
   dashboardLabel?: string;
   className?: string;
   size?: "default" | "sm" | "lg" | "icon";
@@ -16,9 +22,10 @@ type AuthRegisterCtaProps = {
 };
 
 export function AuthRegisterCta({
-  registerHref = "/register",
+  registerHref,
   registerLabel,
-  dashboardLabel = "Go to Dashboard",
+  plan,
+  dashboardLabel,
   className,
   size = "lg",
   variant = "default",
@@ -26,11 +33,16 @@ export function AuthRegisterCta({
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { t } = useTranslation();
   const dashboardText = dashboardLabel ?? t("common.goToDashboard");
+  const href = registerHref ?? registerHrefForPlan(plan);
+
+  const handleRegisterClick = () => {
+    if (plan) savePlanPreference(plan);
+  };
 
   if (isLoading) {
     return (
       <Button size={size} variant={variant} className={className} disabled>
-        {registerLabel}
+        {t("common.loading")}
       </Button>
     );
   }
@@ -48,7 +60,9 @@ export function AuthRegisterCta({
 
   return (
     <Button size={size} variant={variant} className={className} asChild>
-      <Link href={registerHref}>{registerLabel}</Link>
+      <Link href={href} onClick={handleRegisterClick}>
+        {registerLabel}
+      </Link>
     </Button>
   );
 }

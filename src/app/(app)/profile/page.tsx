@@ -23,7 +23,10 @@ export default function ProfilePage() {
   if (profile === undefined || currentUser === undefined) {
     return (
       <DashboardLayout>
-        <Skeleton className="h-96 w-full max-w-2xl mx-auto" />
+        <div className="max-w-2xl mx-auto space-y-4" role="status">
+          <Skeleton className="h-96 w-full" aria-hidden />
+          <p className="text-sm text-muted-foreground">{t("common.loadingData")}</p>
+        </div>
       </DashboardLayout>
     );
   }

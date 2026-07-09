@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n/context";
 import { WHATSAPP_URL } from "@/lib/constants";
+import { clearPlanPreference } from "@/lib/plan-preference";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function PaymentSuccessPage() {
         if (!cancelled) {
           setIsPremium(result.isPremium);
           setStatus("success");
+          clearPlanPreference();
         }
       } catch (err) {
         if (!cancelled) {
