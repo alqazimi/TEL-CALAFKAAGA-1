@@ -57,12 +57,16 @@ export interface FieldConfig {
   options?: readonly string[] | number[];
   required?: boolean;
   condition?: { field: string; value: string };
+  /** Show only when the dependency field matches one of these values. */
+  showWhen?: { field: string; values: string[] };
   hideWhen?: { field: string; values: string[] };
   min?: number;
   max?: number;
   maxSelect?: number;
   preferences?: boolean;
   uiOnly?: boolean;
+  /** Override i18n key for FIELD_LABELS (defaults to `name`). */
+  labelKey?: string;
 }
 
 /** Part 1 — about the user (steps 1–7). Gender is collected during registration. */
@@ -171,19 +175,19 @@ const ABOUT_YOU_STEPS: StepConfig[] = [
     fields: [
       {
         name: "maritalStatus",
-        label: "Have you ever been married?",
+        label: "What is your marital status?",
         type: "radio",
         options: MARITAL_STATUS,
         required: true,
       },
       {
         name: "hasChildren",
-        label: "Do you have children?",
+        label: "Do you have children from a previous marriage?",
         type: "radio",
         options: YES_NO,
         required: true,
         uiOnly: true,
-        hideWhen: { field: "maritalStatus", values: ["Never married"] },
+        showWhen: { field: "maritalStatus", values: ["Divorced", "Widowed"] },
       },
       {
         name: "wantChildren",
@@ -200,10 +204,35 @@ const ABOUT_YOU_STEPS: StepConfig[] = [
         required: true,
       },
       {
-        name: "polygynyOpenness",
-        label: "Are you open to polygyny / a second marriage?",
+        name: "hasCurrentWife",
+        label: "Do you currently have a wife?",
+        type: "radio",
+        options: YES_NO,
+        condition: { field: "gender", value: "male" },
+        required: true,
+      },
+      {
+        name: "openToSecondWife",
+        label: "Do you plan to marry another wife in the future?",
         type: "radio",
         options: POLYGYNY_OPENNESS,
+        condition: { field: "gender", value: "male" },
+        required: true,
+      },
+      {
+        name: "acceptManWithWife",
+        label: "Would you marry a man who already has a wife?",
+        type: "radio",
+        options: POLYGYNY_OPENNESS,
+        condition: { field: "gender", value: "female" },
+        required: true,
+      },
+      {
+        name: "acceptFutureCoWife",
+        label: "Would you accept if your husband marries another wife later?",
+        type: "radio",
+        options: POLYGYNY_OPENNESS,
+        condition: { field: "gender", value: "female" },
         required: true,
       },
     ],
@@ -312,7 +341,7 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
         type: "radio",
         options: YES_NO_DEPENDS,
         preferences: true,
-        hideWhen: { field: "maritalStatus", values: ["Divorced"] },
+        showWhen: { field: "maritalStatus", values: ["Never married", "Widowed"] },
         required: true,
       },
       {
@@ -321,7 +350,7 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
         type: "radio",
         options: YES_NO_DEPENDS,
         preferences: true,
-        hideWhen: { field: "maritalStatus", values: ["Widowed"] },
+        showWhen: { field: "maritalStatus", values: ["Never married", "Divorced"] },
         required: true,
       },
       {

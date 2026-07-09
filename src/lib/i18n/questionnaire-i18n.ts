@@ -83,8 +83,11 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   hasBeard: { en: "Do you have a beard?", so: "Ma leedahay gad?" },
   education: { en: "Education Level", so: "Heerka Waxbarasho" },
   occupation: { en: "Employment Status", so: "Xaaladda Shaqo" },
-  maritalStatus: { en: "Have you ever been married?", so: "Horay ma guursatay?" },
-  hasChildren: { en: "Do you have children?", so: "Carruur ma leedahay?" },
+  maritalStatus: { en: "What is your marital status?", so: "Xaaladdaada guurku maxay tahay?" },
+  hasChildren: {
+    en: "Do you have children from a previous marriage?",
+    so: "Ma leedahay carruur guur hore ka timid?",
+  },
   substanceUse: {
     en: "Do you use any substances (smoking, drugs, etc.)?",
     so: "Ma isticmaashaa waxyaabo (sigaar, daroogo, iwm.)?",
@@ -130,6 +133,22 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   polygynyOpenness: {
     en: "Are you open to polygyny / a second marriage?",
     so: "Ma u furan tahay guur labaad / laba xaas?",
+  },
+  hasCurrentWife: {
+    en: "Do you currently have a wife?",
+    so: "Hadda ma leedahay xaas?",
+  },
+  openToSecondWife: {
+    en: "Do you plan to marry another wife in the future?",
+    so: "Mustaqbalka ma qorshaynaysaa inaad guursato xaas kale?",
+  },
+  acceptManWithWife: {
+    en: "Would you marry a man who already has a wife?",
+    so: "Ma guursan lahayd nin horey xaas u lahaa?",
+  },
+  acceptFutureCoWife: {
+    en: "Would you accept if your husband marries another wife later?",
+    so: "Ma aqbashaa in ninkaagu mustaqbalka guursado xaas kale?",
   },
   languagesSpoken: {
     en: "Languages you speak",
@@ -231,7 +250,7 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   Unemployed: { en: "Unemployed", so: "Shaqo la'aan" },
   Retired: { en: "Retired", so: "Hawlgab" },
   // Marital status
-  "Never married": { en: "Never married", so: "Weligay ma guursan" },
+  "Never married": { en: "Single (never married)", so: "Aan guursan (weligay)" },
   Divorced: { en: "Divorced", so: "La furay" },
   Widowed: { en: "Widowed", so: "Carmal" },
   // Yes/No family
@@ -409,6 +428,15 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
   "Living Situation": { en: "Living Situation", so: "Xaaladda Nololeed" },
   Madhhab: { en: "Madhhab", so: "Madhhab" },
   "Polygyny Openness": { en: "Polygyny Openness", so: "Furfurnaanta Guur Labaad" },
+  "Co-Wife Acceptance": { en: "Co-Wife Acceptance", so: "Aqbalaadda Garoobnimada" },
+  "Current Wife": { en: "Currently Has a Wife", so: "Hadda Xaas leh" },
+  "Open to Second Wife": { en: "Plans Another Wife", so: "Qorshaha Xaas Kale" },
+  "Accept Man With Wife": { en: "Accepts Married Man", so: "Aqbala Ninka Xaas leh" },
+  "Accept Future Co-Wife": { en: "Accepts Future Co-Wife", so: "Aqbala Garoob Mustaqbal" },
+  "Work Preference After Marriage": {
+    en: "Work Preference After Marriage",
+    so: "Doorbidka Shaqada Guurka Kadib",
+  },
   Languages: { en: "Languages", so: "Luuqadaha" },
   "Citizenship / Visa": { en: "Citizenship / Visa", so: "Jinsiyad / Fiiso" },
   "Financial Readiness": { en: "Financial Readiness", so: "Diyaargarowga Dhaqaale" },

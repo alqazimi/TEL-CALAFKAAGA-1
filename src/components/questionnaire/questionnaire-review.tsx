@@ -120,13 +120,41 @@ export function QuestionnaireReview({
   ];
 
   const marriageItems = [
-    { label: "Marital Status", value: profile.maritalStatus || "—" },
+    { label: "Marital Status", value: profile.maritalStatus ? optionLabel(profile.maritalStatus) : "—" },
     ...(profile.maritalStatus !== "Never married"
-      ? [{ label: "Children", value: profile.children > 0 ? "Yes" : "No" }]
+      ? [{ label: "Children", value: profile.children > 0 ? optionLabel("Yes") : optionLabel("No") }]
       : []),
-    { label: "Want Children", value: profile.wantChildren || "—" },
-    { label: "Family Involvement", value: profile.familyInvolvement || "—" },
-    { label: "Polygyny Openness", value: profile.polygynyOpenness || "—" },
+    { label: "Want Children", value: profile.wantChildren ? optionLabel(profile.wantChildren) : "—" },
+    { label: "Family Involvement", value: profile.familyInvolvement ? optionLabel(profile.familyInvolvement) : "—" },
+    ...(profile.gender === "male"
+      ? [
+          {
+            label: "Current Wife",
+            value: profile.hasCurrentWife ? optionLabel(profile.hasCurrentWife) : "—",
+          },
+          {
+            label: "Open to Second Wife",
+            value: profile.openToSecondWife
+              ? optionLabel(profile.openToSecondWife)
+              : profile.polygynyOpenness
+                ? optionLabel(profile.polygynyOpenness)
+                : "—",
+          },
+        ]
+      : [
+          {
+            label: "Accept Man With Wife",
+            value: profile.acceptManWithWife ? optionLabel(profile.acceptManWithWife) : "—",
+          },
+          {
+            label: "Accept Future Co-Wife",
+            value: profile.acceptFutureCoWife
+              ? optionLabel(profile.acceptFutureCoWife)
+              : profile.polygynyOpenness
+                ? optionLabel(profile.polygynyOpenness)
+                : "—",
+          },
+        ]),
   ];
 
   const lifestyleItems = [
@@ -174,8 +202,12 @@ export function QuestionnaireReview({
         { label: "Preferred Countries", value: preferences.preferredCountries?.length ? preferences.preferredCountries.join(", ") : ui("anyValue") },
         { label: "Preferred Education", value: preferences.educationLevel || "—" },
         { label: "Preferred Religious Level", value: preferences.religiousLevel || "—" },
-        { label: "Accept Divorcee", value: preferences.acceptDivorcee || "—" },
-        { label: "Accept Widow", value: preferences.acceptWidow || "—" },
+        ...(profile.maritalStatus !== "Divorced"
+          ? [{ label: "Accept Divorcee", value: preferences.acceptDivorcee || "—" }]
+          : []),
+        ...(profile.maritalStatus !== "Widowed"
+          ? [{ label: "Accept Widow", value: preferences.acceptWidow || "—" }]
+          : []),
         ...(profile.marrySomeoneWithChildren !== "No"
           ? [{ label: "Accept Children", value: preferences.acceptChildren || "—" }]
           : []),

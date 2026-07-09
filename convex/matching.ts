@@ -220,7 +220,7 @@ export function calculateCompatibilityBreakdown(
   push("languages", languageScore, 2);
 
   push("appearance", appearancePrefScore(user, userPrefs, candidate), 3);
-  push("polygyny", polygynyScore(user.polygynyOpenness, candidate.polygynyOpenness), 2);
+  push("polygyny", polygynyCompatibilityScore(user, candidate), 2);
 
   const rawTotal = categories.reduce((sum, item) => sum + item.score, 0);
   const total = Math.round(Math.min(100, Math.max(0, rawTotal)));
@@ -284,6 +284,50 @@ function polygynyScore(userVal?: string, candVal?: string): number {
   return 0;
 }
 
+function polygynyCompatibilityScore(user: Profile, candidate: Profile): number {
+  const man = user.gender === "male" ? user : candidate.gender === "male" ? candidate : null;
+  const woman =
+    user.gender === "female" ? user : candidate.gender === "female" ? candidate : null;
+
+  if (!man || !woman) {
+    return polygynyScore(user.polygynyOpenness, candidate.polygynyOpenness);
+  }
+
+  const usesNewFields =
+    !!man.hasCurrentWife ||
+    !!man.openToSecondWife ||
+    !!woman.acceptManWithWife ||
+    !!woman.acceptFutureCoWife;
+
+  if (!usesNewFields) {
+    return polygynyScore(user.polygynyOpenness, candidate.polygynyOpenness);
+  }
+
+  const currentWifeScore = scorePolygynyAlignment(
+    man.hasCurrentWife === "Yes",
+    woman.acceptManWithWife
+  );
+  const futureWifeScore = scorePolygynyAlignment(
+    man.openToSecondWife === "Yes" || man.openToSecondWife === "Maybe",
+    woman.acceptFutureCoWife,
+    man.openToSecondWife === "Maybe"
+  );
+
+  return currentWifeScore + futureWifeScore;
+}
+
+function scorePolygynyAlignment(
+  manSituation: boolean,
+  womanAccept?: string,
+  manMaybe = false
+): number {
+  if (!manSituation) return 1;
+  if (!womanAccept) return 0.5;
+  if (womanAccept === "Yes") return 1;
+  if (womanAccept === "Maybe") return manMaybe ? 0.75 : 0.5;
+  return 0;
+}
+
 export interface Profile {
   religiousLevel: string;
   prayerFrequency?: string;
@@ -305,6 +349,10 @@ export interface Profile {
   familyInvolvement?: string;
   livingSituation?: string;
   polygynyOpenness?: string;
+  hasCurrentWife?: string;
+  openToSecondWife?: string;
+  acceptManWithWife?: string;
+  acceptFutureCoWife?: string;
   languagesSpoken?: string[];
   citizenshipStatus?: string;
   financialReadiness?: string;

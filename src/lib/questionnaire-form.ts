@@ -70,6 +70,10 @@ export function initFormState(
   if (profile.familyInvolvement) radios.familyInvolvement = profile.familyInvolvement;
   if (profile.livingSituation) radios.livingSituation = profile.livingSituation;
   if (profile.polygynyOpenness) radios.polygynyOpenness = profile.polygynyOpenness;
+  if (profile.hasCurrentWife) radios.hasCurrentWife = profile.hasCurrentWife;
+  if (profile.openToSecondWife) radios.openToSecondWife = profile.openToSecondWife;
+  if (profile.acceptManWithWife) radios.acceptManWithWife = profile.acceptManWithWife;
+  if (profile.acceptFutureCoWife) radios.acceptFutureCoWife = profile.acceptFutureCoWife;
   if (profile.citizenshipStatus) radios.citizenshipStatus = profile.citizenshipStatus;
   if (profile.financialReadiness) radios.financialReadiness = profile.financialReadiness;
   if (profile.marriageWorkPreference) radios.marriageWorkPreference = profile.marriageWorkPreference;
@@ -144,11 +148,41 @@ export function isFieldVisible(
     const condValue = getFieldValue(field.condition.field, profile, radios, selects);
     if (condValue !== field.condition.value) return false;
   }
+  if (field.showWhen) {
+    const value = getFieldValue(field.showWhen.field, profile, radios, selects);
+    if (!value || !field.showWhen.values.includes(value)) return false;
+  }
   if (field.hideWhen) {
     const value = getFieldValue(field.hideWhen.field, profile, radios, selects);
     if (value && field.hideWhen.values.includes(value)) return false;
   }
   return true;
+}
+
+const WANT_CHILDREN_HAS_KIDS_OPTION = "Already have and open to more";
+
+export function userHasChildrenFromPastMarriage(
+  profile: { maritalStatus?: string; children?: number } | null | undefined,
+  radios: Record<string, string>
+): boolean {
+  const maritalStatus = radios.maritalStatus ?? profile?.maritalStatus;
+  if (maritalStatus === "Never married") return false;
+  if (radios.hasChildren === "Yes") return true;
+  if (radios.hasChildren === "No") return false;
+  return (profile?.children ?? 0) > 0;
+}
+
+/** Filter options that do not apply given current answers (e.g. Muslim marriage logic). */
+export function getFieldOptions(
+  field: FieldConfig,
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  radios: Record<string, string>
+): string[] {
+  const options = (field.options ?? []).map(String);
+  if (field.name === "wantChildren" && !userHasChildrenFromPastMarriage(profile, radios)) {
+    return options.filter((option) => option !== WANT_CHILDREN_HAS_KIDS_OPTION);
+  }
+  return options;
 }
 
 export function buildStepData(
@@ -252,6 +286,14 @@ export function buildStepData(
     radios.marrySomeoneWithChildren === "No"
   ) {
     preferences.acceptChildren = "No";
+  }
+
+  const maritalStatus = radios.maritalStatus ?? profile?.maritalStatus;
+  if (maritalStatus === "Divorced") {
+    preferences.acceptDivorcee = "Yes";
+  }
+  if (maritalStatus === "Widowed") {
+    preferences.acceptWidow = "Yes";
   }
 
   if (Object.keys(preferences).length > 0) {

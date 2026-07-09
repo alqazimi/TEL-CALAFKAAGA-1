@@ -275,10 +275,33 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                       label: t("adminDetail.familyInvolvement"),
                       value: detail.profile.familyInvolvement || "—",
                     },
-                    {
-                      label: t("adminDetail.polygynyOpenness"),
-                      value: detail.profile.polygynyOpenness || "—",
-                    },
+                    ...(detail.profile.gender === "male"
+                      ? [
+                          {
+                            label: t("adminDetail.hasCurrentWife"),
+                            value: detail.profile.hasCurrentWife || "—",
+                          },
+                          {
+                            label: t("adminDetail.openToSecondWife"),
+                            value:
+                              detail.profile.openToSecondWife ||
+                              detail.profile.polygynyOpenness ||
+                              "—",
+                          },
+                        ]
+                      : [
+                          {
+                            label: t("adminDetail.acceptManWithWife"),
+                            value: detail.profile.acceptManWithWife || "—",
+                          },
+                          {
+                            label: t("adminDetail.acceptFutureCoWife"),
+                            value:
+                              detail.profile.acceptFutureCoWife ||
+                              detail.profile.polygynyOpenness ||
+                              "—",
+                          },
+                        ]),
                     {
                       label: t("adminDetail.marryWithChildren"),
                       value: detail.profile.marrySomeoneWithChildren || "—",

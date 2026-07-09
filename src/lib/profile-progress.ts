@@ -40,11 +40,17 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
 export type SectionStatus = "complete" | "in_progress" | "not_started";
 
 export function isMarriageComplete(profile: Profile): boolean {
+  const polygynyOk =
+    profile.gender === "male"
+      ? !!(profile.hasCurrentWife && profile.openToSecondWife) ||
+        !!profile.polygynyOpenness
+      : !!(profile.acceptManWithWife && profile.acceptFutureCoWife) ||
+        !!profile.polygynyOpenness;
   return (
     !!profile.maritalStatus &&
     !!profile.wantChildren &&
     !!profile.familyInvolvement &&
-    !!profile.polygynyOpenness
+    polygynyOk
   );
 }
 
@@ -207,7 +213,11 @@ export function getSectionStatus(
       !!profile.maritalStatus ||
       !!profile.wantChildren ||
       !!profile.familyInvolvement ||
-      !!profile.polygynyOpenness,
+      !!profile.polygynyOpenness ||
+      !!profile.hasCurrentWife ||
+      !!profile.openToSecondWife ||
+      !!profile.acceptManWithWife ||
+      !!profile.acceptFutureCoWife,
     lifestyle: profile.smokes === "Yes" || profile.smokes === "No",
     about:
       !!profile.readyToRelocate ||

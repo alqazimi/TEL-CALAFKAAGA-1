@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import {
   buildStepData,
   getVisibleFields,
+  getFieldOptions,
   initFormState,
   validateField,
   validateStepFields,
@@ -375,9 +376,10 @@ export function QuestionnaireStep({
     }
 
     if (field.type === "radio") {
+      const options = getFieldOptions(field, profile, radios);
       return (
         <div className="space-y-2.5" role="radiogroup">
-          {field.options?.map((option) => {
+          {options.map((option) => {
             const value = String(option);
             const selected = radios[field.name] === value;
             return (
@@ -390,6 +392,14 @@ export function QuestionnaireStep({
                     const next = { ...prev, [field.name]: value };
                     if (field.name === "maritalStatus" && value === "Never married") {
                       delete next.hasChildren;
+                      if (prev.wantChildren === "Already have and open to more") {
+                        delete next.wantChildren;
+                      }
+                    }
+                    if (field.name === "hasChildren" && value === "No") {
+                      if (prev.wantChildren === "Already have and open to more") {
+                        delete next.wantChildren;
+                      }
                     }
                     if (field.name === "substanceUse" && value === "No") {
                       setTextFields((tf) => {
@@ -599,7 +609,7 @@ export function QuestionnaireStep({
           className="space-y-6"
         >
           <h2 className="text-[1.625rem] sm:text-3xl font-semibold tracking-tight leading-snug text-foreground">
-            {fieldLabel(currentField.name, currentField.label)}
+            {fieldLabel(currentField.labelKey ?? currentField.name, currentField.label)}
             {currentField.required && (
               <span className="text-destructive ml-0.5">*</span>
             )}

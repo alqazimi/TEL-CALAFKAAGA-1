@@ -29,6 +29,10 @@ export interface Profile {
   familyInvolvement?: string;
   livingSituation?: string;
   polygynyOpenness?: string;
+  hasCurrentWife?: string;
+  openToSecondWife?: string;
+  acceptManWithWife?: string;
+  acceptFutureCoWife?: string;
   languagesSpoken?: string[];
   citizenshipStatus?: string;
   financialReadiness?: string;
