@@ -4,6 +4,7 @@ import {
   QUESTIONNAIRE_COMPLETE_STEP,
   religiousLevelFromPrayer,
 } from "./lib/profileEnrichment";
+import { getTrialEndsAt } from "./lib/trial";
 
 /** One-time backfill for profiles created before new fields were added. */
 export const backfillProfileFields = internalMutation({
@@ -32,6 +33,13 @@ export const backfillProfileFields = internalMutation({
       if (profile.questionnaireComplete && !profile.approved) {
         patch.approved = true;
         patch.verified = true;
+      }
+      if (
+        profile.questionnaireComplete &&
+        !profile.hasPaid &&
+        profile.trialEndsAt === undefined
+      ) {
+        patch.trialEndsAt = getTrialEndsAt();
       }
       if ("dealBreakers" in legacyProfile) {
         needsReplace = true;

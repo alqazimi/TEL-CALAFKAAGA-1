@@ -759,12 +759,12 @@ const UI_TEXT = {
     so: "Profile-ku waa Dhammaystiran",
   },
   profileReadySub: {
-    en: "Your profile is ready. Start browsing your matches!",
-    so: "Profile-kaagu waa diyaar. Bilow inaad eegto kuwa ku habboon!",
+    en: "Your profile is ready. Enjoy your free premium week — start browsing when approved!",
+    so: "Profile-kaagu waa diyaar. Ku raaxayso toddobaadkaaga premium ee bilaashka ah — bilow marka la ansixiyo!",
   },
   profileReadyPaySub: {
-    en: "Your profile is ready. Choose a plan to unlock matches. An admin will verify your profile before you can browse members.",
-    so: "Profile-kaagu waa diyaar. Dooro qorshe si aad u furto isbarbardhigga. Maamuluhu wuu xaqiijin doonaa profile-kaaga ka hor intaadan eegin xubnaha.",
+    en: "Your profile is ready. Enjoy your free premium week — no payment needed for 7 days.",
+    so: "Profile-kaagu waa diyaar. Ku raaxayso toddobaadkaaga premium ee bilaashka ah — 7 maalmood lacag looma baahna.",
   },
   welcomeQuestionnaireTitle: {
     en: "Welcome! Let's build your profile",

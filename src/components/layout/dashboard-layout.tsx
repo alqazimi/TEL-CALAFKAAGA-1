@@ -6,6 +6,7 @@ import { useConvexAuth } from "convex/react";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { AppShellHeader } from "@/components/layout/app-shell-header";
 import { AppMobileNav } from "@/components/layout/app-mobile-nav";
+import { TrialAccessSync } from "@/components/auth/trial-access-sync";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -42,6 +43,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen dashboard-bg flex flex-col">
+      <TrialAccessSync />
       <AppShellHeader />
       <DashboardSidebar />
       <div className="flex flex-1 flex-col lg:pl-64 lg:pt-16">

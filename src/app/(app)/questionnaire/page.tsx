@@ -287,11 +287,7 @@ export default function QuestionnairePage() {
       router.push("/profile");
       return;
     }
-    if (profile && hasPaidAccess(profile)) {
-      router.push("/dashboard");
-      return;
-    }
-    router.push("/payment");
+    router.push("/dashboard");
   };
 
   useEffect(() => {
