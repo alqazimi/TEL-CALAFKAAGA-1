@@ -111,6 +111,22 @@ export const WANT_CHILDREN = [
 
 export const FAMILY_INVOLVEMENT = ["Yes", "No", "Somewhat"] as const;
 
+/** Household arrangement after marriage (location is covered by readyToRelocate + country prefs). */
+export const LIVING_ARRANGEMENT_MALE = [
+  "Own home with my wife",
+  "With my parents or family",
+  "Separate home near my family",
+  "Open to discuss",
+] as const;
+
+export const LIVING_ARRANGEMENT_FEMALE = [
+  "Own home with my husband",
+  "With my husband's family",
+  "Separate home near his family",
+  "Open to discuss",
+] as const;
+
+/** @deprecated Legacy values — kept for matching old profiles. */
 export const LIVING_SITUATION = [
   "Same city",
   "Same country",

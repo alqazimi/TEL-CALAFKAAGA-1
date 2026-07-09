@@ -179,7 +179,7 @@ export function QuestionnaireReview({
       : []),
     { label: "Languages", value: translateList(profile.languagesSpoken) },
     { label: "Ready to Relocate", value: profile.readyToRelocate || "—" },
-    { label: "Living Situation", value: profile.livingSituation || "—" },
+    { label: "Living Situation", value: profile.livingSituation ? optionLabel(profile.livingSituation) : "—" },
     { label: "Marriage Timeline", value: profile.marriageTimeline || "—" },
     { label: "Love Language", value: profile.loveLanguage ? optionLabel(profile.loveLanguage) : "—" },
     { label: "Qualities", value: translateList(profile.qualities) },

@@ -206,7 +206,7 @@ export function calculateCompatibilityBreakdown(
 
   let livingScore = 0;
   if (user.livingSituation && candidate.livingSituation) {
-    livingScore = user.livingSituation === candidate.livingSituation ? 2 : 1;
+    livingScore = livingArrangementScore(user, candidate);
   }
   push("livingSituation", livingScore, 2);
 
@@ -275,6 +275,45 @@ function appearancePrefScore(
     return 2;
   }
   return 2;
+}
+
+function livingArrangementScore(user: Profile, candidate: Profile): number {
+  const a = user.livingSituation;
+  const b = candidate.livingSituation;
+  if (!a || !b) return 1;
+  if (a === b) return 2;
+  if (a === "Open to discuss" || b === "Open to discuss") return 2;
+
+  const maleFemalePairs: [string, string][] = [
+    ["Own home with my wife", "Own home with my husband"],
+    ["With my parents or family", "With my husband's family"],
+    ["Separate home near my family", "Separate home near his family"],
+  ];
+
+  for (const [maleVal, femaleVal] of maleFemalePairs) {
+    const aligned =
+      (user.gender === "male" &&
+        candidate.gender === "female" &&
+        a === maleVal &&
+        b === femaleVal) ||
+      (user.gender === "female" &&
+        candidate.gender === "male" &&
+        a === femaleVal &&
+        b === maleVal);
+    if (aligned) return 2;
+  }
+
+  // Legacy profiles (location-style answers)
+  const legacyCompatible: Record<string, string[]> = {
+    "Own home": ["Own home with my wife", "Own home with my husband"],
+    "With family": ["With my parents or family", "With my husband's family"],
+    "Same city": ["Separate home near my family", "Separate home near his family"],
+    "Same country": ["Open to discuss"],
+    "Open to abroad": ["Open to discuss"],
+  };
+  if (legacyCompatible[a]?.includes(b) || legacyCompatible[b]?.includes(a)) return 1;
+
+  return 0;
 }
 
 function polygynyScore(userVal?: string, candVal?: string): number {

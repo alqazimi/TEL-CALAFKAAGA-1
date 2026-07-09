@@ -130,6 +130,14 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     en: "Preferred living situation after marriage?",
     so: "Habka nololeed ee aad doorbidayso guurka ka dib?",
   },
+  livingSituation_male: {
+    en: "After marriage, where do you plan for your wife to live?",
+    so: "Guurka ka dib, xaggee ayaad qorshaynaysaa in xaaskaagu ku noolaado?",
+  },
+  livingSituation_female: {
+    en: "After marriage, where would you prefer to live?",
+    so: "Guurka ka dib, xaggee ayaad doorbidaysaa inaad ku noolaato?",
+  },
   polygynyOpenness: {
     en: "Are you open to polygyny / a second marriage?",
     so: "Ma u furan tahay guur labaad / laba xaas?",
@@ -292,6 +300,34 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   "Open to abroad": { en: "Open to abroad", so: "U furan dibadda" },
   "With family": { en: "With family", so: "Lala noolaado qoyska" },
   "Own home": { en: "Own home", so: "Gurigeyga gaarka ah" },
+  "Own home with my wife": {
+    en: "Own home with my wife (separate from family)",
+    so: "Guri gaar ah aniga iyo xaaskayga (ka go'an qoyska)",
+  },
+  "Own home with my husband": {
+    en: "Own home with my husband (separate from in-laws)",
+    so: "Guri gaar ah aniga iyo ninkayga (ka go'an qoyska)",
+  },
+  "With my parents or family": {
+    en: "With my parents or family",
+    so: "Waalidkayga ama qoyskeyga la joogo",
+  },
+  "With my husband's family": {
+    en: "With my husband's family",
+    so: "Qoyska ninkayga la joogo",
+  },
+  "Separate home near my family": {
+    en: "Separate home, but near my family",
+    so: "Guri gooni ah, laakiin u dhow qoyskeyga",
+  },
+  "Separate home near his family": {
+    en: "Separate home, but near his family",
+    so: "Guri gooni ah, laakiin u dhow qoyskiisa",
+  },
+  "Open to discuss": {
+    en: "Open to discuss together",
+    so: "Waan ka wada hadli karnaa",
+  },
   "Prefer not to say": { en: "Prefer not to say", so: "Ma doonayo inaan sheego" },
   // Beard / hijab preferences
   "Beard preferred": { en: "Beard preferred", so: "Gad la doorbido" },
