@@ -4,11 +4,15 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation } from "./_generated/server";
 import { hasPaidAccess, isStaffRole } from "./lib/roles";
+import { getTrialDaysRemaining, isInTrialPeriod } from "./lib/trial";
 
 const REMINDER_COOLDOWN_MS = 72 * 60 * 60 * 1000;
 const MIN_AGE_MS = 24 * 60 * 60 * 1000;
 
-type ReminderKind = "reminder_profile" | "reminder_payment";
+type ReminderKind =
+  | "reminder_profile"
+  | "reminder_payment"
+  | "reminder_trial_ending";
 
 async function wasReminderSentRecently(
   ctx: MutationCtx,
@@ -88,8 +92,29 @@ export const run = internalMutation({
         continue;
       }
 
+      if (isInTrialPeriod(profile) && !profile.hasPaid) {
+        const daysLeft = getTrialDaysRemaining(profile, now);
+        if (daysLeft > 2) continue;
+        if (await wasReminderSentRecently(ctx, profile.userId, "reminder_trial_ending")) {
+          continue;
+        }
+
+        await queueReminderEmail(
+          ctx,
+          profile.userId,
+          "reminder_trial_ending",
+          "Your free week on Hel Calafkaaga is ending soon",
+          daysLeft <= 0
+            ? "Your 7-day free trial has ended. Choose the $10 or $20 plan to keep browsing matches and messaging."
+            : `You have ${daysLeft} day${daysLeft === 1 ? "" : "s"} left in your free premium trial. After that, choose the $10 or $20 plan to continue.`,
+          "View plans",
+          daysLeft <= 0 ? "/payment" : "/matches"
+        );
+        continue;
+      }
+
       if (!hasPaidAccess(profile)) {
-        const referenceTime = profile.lastSavedAt ?? profile._creationTime;
+        const referenceTime = profile.trialEndsAt ?? profile.lastSavedAt ?? profile._creationTime;
         if (now - referenceTime < MIN_AGE_MS) continue;
         if (await wasReminderSentRecently(ctx, profile.userId, "reminder_payment")) {
           continue;
@@ -100,7 +125,7 @@ export const run = internalMutation({
           profile.userId,
           "reminder_payment",
           "Unlock matches on Hel Calafkaaga",
-          "Your profile is ready. Choose a plan to start browsing serious members and connecting with compatible matches.",
+          "Your free week has ended. Choose the $10 or $20 plan to keep browsing serious members and connecting with compatible matches.",
           "Choose plan",
           "/payment"
         );

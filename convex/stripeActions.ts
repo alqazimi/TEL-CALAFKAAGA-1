@@ -55,8 +55,11 @@ export const createRegistrationCheckout = action({
 
     if (!profile) throw new Error("Profile not found");
     if (profile.banned) throw new Error("Account suspended");
-    if (hasPaidAccess(profile)) {
+    if (profile.hasPaid) {
       throw new Error("Already paid");
+    }
+    if (hasPaidAccess(profile)) {
+      throw new Error("You still have free access. Payment opens after your trial week.");
     }
 
     const checkout = getRegistrationCheckoutDetails(args.tier);

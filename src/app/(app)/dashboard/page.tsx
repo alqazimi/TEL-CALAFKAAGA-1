@@ -11,7 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { NextStepCard } from "@/components/dashboard/next-step-card";
+import { TrialBanner } from "@/components/payment/trial-banner";
 import { hasPaidAccess, isPremiumMember, isStaffRole } from "@/lib/access";
+import { isInTrialPeriod } from "@/lib/trial";
 import { useTranslation } from "@/lib/i18n/context";
 
 export default function DashboardPage() {
@@ -66,6 +68,10 @@ export default function DashboardPage() {
             {t("dashboard.hello", { name: firstName })}
           </h1>
         </div>
+
+        {profile && isInTrialPeriod(profile) && (
+          <TrialBanner profile={profile} />
+        )}
 
         {awaitingApproval && (
           <PendingApprovalGate isPremium={isPremiumMember(profile)} className="py-0" />

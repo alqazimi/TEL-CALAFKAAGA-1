@@ -486,6 +486,9 @@ export const en = {
     stepPayment: "Payment",
     confirming: "Confirming payment...",
     paymentCanceled: "Payment canceled. Complete payment to unlock matches.",
+    trialEndedTitle: "Your free week has ended",
+    trialEndedDesc:
+      "Your 7-day free trial is over. Choose standard registration (${{basic}}) or registration with personal support (${{premium}}) to keep using Hel Calafkaaga.",
     profileNotFound: "Profile not found.",
     confirmingDesc: "Please wait while we verify your payment with Stripe.",
     success: "Payment successful",
@@ -598,6 +601,14 @@ export const en = {
     nextBrowseTitle: "Discover matches",
     nextBrowseDesc: "{{count}} compatible profiles are waiting for you.",
     nextBrowseAction: "Start browsing",
+  },
+  trial: {
+    bannerTitle: "Your first week is free — full premium access",
+    bannerDesc:
+      "{{days}} left with all premium features. No card needed now. After your trial, choose ${{basic}} standard or ${{premium}} with personal support.",
+    oneDayLeft: "1 day",
+    daysLeft: "{{count}} days",
+    browseMatches: "Browse matches",
   },
   trustBadges: {
     verified: "Verified",
@@ -743,8 +754,12 @@ export const en = {
     completeProfileAction: "Continue profile",
     completePaymentTitle: "Unlock matches",
     completePaymentBody:
-      "Your profile is ready. Choose a plan to start browsing members.",
+      "Your free week has ended. Choose a plan to keep browsing members.",
     completePaymentAction: "Choose plan",
+    freeTrialTitle: "Enjoy your free premium week",
+    freeTrialBody:
+      "Browse matches, see who liked you, and use all premium features. No payment needed this week.",
+    freeTrialAction: "Start browsing",
     pendingApprovalTitle: "Profile under review",
     pendingApprovalBody:
       "An admin is reviewing your profile. You will be notified when approved.",

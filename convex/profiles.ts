@@ -22,6 +22,7 @@ import {
   MAX_ADDITIONAL_PHOTOS,
   MAX_PROFILE_PHOTOS,
 } from "./lib/premium";
+import { getTrialEndsAt, isInTrialPeriod } from "./lib/trial";
 import { hasActiveMatch } from "./lib/matchPresentation";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
@@ -107,6 +108,7 @@ export const getProfile = query({
         (url): url is string => url !== null
       ),
       isPremium: isPremiumMember(profile),
+      isInTrial: isInTrialPeriod(profile),
     };
   },
 });
@@ -309,6 +311,9 @@ export const completeQuestionnaire = mutation({
       questionnaireComplete: true,
       questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
       lastSavedAt: Date.now(),
+      ...(!profile.hasPaid && profile.trialEndsAt === undefined
+        ? { trialEndsAt: getTrialEndsAt() }
+        : {}),
     });
 
     await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {

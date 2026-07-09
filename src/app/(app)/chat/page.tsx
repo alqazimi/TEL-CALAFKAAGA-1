@@ -23,6 +23,9 @@ import { PaymentGate } from "@/components/payment/payment-gate";
 import type { Conversation, ChatMessage, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
+import { TrialBanner } from "@/components/payment/trial-banner";
+import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,7 +35,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/utils";
-import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
@@ -204,11 +206,22 @@ export default function ChatPage() {
     return (
       <DashboardLayout>
         <PaymentGate
-          title={t("payment.profileReadyTitle")}
-          description={t("payment.profileReadyDesc", {
-            basic: REGISTRATION_PRICE,
-            premium: PERSONAL_SUPPORT_PRICE,
-          })}
+          title={
+            isTrialExpired(profile)
+              ? t("payment.trialEndedTitle")
+              : t("payment.profileReadyTitle")
+          }
+          description={
+            isTrialExpired(profile)
+              ? t("payment.trialEndedDesc", {
+                  basic: REGISTRATION_PRICE,
+                  premium: PERSONAL_SUPPORT_PRICE,
+                })
+              : t("payment.profileReadyDesc", {
+                  basic: REGISTRATION_PRICE,
+                  premium: PERSONAL_SUPPORT_PRICE,
+                })
+          }
         />
       </DashboardLayout>
     );

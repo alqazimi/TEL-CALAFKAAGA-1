@@ -51,6 +51,8 @@ export interface Profile {
   lastSavedAt?: number;
   registrationComplete?: boolean;
   hasPaid: boolean;
+  trialEndsAt?: number;
+  isInTrial?: boolean;
   hasPersonalSupport?: boolean;
   advisorReviewed?: boolean;
   additionalImageIds?: Id<"_storage">[];
@@ -133,6 +135,7 @@ export interface Notification {
 export type MemberReminderId =
   | "complete-profile"
   | "complete-payment"
+  | "free-trial-active"
   | "pending-approval"
   | "browse-matches";
 

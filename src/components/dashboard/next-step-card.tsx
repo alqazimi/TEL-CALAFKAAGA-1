@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { isInTrialPeriod } from "@/lib/trial";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { reminderCopy } from "@/lib/reminder-copy";
@@ -24,6 +25,7 @@ import { reminderCopy } from "@/lib/reminder-copy";
 const reminderIcons: Record<MemberReminderId, typeof ClipboardList> = {
   "complete-profile": ClipboardList,
   "complete-payment": CreditCard,
+  "free-trial-active": Sparkles,
   "pending-approval": ShieldCheck,
   "browse-matches": Search,
 };
@@ -43,6 +45,7 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
   const profile = user.profile;
   const isComplete = profile?.questionnaireComplete ?? false;
   const hasPaid = hasPaidAccess(profile);
+  const inTrial = isInTrialPeriod(profile);
   const isApproved = profile?.approved ?? false;
   const isPremium = isPremiumMember(profile);
   const discoverCount = matches?.length ?? 0;
@@ -93,7 +96,7 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
               </p>
               <h2 className="text-xl font-semibold mt-1 leading-snug">{title}</h2>
               <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{body}</p>
-              {!hasPaid && isComplete && (
+              {!hasPaid && !inTrial && isComplete && (
                 <p className="text-xs text-muted-foreground mt-2">
                   {t("dashboard.payToContinue", {
                     basic: REGISTRATION_PRICE,

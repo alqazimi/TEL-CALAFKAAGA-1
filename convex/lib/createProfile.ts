@@ -5,6 +5,7 @@ import {
   QUESTIONNAIRE_COMPLETE_STEP,
   religiousLevelFromPrayer,
 } from "./profileEnrichment";
+import { getTrialEndsAt } from "./trial";
 
 type ProfileArgs = {
   name: string;
@@ -116,6 +117,13 @@ export async function ensureUserProfile(
     }
     if (!existing.religiousLevel?.trim() && existing.prayerFrequency?.trim()) {
       backfill.religiousLevel = religiousLevelFromPrayer(existing.prayerFrequency);
+    }
+    if (
+      existing.questionnaireComplete &&
+      !existing.hasPaid &&
+      existing.trialEndsAt === undefined
+    ) {
+      backfill.trialEndsAt = getTrialEndsAt();
     }
     if (Object.keys(backfill).length > 0) {
       await ctx.db.patch(existing._id, backfill);

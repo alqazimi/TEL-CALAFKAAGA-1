@@ -15,6 +15,11 @@ export const reminderCopy: Record<
     body: "reminders.completePaymentBody",
     action: "reminders.completePaymentAction",
   },
+  "free-trial-active": {
+    title: "reminders.freeTrialTitle",
+    body: "reminders.freeTrialBody",
+    action: "reminders.freeTrialAction",
+  },
   "pending-approval": {
     title: "reminders.pendingApprovalTitle",
     body: "reminders.pendingApprovalBody",

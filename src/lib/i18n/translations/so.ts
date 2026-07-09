@@ -496,6 +496,9 @@ export const so: Translations = {
     stepPayment: "Lacag bixin",
     confirming: "Lacagta waa la xaqiijinayaa...",
     paymentCanceled: "Lacag bixintii waa la joojiyay. Dhammaystir lacag bixinta si aad u furto isbarbardhigga.",
+    trialEndedTitle: "Toddobaadkaaga bilaashka ah wuu dhammaaday",
+    trialEndedDesc:
+      "Tijaabadaada 7 maalmood ahayd waa dhammaatay. Dooro diiwaangelinta caadiga ah (${{basic}}) ama diiwaangelinta taageerada shaqsiga ah (${{premium}}) si aad u sii wadato Hel Calafkaaga.",
     profileNotFound: "Profile lama helin.",
     confirmingDesc: "Fadlan sug inta aan lacagtaada Stripe ku xaqiijinayno.",
     success: "Lacag bixintu waa guulaysatay",
@@ -608,6 +611,14 @@ export const so: Translations = {
     nextBrowseTitle: "Baadh isbarbardhigyo",
     nextBrowseDesc: "{{count}} profile oo ku habboon ayaa ku sugaya.",
     nextBrowseAction: "Bilow baadhista",
+  },
+  trial: {
+    bannerTitle: "Toddobaadkaaga koowaad waa bilaash — premium buuxa",
+    bannerDesc:
+      "{{days}} ayaa hadhay oo leh dhammaan astaamaha premium. Hadda kaarka looma baahna. Ka dib tijaabada, dooro ${{basic}} caadi ama ${{premium}} taageero shaqsi.",
+    oneDayLeft: "1 maalin",
+    daysLeft: "{{count}} maalmood",
+    browseMatches: "Baadh isbarbardhigyo",
   },
   trustBadges: {
     verified: "La xaqiijiyay",
@@ -754,8 +765,12 @@ export const so: Translations = {
     completeProfileAction: "Sii wad profile-ka",
     completePaymentTitle: "Fur isbarbardhigyada",
     completePaymentBody:
-      "Profile-kaagu waa diyaar. Dooro qorshe si aad u bilowdo raadinta xubnaha.",
+      "Toddobaadkaaga bilaashka ah wuu dhammaaday. Dooro qorshe si aad u sii wadato raadinta xubnaha.",
     completePaymentAction: "Dooro qorshe",
+    freeTrialTitle: "Ku raaxayso toddobaadkaaga premium ee bilaashka ah",
+    freeTrialBody:
+      "Baadh isbarbardhigyo, arag cidda ku jeclaatay, oo isticmaal dhammaan astaamaha premium. Toddobaadkan lacag looma baahna.",
+    freeTrialAction: "Bilow baadhista",
     pendingApprovalTitle: "Profile-ka waa la eegayaa",
     pendingApprovalBody:
       "Maamuluhu wuxuu eegayaa profile-kaaga. Waxaa laguu ogeysiin doonaa marka la ansixiyo.",

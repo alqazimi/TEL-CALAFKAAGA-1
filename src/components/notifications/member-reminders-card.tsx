@@ -8,6 +8,7 @@ import {
   CreditCard,
   Search,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import type { MemberReminder, MemberReminderId } from "@/types";
@@ -19,6 +20,7 @@ import { reminderCopy } from "@/lib/reminder-copy";
 const reminderIcons: Record<MemberReminderId, typeof ClipboardList> = {
   "complete-profile": ClipboardList,
   "complete-payment": CreditCard,
+  "free-trial-active": Sparkles,
   "pending-approval": ShieldCheck,
   "browse-matches": Search,
 };
@@ -26,6 +28,7 @@ const reminderIcons: Record<MemberReminderId, typeof ClipboardList> = {
 const reminderColors: Record<MemberReminderId, string> = {
   "complete-profile": "text-primary bg-accent",
   "complete-payment": "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400",
+  "free-trial-active": "text-violet-600 bg-violet-50 dark:bg-violet-950/30 dark:text-violet-400",
   "pending-approval": "text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400",
   "browse-matches": "text-primary bg-accent dark:bg-primary/20",
 };

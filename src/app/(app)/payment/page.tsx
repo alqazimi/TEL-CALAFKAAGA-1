@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import { useTranslation } from "@/lib/i18n/context";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
+import { isTrialExpired } from "@/lib/trial";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { toast } from "sonner";
 
@@ -46,6 +47,7 @@ export default function PaymentPage() {
     profile?.registrationComplete,
     profile?.questionnaireComplete,
     profile?.hasPaid,
+    profile?.trialEndsAt,
     profile?.role,
     router,
   ]);
@@ -83,11 +85,22 @@ export default function PaymentPage() {
   return (
     <DashboardLayout>
       <PaymentGate
-        title={t("payment.profileReadyTitle")}
-        description={t("payment.profileReadyDesc", {
-          basic: REGISTRATION_PRICE,
-          premium: PERSONAL_SUPPORT_PRICE,
-        })}
+        title={
+          isTrialExpired(profile)
+            ? t("payment.trialEndedTitle")
+            : t("payment.profileReadyTitle")
+        }
+        description={
+          isTrialExpired(profile)
+            ? t("payment.trialEndedDesc", {
+                basic: REGISTRATION_PRICE,
+                premium: PERSONAL_SUPPORT_PRICE,
+              })
+            : t("payment.profileReadyDesc", {
+                basic: REGISTRATION_PRICE,
+                premium: PERSONAL_SUPPORT_PRICE,
+              })
+        }
       />
     </DashboardLayout>
   );

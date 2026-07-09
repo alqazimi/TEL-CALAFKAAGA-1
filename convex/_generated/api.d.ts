@@ -21,6 +21,7 @@ import type * as lib_constants from "../lib/constants.js";
 import type * as lib_createProfile from "../lib/createProfile.js";
 import type * as lib_matchPresentation from "../lib/matchPresentation.js";
 import type * as lib_moderation from "../lib/moderation.js";
+import type * as lib_phone from "../lib/phone.js";
 import type * as lib_premium from "../lib/premium.js";
 import type * as lib_profileEnrichment from "../lib/profileEnrichment.js";
 import type * as lib_questionnaire from "../lib/questionnaire.js";
@@ -67,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   "lib/createProfile": typeof lib_createProfile;
   "lib/matchPresentation": typeof lib_matchPresentation;
   "lib/moderation": typeof lib_moderation;
+  "lib/phone": typeof lib_phone;
   "lib/premium": typeof lib_premium;
   "lib/profileEnrichment": typeof lib_profileEnrichment;
   "lib/questionnaire": typeof lib_questionnaire;

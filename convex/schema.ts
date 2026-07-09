@@ -69,6 +69,7 @@ export default defineSchema({
     lastSavedAt: v.optional(v.number()),
     registrationComplete: v.optional(v.boolean()),
     hasPaid: v.boolean(),
+    trialEndsAt: v.optional(v.number()),
     hasPersonalSupport: v.optional(v.boolean()),
     advisorReviewed: v.optional(v.boolean()),
     additionalImageIds: v.optional(v.array(v.id("_storage"))),
@@ -264,7 +265,8 @@ export default defineSchema({
     userId: v.id("users"),
     kind: v.union(
       v.literal("reminder_profile"),
-      v.literal("reminder_payment")
+      v.literal("reminder_payment"),
+      v.literal("reminder_trial_ending")
     ),
     sentAt: v.number(),
   }).index("by_user_kind", ["userId", "kind"]),

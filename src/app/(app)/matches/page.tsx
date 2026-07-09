@@ -23,6 +23,8 @@ import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
+import { TrialBanner } from "@/components/payment/trial-banner";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -131,11 +133,22 @@ export default function MatchesPage() {
     return (
       <DashboardLayout>
         <PaymentGate
-          title={t("payment.profileReadyTitle")}
-          description={t("payment.profileReadyDesc", {
-            basic: REGISTRATION_PRICE,
-            premium: PERSONAL_SUPPORT_PRICE,
-          })}
+          title={
+            isTrialExpired(profile)
+              ? t("payment.trialEndedTitle")
+              : t("payment.profileReadyTitle")
+          }
+          description={
+            isTrialExpired(profile)
+              ? t("payment.trialEndedDesc", {
+                  basic: REGISTRATION_PRICE,
+                  premium: PERSONAL_SUPPORT_PRICE,
+                })
+              : t("payment.profileReadyDesc", {
+                  basic: REGISTRATION_PRICE,
+                  premium: PERSONAL_SUPPORT_PRICE,
+                })
+          }
         />
       </DashboardLayout>
     );
@@ -163,6 +176,7 @@ export default function MatchesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-5 max-w-lg mx-auto">
+        {profile && isInTrialPeriod(profile) && <TrialBanner profile={profile} />}
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold">{t("matchesPage.discoverTitle")}</h1>

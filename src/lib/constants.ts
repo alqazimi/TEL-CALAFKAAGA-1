@@ -14,6 +14,7 @@ export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 export const SUPPORT_EMAIL = "hello@helcalafkaaga.com";
 export const REGISTRATION_PRICE = 10;
 export const PERSONAL_SUPPORT_PRICE = 20;
+export const TRIAL_DAYS = 7;
 export const PREMIUM_UPGRADE_PRICE = PERSONAL_SUPPORT_PRICE - REGISTRATION_PRICE;
 export const MAX_PROFILE_PHOTOS = 5;
 /** @deprecated Use PERSONAL_SUPPORT_PRICE */
