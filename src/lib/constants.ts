@@ -20,6 +20,10 @@ export const MAX_PROFILE_PHOTOS = 5;
 /** @deprecated Use PERSONAL_SUPPORT_PRICE */
 export const WHATSAPP_CALL_PRICE = PERSONAL_SUPPORT_PRICE;
 export const MIN_COMPATIBILITY_SCORE = 70;
+/** Max profiles loaded on Discover (performance at scale). */
+export const MATCH_DISCOVER_LIMIT = 50;
+/** Max profiles per Likes list tab. */
+export const MATCH_LIST_LIMIT = 100;
 
 export const GENDERS = ["male", "female"] as const;
 export type Gender = (typeof GENDERS)[number];

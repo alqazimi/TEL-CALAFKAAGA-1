@@ -39,25 +39,15 @@ export default function LikesPage() {
     profile?.questionnaireComplete && profile.approved && hasPaidAccess(profile);
   const isPremium = isPremiumMember(profile);
 
-  const shortlistMatches = useQuery(
-    api.matches.getShortlistedProfiles,
+  const matchLists = useQuery(
+    api.matches.getMatchLists,
     canQuery ? {} : "skip"
-  ) as MatchResult[] | undefined;
+  );
 
-  const likedMatches = useQuery(
-    api.matches.getSentLikes,
-    canQuery ? {} : "skip"
-  ) as MatchResult[] | undefined;
-
-  const likedYouMatches = useQuery(
-    api.matches.getReceivedLikes,
-    canQuery && isPremium ? {} : "skip"
-  ) as MatchResult[] | undefined;
-
-  const passedMatches = useQuery(
-    api.matches.getPassedProfiles,
-    canQuery ? {} : "skip"
-  ) as MatchResult[] | undefined;
+  const shortlistMatches = matchLists?.shortlist;
+  const likedMatches = matchLists?.liked;
+  const likedYouMatches = matchLists?.likedYou;
+  const passedMatches = matchLists?.passed;
 
   const defaultTab: SecondaryMatchList = isPremium ? "likedYou" : "liked";
   const activeList = isSecondaryMatchList(tabParam) ? tabParam : defaultTab;
@@ -157,7 +147,7 @@ export default function LikesPage() {
     );
   }
 
-  if (shortlistMatches === undefined) {
+  if (matchLists === undefined) {
     return (
       <DashboardLayout>
         <Skeleton className="h-64 w-full max-w-lg mx-auto rounded-2xl" />

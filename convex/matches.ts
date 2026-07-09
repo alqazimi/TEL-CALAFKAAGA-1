@@ -8,13 +8,18 @@ import { hasPaidAccess, isStaffRole } from "./lib/roles";
 import { getBlockedUserIds, isEitherBlocked } from "./lib/moderation";
 import {
   buildMatchResult,
-  hasActiveMatch,
+  getActiveMatchPartnerIds,
   type MatchFilterArgs,
   profilePassesMatchFilters,
 } from "./lib/matchPresentation";
 import { sendNotification } from "./lib/sendNotification";
 import { isPremiumMember } from "./lib/premium";
 import { calculateCompatibilityBreakdown } from "./matching";
+import {
+  MATCH_DISCOVER_LIMIT,
+  MATCH_LIST_LIMIT,
+  MIN_COMPATIBILITY_SCORE,
+} from "./lib/constants";
 
 const matchFilterArgs = {
   country: v.optional(v.string()),
@@ -47,25 +52,37 @@ async function getMatchAccessProfile(ctx: QueryCtx) {
   return { userId, myProfile };
 }
 
+async function buildScoreMap(ctx: QueryCtx, userId: Id<"users">) {
+  const scores = await ctx.db
+    .query("compatibilityScores")
+    .withIndex("by_userA", (q) => q.eq("userA", userId))
+    .collect();
+  return new Map(scores.map((s) => [s.userB, s.score]));
+}
+
+type LoadProfileOptions = {
+  scoreMap?: Map<Id<"users">, number>;
+  /** Skip extra gallery URLs — faster for cards and lists. */
+  listPreview?: boolean;
+  maxResults?: number;
+};
+
 async function loadProfilesForUserIds(
   ctx: QueryCtx,
   userIds: Id<"users">[],
   myProfile: Doc<"profiles">,
   args: MatchFilterArgs,
   myLikes: Doc<"likes">[],
-  blockedIds: Set<Id<"users">>
+  blockedIds: Set<Id<"users">>,
+  options?: LoadProfileOptions
 ) {
-  const scoreMap = new Map(
-    (
-      await ctx.db
-        .query("compatibilityScores")
-        .withIndex("by_userA", (q) => q.eq("userA", myProfile.userId))
-        .collect()
-    ).map((s) => [s.userB, s.score])
-  );
+  const ids = options?.maxResults ? userIds.slice(0, options.maxResults) : userIds;
+  const scoreMap =
+    options?.scoreMap ?? (await buildScoreMap(ctx, myProfile.userId));
+  const includeGallery = !options?.listPreview;
 
   const results = await Promise.all(
-    userIds.map(async (targetUserId) => {
+    ids.map(async (targetUserId) => {
       if (blockedIds.has(targetUserId)) return null;
 
       const profile = await ctx.db
@@ -81,13 +98,30 @@ async function loadProfilesForUserIds(
       const score = scoreMap.get(targetUserId) ?? 0;
       const interaction = myLikes.find((l) => l.toUserId === targetUserId);
 
-      return buildMatchResult(ctx, profile, targetUserId, score, interaction);
+      return buildMatchResult(
+        ctx,
+        profile,
+        targetUserId,
+        score,
+        interaction,
+        { includeGallery }
+      );
     })
   );
 
   return results
     .filter((r): r is NonNullable<typeof r> => r !== null)
     .sort((a, b) => b.score - a.score);
+}
+
+function pickListResults<T extends { userId: Id<"users"> }>(
+  orderedIds: Id<"users">[],
+  results: T[]
+) {
+  const byId = new Map(results.map((r) => [r.userId, r]));
+  return orderedIds
+    .map((id) => byId.get(id))
+    .filter((r): r is T => r !== undefined);
 }
 
 export const getMatches = query({
@@ -109,9 +143,14 @@ export const getMatches = query({
 
     const interactedIds = new Set(myLikes.map((l) => l.toUserId));
     const blockedIds = await getBlockedUserIds(ctx, userId);
+    const scoreMap = new Map(scores.map((s) => [s.userB, s.score]));
 
     const discoverIds = scores
-      .filter((s) => s.score >= 70 && !interactedIds.has(s.userB))
+      .filter(
+        (s) => s.score >= MIN_COMPATIBILITY_SCORE && !interactedIds.has(s.userB)
+      )
+      .sort((a, b) => b.score - a.score)
+      .slice(0, MATCH_DISCOVER_LIMIT)
       .map((s) => s.userB);
 
     return loadProfilesForUserIds(
@@ -120,7 +159,8 @@ export const getMatches = query({
       myProfile,
       args,
       myLikes,
-      blockedIds
+      blockedIds,
+      { scoreMap, listPreview: true }
     );
   },
 });
@@ -142,6 +182,7 @@ export const getShortlistedProfiles = query({
       .map((l) => l.toUserId);
 
     const blockedIds = await getBlockedUserIds(ctx, userId);
+    const scoreMap = await buildScoreMap(ctx, userId);
 
     return loadProfilesForUserIds(
       ctx,
@@ -149,7 +190,8 @@ export const getShortlistedProfiles = query({
       myProfile,
       args,
       myLikes,
-      blockedIds
+      blockedIds,
+      { scoreMap, listPreview: true, maxResults: MATCH_LIST_LIMIT }
     );
   },
 });
@@ -171,6 +213,7 @@ export const getPassedProfiles = query({
       .map((l) => l.toUserId);
 
     const blockedIds = await getBlockedUserIds(ctx, userId);
+    const scoreMap = await buildScoreMap(ctx, userId);
 
     return loadProfilesForUserIds(
       ctx,
@@ -178,7 +221,8 @@ export const getPassedProfiles = query({
       myProfile,
       args,
       myLikes,
-      blockedIds
+      blockedIds,
+      { scoreMap, listPreview: true, maxResults: MATCH_LIST_LIMIT }
     );
   },
 });
@@ -195,14 +239,13 @@ export const getSentLikes = query({
       .withIndex("by_from", (q) => q.eq("fromUserId", userId))
       .collect();
 
-    const likedIds: Id<"users">[] = [];
-    for (const like of myLikes.filter((l) => l.action === "like")) {
-      if (!(await hasActiveMatch(ctx, userId, like.toUserId))) {
-        likedIds.push(like.toUserId);
-      }
-    }
+    const activePartners = await getActiveMatchPartnerIds(ctx, userId);
+    const likedIds = myLikes
+      .filter((l) => l.action === "like" && !activePartners.has(l.toUserId))
+      .map((l) => l.toUserId);
 
     const blockedIds = await getBlockedUserIds(ctx, userId);
+    const scoreMap = await buildScoreMap(ctx, userId);
 
     return loadProfilesForUserIds(
       ctx,
@@ -210,7 +253,8 @@ export const getSentLikes = query({
       myProfile,
       args,
       myLikes,
-      blockedIds
+      blockedIds,
+      { scoreMap, listPreview: true, maxResults: MATCH_LIST_LIMIT }
     );
   },
 });
@@ -231,12 +275,10 @@ export const getReceivedLikes = query({
       .withIndex("by_to", (q) => q.eq("toUserId", userId))
       .collect();
 
-    const receivedIds: Id<"users">[] = [];
-    for (const like of incomingLikes.filter((l) => l.action === "like")) {
-      if (!(await hasActiveMatch(ctx, userId, like.fromUserId))) {
-        receivedIds.push(like.fromUserId);
-      }
-    }
+    const activePartners = await getActiveMatchPartnerIds(ctx, userId);
+    const receivedIds = incomingLikes
+      .filter((l) => l.action === "like" && !activePartners.has(l.fromUserId))
+      .map((l) => l.fromUserId);
 
     const myLikes = await ctx.db
       .query("likes")
@@ -244,6 +286,7 @@ export const getReceivedLikes = query({
       .collect();
 
     const blockedIds = await getBlockedUserIds(ctx, userId);
+    const scoreMap = await buildScoreMap(ctx, userId);
 
     return loadProfilesForUserIds(
       ctx,
@@ -251,8 +294,82 @@ export const getReceivedLikes = query({
       myProfile,
       args,
       myLikes,
-      blockedIds
+      blockedIds,
+      { scoreMap, listPreview: true, maxResults: MATCH_LIST_LIMIT }
     );
+  },
+});
+
+/** All Likes-tab lists in one query (fewer subscriptions, shared reads). */
+export const getMatchLists = query({
+  args: matchFilterArgs,
+  handler: async (ctx, args) => {
+    const empty = {
+      shortlist: [] as Awaited<ReturnType<typeof loadProfilesForUserIds>>,
+      liked: [] as Awaited<ReturnType<typeof loadProfilesForUserIds>>,
+      passed: [] as Awaited<ReturnType<typeof loadProfilesForUserIds>>,
+      likedYou: [] as Awaited<ReturnType<typeof loadProfilesForUserIds>>,
+    };
+
+    const access = await getMatchAccessProfile(ctx);
+    if (!access) return empty;
+
+    const { userId, myProfile } = access;
+    const [myLikes, incomingLikes, blockedIds, scoreMap, activePartners] =
+      await Promise.all([
+        ctx.db
+          .query("likes")
+          .withIndex("by_from", (q) => q.eq("fromUserId", userId))
+          .collect(),
+        ctx.db
+          .query("likes")
+          .withIndex("by_to", (q) => q.eq("toUserId", userId))
+          .collect(),
+        getBlockedUserIds(ctx, userId),
+        buildScoreMap(ctx, userId),
+        getActiveMatchPartnerIds(ctx, userId),
+      ]);
+
+    const shortlistIds = myLikes
+      .filter((l) => l.action === "shortlist")
+      .slice(0, MATCH_LIST_LIMIT)
+      .map((l) => l.toUserId);
+    const likedIds = myLikes
+      .filter((l) => l.action === "like" && !activePartners.has(l.toUserId))
+      .slice(0, MATCH_LIST_LIMIT)
+      .map((l) => l.toUserId);
+    const passedIds = myLikes
+      .filter((l) => l.action === "pass")
+      .slice(0, MATCH_LIST_LIMIT)
+      .map((l) => l.toUserId);
+    const likedYouIds =
+      isPremiumMember(myProfile)
+        ? incomingLikes
+            .filter((l) => l.action === "like" && !activePartners.has(l.fromUserId))
+            .slice(0, MATCH_LIST_LIMIT)
+            .map((l) => l.fromUserId)
+        : [];
+
+    const uniqueIds = [
+      ...new Set([...shortlistIds, ...likedIds, ...passedIds, ...likedYouIds]),
+    ];
+
+    const loaded = await loadProfilesForUserIds(
+      ctx,
+      uniqueIds,
+      myProfile,
+      args,
+      myLikes,
+      blockedIds,
+      { scoreMap, listPreview: true }
+    );
+
+    return {
+      shortlist: pickListResults(shortlistIds, loaded),
+      liked: pickListResults(likedIds, loaded),
+      passed: pickListResults(passedIds, loaded),
+      likedYou: pickListResults(likedYouIds, loaded),
+    };
   },
 });
 

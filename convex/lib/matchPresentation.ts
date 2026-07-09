@@ -47,6 +47,7 @@ async function resolveAdditionalImageUrls(
   profile: Doc<"profiles">
 ) {
   const ids = profile.additionalImageIds ?? [];
+  if (ids.length === 0) return [];
   const urls = await Promise.all(
     ids.map(async (id) => (await ctx.storage.getUrl(id)) ?? null)
   );
@@ -58,14 +59,18 @@ export async function buildMatchResult(
   profile: Doc<"profiles">,
   userId: Id<"users">,
   score: number,
-  interaction?: Doc<"likes"> | null
+  interaction?: Doc<"likes"> | null,
+  options?: { includeGallery?: boolean }
 ) {
   let imageUrl = null;
   if (profile.profileImageId) {
     imageUrl = await ctx.storage.getUrl(profile.profileImageId);
   }
 
-  const additionalImageUrls = await resolveAdditionalImageUrls(ctx, profile);
+  const additionalImageUrls =
+    options?.includeGallery === false
+      ? []
+      : await resolveAdditionalImageUrls(ctx, profile);
 
   return {
     userId,
@@ -100,19 +105,32 @@ export async function hasActiveMatch(
   userId: Id<"users">,
   otherUserId: Id<"users">
 ) {
-  const asA = await ctx.db
-    .query("matches")
-    .withIndex("by_userA", (q) => q.eq("userA", userId))
-    .collect();
-  const asB = await ctx.db
-    .query("matches")
-    .withIndex("by_userB", (q) => q.eq("userB", userId))
-    .collect();
+  const partners = await getActiveMatchPartnerIds(ctx, userId);
+  return partners.has(otherUserId);
+}
 
-  return [...asA, ...asB].some(
-    (m) =>
-      m.status === "active" &&
-      ((m.userA === userId && m.userB === otherUserId) ||
-        (m.userB === userId && m.userA === otherUserId))
-  );
+/** All users this member has an active mutual match with (one query batch). */
+export async function getActiveMatchPartnerIds(
+  ctx: QueryCtx,
+  userId: Id<"users">
+) {
+  const [asA, asB] = await Promise.all([
+    ctx.db
+      .query("matches")
+      .withIndex("by_userA", (q) => q.eq("userA", userId))
+      .collect(),
+    ctx.db
+      .query("matches")
+      .withIndex("by_userB", (q) => q.eq("userB", userId))
+      .collect(),
+  ]);
+
+  const partners = new Set<Id<"users">>();
+  for (const m of asA) {
+    if (m.status === "active") partners.add(m.userB);
+  }
+  for (const m of asB) {
+    if (m.status === "active") partners.add(m.userA);
+  }
+  return partners;
 }

@@ -76,7 +76,11 @@ export function AppShellHeader() {
     };
   }, [siteMenuOpen]);
 
-  if (!isAppShellRoute(pathname) && !isStandaloneDisplay()) return null;
+  const isStaff = isStaffRole(user?.profile?.role);
+  const onMarketing = !isAppShellRoute(pathname);
+
+  // Staff should use the public site chrome on marketing pages, not the app dashboard shell.
+  if (onMarketing && (isStaff || !isStandaloneDisplay())) return null;
 
   return (
     <>

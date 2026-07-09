@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, Suspense, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
@@ -9,6 +9,12 @@ import { AppMobileNav } from "@/components/layout/app-mobile-nav";
 import { TrialAccessSync } from "@/components/auth/trial-access-sync";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n/context";
+
+const mobileNavFallback = (
+  <div className="lg:hidden fixed bottom-0 left-0 right-0 h-[3.25rem] border-t border-border bg-card" />
+);
+
+const sidebarFallback = <div className="hidden lg:block lg:w-64 shrink-0" aria-hidden />;
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -34,7 +40,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             </p>
           </div>
         </div>
-        <AppMobileNav />
+        <Suspense fallback={mobileNavFallback}>
+          <AppMobileNav />
+        </Suspense>
       </div>
     );
   }
@@ -45,13 +53,17 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen dashboard-bg flex flex-col">
       <TrialAccessSync />
       <AppShellHeader />
-      <DashboardSidebar />
+      <Suspense fallback={sidebarFallback}>
+        <DashboardSidebar />
+      </Suspense>
       <div className="flex flex-1 flex-col lg:pl-64 lg:pt-16">
         <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 pb-[calc(var(--app-tabbar)+1rem)] lg:pb-8">
           {children}
         </div>
       </div>
-      <AppMobileNav />
+      <Suspense fallback={mobileNavFallback}>
+        <AppMobileNav />
+      </Suspense>
     </div>
   );
 }
