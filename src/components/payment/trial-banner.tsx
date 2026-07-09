@@ -1,22 +1,35 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n/context";
 import { getTrialDaysRemaining, isInTrialPeriod } from "@/lib/trial";
+import { markTrialWelcomeNoticeSeen, hasSeenTrialWelcomeNotice } from "@/lib/trial-notice";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
 import type { Profile } from "@/types";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 interface TrialBannerProps {
-  profile: Pick<Profile, "trialEndsAt" | "hasPaid" | "isInTrial">;
+  profile: Pick<Profile, "trialEndsAt" | "hasPaid" | "isInTrial" | "userId">;
   className?: string;
 }
 
 export function TrialBanner({ profile, className }: TrialBannerProps) {
   const { t } = useTranslation();
+  const userId = profile.userId as Id<"users"> | undefined;
+  const inTrial = isInTrialPeriod(profile);
+  const alreadySeen = userId ? hasSeenTrialWelcomeNotice(userId) : false;
+  const shouldShow = inTrial && !alreadySeen;
 
-  if (!isInTrialPeriod(profile)) {
+  useEffect(() => {
+    if (shouldShow && userId) {
+      markTrialWelcomeNoticeSeen(userId);
+    }
+  }, [shouldShow, userId]);
+
+  if (!shouldShow) {
     return null;
   }
 

@@ -11,7 +11,7 @@ import { PREMIUM_UPGRADE_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
-export type SecondaryMatchList = "shortlist" | "liked" | "likedYou";
+export type SecondaryMatchList = "shortlist" | "liked" | "likedYou" | "passed";
 
 interface MatchListsSheetProps {
   open: boolean;
@@ -21,6 +21,7 @@ interface MatchListsSheetProps {
   shortlist: MatchResult[];
   liked: MatchResult[];
   likedYou: MatchResult[];
+  passed: MatchResult[];
   isPremium: boolean;
   onView: (match: MatchResult) => void;
   onAction: (userId: Id<"users">, action: "like" | "pass" | "shortlist") => void;
@@ -32,6 +33,7 @@ const LIST_META: Record<
 > = {
   shortlist: { icon: Bookmark },
   liked: { icon: Heart },
+  passed: { icon: X },
   likedYou: { icon: Sparkles, premium: true },
 };
 
@@ -43,6 +45,7 @@ export function MatchListsSheet({
   shortlist,
   liked,
   likedYou,
+  passed,
   isPremium,
   onView,
   onAction,
@@ -53,6 +56,7 @@ export function MatchListsSheet({
     shortlist,
     liked,
     likedYou,
+    passed,
   };
 
   const current = lists[activeList];
@@ -63,18 +67,23 @@ export function MatchListsSheet({
       ? t("matchesPage.noShortlistTitle")
       : activeList === "liked"
         ? t("matchesPage.noLikedTitle")
-        : t("matchesPage.noLikedYouTitle");
+        : activeList === "passed"
+          ? t("matchesPage.noPassedTitle")
+          : t("matchesPage.noLikedYouTitle");
 
   const emptyDesc =
     activeList === "shortlist"
       ? t("matchesPage.noShortlistDesc")
       : activeList === "liked"
         ? t("matchesPage.noLikedDesc")
-        : t("matchesPage.noLikedYouDesc");
+        : activeList === "passed"
+          ? t("matchesPage.noPassedDesc")
+          : t("matchesPage.noLikedYouDesc");
 
   const tabLabels: Record<SecondaryMatchList, string> = {
     shortlist: t("matchesPage.tabShortlist"),
     liked: t("matchesPage.tabLiked"),
+    passed: t("matchesPage.tabPassed"),
     likedYou: t("matchesPage.tabLikedYou"),
   };
 

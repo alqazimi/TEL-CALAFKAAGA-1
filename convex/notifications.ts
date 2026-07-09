@@ -2,7 +2,6 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { hasPaidAccess, isStaffRole } from "./lib/roles";
-import { isInTrialPeriod } from "./lib/trial";
 
 export const getNotifications = query({
   args: {},
@@ -51,10 +50,6 @@ export const getMemberReminders = query({
       return [{ id: "complete-profile" as const, href: "/questionnaire" }];
     }
 
-    if (isInTrialPeriod(profile) && !profile.hasPaid) {
-      return [{ id: "free-trial-active" as const, href: "/matches" }];
-    }
-
     if (!hasPaidAccess(profile)) {
       return [{ id: "complete-payment" as const, href: "/payment" }];
     }
@@ -63,7 +58,7 @@ export const getMemberReminders = query({
       return [{ id: "pending-approval" as const, href: "/dashboard" }];
     }
 
-    return [];
+    return [{ id: "browse-matches" as const, href: "/matches" }];
   },
 });
 

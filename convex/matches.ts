@@ -154,6 +154,35 @@ export const getShortlistedProfiles = query({
   },
 });
 
+export const getPassedProfiles = query({
+  args: matchFilterArgs,
+  handler: async (ctx, args) => {
+    const access = await getMatchAccessProfile(ctx);
+    if (!access) return [];
+
+    const { userId, myProfile } = access;
+    const myLikes = await ctx.db
+      .query("likes")
+      .withIndex("by_from", (q) => q.eq("fromUserId", userId))
+      .collect();
+
+    const passedIds = myLikes
+      .filter((l) => l.action === "pass")
+      .map((l) => l.toUserId);
+
+    const blockedIds = await getBlockedUserIds(ctx, userId);
+
+    return loadProfilesForUserIds(
+      ctx,
+      passedIds,
+      myProfile,
+      args,
+      myLikes,
+      blockedIds
+    );
+  },
+});
+
 export const getSentLikes = query({
   args: matchFilterArgs,
   handler: async (ctx, args) => {

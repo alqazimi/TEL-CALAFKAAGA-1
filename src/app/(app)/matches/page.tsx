@@ -85,6 +85,11 @@ export default function MatchesPage() {
     canQuery && isPremium ? filterArgs : "skip"
   ) as MatchResult[] | undefined;
 
+  const passedMatches = useQuery(
+    api.matches.getPassedProfiles,
+    canQuery ? filterArgs : "skip"
+  ) as MatchResult[] | undefined;
+
   const likeUser = useMutation(api.matches.likeUser);
 
   const handleAction = async (
@@ -99,6 +104,8 @@ export default function MatchesPage() {
         toast.success(t("matchesPage.likedToast"));
       } else if (action === "shortlist") {
         toast.success(t("matchesPage.shortlistedToast"));
+      } else if (action === "pass") {
+        toast.message(t("matchesPage.passedToast"));
       }
     } catch {
       toast.error(t("matchesPage.errorToast"));
@@ -108,6 +115,7 @@ export default function MatchesPage() {
   const listCounts =
     (shortlistMatches?.length ?? 0) +
     (likedMatches?.length ?? 0) +
+    (passedMatches?.length ?? 0) +
     (isPremium ? likedYouMatches?.length ?? 0 : 0);
 
   if (profile === undefined) {
@@ -235,6 +243,7 @@ export default function MatchesPage() {
         shortlist={shortlistMatches ?? []}
         liked={likedMatches ?? []}
         likedYou={likedYouMatches ?? []}
+        passed={passedMatches ?? []}
         isPremium={isPremium}
         onView={setSelectedMatch}
         onAction={handleAction}
