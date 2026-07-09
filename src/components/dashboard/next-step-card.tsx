@@ -179,7 +179,7 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
           </div>
           <div className="space-y-2">
             {matches.slice(0, 2).map((match) => (
-              <Link key={match.userId} href="/matches">
+              <Link key={match.userId} href={`/matches?user=${match.userId}`}>
                 <Card className="border-border/80 hover:border-primary/30 transition-colors">
                   <CardContent className="p-3 flex items-center gap-3">
                     <Avatar className="h-12 w-12">

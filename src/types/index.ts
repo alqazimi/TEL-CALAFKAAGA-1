@@ -38,7 +38,6 @@ export interface Profile {
   citizenshipStatus?: string;
   financialReadiness?: string;
   marriageWorkPreference?: string;
-  readyToRelocate?: string;
   marriageTimeline?: string;
   loveLanguage?: string;
   marrySomeoneWithChildren?: string;

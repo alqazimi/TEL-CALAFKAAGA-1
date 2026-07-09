@@ -271,10 +271,6 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                         ]
                       : []),
                     { label: t("adminDetail.wantChildren"), value: detail.profile.wantChildren || "—" },
-                    {
-                      label: t("adminDetail.familyInvolvement"),
-                      value: detail.profile.familyInvolvement || "—",
-                    },
                     ...(detail.profile.gender === "male"
                       ? [
                           {
@@ -367,7 +363,6 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                               "—",
                           },
                         ]),
-                    { label: t("adminDetail.readyToRelocate"), value: detail.profile.readyToRelocate || "—" },
                     {
                       label: t("adminDetail.livingSituation"),
                       value: detail.profile.livingSituation || "—",

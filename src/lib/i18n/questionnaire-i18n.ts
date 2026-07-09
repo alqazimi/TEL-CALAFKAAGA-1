@@ -100,10 +100,6 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     en: "How often do you exercise?",
     so: "Immisa jeer ayaad jimicsi samaysaa?",
   },
-  readyToRelocate: {
-    en: "Ready to relocate?",
-    so: "Ma diyaar u tahay inaad guurto meel kale?",
-  },
   marriageTimeline: { en: "Marriage Timeline", so: "Wakhtiga Guurka" },
   loveLanguage: {
     en: "What is your love language?",
@@ -121,10 +117,6 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   wantChildren: {
     en: "Do you want children?",
     so: "Ma doonaysaa carruur?",
-  },
-  familyInvolvement: {
-    en: "Will family be involved in the process?",
-    so: "Qoyska ma ku lug yeelan doonaa hawlahan?",
   },
   livingSituation: {
     en: "Preferred living situation after marriage?",
@@ -451,11 +443,9 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
   Children: { en: "Children", so: "Carruur" },
   Smokes: { en: "Smokes", so: "Sigaar" },
   Exercise: { en: "Exercise", so: "Jimicsi" },
-  "Ready to Relocate": { en: "Ready to Relocate", so: "Diyaar u ah Guuritaan" },
   "Marriage Timeline": { en: "Marriage Timeline", so: "Wakhtiga Guurka" },
   "Love Language": { en: "Love Language", so: "Luuqadda Jacaylka" },
   "Want Children": { en: "Want Children", so: "Rabitaanka Carruur" },
-  "Family Involvement": { en: "Family Involvement", so: "Ka qaybgalka Qoyska" },
   "Living Situation": { en: "Living Situation", so: "Xaaladda Nololeed" },
   Madhhab: { en: "Madhhab", so: "Madhhab" },
   "Polygyny Openness": { en: "Polygyny Openness", so: "Furfurnaanta Guur Labaad" },
@@ -749,12 +739,12 @@ const UI_TEXT = {
     so: "Profile-ku waa Dhammaystiran",
   },
   profileReadySub: {
-    en: "Your profile is ready. We will notify you when you can start browsing matches.",
-    so: "Profile-kaagu waa diyaar. Waan kuu soo wargelin doonaa markaad bilaabi karto raadinta isbarbardhigga.",
+    en: "Your profile is ready. Start browsing matches when you find someone you like.",
+    so: "Profile-kaagu waa diyaar. Bilow inaad eegto isbarbardhigga markaad qof jeclaato.",
   },
   profileReadyPaySub: {
-    en: "Your profile is ready. We will notify you when you can start browsing matches.",
-    so: "Profile-kaagu waa diyaar. Waan kuu soo wargelin doonaa markaad bilaabi karto raadinta isbarbardhigga.",
+    en: "Your profile is ready. Start browsing matches — enjoy your free premium week.",
+    so: "Profile-kaagu waa diyaar. Bilow inaad eegto isbarbardhigga — ku raaxayso toddobaadkaaga premium ee bilaashka ah.",
   },
   welcomeQuestionnaireTitle: {
     en: "Welcome! Let's build your profile",

@@ -59,8 +59,9 @@ export default defineSchema({
     citizenshipStatus: v.optional(v.string()),
     financialReadiness: v.optional(v.string()),
     marriageWorkPreference: v.optional(v.string()),
-    readyToRelocate: v.string(),
     marriageTimeline: v.string(),
+    /** @deprecated Removed from questionnaire; kept for legacy prod documents */
+    readyToRelocate: v.optional(v.string()),
     loveLanguage: v.optional(v.string()),
     marrySomeoneWithChildren: v.string(),
     qualities: v.array(v.string()),
@@ -100,9 +101,10 @@ export default defineSchema({
     maxDistance: v.optional(v.string()),
     qualities: v.array(v.string()),
     hobbies: v.array(v.string()),
-    readyToRelocate: v.string(),
     partnerBeard: v.optional(v.string()),
     partnerHijabLevel: v.optional(v.string()),
+    /** @deprecated Removed from questionnaire; kept for legacy prod documents */
+    readyToRelocate: v.optional(v.string()),
   }).index("by_userId", ["userId"]),
 
   compatibilityScores: defineTable({

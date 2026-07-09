@@ -159,7 +159,7 @@ export default function PaymentSuccessPage() {
                 <Button onClick={() => router.push("/payment")} className="font-semibold">
                   {t("payment.tryAgain")}
                 </Button>
-                <Button variant="outline" onClick={() => router.push("/dashboard")}>
+                <Button variant="outline" onClick={() => router.push("/matches")}>
                   {t("common.goToDashboard")}
                 </Button>
               </div>

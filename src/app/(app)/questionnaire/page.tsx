@@ -305,7 +305,7 @@ export default function QuestionnairePage() {
       router.push("/profile");
       return;
     }
-    router.push("/dashboard");
+    router.push("/matches");
   };
 
   useEffect(() => {

@@ -41,7 +41,7 @@ export default function PaymentPage() {
       return;
     }
     if (profile && hasPaidAccess(profile)) {
-      router.replace("/dashboard");
+      router.replace("/matches");
     }
   }, [
     profile?.registrationComplete,

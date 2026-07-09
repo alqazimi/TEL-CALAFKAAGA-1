@@ -40,13 +40,23 @@ export default function DashboardPage() {
     canViewMatches ? undefined : "skip"
   ) as MutualMatch[] | undefined;
 
+  const profile = user?.profile;
+  const shouldUseDiscoverHome =
+    profile?.questionnaireComplete &&
+    hasPaidAccess(profile) &&
+    profile.approved;
+
   useEffect(() => {
     if (isStaff) {
       router.replace("/admin");
+      return;
     }
-  }, [isStaff, router]);
+    if (shouldUseDiscoverHome) {
+      router.replace("/matches");
+    }
+  }, [isStaff, router, shouldUseDiscoverHome]);
 
-  if (user === undefined || isStaff) {
+  if (user === undefined || isStaff || shouldUseDiscoverHome) {
     return (
       <DashboardLayout>
         <div className="space-y-6 max-w-2xl" role="status">
@@ -58,7 +68,6 @@ export default function DashboardPage() {
     );
   }
 
-  const profile = user?.profile;
   const firstName = profile?.name?.split(" ")[0] ?? t("dashboard.guestName");
   const isComplete = profile?.questionnaireComplete ?? false;
   const hasPaid = hasPaidAccess(profile);

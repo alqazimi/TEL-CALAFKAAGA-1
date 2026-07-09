@@ -64,3 +64,31 @@ export const backfillProfileFields = internalMutation({
     return { updated, total: profiles.length };
   },
 });
+
+/** Strip questionnaire fields removed from the product but still on old documents. */
+export const stripLegacyQuestionnaireFields = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    let preferencesUpdated = 0;
+    let profilesUpdated = 0;
+
+    for (const pref of await ctx.db.query("preferences").collect()) {
+      if (!("readyToRelocate" in pref)) continue;
+      const { _id, _creationTime, readyToRelocate: _readyToRelocate, ...rest } =
+        pref as typeof pref & { readyToRelocate?: string };
+      await ctx.db.replace(_id, rest);
+      preferencesUpdated++;
+    }
+
+    for (const profile of await ctx.db.query("profiles").collect()) {
+      const legacy = profile as typeof profile & { readyToRelocate?: string };
+      if (!("readyToRelocate" in legacy)) continue;
+      const { _id, _creationTime, readyToRelocate: _readyToRelocate, ...rest } =
+        legacy;
+      await ctx.db.replace(_id, rest);
+      profilesUpdated++;
+    }
+
+    return { preferencesUpdated, profilesUpdated };
+  },
+});

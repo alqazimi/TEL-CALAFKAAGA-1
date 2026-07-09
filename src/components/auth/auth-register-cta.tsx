@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useConvexAuth } from "convex/react";
-import { LayoutDashboard } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n/context";
 import {
@@ -50,8 +50,8 @@ export function AuthRegisterCta({
   if (isAuthenticated) {
     return (
       <Button size={size} variant={variant} className={className} asChild>
-        <Link href="/dashboard">
-          <LayoutDashboard className="mr-2 h-4 w-4" />
+        <Link href="/matches">
+          <Heart className="mr-2 h-4 w-4" />
           {dashboardText}
         </Link>
       </Button>

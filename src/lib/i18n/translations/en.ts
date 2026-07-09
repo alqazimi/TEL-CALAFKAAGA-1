@@ -20,6 +20,8 @@ export const en = {
   },
   app: {
     dashboard: "Dashboard",
+    discover: "Discover",
+    likes: "Likes",
     home: "Home",
     matches: "Matches",
     messages: "Messages",
@@ -593,9 +595,9 @@ export const en = {
     choosePlan: "Choose plan",
     pendingApproval: "Profile pending approval",
     pendingApprovalDesc:
-      "Your profile is under admin review. Once approved, you will get a Verified badge and can see matches.",
+      "Your profile is being checked. Once verified, you can browse matches.",
     pendingApprovalPremiumDesc:
-      "Your premium profile is in the priority review queue. We usually approve premium members first.",
+      "Your profile is in the review queue. Contact us on WhatsApp if you need help.",
     matches: "Matches",
     mutual: "Mutual",
     suggestedShort: "Suggested",
@@ -747,6 +749,12 @@ export const en = {
     discoverTitle: "Discover",
     yourLists: "Your lists",
     openLists: "Lists",
+    viewSwipe: "Swipe view",
+    viewBrowse: "Browse all matches",
+  },
+  likesPage: {
+    summary: "{{count}} saved in your lists",
+    summaryEmpty: "Like profiles on Discover to see them here",
   },
   notificationsPage: {
     title: "Notifications",
@@ -1015,7 +1023,6 @@ export const en = {
     spousePrayerImportance: "Spouse Prayer Importance",
     children: "Children",
     marryWithChildren: "Marry Someone With Children",
-    readyToRelocate: "Ready to Relocate",
     marriageTimeline: "Marriage Timeline",
     preferredAge: "Preferred Age",
     preferredHeight: "Preferred Height",

@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Heart,
   MessageCircle,
+  Sparkles,
   Bell,
   Shield,
   LogOut,
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { isStaffRole } from "@/lib/access";
 import { calculateProfileProgress } from "@/lib/profile-progress";
 
@@ -39,6 +41,7 @@ const iconMap = {
   ClipboardList,
   Heart,
   MessageCircle,
+  Sparkles,
   Bell,
 };
 
@@ -69,11 +72,12 @@ export function DashboardSidebar() {
     : 0;
   const appNavLinks = useAppNavLinks(profileComplete);
   const { t } = useTranslation();
+  const homeHref = getAuthenticatedHomeRoute(user?.profile);
 
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:top-16 lg:bottom-0 lg:left-0 lg:z-40 lg:border-r lg:border-border lg:bg-card/95 lg:backdrop-blur-xl">
       <div className="flex flex-col flex-1 px-4 py-6 overflow-y-auto">
-        <BrandLogo href={isStaff ? "/admin" : "/dashboard"} className="px-2 mb-6" />
+        <BrandLogo href={isStaff ? "/admin" : homeHref} className="px-2 mb-6" />
 
         {!isStaff && user?.profile && !profileComplete && (
           <div className="mb-4 rounded-xl bg-accent p-3 space-y-1.5">
@@ -95,6 +99,7 @@ export function DashboardSidebar() {
               const Icon = iconMap[link.icon as AppNavIcon];
               const isActive =
                 pathname === link.href ||
+                (link.href === "/likes" && pathname.startsWith("/likes")) ||
                 (!profileComplete && link.href === "/questionnaire" && pathname.startsWith("/questionnaire"));
               const isLocked = "locked" in link && link.locked && !profileComplete;
               const href = link.href;

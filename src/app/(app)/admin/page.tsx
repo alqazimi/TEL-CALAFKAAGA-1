@@ -49,6 +49,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
+import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { WHATSAPP_URL } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
@@ -142,7 +143,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (currentUser !== undefined && !isStaffRole(currentUser?.profile?.role)) {
-      router.replace("/dashboard");
+      router.replace(getAuthenticatedHomeRoute(currentUser?.profile));
     }
   }, [currentUser, router]);
 

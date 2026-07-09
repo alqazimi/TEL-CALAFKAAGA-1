@@ -52,11 +52,12 @@ function getNotificationHref(notification: Notification): string | null {
     case "message":
       return "/chat";
     case "like":
+      return "/likes?tab=likedYou";
     case "match":
     case "approval":
-      return "/matches";
+      return "/likes?tab=liked";
     case "payment":
-      return "/dashboard";
+      return "/payment";
     case "announcement":
       return null;
     default:

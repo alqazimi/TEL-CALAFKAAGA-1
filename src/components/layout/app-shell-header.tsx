@@ -23,7 +23,7 @@ import { isStaffRole } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { isAppShellRoute } from "@/lib/routes";
+import { isAppShellRoute, getAuthenticatedHomeRoute } from "@/lib/routes";
 import { isStandaloneDisplay } from "@/lib/pwa";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -46,6 +46,7 @@ export function AppShellHeader() {
   const profileImage = profile?.imageUrl;
   const navLinks = useNavLinks();
   const { t } = useTranslation();
+  const homeHref = getAuthenticatedHomeRoute(user?.profile);
 
   const isMarketingActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href;
@@ -92,7 +93,7 @@ export function AppShellHeader() {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <BrandLogo href={isStaffRole(user?.profile?.role) ? "/admin" : "/dashboard"} size="sm" className="min-w-0" />
+            <BrandLogo href={isStaffRole(user?.profile?.role) ? "/admin" : homeHref} size="sm" className="min-w-0" />
           </div>
 
           <div className="flex items-center gap-1 shrink-0">

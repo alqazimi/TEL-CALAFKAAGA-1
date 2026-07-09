@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   motion,
   useMotionValue,
@@ -31,6 +31,7 @@ const SWIPE_THRESHOLD = 96;
 
 interface MatchSwipeDeckProps {
   matches: MatchResult[];
+  startUserId?: string;
   onView: (match: MatchResult) => void;
   onAction: (
     userId: Id<"users">,
@@ -272,6 +273,7 @@ function SwipeCard({
 
 export function MatchSwipeDeck({
   matches,
+  startUserId,
   onView,
   onAction,
 }: MatchSwipeDeckProps) {
@@ -280,10 +282,30 @@ export function MatchSwipeDeck({
   const [exitDirection, setExitDirection] = useState<"left" | "right" | null>(
     null
   );
+  const appliedStartUserRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setIndex(0);
-    setExitDirection(null);
+    appliedStartUserRef.current = null;
+  }, [startUserId]);
+
+  // Jump to a specific profile (e.g. from dashboard) once when the list loads.
+  useEffect(() => {
+    if (!startUserId || matches.length === 0) return;
+    if (appliedStartUserRef.current === startUserId) return;
+    const targetIndex = matches.findIndex((m) => m.userId === startUserId);
+    if (targetIndex >= 0) {
+      setIndex(targetIndex);
+      setExitDirection(null);
+      appliedStartUserRef.current = startUserId;
+    }
+  }, [startUserId, matches]);
+
+  // When someone is liked/passed they drop off the list — keep the same index so the next person appears.
+  useEffect(() => {
+    setIndex((prev) => {
+      if (matches.length === 0) return 0;
+      return Math.min(prev, matches.length - 1);
+    });
   }, [matches]);
 
   const current = matches[index];
@@ -303,8 +325,9 @@ export function MatchSwipeDeck({
   const handleDismiss = (direction: "left" | "right") => {
     setExitDirection(direction);
     window.setTimeout(() => {
-      setIndex((value) => value + 1);
       setExitDirection(null);
+      // Do not increment index — the liked/passed user is removed from `matches`,
+      // so the same index now points at the next profile.
     }, 180);
   };
 

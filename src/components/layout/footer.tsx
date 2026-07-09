@@ -130,7 +130,7 @@ export function Footer() {
             </p>
             {!isLoading && isAuthenticated ? (
               <Link
-                href="/dashboard"
+                href="/matches"
                 className={cn(
                   "mt-4 inline-flex items-center justify-center rounded-xl bg-primary-foreground px-6 py-3 text-sm font-semibold text-primary hover:bg-primary-foreground/90 transition-colors w-full"
                 )}

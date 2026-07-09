@@ -22,6 +22,8 @@ export const so: Translations = {
   },
   app: {
     dashboard: "Dashboard",
+    discover: "Baadh",
+    likes: "Jecel",
     home: "Guriga",
     matches: "Isbarbardhigyo",
     messages: "Fariimaha",
@@ -604,9 +606,9 @@ export const so: Translations = {
     choosePlan: "Dooro qorshe",
     pendingApproval: "Profile-ka waa la eegayaa",
     pendingApprovalDesc:
-      "Profile-kaaga waa la eegayaa maamulaha. Marka la ansixiyo, waxaad heli doontaa calaamadda Verified oo waad arki kartaa isbarbardhigga.",
+      "Profile-kaaga waa la hubinayaa. Marka la xaqiijiyo, waad bilaabi kartaa raadinta isbarbardhigga.",
     pendingApprovalPremiumDesc:
-      "Profile-kaaga premium wuxuu ku jiraa safka mudnaanta leh. Badanaa waxaan marka hore ansixinnaa xubnaha premium.",
+      "Profile-kaaga wuxuu ku jiraa safka dib u eegista. Nala soo xiriir WhatsApp haddii aad u baahan tahay caawin.",
     matches: "Isbarbardhigyo",
     mutual: "Isdhaaf",
     suggestedShort: "La soo jeediyay",
@@ -759,6 +761,12 @@ export const so: Translations = {
     discoverTitle: "Baadh",
     yourLists: "Liisaskaaga",
     openLists: "Liisaska",
+    viewSwipe: "Muuqaalka swipe",
+    viewBrowse: "Eeg dhammaan isbarbardhigyada",
+  },
+  likesPage: {
+    summary: "{{count}} ayaa ku jira liisaskaaga",
+    summaryEmpty: "Ku jecel profile-yada Baadh si aad halkan ugu aragto",
   },
   notificationsPage: {
     title: "Ogeysiisyada",
@@ -1027,7 +1035,6 @@ export const so: Translations = {
     spousePrayerImportance: "Muhiimadda Salaadda Lammaanaha",
     children: "Carruur",
     marryWithChildren: "Guursan Qof Carruur Leh",
-    readyToRelocate: "Diyaar u ah inuu Guuro",
     marriageTimeline: "Waqtiga Guurka",
     preferredAge: "Da'da aad rabtid",
     preferredHeight: "Dhererka aad rabtid",

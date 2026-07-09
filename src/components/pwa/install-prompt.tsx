@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 const APP_ROUTE_PREFIXES = [
   "/dashboard",
   "/matches",
+  "/likes",
   "/chat",
   "/profile",
   "/notifications",

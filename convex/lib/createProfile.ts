@@ -43,7 +43,6 @@ export async function createUserProfile(
     drinksAlcohol: "",
     exercise: "",
     wantChildren: "",
-    familyInvolvement: "",
     livingSituation: "",
     polygynyOpenness: "",
     hasCurrentWife: "",
@@ -55,7 +54,6 @@ export async function createUserProfile(
     citizenshipStatus: "",
     financialReadiness: "",
     marriageWorkPreference: "",
-    readyToRelocate: "",
     marriageTimeline: "",
     loveLanguage: "",
     marrySomeoneWithChildren: "",
@@ -84,7 +82,6 @@ export async function createUserProfile(
     acceptWidow: "Depends",
     qualities: [],
     hobbies: [],
-    readyToRelocate: "Maybe",
     partnerBeard: "",
     partnerHijabLevel: "",
   });
@@ -123,6 +120,10 @@ export async function ensureUserProfile(
       existing.trialEndsAt === undefined
     ) {
       backfill.trialEndsAt = getTrialEndsAt();
+    }
+    if (existing.questionnaireComplete && !existing.approved) {
+      backfill.approved = true;
+      backfill.verified = true;
     }
     if (Object.keys(backfill).length > 0) {
       await ctx.db.patch(existing._id, backfill);

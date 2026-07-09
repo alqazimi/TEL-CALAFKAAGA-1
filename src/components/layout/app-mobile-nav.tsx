@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Heart,
   MessageCircle,
+  Sparkles,
   ClipboardList,
   Users,
   CreditCard,
@@ -27,6 +28,7 @@ const iconMap = {
   LayoutDashboard,
   Heart,
   MessageCircle,
+  Sparkles,
   ClipboardList,
   User,
 };
@@ -100,6 +102,7 @@ export function AppMobileNav() {
           const Icon = iconMap[link.icon as TabIcon];
           const isActive =
             pathname === link.href ||
+            (link.href === "/likes" && pathname.startsWith("/likes")) ||
             (!profileComplete && link.href === "/questionnaire" && pathname.startsWith("/questionnaire"));
           const isLocked = "locked" in link && link.locked && !profileComplete;
           const href = link.href;

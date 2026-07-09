@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import { Filter, List } from "lucide-react";
+import { Filter, LayoutGrid, Layers } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -13,10 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MatchFilters } from "@/components/matches/match-filters";
 import { MatchProfileModal } from "@/components/matches/match-profile-modal";
 import { MatchSwipeDeck } from "@/components/matches/match-swipe-deck";
-import {
-  MatchListsSheet,
-  type SecondaryMatchList,
-} from "@/components/matches/match-lists-sheet";
+import { MatchProfileCard } from "@/components/matches/match-profile-card";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
@@ -50,11 +48,14 @@ function buildFilterArgs(filters: Record<string, string>) {
 
 export default function MatchesPage() {
   const { t } = useTranslation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const focusUserId = searchParams.get("user") ?? undefined;
+  const openedFocusRef = useRef<string | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<"swipe" | "browse">("swipe");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
-  const [listsOpen, setListsOpen] = useState(false);
-  const [activeList, setActiveList] = useState<SecondaryMatchList>("shortlist");
 
   const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
@@ -70,27 +71,18 @@ export default function MatchesPage() {
     canQuery ? filterArgs : "skip"
   ) as MatchResult[] | undefined;
 
-  const shortlistMatches = useQuery(
-    api.matches.getShortlistedProfiles,
-    canQuery ? filterArgs : "skip"
-  ) as MatchResult[] | undefined;
-
-  const likedMatches = useQuery(
-    api.matches.getSentLikes,
-    canQuery ? filterArgs : "skip"
-  ) as MatchResult[] | undefined;
-
-  const likedYouMatches = useQuery(
-    api.matches.getReceivedLikes,
-    canQuery && isPremium ? filterArgs : "skip"
-  ) as MatchResult[] | undefined;
-
-  const passedMatches = useQuery(
-    api.matches.getPassedProfiles,
-    canQuery ? filterArgs : "skip"
-  ) as MatchResult[] | undefined;
-
   const likeUser = useMutation(api.matches.likeUser);
+
+  // Open the profile the user tapped on the dashboard (?user=).
+  useEffect(() => {
+    if (!focusUserId || !discoverMatches?.length) return;
+    if (openedFocusRef.current === focusUserId) return;
+    const match = discoverMatches.find((m) => m.userId === focusUserId);
+    if (match) {
+      setSelectedMatch(match);
+      openedFocusRef.current = focusUserId;
+    }
+  }, [focusUserId, discoverMatches]);
 
   const handleAction = async (
     userId: Id<"users">,
@@ -111,12 +103,6 @@ export default function MatchesPage() {
       toast.error(t("matchesPage.errorToast"));
     }
   };
-
-  const listCounts =
-    (shortlistMatches?.length ?? 0) +
-    (likedMatches?.length ?? 0) +
-    (passedMatches?.length ?? 0) +
-    (isPremium ? likedYouMatches?.length ?? 0 : 0);
 
   if (profile === undefined) {
     return (
@@ -194,18 +180,22 @@ export default function MatchesPage() {
           </div>
           <div className="flex gap-2 shrink-0">
             <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full"
-              onClick={() => setListsOpen(true)}
+              variant={viewMode === "swipe" ? "default" : "outline"}
+              size="icon"
+              className="rounded-full shrink-0"
+              onClick={() => setViewMode("swipe")}
+              aria-label={t("matchesPage.viewSwipe")}
             >
-              <List className="h-4 w-4 mr-1.5" />
-              {t("matchesPage.openLists")}
-              {listCounts > 0 && (
-                <span className="ml-1.5 rounded-full bg-primary/10 px-1.5 text-xs font-semibold text-primary">
-                  {listCounts}
-                </span>
-              )}
+              <Layers className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "browse" ? "default" : "outline"}
+              size="icon"
+              className="rounded-full shrink-0"
+              onClick={() => setViewMode("browse")}
+              aria-label={t("matchesPage.viewBrowse")}
+            >
+              <LayoutGrid className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
@@ -226,37 +216,44 @@ export default function MatchesPage() {
             <h3 className="text-lg font-semibold mb-2">{t("matchesPage.noMatchesTitle")}</h3>
             <p className="text-muted-foreground text-sm">{t("matchesPage.noMatchesDesc")}</p>
           </Card>
+        ) : viewMode === "browse" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {matchList.map((match, i) => (
+              <MatchProfileCard
+                key={match.userId}
+                match={match}
+                index={i}
+                onView={() => setSelectedMatch(match)}
+                onAction={(action) => void handleAction(match.userId, action)}
+              />
+            ))}
+          </div>
         ) : (
           <MatchSwipeDeck
             matches={matchList}
+            startUserId={focusUserId}
             onView={setSelectedMatch}
             onAction={handleAction}
           />
         )}
       </div>
 
-      <MatchListsSheet
-        open={listsOpen}
-        onClose={() => setListsOpen(false)}
-        activeList={activeList}
-        onListChange={setActiveList}
-        shortlist={shortlistMatches ?? []}
-        liked={likedMatches ?? []}
-        likedYou={likedYouMatches ?? []}
-        passed={passedMatches ?? []}
-        isPremium={isPremium}
-        onView={setSelectedMatch}
-        onAction={handleAction}
-      />
-
       {selectedMatch && (
         <MatchProfileModal
           match={selectedMatch}
           isPremium={isPremium}
-          onClose={() => setSelectedMatch(null)}
-          onLike={(action) => {
-            handleAction(selectedMatch.userId, action);
+          onClose={() => {
             setSelectedMatch(null);
+            if (focusUserId) {
+              router.replace("/matches", { scroll: false });
+            }
+          }}
+          onLike={(action) => {
+            void handleAction(selectedMatch.userId, action);
+            setSelectedMatch(null);
+            if (focusUserId) {
+              router.replace("/matches", { scroll: false });
+            }
           }}
         />
       )}

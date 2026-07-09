@@ -107,9 +107,7 @@ export const WANT_CHILDREN = [
   "Already have and open to more",
 ] as const;
 
-export const FAMILY_INVOLVEMENT = ["Yes", "No", "Somewhat"] as const;
-
-/** Household arrangement after marriage (location is covered by readyToRelocate + country prefs). */
+/** Household arrangement after marriage. */
 export const LIVING_ARRANGEMENT_MALE = [
   "Own home with my wife",
   "With my parents or family",
@@ -319,19 +317,30 @@ export type AppNavIcon =
   | "ClipboardList"
   | "Heart"
   | "MessageCircle"
+  | "Sparkles"
   | "Bell";
 
-/** App navigation — Muzz-style: Home, Matches, Messages, Profile (4 tabs). */
+/** App navigation — Muzz-style: Discover, Messages, Likes, Profile (4 tabs when complete). */
 export function getAppNavLinks(profileComplete = true) {
+  if (profileComplete) {
+    return [
+      { href: "/matches", label: "Discover", mobileLabel: "Home", icon: "Heart" as AppNavIcon, tab: true },
+      { href: "/chat", label: "Messages", icon: "MessageCircle" as AppNavIcon, tab: true },
+      { href: "/likes", label: "Likes", icon: "Sparkles" as AppNavIcon, tab: true },
+      { href: "/profile", label: "Profile", icon: "User" as AppNavIcon, tab: true },
+      { href: "/notifications", label: "Notifications", icon: "Bell" as AppNavIcon, tab: false },
+    ] as const;
+  }
+
   return [
-    { href: "/dashboard", label: "Dashboard", mobileLabel: "Home", icon: "LayoutDashboard" as AppNavIcon, tab: true },
+    { href: "/dashboard", label: "Complete profile", mobileLabel: "Home", icon: "ClipboardList" as AppNavIcon, tab: true },
     { href: "/matches", label: "Matches", icon: "Heart" as AppNavIcon, tab: true, locked: true },
     { href: "/chat", label: "Messages", icon: "MessageCircle" as AppNavIcon, tab: true, locked: true },
     {
-      href: profileComplete ? "/profile" : "/questionnaire",
-      label: profileComplete ? "Profile" : "Complete profile",
-      mobileLabel: profileComplete ? "Profile" : "Complete",
-      icon: (profileComplete ? "User" : "ClipboardList") as AppNavIcon,
+      href: "/questionnaire",
+      label: "Complete profile",
+      mobileLabel: "Complete",
+      icon: "ClipboardList" as AppNavIcon,
       tab: true,
     },
     { href: "/notifications", label: "Notifications", icon: "Bell" as AppNavIcon, tab: false },

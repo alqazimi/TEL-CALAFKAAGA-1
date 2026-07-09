@@ -24,6 +24,7 @@ import {
 } from "./lib/premium";
 import { getTrialEndsAt, isInTrialPeriod } from "./lib/trial";
 import { hasActiveMatch } from "./lib/matchPresentation";
+import { sendNotification } from "./lib/sendNotification";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
@@ -311,10 +312,22 @@ export const completeQuestionnaire = mutation({
       questionnaireComplete: true,
       questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
       lastSavedAt: Date.now(),
+      approved: true,
+      verified: true,
       ...(!profile.hasPaid && profile.trialEndsAt === undefined
         ? { trialEndsAt: getTrialEndsAt() }
         : {}),
     });
+
+    if (!profile.approved) {
+      await sendNotification(ctx, {
+        userId,
+        type: "approval",
+        title: "Profile approved",
+        body: "Your profile is verified. You can now browse matches and connect with members.",
+        sendEmail: true,
+      });
+    }
 
     await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
       userId,

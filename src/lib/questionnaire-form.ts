@@ -76,7 +76,6 @@ export function initFormState(
   if (profile.substanceDetails) textFields.substanceDetails = profile.substanceDetails;
   if (profile.exercise) radios.exercise = profile.exercise;
   if (profile.wantChildren) radios.wantChildren = profile.wantChildren;
-  if (profile.familyInvolvement) radios.familyInvolvement = profile.familyInvolvement;
   if (profile.livingSituation) radios.livingSituation = profile.livingSituation;
   if (profile.polygynyOpenness) radios.polygynyOpenness = profile.polygynyOpenness;
   if (profile.hasCurrentWife) radios.hasCurrentWife = profile.hasCurrentWife;
@@ -90,7 +89,6 @@ export function initFormState(
   if (profile.financialReadiness) radios.financialReadiness = profile.financialReadiness;
   if (profile.marriageWorkPreference) radios.marriageWorkPreference = profile.marriageWorkPreference;
 
-  if (profile.readyToRelocate) radios.readyToRelocate = profile.readyToRelocate;
   if (profile.marriageTimeline) radios.marriageTimeline = profile.marriageTimeline;
   if (profile.loveLanguage) radios.loveLanguage = profile.loveLanguage;
 

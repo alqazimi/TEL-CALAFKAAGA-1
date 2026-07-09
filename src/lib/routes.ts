@@ -3,6 +3,7 @@ export const APP_SHELL_ROUTES = [
   "/dashboard",
   "/profile",
   "/matches",
+  "/likes",
   "/chat",
   "/questionnaire",
   "/payment",
@@ -41,7 +42,6 @@ export function isMarketingRoute(pathname: string): boolean {
 }
 
 import { hasPaidAccess, isStaffRole } from "./access";
-import { isInTrialPeriod } from "./trial";
 
 /** Where signed-in users should land instead of the marketing homepage. */
 export function getAuthenticatedHomeRoute(
@@ -66,11 +66,8 @@ export function getAuthenticatedHomeRoute(
   if (!profile?.questionnaireComplete) {
     return "/questionnaire";
   }
-  if (isInTrialPeriod(profile)) {
-    return "/dashboard";
-  }
   if (!hasPaidAccess(profile)) {
     return "/payment";
   }
-  return "/dashboard";
+  return "/matches";
 }

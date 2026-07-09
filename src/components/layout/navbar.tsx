@@ -25,7 +25,7 @@ export function Navbar() {
   const isStaff = isStaffRole(user?.profile?.role);
   const consoleHref = user
     ? getAuthenticatedHomeRoute(user.profile)
-    : "/dashboard";
+    : "/matches";
 
   useEffect(() => {
     setOpen(false);

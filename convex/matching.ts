@@ -30,6 +30,8 @@ const TIMELINE_SCORES: Record<string, number> = {
   "No timeline": 1,
 };
 
+const COUNTRY_MAX_SCORE = 20;
+
 function spousePrayerScore(
   importance: string | undefined,
   candidatePrayer: string | undefined
@@ -43,16 +45,6 @@ function spousePrayerScore(
     return prayer >= 2 ? 5 : prayer >= 1 ? 3 : 0;
   }
   return 3;
-}
-
-function relocateScore(user: Profile, candidate: Profile): number {
-  const userReady = user.readyToRelocate;
-  const candReady = candidate.readyToRelocate;
-  if (!userReady || !candReady) return 2;
-  if (userReady === "Yes" && (candReady === "Yes" || candReady === "Maybe")) return 3;
-  if (userReady === "Maybe" && candReady !== "No") return 3;
-  if (userReady === "No" && candReady === "No") return 3;
-  return 1;
 }
 
 export type CompatibilityBreakdownItem = {
@@ -100,11 +92,11 @@ export function calculateCompatibilityBreakdown(
     userPrefs.preferredCountries.length === 0 ||
     userPrefs.preferredCountries.includes(candidate.country)
   ) {
-    countryScore = 8;
+    countryScore = COUNTRY_MAX_SCORE;
   } else if (user.country === candidate.country) {
-    countryScore = 4;
+    countryScore = COUNTRY_MAX_SCORE / 2;
   }
-  push("country", countryScore, 8);
+  push("country", countryScore, COUNTRY_MAX_SCORE);
 
   let heightScore = 0;
   if (candidate.height >= userPrefs.minHeight && candidate.height <= userPrefs.maxHeight) {
@@ -179,14 +171,7 @@ export function calculateCompatibilityBreakdown(
   const timelineDiff = Math.abs(userTimeline - candTimeline);
   push("timeline", Math.max(0, 7 - timelineDiff * 2), 7);
 
-  push("relocation", relocateScore(user, candidate), 3);
   push("wantChildren", wantChildrenScore(user.wantChildren, candidate.wantChildren), 4);
-
-  let familyScore = 0;
-  if (user.familyInvolvement && candidate.familyInvolvement) {
-    familyScore = user.familyInvolvement === candidate.familyInvolvement ? 2 : 1;
-  }
-  push("familyInvolvement", familyScore, 2);
 
   let livingScore = 0;
   if (user.livingSituation && candidate.livingSituation) {
@@ -346,7 +331,6 @@ export interface Profile {
   religiousLevel: string;
   prayerFrequency?: string;
   spousePrayerImportance?: string;
-  readyToRelocate?: string;
   age: number;
   country: string;
   city?: string;
@@ -360,7 +344,6 @@ export interface Profile {
   marrySomeoneWithChildren?: string;
   gender: "male" | "female";
   wantChildren?: string;
-  familyInvolvement?: string;
   livingSituation?: string;
   polygynyOpenness?: string;
   hasCurrentWife?: string;

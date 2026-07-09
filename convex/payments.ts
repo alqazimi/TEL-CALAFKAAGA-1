@@ -82,9 +82,9 @@ async function applyPaymentCompletion(
         title: "Payment successful",
         body: isPremium
           ? payment.paymentType === "premium_upgrade"
-            ? "Your premium plan is active. Enjoy priority approval, who liked you, and personal support."
-            : "Your registration and personal support plan are active. Browse matches when your profile is approved."
-          : "Your registration is complete. Browse matches when your profile is approved.",
+            ? "Your premium plan is active. Enjoy who liked you and personal support."
+            : "Your registration and personal support plan are active. Browse matches from your dashboard."
+          : "Your registration is complete. Browse matches from your dashboard.",
         sendEmail: true,
       });
     }
