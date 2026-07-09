@@ -38,6 +38,7 @@ import { formatTime } from "@/lib/utils";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
+import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
 import { TrustBadges } from "@/components/profile/trust-badges";
@@ -110,6 +111,12 @@ export default function ChatPage() {
   const activeConv = conversations?.find((c) => c.conversationId === activeConversation);
   const myUserId = currentUser?.userId;
   const showMobileChat = activeConversation && activeConv;
+
+  useMarkNotificationsRead(
+    ["message"],
+    !!profile?.questionnaireComplete,
+    activeConv?.profile?.userId
+  );
 
   useEffect(() => {
     if (activeConversation) {

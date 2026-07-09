@@ -58,7 +58,7 @@ export const getMemberReminders = query({
       return [{ id: "pending-approval" as const, href: "/dashboard" }];
     }
 
-    return [{ id: "browse-matches" as const, href: "/matches" }];
+    return [];
   },
 });
 
@@ -106,6 +106,39 @@ export const markAllAsRead = mutation({
       .collect();
 
     for (const n of unread) {
+      await ctx.db.patch(n._id, { read: true });
+    }
+  },
+});
+
+const notificationType = v.union(
+  v.literal("like"),
+  v.literal("match"),
+  v.literal("message"),
+  v.literal("announcement"),
+  v.literal("approval"),
+  v.literal("payment")
+);
+
+export const markNotificationsRead = mutation({
+  args: {
+    types: v.optional(v.array(notificationType)),
+    relatedUserId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return;
+
+    const unread = await ctx.db
+      .query("notifications")
+      .withIndex("by_user_read", (q) =>
+        q.eq("userId", userId).eq("read", false)
+      )
+      .collect();
+
+    for (const n of unread) {
+      if (args.types && !args.types.includes(n.type)) continue;
+      if (args.relatedUserId && n.relatedUserId !== args.relatedUserId) continue;
       await ctx.db.patch(n._id, { read: true });
     }
   },

@@ -13,6 +13,7 @@ import { hasPaidAccess, isStaffRole } from "@/lib/access";
 import { isTrialExpired } from "@/lib/trial";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { toast } from "sonner";
+import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -20,6 +21,8 @@ export default function PaymentPage() {
   const canceled = searchParams.get("canceled") === "true";
   const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
   const { t } = useTranslation();
+
+  useMarkNotificationsRead(["payment"], profile !== undefined);
 
   useEffect(() => {
     if (canceled) {

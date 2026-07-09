@@ -21,7 +21,6 @@ import { useNavLinks } from "@/lib/i18n/hooks";
 import { useTranslation } from "@/lib/i18n/context";
 import { isStaffRole } from "@/lib/access";
 import { Button } from "@/components/ui/button";
-import { LanguageToggle } from "@/components/layout/language-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isAppShellRoute, getAuthenticatedHomeRoute } from "@/lib/routes";
 import { isStandaloneDisplay } from "@/lib/pwa";
@@ -97,8 +96,6 @@ export function AppShellHeader() {
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            <LanguageToggle className="h-9 px-2 rounded-xl" />
-
             <Button
               variant="ghost"
               size="icon"

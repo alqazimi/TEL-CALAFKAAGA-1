@@ -6,7 +6,6 @@ import { useConvexAuth } from "convex/react";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LanguageToggle } from "@/components/layout/language-toggle";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -83,7 +82,7 @@ export function QuestionnaireShell({
           <p className="flex-1 text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground truncate">
             {phaseLabel}
           </p>
-          <LanguageToggle className="h-9 px-2 rounded-xl shrink-0" />
+          <div className="w-[4.5rem] shrink-0" aria-hidden />
         </div>
         {progressHint ? (
           <p className="border-t border-border/40 py-2 text-center text-xs text-muted-foreground">

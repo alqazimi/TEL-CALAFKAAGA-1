@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -76,8 +77,16 @@ export default function NotificationsPage() {
     | undefined;
   const markAsRead = useMutation(api.notifications.markAsRead);
   const markAllAsRead = useMutation(api.notifications.markAllAsRead);
+  const markedAllRef = useRef(false);
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0;
+
+  useEffect(() => {
+    if (notifications === undefined || markedAllRef.current) return;
+    if (!notifications.some((n) => !n.read)) return;
+    markedAllRef.current = true;
+    void markAllAsRead();
+  }, [notifications, markAllAsRead]);
 
   if (notifications === undefined || reminders === undefined) {
     return (

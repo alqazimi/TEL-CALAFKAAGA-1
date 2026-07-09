@@ -25,6 +25,7 @@ import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
 import { TrialBanner } from "@/components/payment/trial-banner";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
+import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 
 function buildFilterArgs(filters: Record<string, string>) {
   return {
@@ -63,6 +64,8 @@ export default function MatchesPage() {
   const canQuery =
     profile?.questionnaireComplete && profile.approved && hasPaidAccess(profile);
   const isPremium = isPremiumMember(profile);
+
+  useMarkNotificationsRead(["match", "approval"], canQuery);
 
   const filterArgs = useMemo(() => buildFilterArgs(filters), [filters]);
 

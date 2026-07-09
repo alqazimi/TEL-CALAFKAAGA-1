@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  appShellLocale,
   defaultLocale,
   LOCALE_STORAGE_KEY,
   translate,
@@ -62,6 +63,43 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
   );
 }
+
+/** Override locale for a subtree (e.g. app shell always in English). */
+export function ForcedLocaleProvider({
+  locale,
+  children,
+}: {
+  locale: Locale;
+  children: ReactNode;
+}) {
+  const parent = useContext(LanguageContext);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    return () => {
+      document.documentElement.lang = parent?.locale ?? defaultLocale;
+    };
+  }, [locale, parent?.locale]);
+
+  const t = useCallback(
+    (key: TranslationPath, params?: Record<string, string | number>) =>
+      translate(locale, key, params),
+    [locale]
+  );
+
+  const setLocale = parent?.setLocale ?? (() => {});
+
+  const value = useMemo(
+    () => ({ locale, setLocale, t }),
+    [locale, setLocale, t]
+  );
+
+  return (
+    <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
+  );
+}
+
+export { appShellLocale };
 
 export function useTranslation() {
   const context = useContext(LanguageContext);

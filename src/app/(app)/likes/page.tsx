@@ -23,6 +23,7 @@ import { hasPaidAccess, isPremiumMember } from "@/lib/access";
 import { isTrialExpired } from "@/lib/trial";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
+import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 
 export default function LikesPage() {
   const { t } = useTranslation();
@@ -60,6 +61,11 @@ export default function LikesPage() {
 
   const defaultTab: SecondaryMatchList = isPremium ? "likedYou" : "liked";
   const activeList = isSecondaryMatchList(tabParam) ? tabParam : defaultTab;
+
+  useMarkNotificationsRead(
+    activeList === "likedYou" ? ["like"] : activeList === "liked" ? ["match"] : [],
+    canQuery
+  );
 
   const setActiveList = useCallback(
     (list: SecondaryMatchList) => {

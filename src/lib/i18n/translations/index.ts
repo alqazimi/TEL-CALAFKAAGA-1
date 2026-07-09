@@ -4,6 +4,8 @@ import { so } from "./so";
 export type Locale = "so" | "en";
 
 export const defaultLocale: Locale = "so";
+/** Signed-in app shell (dashboard, matches, profile, etc.) always uses English. */
+export const appShellLocale: Locale = "en";
 export const LOCALE_STORAGE_KEY = "calaf-locale";
 
 export const translations = {
