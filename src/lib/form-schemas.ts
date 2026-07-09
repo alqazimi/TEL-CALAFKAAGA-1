@@ -9,7 +9,10 @@ export type TranslateFn = (
 
 export function createLoginSchema(t: TranslateFn) {
   return z.object({
-    email: z.string().email(t("validation.invalidEmail")),
+    email: z
+      .string()
+      .email(t("validation.invalidEmail"))
+      .transform((value) => value.trim().toLowerCase()),
     password: z.string().min(6, t("validation.passwordMin6")),
   });
 }
@@ -17,7 +20,10 @@ export function createLoginSchema(t: TranslateFn) {
 export function createAccountSchema(t: TranslateFn) {
   return z
     .object({
-      email: z.string().email(t("validation.invalidEmail")),
+      email: z
+        .string()
+        .email(t("validation.invalidEmail"))
+        .transform((value) => value.trim().toLowerCase()),
       password: z.string().min(8, t("validation.passwordMin8")),
       confirmPassword: z.string().min(1, t("validation.confirmPasswordRequired")),
     })
@@ -47,7 +53,10 @@ export function createDetailsSchema(t: TranslateFn) {
 
 export function createForgotEmailSchema(t: TranslateFn) {
   return z.object({
-    email: z.string().email(t("validation.invalidEmail")),
+    email: z
+      .string()
+      .email(t("validation.invalidEmail"))
+      .transform((value) => value.trim().toLowerCase()),
   });
 }
 

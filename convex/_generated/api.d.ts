@@ -30,6 +30,7 @@ import type * as lib_resendOtp from "../lib/resendOtp.js";
 import type * as lib_roles from "../lib/roles.js";
 import type * as lib_sendNotification from "../lib/sendNotification.js";
 import type * as lib_stripe from "../lib/stripe.js";
+import type * as lib_trial from "../lib/trial.js";
 import type * as matches from "../matches.js";
 import type * as matching from "../matching.js";
 import type * as matchingEngine from "../matchingEngine.js";
@@ -77,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   "lib/roles": typeof lib_roles;
   "lib/sendNotification": typeof lib_sendNotification;
   "lib/stripe": typeof lib_stripe;
+  "lib/trial": typeof lib_trial;
   matches: typeof matches;
   matching: typeof matching;
   matchingEngine: typeof matchingEngine;

@@ -14,7 +14,8 @@ import { GuestGate } from "@/components/auth/guest-gate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
-import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { getAuthErrorMessage, isUnknownAccountError } from "@/lib/auth-errors";
+import { normalizeAuthEmail } from "@/lib/auth-email";
 import {
   createForgotEmailSchema,
   createResetCodeSchema,
@@ -56,7 +57,7 @@ export default function ForgotPasswordPage() {
 
   const requestResetCode = async (address: string) => {
     await signIn("password", {
-      email: address,
+      email: normalizeAuthEmail(address),
       flow: "reset",
     });
   };
@@ -100,6 +101,10 @@ export default function ForgotPasswordPage() {
       setStep("code");
       toast.success(t("auth.resetCodeSent"));
     } catch (error) {
+      if (isUnknownAccountError(error)) {
+        toast.success(t("auth.resetCodeSent"));
+        return;
+      }
       toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed"), t));
     } finally {
       setSending(false);
@@ -115,6 +120,10 @@ export default function ForgotPasswordPage() {
       setResendCooldown(RESEND_COOLDOWN_S);
       toast.success(t("auth.resetCodeResent"));
     } catch (error) {
+      if (isUnknownAccountError(error)) {
+        toast.success(t("auth.resetCodeSent"));
+        return;
+      }
       toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed"), t));
     } finally {
       setResending(false);
@@ -148,7 +157,7 @@ export default function ForgotPasswordPage() {
     setResetting(true);
     try {
       await signIn("password", {
-        email,
+        email: normalizeAuthEmail(email),
         code: verifiedCode,
         newPassword: data.newPassword,
         flow: "reset-verification",

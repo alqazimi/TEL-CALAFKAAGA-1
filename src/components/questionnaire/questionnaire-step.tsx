@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import type { Preferences } from "@/lib/profile-progress";
 import type { Profile } from "@/types";
-import { CITIES, CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
+import { getCitiesForCountry, CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import { useTranslation } from "@/lib/i18n/context";
 import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
@@ -57,10 +57,24 @@ function translateError(
   return key ? ui(key) : error;
 }
 
-function fieldNeedsManualAdvance(field: FieldConfig, selectedCountry: string): boolean {
+function resolveCountryForCities(
+  selectedCountry: string,
+  selects: Record<string, string>,
+  profileCountry?: string
+): string {
+  return selectedCountry || selects.country || profileCountry || "";
+}
+
+function fieldNeedsManualAdvance(
+  field: FieldConfig,
+  selectedCountry: string,
+  selects: Record<string, string>,
+  profileCountry?: string
+): boolean {
   if (!AUTO_ADVANCE_TYPES.has(field.type)) return true;
-  if (field.type === "select" && field.name === "city" && !CITIES[selectedCountry]?.length) {
-    return true;
+  if (field.type === "select" && field.name === "city") {
+    const country = resolveCountryForCities(selectedCountry, selects, profileCountry);
+    if (!getCitiesForCountry(country).length) return true;
   }
   return false;
 }
@@ -269,7 +283,16 @@ export function QuestionnaireStep({
 
   const scheduleAutoAdvance = useCallback(
     (field: FieldConfig) => {
-      if (fieldNeedsManualAdvance(field, selectedCountryRef.current)) return;
+      if (
+        fieldNeedsManualAdvance(
+          field,
+          selectedCountryRef.current,
+          formStateRef.current.selects,
+          profileRef.current?.country
+        )
+      ) {
+        return;
+      }
       if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
       autoAdvanceRef.current = setTimeout(() => {
         const idx = fieldIndexRef.current;
@@ -324,7 +347,13 @@ export function QuestionnaireStep({
   };
 
   const showManualNext =
-    currentField && fieldNeedsManualAdvance(currentField, selectedCountry);
+    currentField &&
+    fieldNeedsManualAdvance(
+      currentField,
+      selectedCountry,
+      selects,
+      profile?.country
+    );
 
   const renderSelectOptions = (
     field: FieldConfig,
@@ -463,12 +492,22 @@ export function QuestionnaireStep({
     }
 
     if (field.type === "select" && field.name === "city") {
-      if (CITIES[selectedCountry]?.length) {
-        return renderSelectOptions(field, selects[field.name] ?? "", (v) => {
-          setSelects((prev) => ({ ...prev, [field.name]: v }));
-          clearFieldError(field.name);
-          scheduleAutoAdvance(field);
-        });
+      const countryForCities = resolveCountryForCities(
+        selectedCountry,
+        selects,
+        profile?.country
+      );
+      const cityOptions = getCitiesForCountry(countryForCities);
+      if (cityOptions.length) {
+        return renderSelectOptions(
+          { ...field, options: cityOptions },
+          selects[field.name] ?? "",
+          (v) => {
+            setSelects((prev) => ({ ...prev, [field.name]: v }));
+            clearFieldError(field.name);
+            scheduleAutoAdvance(field);
+          }
+        );
       }
       return (
         <Input

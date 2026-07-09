@@ -2,6 +2,11 @@ import type { TranslationPath } from "@/lib/i18n/translations";
 
 type TranslateFn = (key: TranslationPath) => string;
 
+export function isUnknownAccountError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.message.includes("InvalidAccountId");
+}
+
 /** Extract a user-facing message from Convex Auth / Convex client errors. */
 export function getAuthErrorMessage(
   error: unknown,
@@ -24,6 +29,9 @@ export function getAuthErrorMessage(
       return t?.("auth.errorAccountExists") ?? fallback;
     }
     if (msg.includes("Could not send reset email")) {
+      return t?.("auth.errorResetEmail") ?? fallback;
+    }
+    if (msg.includes("AUTH_RESEND_KEY is not configured")) {
       return t?.("auth.errorResetEmail") ?? fallback;
     }
     if (msg.includes("TooManyFailedAttempts")) {

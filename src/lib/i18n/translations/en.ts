@@ -304,7 +304,7 @@ export const en = {
     passwordConfirmPlaceholder: "Re-enter your password",
     codePlaceholder: "123456",
     errorNoAccount:
-      "No account found with this email. Production uses a separate database — register here if you only had a local/dev account.",
+      "No account found with this email. Please register first, or check for typos.",
     errorAccountExists:
       "An account with this email already exists. Try signing in instead.",
     errorResetEmail: "We could not send the reset email. Please try again later or contact support.",

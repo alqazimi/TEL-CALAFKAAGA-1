@@ -130,6 +130,7 @@ if (useProd) {
       "STRIPE_SECRET_KEY",
       "STRIPE_WEBHOOK_SECRET",
       "AUTH_RESEND_KEY",
+      "AUTH_EMAIL_FROM",
     ];
 
     for (const key of required) {

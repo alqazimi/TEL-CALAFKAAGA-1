@@ -310,7 +310,7 @@ export const so: Translations = {
     passwordConfirmPlaceholder: "Dib u geli erayga sirta ah",
     codePlaceholder: "123456",
     errorNoAccount:
-      "Akoonkan emailka lama helin. Production waxay isticmaashaa database gooni ah — halkan iska diiwaangeli haddii aad hore u lahayd akoon dev/local.",
+      "Akoonkan emailka lama helin. Fadlan marka hore iska diiwaangeli, ama hubi in emailku sax yahay.",
     errorAccountExists:
       "Emailkan hore ayaa loo isticmaalay akoon. Fadlan gal halkii aad iska diiwaangelin lahayd.",
     errorResetEmail:
