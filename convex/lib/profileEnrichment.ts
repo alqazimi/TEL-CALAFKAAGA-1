@@ -36,5 +36,10 @@ export function enrichProfileUpdates(
   if (typeof enriched.prayerFrequency === "string" && enriched.prayerFrequency) {
     enriched.religiousLevel = religiousLevelFromPrayer(enriched.prayerFrequency);
   }
+  for (const key of ["wearsHijab", "hasBeard"] as const) {
+    const val = enriched[key];
+    if (val === "Yes") enriched[key] = true;
+    else if (val === "No") enriched[key] = false;
+  }
   return enriched;
 }

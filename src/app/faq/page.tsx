@@ -1,11 +1,8 @@
 import { Metadata } from "next";
 import { FaqPageContent } from "@/components/marketing/faq-page-content";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "FAQ",
-  description:
-    "Answers about Hel Calafkaaga — halal matchmaking, pricing ($10 standard or $20 with personal support), privacy, and how matching works.",
-};
+export const metadata: Metadata = pageMetadata("faq", "/faq");
 
 export default function FAQPage() {
   return <FaqPageContent />;

@@ -217,6 +217,8 @@ export function buildStepData(
       const value = radios[field.name];
       if (field.preferences) {
         preferences[field.name.replace("pref_", "")] = value;
+      } else if (field.name === "wearsHijab" || field.name === "hasBeard") {
+        data[field.name] = value === "Yes";
       } else {
         data[field.name] = value;
       }

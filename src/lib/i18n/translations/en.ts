@@ -329,6 +329,23 @@ export const en = {
       "Run: SITE_URL=https://hel-calafkaaga-d9g4.vercel.app npm run setup:auth:prod",
     convexTimeoutStep4: "Redeploy Vercel again",
   },
+  approvalGate: {
+    title: "Your profile is under review",
+    subtitle:
+      "Payment and profile are complete. An admin will review your account before you can browse matches — this keeps the community safe and serious.",
+    subtitlePremium:
+      "You are in the priority review queue. An admin will approve your profile soon. Contact us on WhatsApp if you need help.",
+    progressLabel: "Your progress",
+    stepPaid: "Registration paid",
+    stepProfile: "Profile submitted",
+    stepReview: "Admin review (in progress)",
+    stepMatches: "Browse matches & chat",
+    typicalWait:
+      "Most profiles are reviewed within 24 hours. You will get a notification when approved.",
+    premiumWhatsApp: "Message us on WhatsApp (premium support)",
+    goToDashboard: "Go to dashboard",
+    viewProfile: "View my profile",
+  },
   profileProgress: {
     lockedTitle: "Find Your Best Match",
     lockedDesc:

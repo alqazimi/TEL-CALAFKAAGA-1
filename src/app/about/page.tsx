@@ -1,11 +1,8 @@
 import { Metadata } from "next";
 import { AboutPageContent } from "@/components/marketing/about-page-content";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "About",
-  description:
-    "Hel Calafkaaga helps Muslims find a halal life partner through respectful matchmaking, privacy-first profiles, and Islamic values.",
-};
+export const metadata: Metadata = pageMetadata("about", "/about");
 
 export default function AboutPage() {
   return <AboutPageContent />;

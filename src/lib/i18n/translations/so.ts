@@ -336,6 +336,23 @@ export const so: Translations = {
       "Orod: SITE_URL=https://hel-calafkaaga-d9g4.vercel.app npm run setup:auth:prod",
     convexTimeoutStep4: "Dib u deploy Vercel",
   },
+  approvalGate: {
+    title: "Profile-kaaga waa la eegayaa",
+    subtitle:
+      "Lacag bixinta iyo profile-ka waa dhammaystiran yihiin. Maamuluhu wuu eegi doonaa akoonkaaga ka hor intaadan eegin isbarbardhigga — tani waxay ilaalinaysaa bulsho dhab ah oo ammaan ah.",
+    subtitlePremium:
+      "Waxaad ku jirtaa safka mudnaanta leh. Maamuluhu dhawaan ayuu ansixin doonaa profile-kaaga. Nala soo xiriir WhatsApp haddii aad u baahan tahay caawin.",
+    progressLabel: "Horumarkaaga",
+    stepPaid: "Diiwaangelinta waa la bixiyay",
+    stepProfile: "Profile-ka waa la gudbiyay",
+    stepReview: "Dib u eegis maamule (waa socda)",
+    stepMatches: "Baadh isbarbardhigga & sheekayso",
+    typicalWait:
+      "Inta badan profile-yada waxaa lagu eegaa 24 saac gudahood. Waxaa laguu soo ogeysiin doonaa marka la ansixiyo.",
+    premiumWhatsApp: "Nala soo qor WhatsApp (taageero premium)",
+    goToDashboard: "Tag dashboard-ka",
+    viewProfile: "Eeg profile-kayga",
+  },
   profileProgress: {
     lockedTitle: "Hel Isbarbardhiggaaga Ugu Fiican",
     lockedDesc:

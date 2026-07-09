@@ -9,8 +9,9 @@ import type { Preferences } from "@/lib/profile-progress";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
+import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { NextStepCard } from "@/components/dashboard/next-step-card";
-import { hasPaidAccess, isStaffRole } from "@/lib/access";
+import { hasPaidAccess, isPremiumMember, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 
 export default function DashboardPage() {
@@ -54,6 +55,8 @@ export default function DashboardPage() {
   const profile = user?.profile;
   const firstName = profile?.name?.split(" ")[0] ?? t("dashboard.guestName");
   const isComplete = profile?.questionnaireComplete ?? false;
+  const hasPaid = hasPaidAccess(profile);
+  const awaitingApproval = isComplete && hasPaid && profile && !profile.approved;
 
   return (
     <DashboardLayout>
@@ -64,7 +67,13 @@ export default function DashboardPage() {
           </h1>
         </div>
 
-        {user && <NextStepCard user={user} matches={matches} mutualCount={myMatches?.length ?? 0} />}
+        {awaitingApproval && (
+          <PendingApprovalGate isPremium={isPremiumMember(profile)} className="py-0" />
+        )}
+
+        {user && !awaitingApproval && (
+          <NextStepCard user={user} matches={matches} mutualCount={myMatches?.length ?? 0} />
+        )}
 
         {profile && !isComplete && (
           <ProfileCompletionCard profile={profile} preferences={preferences} />

@@ -1,11 +1,8 @@
 import { Metadata } from "next";
 import { PricingPageContent } from "@/components/marketing/pricing-page-content";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Pricing",
-  description:
-    "Hel Calafkaaga registration: $10 standard or $20 with personal relationship support. One-time payment, full access to halal matchmaking.",
-};
+export const metadata: Metadata = pageMetadata("pricing", "/pricing");
 
 export default function PricingPage() {
   return <PricingPageContent />;

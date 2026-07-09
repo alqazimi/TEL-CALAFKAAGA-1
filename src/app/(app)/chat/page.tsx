@@ -18,11 +18,11 @@ import {
 import { LazyEmojiPicker, type EmojiClickData } from "@/components/chat/lazy-emoji-picker";
 import { api } from "../../../../convex/_generated/api";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
-import { PendingApprovalCard } from "@/components/profile/pending-approval-card";
+import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { Conversation, ChatMessage, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
-import { hasPaidAccess } from "@/lib/access";
+import { hasPaidAccess, isPremiumMember } from "@/lib/access";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -217,9 +217,7 @@ export default function ChatPage() {
   if (profile && !profile.approved) {
     return (
       <DashboardLayout>
-        <div className="max-w-lg mx-auto py-8">
-          <PendingApprovalCard />
-        </div>
+        <PendingApprovalGate isPremium={isPremiumMember(profile)} />
       </DashboardLayout>
     );
   }

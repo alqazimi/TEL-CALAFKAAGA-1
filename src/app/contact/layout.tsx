@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { APP_NAME, SUPPORT_EMAIL } from "@/lib/constants";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: `Get in touch with ${APP_NAME} — email ${SUPPORT_EMAIL} or WhatsApp for registration help and personal support.`,
-};
+export const metadata: Metadata = pageMetadata("contact", "/contact");
 
 export default function ContactLayout({
   children,

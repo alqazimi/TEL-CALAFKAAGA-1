@@ -1,11 +1,8 @@
 import { Metadata } from "next";
 import { TermsPageContent } from "@/components/marketing/terms-page-content";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Terms of Service",
-  description:
-    "Terms of service for using Hel Calafkaaga — halal Islamic matchmaking, registration, and member conduct.",
-};
+export const metadata: Metadata = pageMetadata("terms", "/terms");
 
 export default function TermsPage() {
   return <TermsPageContent />;

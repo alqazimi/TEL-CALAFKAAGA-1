@@ -18,7 +18,7 @@ import {
   type SecondaryMatchList,
 } from "@/components/matches/match-lists-sheet";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
-import { PendingApprovalCard } from "@/components/profile/pending-approval-card";
+import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
@@ -144,9 +144,7 @@ export default function MatchesPage() {
   if (profile && !profile.approved) {
     return (
       <DashboardLayout>
-        <div className="max-w-2xl mx-auto space-y-4">
-          <PendingApprovalCard isPremium={isPremiumMember(profile)} />
-        </div>
+        <PendingApprovalGate isPremium={isPremiumMember(profile)} />
       </DashboardLayout>
     );
   }

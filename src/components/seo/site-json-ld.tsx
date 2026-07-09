@@ -1,10 +1,10 @@
 import {
-  APP_DESCRIPTION,
   PRODUCTION_SITE_URL,
   SITE_BRAND_NAME,
   SUPPORT_EMAIL,
   WHATSAPP_DISPLAY,
 } from "@/lib/constants";
+import { SEO_SO } from "@/lib/seo/metadata";
 
 function getCanonicalSiteUrl() {
   const base = (
@@ -35,7 +35,7 @@ export function SiteJsonLd() {
         },
         image: logoUrl,
         email: SUPPORT_EMAIL,
-        description: APP_DESCRIPTION,
+        description: SEO_SO.siteDescription,
         contactPoint: {
           "@type": "ContactPoint",
           contactType: "customer support",
@@ -53,7 +53,7 @@ export function SiteJsonLd() {
           "www.helcalafkaaga.com",
         ],
         url: siteUrl,
-        description: APP_DESCRIPTION,
+        description: SEO_SO.siteDescription,
         inLanguage: ["en", "so"],
         publisher: { "@id": `${siteOrigin}/#organization` },
       },
