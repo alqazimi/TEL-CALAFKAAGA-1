@@ -12,7 +12,7 @@ const STEP_TEXT: Record<number, { title: Bilingual; description: Bilingual }> = 
     title: { en: "About you", so: "Wax kugu saabsan" },
     description: {
       en: "Who is looking for a spouse?",
-      so: "Yaa xaas raadinaya?",
+      so: "Yaa lamaanahaaga raadinaya?",
     },
   },
   1: {
@@ -53,7 +53,7 @@ const STEP_TEXT: Record<number, { title: Bilingual; description: Bilingual }> = 
     title: { en: "Partner Preferences", so: "Doorbidyada Lammaanaha" },
     description: {
       en: "What you are looking for in a spouse",
-      so: "Waxa aad ka doonayso xaas",
+      so: "Waxa aad ka doonayso lamaanahaaga",
     },
   },
   9: {
@@ -132,7 +132,7 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   },
   livingSituation_male: {
     en: "After marriage, where do you plan for your wife to live?",
-    so: "Guurka ka dib, xaggee ayaad qorshaynaysaa in xaaskaagu ku noolaado?",
+    so: "Guurka ka dib, xaggee ayaad qorshaynaysaa in lamaanahaagu ku noolaado?",
   },
   livingSituation_female: {
     en: "After marriage, where would you prefer to live?",
@@ -140,19 +140,19 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   },
   polygynyOpenness: {
     en: "Are you open to polygyny / a second marriage?",
-    so: "Ma u furan tahay guur labaad / laba xaas?",
+    so: "Ma u furan tahay guur labaad / laba lamaanahaaga?",
   },
   hasCurrentWife: {
     en: "Do you currently have a wife?",
-    so: "Hadda ma leedahay xaas?",
+    so: "Hadda ma leedahay lamaanahaaga?",
   },
   openToSecondWife: {
     en: "Do you plan to marry another wife in the future?",
-    so: "Mustaqbalka ma qorshaynaysaa inaad guursato xaas kale?",
+    so: "Mustaqbalka ma qorshaynaysaa inaad guursato lamaanahaaga kale?",
   },
   acceptManWithWife: {
     en: "Would you marry a man who already has a wife?",
-    so: "Ma guursan lahayd nin horey xaas u lahaa?",
+    so: "Ma guursan lahayd nin horay guur usoo maray?",
   },
   acceptPreviouslyMarriedMan: {
     en: "Would you accept a man who was previously married?",
@@ -160,7 +160,7 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   },
   acceptFutureCoWife: {
     en: "Would you accept if your husband marries another wife later?",
-    so: "Ma aqbalaysaa in ninkaagu mustaqbalka guursado xaas kale?",
+    so: "Ma aqbalaysaa in ninkaagu mustaqbalka guursado lamaanahaaga kale?",
   },
   languagesSpoken: {
     en: "Languages you speak",
@@ -180,15 +180,15 @@ const FIELD_LABELS: Record<string, Bilingual> = {
   },
   pref_partnerBeard: {
     en: "Beard preference for your spouse",
-    so: "Doorbidka gadka ee xaaskaaga",
+    so: "Doorbidka gadka ee lamaanahaaga",
   },
   pref_partnerHijabLevel: {
     en: "Hijab / niqab preference for your spouse",
-    so: "Doorbidka xijaab / niqaab ee xaaskaaga",
+    so: "Doorbidka xijaab / niqaab ee lamaanahaaga",
   },
   spousePrayerImportance: {
     en: "How important is it that your spouse prays regularly?",
-    so: "Intee ayay muhiim u tahay in xaaskaagu si joogto ah u tukado?",
+    so: "Intee ayay muhiim u tahay in lamaanahaagu si joogto ah u tukado?",
   },
   marrySomeoneWithChildren: {
     en: "Would you marry someone with children?",
@@ -306,7 +306,7 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   "Own home": { en: "Own home", so: "Gurigeyga gaarka ah" },
   "Own home with my wife": {
     en: "Own home with my wife (separate from family)",
-    so: "Guri gaar ah aniga iyo xaaskayga (ka go'an qoyska)",
+    so: "Guri gaar ah aniga iyo lamaanahayga (ka go'an qoyska)",
   },
   "Own home with my husband": {
     en: "Own home with my husband (separate from in-laws)",
@@ -469,9 +469,9 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
   Madhhab: { en: "Madhhab", so: "Madhhab" },
   "Polygyny Openness": { en: "Polygyny Openness", so: "Furfurnaanta Guur Labaad" },
   "Co-Wife Acceptance": { en: "Co-Wife Acceptance", so: "Aqbalaadda Garoobnimada" },
-  "Current Wife": { en: "Currently Has a Wife", so: "Hadda Xaas leh" },
-  "Open to Second Wife": { en: "Plans Another Wife", so: "Qorshaha Xaas Kale" },
-  "Accept Man With Wife": { en: "Accepts Married Man", so: "Aqbala Ninka Xaas leh" },
+  "Current Wife": { en: "Currently Has a Wife", so: "Hadda Lamaanahaaga leh" },
+  "Open to Second Wife": { en: "Plans Another Wife", so: "Qorshaha Lamaanahaaga kale" },
+  "Accept Man With Wife": { en: "Accepts Married Man", so: "Aqbala Ninka Lamaanahaaga leh" },
   "Accept Future Co-Wife": { en: "Accepts Future Co-Wife", so: "Aqbala Garoob Mustaqbal" },
   "Work Preference After Marriage": {
     en: "Work Preference After Marriage",
@@ -488,7 +488,7 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
   Hobbies: { en: "Hobbies", so: "Hiwaayado" },
   "Spouse Prayer Importance": {
     en: "Spouse Prayer Importance",
-    so: "Muhiimadda Salaadda Xaaska",
+    so: "Muhiimadda Salaadda Lamaanahaaga",
   },
   "Marry Someone With Children": {
     en: "Marry Someone With Children",
@@ -547,7 +547,7 @@ const UI_TEXT = {
     so: "Gudbintu waa fashilantay. Fadlan mar kale isku day.",
   },
   // Phase-complete interstitial
-  part1Complete: { en: "Part 1 complete", so: "Qaybta 1aad waa dhammaatay" },
+  part1Complete: { en: "Part 1 complete", so: "QAYBTA 1AAD WAA DHAMMAATAY" },
   part2Complete: { en: "Part 2 complete", so: "Qaybta 2aad waa dhammaatay" },
   infoSaved: {
     en: "Your information is saved",
@@ -559,7 +559,7 @@ const UI_TEXT = {
   },
   part1Desc: {
     en: "Great work — you've finished telling us about yourself. Next, share what you're looking for in a spouse.",
-    so: "Waad ku mahadsan tahay — waxaad dhammaysay inaad noo sheegto wax kugu saabsan. Marka xigta, noo sheeg waxa aad ka doonayso xaas.",
+    so: "Waad ku mahadsan tahay — waxaad dhammaysay inaad noo sheegto wax kugu saabsan. Marka xigta, noo sheeg waxa aad ka doonayso lamaanahaaga.",
   },
   part2Desc: {
     en: "You've finished both parts of your profile. Review your answers one last time, then submit.",
@@ -709,7 +709,7 @@ const UI_TEXT = {
   },
   part2Sub: {
     en: "Part 2 — What you're looking for in a spouse",
-    so: "Qaybta 2aad — Waxa aad ka doonayso xaas",
+    so: "Qaybta 2aad — Waxa aad ka doonayso lamaanahaaga",
   },
   part1AboutPrefix: {
     en: "Part 1 — About you",
@@ -726,7 +726,7 @@ const UI_TEXT = {
   },
   part2CalloutTitle: {
     en: "Part 2: What you want in a spouse",
-    so: "Qaybta 2aad: Waxa aad ka rabto xaas",
+    so: "Qaybta 2aad: Waxa aad ka rabto lamaanahaaga",
   },
   part2CalloutDesc: {
     en: "You finished your own details. Now answer the questions below about your ideal partner.",

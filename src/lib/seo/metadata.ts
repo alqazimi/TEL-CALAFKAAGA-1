@@ -15,7 +15,7 @@ export const SEO_SO = {
     "islaam",
     "hel calafkaaga",
     "lammaane",
-    "xaas",
+    "lamaanahaaga",
     "soomaali",
   ],
   pages: {
