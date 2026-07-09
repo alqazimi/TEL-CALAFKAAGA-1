@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   calculateProfileProgress,
   getEncouragementKey,
+  getRemainingProgressPercent,
   getRemainingSections,
   type Preferences,
 } from "@/lib/profile-progress";
@@ -29,6 +30,7 @@ export function ProfileLockedGate({
 }: ProfileLockedGateProps) {
   const { t } = useTranslation();
   const progress = calculateProfileProgress(profile, preferences);
+  const remainingPercent = getRemainingProgressPercent(profile, preferences);
   const remaining = getRemainingSections(profile, preferences);
   const encouragementKey = getEncouragementKey(profile, preferences);
   const heading = title ?? t("profileProgress.lockedTitle");
@@ -59,6 +61,11 @@ export function ProfileLockedGate({
               <span className="font-bold text-primary">{progress}%</span>
             </div>
             <Progress value={progress} className="h-3" />
+            {remainingPercent > 0 && (
+              <p className="text-xs font-medium text-primary">
+                {t("profileProgress.remainingPercent", { percent: remainingPercent })}
+              </p>
+            )}
             {remaining > 0 && (
               <p className="text-xs text-muted-foreground">
                 {remaining === 1

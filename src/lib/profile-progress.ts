@@ -245,6 +245,13 @@ export function calculateProfileProgress(
   return Math.round((completed / PROFILE_SECTIONS.length) * 100);
 }
 
+export function getRemainingProgressPercent(
+  profile: Profile,
+  prefs?: Preferences | null
+): number {
+  return Math.max(0, 100 - calculateProfileProgress(profile, prefs));
+}
+
 export function getRemainingSections(
   profile: Profile,
   prefs?: Preferences | null

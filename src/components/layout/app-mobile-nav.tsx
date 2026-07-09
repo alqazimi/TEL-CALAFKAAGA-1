@@ -21,6 +21,7 @@ import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
 import { isStaffRole } from "@/lib/access";
 import { cn } from "@/lib/utils";
+import { calculateProfileProgress } from "@/lib/profile-progress";
 
 const iconMap = {
   LayoutDashboard,
@@ -45,7 +46,11 @@ export function AppMobileNav() {
   const searchParams = useSearchParams();
   const { t } = useTranslation();
   const user = useQuery(api.users.currentUser);
+  const preferences = useQuery(api.profiles.getPreferences);
   const profileComplete = user?.profile?.questionnaireComplete ?? false;
+  const profileProgress = user?.profile
+    ? calculateProfileProgress(user.profile, preferences ?? undefined)
+    : 0;
   const appNavLinks = useAppNavLinks(profileComplete).filter((l) => l.tab);
 
   // Admins and owners get admin-section navigation instead of member tabs.
@@ -97,15 +102,19 @@ export function AppMobileNav() {
             pathname === link.href ||
             (!profileComplete && link.href === "/questionnaire" && pathname.startsWith("/questionnaire"));
           const isLocked = "locked" in link && link.locked && !profileComplete;
-          const href = isLocked ? "/questionnaire" : link.href;
+          const href = link.href;
+          const showProgressBadge =
+            !profileComplete &&
+            (link.href === "/questionnaire" || link.href === "/profile");
 
           return (
             <Link
               key={link.href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 py-2.5 min-h-[3.25rem] transition-colors",
-                isActive ? "text-primary" : "text-muted-foreground"
+                "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 min-h-[3.25rem] transition-colors",
+                isActive ? "text-primary" : "text-muted-foreground",
+                isLocked && "opacity-90"
               )}
             >
               <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
@@ -114,6 +123,11 @@ export function AppMobileNav() {
                   ? link.mobileLabel
                   : link.label}
               </span>
+              {showProgressBadge && profileProgress > 0 && (
+                <span className="absolute top-1.5 right-[calc(50%-1.35rem)] min-w-[1.35rem] rounded-full bg-primary px-1 py-0.5 text-[9px] font-bold leading-none text-primary-foreground">
+                  {profileProgress}%
+                </span>
+              )}
             </Link>
           );
         })}

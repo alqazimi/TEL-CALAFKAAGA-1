@@ -21,6 +21,12 @@ import { isInTrialPeriod } from "@/lib/trial";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { reminderCopy } from "@/lib/reminder-copy";
+import {
+  calculateProfileProgress,
+  getRemainingProgressPercent,
+  type Preferences,
+} from "@/lib/profile-progress";
+import { Progress } from "@/components/ui/progress";
 
 const reminderIcons: Record<MemberReminderId, typeof ClipboardList> = {
   "complete-profile": ClipboardList,
@@ -38,6 +44,7 @@ interface NextStepCardProps {
 
 export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardProps) {
   const { t } = useTranslation();
+  const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
   const reminders = useQuery(api.notifications.getMemberReminders) as
     | MemberReminder[]
     | undefined;
@@ -49,6 +56,12 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
   const isApproved = profile?.approved ?? false;
   const isPremium = isPremiumMember(profile);
   const discoverCount = matches?.length ?? 0;
+  const profileProgress = profile
+    ? calculateProfileProgress(profile, preferences ?? undefined)
+    : 0;
+  const remainingProgress = profile
+    ? getRemainingProgressPercent(profile, preferences ?? undefined)
+    : 100;
 
   let title: string;
   let body: string;
@@ -61,7 +74,13 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
   if (primaryReminder) {
     const copy = reminderCopy[primaryReminder.id];
     title = t(copy.title);
-    body = t(copy.body);
+    body =
+      primaryReminder.id === "complete-profile"
+        ? t(copy.body, {
+            percent: profileProgress,
+            remaining: remainingProgress,
+          })
+        : t(copy.body);
     href = primaryReminder.href;
     action = t(copy.action);
     Icon = reminderIcons[primaryReminder.id];
@@ -96,6 +115,18 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
               </p>
               <h2 className="text-xl font-semibold mt-1 leading-snug">{title}</h2>
               <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{body}</p>
+              {primaryReminder?.id === "complete-profile" && !isComplete && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{t("profileProgress.progress")}</span>
+                    <span className="font-semibold text-primary">{profileProgress}%</span>
+                  </div>
+                  <Progress value={profileProgress} className="h-2" />
+                  <p className="text-xs text-muted-foreground">
+                    {t("profileProgress.remainingPercent", { percent: remainingProgress })}
+                  </p>
+                </div>
+              )}
               {!hasPaid && !inTrial && isComplete && (
                 <p className="text-xs text-muted-foreground mt-2">
                   {t("dashboard.payToContinue", {

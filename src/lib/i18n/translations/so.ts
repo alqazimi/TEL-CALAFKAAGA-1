@@ -357,6 +357,7 @@ export const so: Translations = {
     lockedTitle: "Hel Isbarbardhiggaaga Ugu Fiican",
     lockedDesc:
       "Ka hor intaanan kuu soo jeedin dad ku habboon, fadlan dhammaystir profile-kaaga.",
+    remainingPercent: "{{percent}}% ayaa hadhay si aad u furato isbarbardhigga",
     completionLabel: "Dhammaystirka Profile-ka",
     sectionsRemaining: "{{count}} qaybood ayaa hadhay",
     sectionRemaining: "{{count}} qayb ayaa hadhay",
@@ -365,6 +366,7 @@ export const so: Translations = {
     completeToMatch: "Dhammaystir profile-kaaga si aad u bilowdo isbarbardhigga",
     sectionsDone: "{{completed}} ka mid ah {{total}} qaybood waa la dhammaystiray",
     remainingSuffix: " · {{count}} ayaa hadhay",
+    sidebarProgress: "Profile {{percent}}% dhammaystiran",
     progress: "Horumarka",
     continueSetup: "Sii wad dejinta",
     complete: "Profile-ku waa dhammaystiran",
@@ -581,6 +583,8 @@ export const so: Translations = {
   },
   dashboard: {
     hello: "Salaan, {{name}}",
+    profileProgressHint:
+      "Profile-kaagu waa {{percent}}% dhammaystiran — {{remaining}}% ayaa hadhay si aad u furato isbarbardhigga",
     guestName: "saaxiib",
     payToContinue:
       "Profile-kaagu waa diyaar. Dooro diiwaangelinta (${{basic}}) ama taageerada shakhsi ah (${{premium}}) si aad u furto isbarbardhigga.",
@@ -761,7 +765,7 @@ export const so: Translations = {
   reminders: {
     completeProfileTitle: "Dhammaystir profile-kaaga",
     completeProfileBody:
-      "Dhammaystir su'aalaha iyo sawirka si xubnaha ay kuu arkaan.",
+      "Dhammaystir su'aalaha iyo sawirka si xubnaha ay kuu arkaan. Waxaad dhammaystirtay {{percent}}% — {{remaining}}% ayaa hadhay.",
     completeProfileAction: "Sii wad profile-ka",
     completePaymentTitle: "Fur isbarbardhigyada",
     completePaymentBody:

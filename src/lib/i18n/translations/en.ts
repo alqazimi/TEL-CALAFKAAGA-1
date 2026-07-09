@@ -350,6 +350,7 @@ export const en = {
     lockedTitle: "Find Your Best Match",
     lockedDesc:
       "Before we can recommend compatible people, please complete your profile.",
+    remainingPercent: "{{percent}}% left to unlock matches",
     completionLabel: "Profile Completion",
     sectionsRemaining: "{{count}} sections remaining",
     sectionRemaining: "{{count}} section remaining",
@@ -358,6 +359,7 @@ export const en = {
     completeToMatch: "Complete your profile to start matching",
     sectionsDone: "{{completed}} of {{total}} sections done",
     remainingSuffix: " · {{count}} remaining",
+    sidebarProgress: "Profile {{percent}}% complete",
     progress: "Progress",
     continueSetup: "Continue setup",
     complete: "Profile complete",
@@ -571,6 +573,7 @@ export const en = {
   },
   dashboard: {
     hello: "Hello, {{name}}",
+    profileProgressHint: "Your profile is {{percent}}% complete — {{remaining}}% left to unlock matches",
     guestName: "friend",
     payToContinue:
       "Your profile is ready. Choose registration (${{basic}}) or personal support (${{premium}}) to unlock matches.",
@@ -750,7 +753,7 @@ export const en = {
   reminders: {
     completeProfileTitle: "Complete your profile",
     completeProfileBody:
-      "Finish your questionnaire and photo so members can see you.",
+      "Finish your questionnaire and photo so members can see you. You are {{percent}}% done — {{remaining}}% left.",
     completeProfileAction: "Continue profile",
     completePaymentTitle: "Unlock matches",
     completePaymentBody:

@@ -15,6 +15,10 @@ import { TrialBanner } from "@/components/payment/trial-banner";
 import { hasPaidAccess, isPremiumMember, isStaffRole } from "@/lib/access";
 import { isInTrialPeriod } from "@/lib/trial";
 import { useTranslation } from "@/lib/i18n/context";
+import {
+  calculateProfileProgress,
+  getRemainingProgressPercent,
+} from "@/lib/profile-progress";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -59,6 +63,12 @@ export default function DashboardPage() {
   const isComplete = profile?.questionnaireComplete ?? false;
   const hasPaid = hasPaidAccess(profile);
   const awaitingApproval = isComplete && hasPaid && profile && !profile.approved;
+  const profileProgress = profile
+    ? calculateProfileProgress(profile, preferences ?? undefined)
+    : 0;
+  const remainingProgress = profile
+    ? getRemainingProgressPercent(profile, preferences ?? undefined)
+    : 100;
 
   return (
     <DashboardLayout>
@@ -67,6 +77,14 @@ export default function DashboardPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
             {t("dashboard.hello", { name: firstName })}
           </h1>
+          {!isComplete && profile && (
+            <p className="text-sm text-muted-foreground mt-2">
+              {t("dashboard.profileProgressHint", {
+                percent: profileProgress,
+                remaining: remainingProgress,
+              })}
+            </p>
+          )}
         </div>
 
         {profile && isInTrialPeriod(profile) && (

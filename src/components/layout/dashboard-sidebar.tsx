@@ -78,7 +78,7 @@ export function DashboardSidebar() {
         {!isStaff && user?.profile && !profileComplete && (
           <div className="mb-4 rounded-xl bg-accent p-3 space-y-1.5">
             <p className="text-xs font-medium text-accent-foreground">
-              Profile {progress}% {t("app.profileSetup").toLowerCase()}
+              {t("profileProgress.sidebarProgress", { percent: progress })}
             </p>
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <div
@@ -97,7 +97,7 @@ export function DashboardSidebar() {
                 pathname === link.href ||
                 (!profileComplete && link.href === "/questionnaire" && pathname.startsWith("/questionnaire"));
               const isLocked = "locked" in link && link.locked && !profileComplete;
-              const href = isLocked ? "/questionnaire" : link.href;
+              const href = link.href;
 
               return (
                 <Link

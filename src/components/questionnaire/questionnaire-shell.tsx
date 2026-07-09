@@ -14,6 +14,7 @@ interface QuestionnaireShellProps {
   children: ReactNode;
   progress: number;
   phaseLabel: string;
+  progressHint?: string;
   onBack?: () => void;
   className?: string;
 }
@@ -22,6 +23,7 @@ export function QuestionnaireShell({
   children,
   progress,
   phaseLabel,
+  progressHint,
   onBack,
   className,
 }: QuestionnaireShellProps) {
@@ -83,6 +85,11 @@ export function QuestionnaireShell({
           </p>
           <LanguageToggle className="h-9 px-2 rounded-xl shrink-0" />
         </div>
+        {progressHint ? (
+          <p className="border-t border-border/40 py-2 text-center text-xs text-muted-foreground">
+            {progressHint}
+          </p>
+        ) : null}
       </header>
 
       <main

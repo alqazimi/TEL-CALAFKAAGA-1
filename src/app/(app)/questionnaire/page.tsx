@@ -10,6 +10,7 @@ import { api } from "../../../../convex/_generated/api";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import {
+  calculateProfileProgress,
   getResumeStepIndex,
 } from "@/lib/profile-progress";
 import {
@@ -120,10 +121,14 @@ export default function QuestionnairePage() {
   ]);
 
   const totalSteps = STEPS.length + 1;
-  const progress =
-    currentStep !== null
-      ? ((currentStep + 1) / totalSteps) * 100
-      : 0;
+  const sectionProgress = profile
+    ? calculateProfileProgress(profile, preferences ?? undefined)
+    : 0;
+  const stepProgress =
+    currentStep !== null ? ((currentStep + 1) / totalSteps) * 100 : 0;
+  const progress = isReviewStep
+    ? 100
+    : Math.max(sectionProgress, Math.round(stepProgress));
 
   const handleAutoSave = async (data: Record<string, unknown>) => {
     if (currentStep === null || isReviewStep) return;
@@ -382,11 +387,16 @@ export default function QuestionnairePage() {
   const isPhotoPhase = currentStepConfig?.phase === "photo";
   const showWelcome =
     welcome && currentStep === 0 && !isReviewStep && !phaseComplete && !isEditMode;
+  const progressHint =
+    !isReviewStep && progress < 100
+      ? ui("profileCompleteFooter").replace("{p}", String(progress))
+      : undefined;
 
   return (
     <QuestionnaireShell
       progress={progress}
       phaseLabel={phaseLabel}
+      progressHint={progressHint}
       onBack={canGoBack ? handleBack : undefined}
     >
       {showWelcome && (

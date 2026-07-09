@@ -9,6 +9,7 @@ import {
   PROFILE_SECTIONS,
   calculateProfileProgress,
   getSectionStatus,
+  getRemainingProgressPercent,
   getRemainingSections,
   type Preferences,
 } from "@/lib/profile-progress";
@@ -31,6 +32,9 @@ export function ProfileCompletionCard({
   const progress = profile.questionnaireComplete
     ? 100
     : calculateProfileProgress(profile, preferences);
+  const remainingPercent = profile.questionnaireComplete
+    ? 0
+    : getRemainingProgressPercent(profile, preferences);
   const remaining = getRemainingSections(profile, preferences);
   const completedCount = PROFILE_SECTIONS.filter(
     (s) => getSectionStatus(s.id, profile, preferences) === "complete"
@@ -63,6 +67,11 @@ export function ProfileCompletionCard({
             <span className="font-semibold">{progress}%</span>
           </div>
           <Progress value={progress} className="h-2" />
+          {remainingPercent > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t("profileProgress.remainingPercent", { percent: remainingPercent })}
+            </p>
+          )}
         </div>
 
         {showContinue && (
