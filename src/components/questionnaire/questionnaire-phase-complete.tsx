@@ -28,11 +28,11 @@ export function QuestionnairePhaseComplete({
         {isAbout ? ui("part1Complete") : ui("part2Complete")}
       </p>
 
-      <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-3">
+      <h2 className="text-[1.625rem] sm:text-3xl font-semibold tracking-tight mb-3">
         {isAbout ? ui("infoSaved") : ui("prefsSaved")}
       </h2>
 
-      <p className="text-muted-foreground max-w-md mb-10 text-base leading-relaxed">
+      <p className="text-muted-foreground max-w-md mb-10 text-lg leading-relaxed">
         {isAbout ? ui("part1Desc") : ui("part2Desc")}
       </p>
 
@@ -58,7 +58,7 @@ export function QuestionnairePhaseComplete({
 
       <Button
         size="lg"
-        className="w-full max-w-sm h-12 rounded-2xl text-base font-semibold"
+        className="w-full max-w-sm h-14 min-h-14 rounded-2xl text-lg font-semibold"
         onClick={onContinue}
       >
         {isAbout ? ui("continueToPartner") : ui("continueToPhoto")}

@@ -15,6 +15,8 @@ const PROFILE_FIELD_KEYS = new Set([
   "prayerFrequency",
   "spousePrayerImportance",
   "wearsHijab",
+  "hasBeard",
+  "gender",
   "smokes",
   "substanceDetails",
   "exercise",

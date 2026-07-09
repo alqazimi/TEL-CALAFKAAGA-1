@@ -42,7 +42,16 @@ export interface StepConfig {
 export interface FieldConfig {
   name: string;
   label: string;
-  type: "select" | "radio" | "number" | "textarea" | "multi-select" | "range" | "country-search" | "country-multi";
+  type:
+    | "select"
+    | "radio"
+    | "number"
+    | "textarea"
+    | "multi-select"
+    | "range"
+    | "country-search"
+    | "country-multi"
+    | "gender-select";
   options?: readonly string[] | number[];
   required?: boolean;
   condition?: { field: string; value: string };
@@ -54,8 +63,24 @@ export interface FieldConfig {
   uiOnly?: boolean;
 }
 
-/** Part 1 — about the user (steps 1–7). */
+/** Part 1 — about the user (gender + steps 1–7). */
+const GENDER_STEP: StepConfig = {
+  id: 0,
+  title: "About you",
+  description: "Who is looking for a spouse?",
+  phase: "about",
+  fields: [
+    {
+      name: "gender",
+      label: "I am a",
+      type: "gender-select",
+      required: true,
+    },
+  ],
+};
+
 const ABOUT_YOU_STEPS: StepConfig[] = [
+  GENDER_STEP,
   {
     id: 1,
     title: "Basic Information",
@@ -102,10 +127,18 @@ const ABOUT_YOU_STEPS: StepConfig[] = [
       },
       {
         name: "wearsHijab",
-        label: "Do you wear Hijab?",
+        label: "Do you wear hijab?",
         type: "radio",
-        options: ["Yes", "No"],
+        options: YES_NO,
         condition: { field: "gender", value: "female" },
+        required: true,
+      },
+      {
+        name: "hasBeard",
+        label: "Do you have a beard?",
+        type: "radio",
+        options: YES_NO,
+        condition: { field: "gender", value: "male" },
         required: true,
       },
     ],

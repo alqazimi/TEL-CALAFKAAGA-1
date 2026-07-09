@@ -70,10 +70,10 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
 
   return (
     <div className="flex flex-col items-center text-center pb-28">
-      <h2 className="text-2xl sm:text-[1.75rem] font-semibold tracking-tight leading-snug mb-3 w-full text-left">
+      <h2 className="text-[1.625rem] sm:text-3xl font-semibold tracking-tight leading-snug mb-3 w-full text-left">
         {ui("photoTitle")}
       </h2>
-      <p className="text-sm text-muted-foreground mb-10 w-full text-left leading-relaxed">
+      <p className="text-base text-muted-foreground mb-10 w-full text-left leading-relaxed">
         {ui("photoStepDesc")}
       </p>
 
@@ -106,8 +106,8 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
         />
       </div>
 
-      <p className="text-base font-medium text-foreground mb-2">{ui("uploadYourPhoto")}</p>
-      <p className="text-sm text-muted-foreground max-w-sm leading-relaxed mb-6">
+      <p className="text-lg font-medium text-foreground mb-2">{ui("uploadYourPhoto")}</p>
+      <p className="text-base text-muted-foreground max-w-sm leading-relaxed mb-6">
         {ui("photoHelp")}
       </p>
 
@@ -125,7 +125,7 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
         <div className="mx-auto max-w-xl">
           <Button
             onClick={handleContinue}
-            className="w-full h-12 rounded-2xl text-base font-semibold"
+            className="w-full h-14 min-h-14 rounded-2xl text-lg font-semibold"
             size="lg"
             disabled={uploading}
           >

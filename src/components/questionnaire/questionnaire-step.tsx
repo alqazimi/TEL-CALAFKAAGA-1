@@ -12,7 +12,6 @@ import { CountryMultiCombobox } from "@/components/ui/country-multi-combobox";
 import { cn } from "@/lib/utils";
 import {
   buildStepData,
-  getResumeFieldIndex,
   getVisibleFields,
   initFormState,
   validateField,
@@ -23,12 +22,14 @@ import type { Preferences } from "@/lib/profile-progress";
 import type { Profile } from "@/types";
 import { CITIES, CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
+import { useTranslation } from "@/lib/i18n/context";
 import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
 import type { FieldConfig, StepConfig } from "./steps";
+import { GenderSelectCards } from "./gender-select-cards";
 
 const AUTO_ADVANCE_MS = 380;
 const AUTO_SAVE_MS = 1000;
-const AUTO_ADVANCE_TYPES = new Set(["radio", "select", "country-search"]);
+const AUTO_ADVANCE_TYPES = new Set(["radio", "select", "country-search", "gender-select"]);
 const SCROLLABLE_SELECT_MIN = 8;
 
 type FormState = {
@@ -78,15 +79,15 @@ function OptionButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "w-full flex items-center justify-between gap-4 rounded-2xl border-2 px-5 py-4 text-left transition-all duration-200 active:scale-[0.99]",
+        "w-full flex items-center justify-between gap-4 rounded-2xl border-2 px-5 py-[1.125rem] text-left transition-all duration-200 active:scale-[0.99]",
         selected
           ? "border-primary bg-primary/[0.07] shadow-sm"
           : "border-border bg-card hover:border-primary/30 hover:bg-muted/40",
         disabled && "opacity-60 pointer-events-none"
       )}
     >
-      <span className="text-base font-medium leading-snug">{label}</span>
-      {selected && <Check className="h-5 w-5 shrink-0 text-primary" strokeWidth={2.5} />}
+      <span className="text-lg font-medium leading-snug">{label}</span>
+      {selected && <Check className="h-6 w-6 shrink-0 text-primary" strokeWidth={2.5} />}
     </button>
   );
 }
@@ -97,6 +98,10 @@ interface QuestionnaireStepProps {
   preferences?: Preferences | null;
   onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
   onAutoSave?: (data: Record<string, unknown>) => Promise<void>;
+  fieldIndex: number;
+  onFieldIndexChange: (index: number) => void;
+  globalQuestionCurrent: number;
+  globalQuestionTotal: number;
   isLastFormStep?: boolean;
   isLastAboutStep?: boolean;
 }
@@ -107,6 +112,10 @@ export function QuestionnaireStep({
   preferences,
   onSubmit,
   onAutoSave,
+  fieldIndex,
+  onFieldIndexChange,
+  globalQuestionCurrent,
+  globalQuestionTotal,
 }: QuestionnaireStepProps) {
   const initial = initFormState(profile, preferences);
   const [selectedCountry, setSelectedCountry] = useState(initial.selectedCountry);
@@ -114,17 +123,16 @@ export function QuestionnaireStep({
   const [selects, setSelects] = useState(initial.selects);
   const [radios, setRadios] = useState(initial.radios);
   const [textFields, setTextFields] = useState(initial.textFields);
-  const [fieldIndex, setFieldIndex] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isAdvancing, setIsAdvancing] = useState(false);
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null);
   const skipAutoSaveRef = useRef(true);
-  const fieldIndexRef = useRef(0);
   const selectedCountryRef = useRef(initial.selectedCountry);
   const { register, watch, setValue } = useForm({ defaultValues: { bio: initial.bio } });
   const bio = watch("bio", initial.bio);
   const { fieldLabel, optionLabel, ui } = useQuestionnaireI18n();
+  const { t } = useTranslation();
 
   const profileId = profile?._id ?? null;
   const stepId = step.id;
@@ -136,8 +144,9 @@ export function QuestionnaireStep({
   const formState: FormState = { radios, selects, multiSelects, textFields, bio };
   const formStateRef = useRef(formState);
   formStateRef.current = formState;
-  fieldIndexRef.current = fieldIndex;
   selectedCountryRef.current = selectedCountry;
+  const fieldIndexRef = useRef(fieldIndex);
+  fieldIndexRef.current = fieldIndex;
 
   const visibleFields = useMemo(
     () => getVisibleFields(step, profile, radios, selects),
@@ -161,18 +170,18 @@ export function QuestionnaireStep({
     setTextFields(state.textFields);
     setValue("bio", state.bio);
     setFieldErrors({});
-    setFieldIndex(getResumeFieldIndex(step, profileRef.current, state));
     skipAutoSaveRef.current = true;
     if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
   }, [profileId, stepId, setValue, step]);
 
   useEffect(() => {
-    setFieldIndex((i) => {
-      if (visibleFields.length === 0) return 0;
-      return Math.min(i, visibleFields.length - 1);
-    });
-  }, [visibleFieldKey, visibleFields.length]);
+    if (visibleFields.length === 0) return;
+    const clamped = Math.min(fieldIndex, visibleFields.length - 1);
+    if (clamped !== fieldIndex) {
+      onFieldIndexChange(clamped);
+    }
+  }, [visibleFieldKey, visibleFields.length, fieldIndex, onFieldIndexChange]);
 
   const flushAutoSave = useCallback(async () => {
     if (!onAutoSave) return;
@@ -223,7 +232,7 @@ export function QuestionnaireStep({
     if (Object.keys(errors).length > 0) {
       const firstErrorField = visible.find((f) => errors[f.name]);
       if (firstErrorField) {
-        setFieldIndex(visible.indexOf(firstErrorField));
+        onFieldIndexChange(visible.indexOf(firstErrorField));
         setFieldErrors(errors);
       }
       toast.error(ui("answerAllRequired"));
@@ -260,11 +269,11 @@ export function QuestionnaireStep({
         if (idx >= count - 1) {
           void completeStepRef.current();
         } else {
-          setFieldIndex(idx + 1);
+          onFieldIndexChange(idx + 1);
         }
       }, AUTO_ADVANCE_MS);
     },
-    [step, profile]
+    [step, profile, onFieldIndexChange]
   );
 
   const goToNextField = () => {
@@ -278,7 +287,7 @@ export function QuestionnaireStep({
     if (isLastField) {
       void completeCurrentStep();
     } else {
-      setFieldIndex((i) => i + 1);
+      onFieldIndexChange(safeFieldIndex + 1);
     }
   };
 
@@ -339,6 +348,21 @@ export function QuestionnaireStep({
   };
 
   const renderFieldInput = (field: FieldConfig) => {
+    if (field.type === "gender-select") {
+      return (
+        <GenderSelectCards
+          value={(radios.gender as "male" | "female" | "") ?? ""}
+          maleLabel={t("auth.male")}
+          femaleLabel={t("auth.female")}
+          onChange={(g) => {
+            setRadios((prev) => ({ ...prev, gender: g }));
+            clearFieldError(field.name);
+            scheduleAutoAdvance(field);
+          }}
+        />
+      );
+    }
+
     if (field.type === "radio") {
       return (
         <div className="space-y-2.5" role="radiogroup">
@@ -432,7 +456,7 @@ export function QuestionnaireStep({
             clearFieldError(field.name);
           }}
           placeholder={ui("enterCity")}
-          className="h-14 rounded-2xl text-base px-5"
+          className="h-14 rounded-2xl text-lg px-5"
         />
       );
     }
@@ -454,7 +478,7 @@ export function QuestionnaireStep({
             placeholder={ui("bioPlaceholder")}
             rows={6}
             maxLength={500}
-            className="rounded-2xl text-base leading-relaxed resize-none min-h-[10rem]"
+            className="rounded-2xl text-lg leading-relaxed resize-none min-h-[10rem]"
             onChange={(e) => {
               setValue("bio", e.target.value);
               clearFieldError("bio");
@@ -474,7 +498,7 @@ export function QuestionnaireStep({
           placeholder={ui("substanceDetailsPlaceholder")}
           rows={5}
           maxLength={500}
-          className="rounded-2xl text-base leading-relaxed resize-none"
+          className="rounded-2xl text-lg leading-relaxed resize-none"
           onChange={(e) => {
             setTextFields((prev) => ({ ...prev, [field.name]: e.target.value }));
             clearFieldError(field.name);
@@ -513,10 +537,10 @@ export function QuestionnaireStep({
   return (
     <div className="flex flex-col pb-28">
       <div className="mb-6">
-        <p className="text-sm font-medium text-muted-foreground">
+        <p className="text-base font-medium text-muted-foreground">
           {ui("questionOf")
-            .replace("{current}", String(safeFieldIndex + 1))
-            .replace("{total}", String(visibleFields.length))}
+            .replace("{current}", String(globalQuestionCurrent))
+            .replace("{total}", String(globalQuestionTotal))}
         </p>
       </div>
 
@@ -543,7 +567,7 @@ export function QuestionnaireStep({
           transition={{ duration: 0.22, ease: "easeOut" }}
           className="space-y-6"
         >
-          <h2 className="text-2xl sm:text-[1.75rem] font-semibold tracking-tight leading-snug text-foreground">
+          <h2 className="text-[1.625rem] sm:text-3xl font-semibold tracking-tight leading-snug text-foreground">
             {fieldLabel(currentField.name, currentField.label)}
             {currentField.required && (
               <span className="text-destructive ml-0.5">*</span>
@@ -551,13 +575,13 @@ export function QuestionnaireStep({
           </h2>
 
           {currentField.type === "multi-select" && currentField.maxSelect && (
-            <p className="text-sm text-muted-foreground -mt-2">
+            <p className="text-base text-muted-foreground -mt-2">
               {ui("selectUpTo").replace("{count}", String(currentField.maxSelect))}
             </p>
           )}
 
           {fieldErrors[currentField.name] && (
-            <p className="text-sm text-destructive font-medium -mt-2">
+            <p className="text-base text-destructive font-medium -mt-2">
               {translateError(fieldErrors[currentField.name], ui)}
             </p>
           )}
@@ -572,7 +596,7 @@ export function QuestionnaireStep({
             {showManualNext ? (
               <Button
                 onClick={goToNextField}
-                className="w-full h-12 rounded-2xl text-base font-semibold"
+                className="w-full h-14 min-h-14 rounded-2xl text-lg font-semibold"
                 size="lg"
                 disabled={isAdvancing}
               >

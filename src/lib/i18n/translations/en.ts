@@ -260,6 +260,7 @@ export const en = {
     phonePlaceholder: "+254 7XX XXX XXX",
     continue: "Continue",
     continueToPayment: "Continue to Payment",
+    continueToQuestionnaire: "Continue to Profile Questions",
     creatingAccount: "Creating account...",
     savingDetails: "Saving...",
     stepOf: "Step {{step}} of {{total}}",

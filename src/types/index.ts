@@ -20,6 +20,7 @@ export interface Profile {
   prayerFrequency?: string;
   spousePrayerImportance?: string;
   wearsHijab?: boolean;
+  hasBeard?: boolean;
   smokes?: string;
   substanceDetails?: string;
   drinksAlcohol?: string;

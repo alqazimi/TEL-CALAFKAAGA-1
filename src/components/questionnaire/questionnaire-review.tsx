@@ -40,8 +40,8 @@ function ReviewSection({
   return (
     <div className="rounded-2xl border border-border bg-muted/50 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-bold text-lg text-foreground">{reviewLabel(title)}</h3>
-        <Button variant="outline" size="sm" onClick={() => onEdit(stepIndex)} className="h-8">
+        <h3 className="font-bold text-xl text-foreground">{reviewLabel(title)}</h3>
+        <Button variant="outline" size="sm" onClick={() => onEdit(stepIndex)} className="h-9 text-sm">
           <Pencil className="h-3.5 w-3.5 mr-1" />
           {ui("edit")}
         </Button>
@@ -49,8 +49,8 @@ function ReviewSection({
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 text-sm">
         {filled.map((item) => (
           <div key={item.label} className="min-w-0">
-            <dt className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">{reviewLabel(item.label)}</dt>
-            <dd className="font-bold mt-1 text-foreground break-words text-base">{optionLabel(item.value)}</dd>
+            <dt className="text-muted-foreground text-sm font-semibold uppercase tracking-wide">{reviewLabel(item.label)}</dt>
+            <dd className="font-semibold mt-1 text-foreground break-words text-lg">{optionLabel(item.value)}</dd>
           </div>
         ))}
       </dl>
@@ -100,6 +100,9 @@ export function QuestionnaireReview({
     { label: "Prayer Frequency", value: profile.prayerFrequency || "—" },
     ...(profile.gender === "female"
       ? [{ label: "Wears Hijab", value: profile.wearsHijab !== undefined ? (profile.wearsHijab ? "Yes" : "No") : "—" }]
+      : []),
+    ...(profile.gender === "male"
+      ? [{ label: "Has Beard", value: profile.hasBeard !== undefined ? (profile.hasBeard ? "Yes" : "No") : "—" }]
       : []),
   ];
 
@@ -182,10 +185,11 @@ export function QuestionnaireReview({
     { label: "Weight", value: profile.weight ? `${profile.weight} kg` : "—" },
   ];
   return (
-    <Card className="border-border shadow-lg shadow-primary/5">
+    <>
+    <Card className="border-border shadow-lg shadow-primary/5 pb-4">
       <CardHeader className="border-b border-border bg-gradient-to-r from-accent/50 to-transparent dark:from-primary/10">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-xl sm:text-2xl font-bold">{isEditMode ? ui("editProfileDetails") : ui("finalReview")}</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl font-bold">{isEditMode ? ui("editProfileDetails") : ui("finalReview")}</CardTitle>
           {!isEditMode && (
             <Badge variant="outline" className="inline-flex items-center text-primary border-primary/30">
               <Check className="h-3 w-3 mr-1" />
@@ -193,18 +197,29 @@ export function QuestionnaireReview({
             </Badge>
           )}
         </div>
-        <CardDescription>
+        <CardDescription className="text-base leading-relaxed">
           {isEditMode ? ui("editModeDesc") : ui("reviewDesc")}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <ReviewSection title="Basic Information" stepIndex={0} items={basicItems} onEdit={onEditStep} />
-        <ReviewSection title="Your Religious Practice" stepIndex={1} items={religiousItems} onEdit={onEditStep} />
-        <ReviewSection title="Education & Work" stepIndex={2} items={educationItems} onEdit={onEditStep} />
-        <ReviewSection title="Marriage & Family" stepIndex={4} items={marriageItems} onEdit={onEditStep} />
-        <ReviewSection title="Lifestyle" stepIndex={5} items={lifestyleItems} onEdit={onEditStep} />
-        <ReviewSection title="About You" stepIndex={6} items={aboutItems} onEdit={onEditStep} />
-        <ReviewSection title="Partner Preferences" stepIndex={7} items={prefItems} onEdit={onEditStep} />
+      <CardContent className="space-y-4 pb-28">
+        <ReviewSection
+          title="Gender"
+          stepIndex={0}
+          items={[
+            {
+              label: "Gender",
+              value: profile.gender === "female" ? "Female" : profile.gender === "male" ? "Male" : "—",
+            },
+          ]}
+          onEdit={onEditStep}
+        />
+        <ReviewSection title="Basic Information" stepIndex={1} items={basicItems} onEdit={onEditStep} />
+        <ReviewSection title="Your Religious Practice" stepIndex={2} items={religiousItems} onEdit={onEditStep} />
+        <ReviewSection title="Education & Work" stepIndex={3} items={educationItems} onEdit={onEditStep} />
+        <ReviewSection title="Marriage & Family" stepIndex={5} items={marriageItems} onEdit={onEditStep} />
+        <ReviewSection title="Lifestyle" stepIndex={6} items={lifestyleItems} onEdit={onEditStep} />
+        <ReviewSection title="About You" stepIndex={7} items={aboutItems} onEdit={onEditStep} />
+        <ReviewSection title="Partner Preferences" stepIndex={8} items={prefItems} onEdit={onEditStep} />
         <ReviewSection
           title="Profile Photo"
           stepIndex={PHOTO_STEP_INDEX}
@@ -217,17 +232,26 @@ export function QuestionnaireReview({
           onEdit={onEditStep}
         />
 
-        <div className="pt-4 flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleSubmit} disabled={submitting} className="flex-1 text-base font-semibold" size="lg">
-            {isEditMode
-              ? ui("saveChanges")
-              : submitting
-                ? ui("submitting")
-                : ui("submitProfile")}
-            <ChevronRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
       </CardContent>
     </Card>
+
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/95 backdrop-blur-md px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto max-w-xl">
+        <Button
+          onClick={handleSubmit}
+          disabled={submitting}
+          className="w-full h-14 min-h-14 rounded-2xl text-lg font-semibold"
+          size="lg"
+        >
+          {isEditMode
+            ? ui("saveChanges")
+            : submitting
+              ? ui("submitting")
+              : ui("submitProfile")}
+          <ChevronRight className="ml-2 h-5 w-5" />
+        </Button>
+      </div>
+    </div>
+    </>
   );
 }

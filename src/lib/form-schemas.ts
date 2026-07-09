@@ -37,7 +37,6 @@ export function createVerifyCodeSchema(t: TranslateFn) {
 export function createDetailsSchema(t: TranslateFn) {
   return z.object({
     name: z.string().min(2, t("validation.nameRequired")),
-    gender: z.enum(["male", "female"], { message: t("validation.genderRequired") }),
     phone: z
       .string()
       .min(8, t("validation.phoneRequired"))

@@ -26,14 +26,15 @@ export interface ProfileSection {
 }
 
 export const PROFILE_SECTIONS: ProfileSection[] = [
-  { id: "basic", title: "Basic Information", stepIndex: 0 },
-  { id: "religious", title: "Your Religious Practice", stepIndex: 1 },
-  { id: "education", title: "Education & Work", stepIndex: 2 },
-  { id: "marriage", title: "Marriage & Family", stepIndex: 4 },
-  { id: "lifestyle", title: "Lifestyle", stepIndex: 5 },
-  { id: "about", title: "About You", stepIndex: 6 },
-  { id: "preferences", title: "Partner Preferences", stepIndex: 7 },
-  { id: "photo", title: "Profile Photo", stepIndex: 8 },
+  { id: "gender", title: "Gender", stepIndex: 0 },
+  { id: "basic", title: "Basic Information", stepIndex: 1 },
+  { id: "religious", title: "Your Religious Practice", stepIndex: 2 },
+  { id: "education", title: "Education & Work", stepIndex: 3 },
+  { id: "marriage", title: "Marriage & Family", stepIndex: 5 },
+  { id: "lifestyle", title: "Lifestyle", stepIndex: 6 },
+  { id: "about", title: "About You", stepIndex: 7 },
+  { id: "preferences", title: "Partner Preferences", stepIndex: 8 },
+  { id: "photo", title: "Profile Photo", stepIndex: 9 },
 ];
 
 export type SectionStatus = "complete" | "in_progress" | "not_started";
@@ -72,6 +73,9 @@ export function isReligiousComplete(profile: Profile): boolean {
   const base = !!profile.prayerFrequency;
   if (profile.gender === "female") {
     return base && profile.wearsHijab !== undefined;
+  }
+  if (profile.gender === "male") {
+    return base && profile.hasBeard !== undefined;
   }
   return base;
 }
@@ -150,6 +154,7 @@ const sectionCheckers: Record<
   string,
   (profile: Profile, prefs?: Preferences | null) => boolean
 > = {
+  gender: (p) => p.gender === "male" || p.gender === "female",
   basic: (p) => isBasicComplete(p),
   religious: (p) => isReligiousComplete(p),
   education: (p) => isEducationComplete(p),
@@ -176,6 +181,7 @@ export function getSectionStatus(
   const sectionStep = section.stepIndex + 1;
 
   const partialChecks: Record<string, boolean> = {
+    gender: profile.gender === "male" || profile.gender === "female",
     basic:
       profile.age > 0 ||
       !!profile.country ||
@@ -238,7 +244,7 @@ export function getResumeStepIndex(
   for (const section of PROFILE_SECTIONS) {
     if (getSectionStatus(section.id, profile, prefs) !== "complete") {
       if (section.id === "education" && isReligiousComplete(profile)) {
-        return profile.education ? 3 : 2;
+        return profile.education ? 4 : 3;
       }
       if (section.id === "preferences" && isAboutYouPhaseComplete(profile, prefs)) {
         return ABOUT_YOU_STEP_COUNT;

@@ -12,6 +12,13 @@ import type { Preferences } from "@/lib/profile-progress";
 import {
   getResumeStepIndex,
 } from "@/lib/profile-progress";
+import {
+  countFormQuestions,
+  getGlobalQuestionNumber,
+  getResumeFieldIndex,
+  getVisibleFields,
+  initFormState,
+} from "@/lib/questionnaire-form";
 import { Button } from "@/components/ui/button";
 import { QuestionnaireStep } from "@/components/questionnaire/questionnaire-step";
 import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-review";
@@ -45,6 +52,8 @@ export default function QuestionnairePage() {
     isEditMode ? REVIEW_STEP_INDEX : null
   );
   const [phaseComplete, setPhaseComplete] = useState<"about" | "partner" | null>(null);
+  const [fieldIndex, setFieldIndex] = useState(0);
+  const [backNavigation, setBackNavigation] = useState(false);
 
   const autoStep = useMemo(() => {
     if (!profile) return null;
@@ -55,9 +64,41 @@ export default function QuestionnairePage() {
   }, [profile, preferences, isEditMode]);
 
   const currentStep = stepOverride ?? autoStep;
+  const isReviewStep = currentStep === REVIEW_STEP_INDEX;
+
+  const formStateForNav = useMemo(
+    () => initFormState(profile ?? null, preferences),
+    [profile, preferences]
+  );
+
+  const globalQuestionTotal = useMemo(
+    () => countFormQuestions(STEPS, profile ?? null, formStateForNav),
+    [profile, formStateForNav]
+  );
+
+  const globalQuestionCurrent =
+    currentStep !== null && !isReviewStep && currentStep < STEPS.length
+      ? getGlobalQuestionNumber(
+          STEPS,
+          currentStep,
+          fieldIndex,
+          profile ?? null,
+          formStateForNav
+        )
+      : 0;
+
+  useEffect(() => {
+    if (currentStep === null || isReviewStep || phaseComplete) return;
+    if (backNavigation) {
+      setBackNavigation(false);
+      return;
+    }
+    const stepConfig = STEPS[currentStep];
+    if (!stepConfig || stepConfig.phase === "photo") return;
+    setFieldIndex(getResumeFieldIndex(stepConfig, profile ?? null, formStateForNav));
+  }, [currentStep, profile?._id, isReviewStep, phaseComplete, backNavigation, formStateForNav, profile]);
 
   const totalSteps = STEPS.length + 1;
-  const isReviewStep = currentStep === REVIEW_STEP_INDEX;
   const progress =
     currentStep !== null
       ? ((currentStep + 1) / totalSteps) * 100
@@ -102,6 +143,7 @@ export default function QuestionnairePage() {
           return;
         }
         setPhaseComplete(null);
+        setFieldIndex(0);
         setStepOverride(currentStep + 1);
       }
     } catch {
@@ -111,24 +153,79 @@ export default function QuestionnairePage() {
 
   const handleBack = () => {
     setPhaseComplete(null);
-    if (currentStep !== null && currentStep > 0) {
-      setStepOverride(currentStep - 1);
+    if (currentStep === null || isReviewStep || phaseComplete) return;
+
+    const stepConfig = STEPS[currentStep];
+    if (stepConfig?.phase === "photo") {
+      if (currentStep > 0) {
+        const prevStep = currentStep - 1;
+        const prevFields = getVisibleFields(
+          STEPS[prevStep],
+          profile ?? null,
+          formStateForNav.radios,
+          formStateForNav.selects
+        );
+        setBackNavigation(true);
+        setFieldIndex(Math.max(0, prevFields.length - 1));
+        setStepOverride(prevStep);
+      }
+      return;
+    }
+
+    if (fieldIndex > 0) {
+      setFieldIndex(fieldIndex - 1);
+      return;
+    }
+
+    if (currentStep > 0) {
+      const prevStep = currentStep - 1;
+      const prevConfig = STEPS[prevStep];
+      if (prevConfig.phase === "photo") {
+        setBackNavigation(true);
+        setFieldIndex(0);
+        setStepOverride(prevStep);
+        return;
+      }
+      const prevFields = getVisibleFields(
+        prevConfig,
+        profile ?? null,
+        formStateForNav.radios,
+        formStateForNav.selects
+      );
+      setBackNavigation(true);
+      setFieldIndex(Math.max(0, prevFields.length - 1));
+      setStepOverride(prevStep);
     }
   };
 
+  const canGoBack =
+    !phaseComplete &&
+    !isReviewStep &&
+    currentStep !== null &&
+    (fieldIndex > 0 || currentStep > 0);
+
   const handleEditStep = (stepIndex: number) => {
     setPhaseComplete(null);
+    const stepConfig = STEPS[stepIndex];
+    const resumeField =
+      stepConfig && stepConfig.phase !== "photo"
+        ? getResumeFieldIndex(stepConfig, profile ?? null, formStateForNav)
+        : 0;
+    setBackNavigation(true);
+    setFieldIndex(resumeField);
     setStepOverride(stepIndex);
   };
 
   const handlePhaseContinue = () => {
     if (phaseComplete === "about") {
       setPhaseComplete(null);
+      setFieldIndex(0);
       setStepOverride(PARTNER_PREFERENCES_STEP_INDEX);
       return;
     }
     if (phaseComplete === "partner") {
       setPhaseComplete(null);
+      setFieldIndex(0);
       setStepOverride(PHOTO_STEP_INDEX);
     }
   };
@@ -247,15 +344,13 @@ export default function QuestionnairePage() {
   const currentStepConfig = !isReviewStep ? STEPS[currentStep] : null;
   const isPhotoPhase = currentStepConfig?.phase === "photo";
   const showWelcome =
-    welcome && currentStep === 0 && !isReviewStep && !phaseComplete && !isEditMode;
+    welcome && currentStep === 1 && !isReviewStep && !phaseComplete && !isEditMode;
 
   return (
     <QuestionnaireShell
       progress={progress}
       phaseLabel={phaseLabel}
-      onBack={
-        currentStep > 0 && !isReviewStep && !phaseComplete ? handleBack : undefined
-      }
+      onBack={canGoBack ? handleBack : undefined}
     >
       {showWelcome && (
         <motion.div
@@ -306,6 +401,10 @@ export default function QuestionnairePage() {
               preferences={preferences}
               onSubmit={handleNext}
               onAutoSave={handleAutoSave}
+              fieldIndex={fieldIndex}
+              onFieldIndexChange={setFieldIndex}
+              globalQuestionCurrent={globalQuestionCurrent}
+              globalQuestionTotal={globalQuestionTotal}
             />
           )}
         </motion.div>

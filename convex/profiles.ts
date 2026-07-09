@@ -16,6 +16,25 @@ import {
   MAX_PROFILE_PHOTOS,
 } from "./lib/premium";
 import { hasActiveMatch } from "./lib/matchPresentation";
+import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+
+async function syncGenderSideEffects(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  gender: "male" | "female"
+) {
+  await ctx.db.patch(userId, { gender });
+  const prefs = await ctx.db
+    .query("preferences")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+  if (prefs) {
+    await ctx.db.patch(prefs._id, {
+      preferredGender: gender === "male" ? "female" : "male",
+    });
+  }
+}
 
 export const getProfile = query({
   args: {},
@@ -101,6 +120,11 @@ export const updateQuestionnaire = mutation({
       args.data as Record<string, unknown>
     );
 
+    const genderUpdate = profileUpdates.gender;
+    if (genderUpdate === "male" || genderUpdate === "female") {
+      await syncGenderSideEffects(ctx, userId, genderUpdate);
+    }
+
     const updates: Record<string, unknown> = {
       ...profileUpdates,
       questionnaireStep: args.step,
@@ -148,6 +172,11 @@ export const autoSaveProfile = mutation({
 
     if (Object.keys(profileUpdates).length === 0 && !preferences) {
       return profile._id;
+    }
+
+    const genderUpdate = profileUpdates.gender;
+    if (genderUpdate === "male" || genderUpdate === "female") {
+      await syncGenderSideEffects(ctx, userId, genderUpdate);
     }
 
     const updates: Record<string, unknown> = {
@@ -209,7 +238,6 @@ export const completeQuestionnaire = mutation({
 export const completeRegistrationDetails = mutation({
   args: {
     name: v.string(),
-    gender: v.union(v.literal("male"), v.literal("female")),
     phone: v.string(),
   },
   handler: async (ctx, args) => {
@@ -230,27 +258,14 @@ export const completeRegistrationDetails = mutation({
 
     await ctx.db.patch(userId, {
       name: trimmedName,
-      gender: args.gender,
       phone: trimmedPhone,
     });
 
     await ctx.db.patch(profile._id, {
       name: trimmedName,
-      gender: args.gender,
       phone: trimmedPhone,
       registrationComplete: true,
     });
-
-    const prefs = await ctx.db
-      .query("preferences")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .unique();
-
-    if (prefs) {
-      await ctx.db.patch(prefs._id, {
-        preferredGender: args.gender === "male" ? "female" : "male",
-      });
-    }
 
     return profile._id;
   },

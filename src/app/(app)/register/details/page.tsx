@@ -16,7 +16,6 @@ import { RegisterStepIndicator } from "@/components/auth/register-step-indicator
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
-import { OptionPills } from "@/components/ui/option-pills";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { createDetailsSchema } from "@/lib/form-schemas";
@@ -32,7 +31,6 @@ export default function RegisterDetailsPage() {
   const user = useQuery(api.users.currentUser);
   const completeDetails = useMutation(api.profiles.completeRegistrationDetails);
   const [loading, setLoading] = useState(false);
-  const [gender, setGender] = useState<"male" | "female">("male");
 
   const {
     register,
@@ -41,7 +39,6 @@ export default function RegisterDetailsPage() {
     formState: { errors },
   } = useForm<DetailsForm>({
     resolver: zodResolver(detailsSchema),
-    defaultValues: { gender: "male" },
   });
 
   useEffect(() => {
@@ -65,10 +62,6 @@ export default function RegisterDetailsPage() {
     if (profile.phone) {
       setValue("phone", profile.phone);
     }
-    if (profile.gender === "male" || profile.gender === "female") {
-      setGender(profile.gender);
-      setValue("gender", profile.gender);
-    }
   }, [user?.profile, setValue]);
 
   const onSubmit = async (data: DetailsForm) => {
@@ -76,7 +69,6 @@ export default function RegisterDetailsPage() {
     try {
       await completeDetails({
         name: data.name,
-        gender: data.gender,
         phone: data.phone,
       });
       toast.success(t("auth.registerDetailsSuccess"));
@@ -134,21 +126,6 @@ export default function RegisterDetailsPage() {
           </InputIconWrapper>
         </FormField>
 
-        <FormField label={t("auth.gender")} error={errors.gender?.message} required>
-          <OptionPills
-            value={gender}
-            onChange={(v) => {
-              const g = v as "male" | "female";
-              setGender(g);
-              setValue("gender", g, { shouldValidate: true });
-            }}
-            options={[
-              { value: "male", label: t("auth.male") },
-              { value: "female", label: t("auth.female") },
-            ]}
-          />
-        </FormField>
-
         <FormField label={t("auth.phoneNumber")} htmlFor="phone" error={errors.phone?.message} required>
           <InputIconWrapper icon={<Phone className="h-4 w-4" />}>
             <Input
@@ -163,7 +140,7 @@ export default function RegisterDetailsPage() {
         </FormField>
 
         <Button type="submit" className="w-full" size="lg" disabled={loading}>
-          {loading ? t("auth.savingDetails") : t("auth.continueToPayment")}
+          {loading ? t("auth.savingDetails") : t("auth.continueToQuestionnaire")}
         </Button>
       </form>
     </AuthShell>

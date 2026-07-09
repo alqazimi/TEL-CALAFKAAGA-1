@@ -40,6 +40,7 @@ export default defineSchema({
     prayerFrequency: v.string(),
     spousePrayerImportance: v.optional(v.string()),
     wearsHijab: v.optional(v.boolean()),
+    hasBeard: v.optional(v.boolean()),
     smokes: v.string(),
     substanceDetails: v.optional(v.string()),
     drinksAlcohol: v.string(),

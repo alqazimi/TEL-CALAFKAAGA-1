@@ -261,8 +261,11 @@ function appearancePrefScore(
   if (user.gender === "female") {
     const pref = prefs.partnerBeard;
     if (!pref || pref === "No preference") return 3;
-    // Soft points — we don't store whether men have a beard yet.
-    return pref === "Beard required" ? 2 : 3;
+    if (candidate.hasBeard === true) return 3;
+    if (candidate.hasBeard === false) {
+      return pref === "Beard required" ? 1 : pref === "Beard preferred" ? 2 : 3;
+    }
+    return 2;
   }
   if (user.gender === "male") {
     const pref = prefs.partnerHijabLevel;
@@ -306,6 +309,7 @@ export interface Profile {
   citizenshipStatus?: string;
   financialReadiness?: string;
   wearsHijab?: boolean;
+  hasBeard?: boolean;
   smokes?: string;
 }
 

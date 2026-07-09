@@ -266,6 +266,7 @@ export const so: Translations = {
     phonePlaceholder: "+254 7XX XXX XXX",
     continue: "Sii wad",
     continueToPayment: "U gudub Lacag Bixinta",
+    continueToQuestionnaire: "U gudub Su'aalaha Profile-ka",
     creatingAccount: "Akoonka waa la abuurayaa...",
     savingDetails: "Waa la kaydinayaa...",
     stepOf: "Tallaabada {{step}} / {{total}}",

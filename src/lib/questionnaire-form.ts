@@ -45,7 +45,9 @@ export function initFormState(
   if (profile.religiousLevel) radios.religiousLevel = profile.religiousLevel;
   if (profile.prayerFrequency) radios.prayerFrequency = profile.prayerFrequency;
   if (profile.spousePrayerImportance) radios.spousePrayerImportance = profile.spousePrayerImportance;
+  if (profile.gender) radios.gender = profile.gender;
   if (profile.wearsHijab !== undefined) radios.wearsHijab = profile.wearsHijab ? "Yes" : "No";
+  if (profile.hasBeard !== undefined) radios.hasBeard = profile.hasBeard ? "Yes" : "No";
 
   if (profile.education) radios.education = profile.education;
   if (profile.occupation) radios.occupation = profile.occupation;
@@ -199,12 +201,12 @@ export function buildStepData(
           value === "200+" || value === "100+"
             ? parseInt(value) || 200
             : parseInt(value) || 0;
-      } else if (field.name === "wearsHijab") {
+      } else if (field.name === "wearsHijab" || field.name === "hasBeard") {
         data[field.name] = value === "Yes";
       } else {
         data[field.name] = value;
       }
-    } else if (field.type === "radio") {
+    } else if (field.type === "radio" || field.type === "gender-select") {
       const value = radios[field.name];
       if (field.preferences) {
         preferences[field.name.replace("pref_", "")] = value;
@@ -271,7 +273,7 @@ export function validateField(
     return values.length > 0 ? null : "Please select at least one option";
   }
 
-  if (field.type === "radio") {
+  if (field.type === "radio" || field.type === "gender-select") {
     const radioKey = field.name === "substanceUse" ? "substanceUse" : field.name;
     return state.radios[radioKey] ? null : "Please select an option";
   }
@@ -290,6 +292,44 @@ export function getVisibleFields(
   selects?: Record<string, string>
 ): FieldConfig[] {
   return step.fields.filter((field) => isFieldVisible(field, profile, radios, selects));
+}
+
+type FormStateSlice = {
+  radios: Record<string, string>;
+  selects: Record<string, string>;
+  multiSelects: Record<string, string[]>;
+  textFields: Record<string, string>;
+  bio: string;
+};
+
+/** Count visible questions in form steps (excludes photo). */
+export function countFormQuestions(
+  steps: StepConfig[],
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  state: FormStateSlice
+): number {
+  return steps
+    .filter((s) => s.phase !== "photo")
+    .reduce(
+      (sum, step) =>
+        sum + getVisibleFields(step, profile, state.radios, state.selects).length,
+      0
+    );
+}
+
+/** 1-based position in the flat question queue (form steps only). */
+export function getGlobalQuestionNumber(
+  steps: StepConfig[],
+  stepIndex: number,
+  fieldIndex: number,
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  state: FormStateSlice
+): number {
+  let n = 0;
+  for (let s = 0; s < stepIndex; s++) {
+    n += getVisibleFields(steps[s], profile, state.radios, state.selects).length;
+  }
+  return n + fieldIndex + 1;
 }
 
 export function isFieldAnswered(
@@ -360,7 +400,7 @@ export function validateStepFields(
       continue;
     }
 
-    if (field.type === "radio") {
+    if (field.type === "radio" || field.type === "gender-select") {
       const radioKey = field.name === "substanceUse" ? "substanceUse" : field.name;
       if (!state.radios[radioKey]) {
         errors[field.name] = "Please select an option";

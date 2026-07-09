@@ -8,6 +8,13 @@ type Bilingual = { en: string; so: string };
 
 /** Step titles and descriptions keyed by StepConfig.id. */
 const STEP_TEXT: Record<number, { title: Bilingual; description: Bilingual }> = {
+  0: {
+    title: { en: "About you", so: "Wax kugu saabsan" },
+    description: {
+      en: "Who is looking for a spouse?",
+      so: "Yaa xaas raadinaya?",
+    },
+  },
   1: {
     title: { en: "Basic Information", so: "Macluumaadka Aasaasiga ah" },
     description: { en: "Tell us about yourself", so: "Noo sheeg wax kugu saabsan" },
@@ -60,6 +67,7 @@ const STEP_TEXT: Record<number, { title: Bilingual; description: Bilingual }> = 
 
 /** Question labels keyed by FieldConfig.name. */
 const FIELD_LABELS: Record<string, Bilingual> = {
+  gender: { en: "I am a", so: "Waxaan ahay" },
   age: { en: "Age", so: "Da'da" },
   country: { en: "Country", so: "Dalka" },
   city: { en: "City", so: "Magaalada" },
@@ -69,7 +77,8 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     en: "Do you perform the five daily prayers?",
     so: "Ma tukataa shanta salaadood ee maalinlaha ah?",
   },
-  wearsHijab: { en: "Do you wear Hijab?", so: "Ma xijaabataa?" },
+  wearsHijab: { en: "Do you wear hijab?", so: "Ma xijaabataa?" },
+  hasBeard: { en: "Do you have a beard?", so: "Ma leedahay gadh?" },
   education: { en: "Education Level", so: "Heerka Waxbarasho" },
   occupation: { en: "Employment Status", so: "Xaaladda Shaqo" },
   maritalStatus: { en: "Have you ever been married?", so: "Weligaa ma guursatay?" },
@@ -222,6 +231,8 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   // Yes/No family
   Yes: { en: "Yes", so: "Haa" },
   No: { en: "No", so: "Maya" },
+  Male: { en: "Male", so: "Lab" },
+  Female: { en: "Female", so: "Dhedig" },
   Depends: { en: "Depends", so: "Way ku xiran tahay" },
   Maybe: { en: "Maybe", so: "Waa suurtogal" },
   // Frequency
@@ -349,6 +360,7 @@ const OPTION_LABELS: Record<string, Bilingual> = {
 const REVIEW_LABELS: Record<string, Bilingual> = {
   // Section titles
   "Basic Information": { en: "Basic Information", so: "Macluumaadka Aasaasiga ah" },
+  Gender: { en: "Gender", so: "Jinsiga" },
   "Your Religious Practice": { en: "Your Religious Practice", so: "Dhaqankaaga Diineed" },
   "Education & Work": { en: "Education & Work", so: "Waxbarasho & Shaqo" },
   "Marriage & Family": { en: "Marriage & Family", so: "Guur & Qoys" },
@@ -364,6 +376,7 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
   Weight: { en: "Weight", so: "Miisaanka" },
   "Prayer Frequency": { en: "Prayer Frequency", so: "Salaadda" },
   "Wears Hijab": { en: "Wears Hijab", so: "Xijaab" },
+  "Has Beard": { en: "Has Beard", so: "Gadh" },
   Education: { en: "Education", so: "Waxbarasho" },
   Occupation: { en: "Occupation", so: "Shaqo" },
   "Marital Status": { en: "Marital Status", so: "Xaaladda Guur" },
