@@ -35,7 +35,7 @@ export const en = {
     profileSetup: "Profile setup",
   },
   common: {
-    joinNow: "Join Now",
+    joinNow: "Register Now",
     goToDashboard: "Go to Dashboard",
     loading: "Loading...",
     securePayments: "Secure Payments",
@@ -135,7 +135,7 @@ export const en = {
     heroFeature2: "Verified Profiles",
     heroFeature3: "Private & Secure",
     heroFeature4: "Islamic Values",
-    heroCta: "Join Now — from ${{price}}",
+    heroCta: "Register Now — from ${{price}}",
     seeHowItWorks: "See how it works",
     findMatchTitle: "Find Your Match",
     findMatchIam: "I am a",
@@ -241,8 +241,8 @@ export const en = {
     testimonialQuote:
       "We matched on Hel Calafkaaga and were married within the year, alhamdulillah. The process felt respectful and serious from day one.",
     testimonialAuthor: "Aisha & Yusuf — married couple",
-    joinNowPrice: "Join Now – ${{price}}",
-    registerTitle: "Join {{name}}",
+    joinNowPrice: "Register Now – ${{price}}",
+    registerTitle: "Register on {{name}}",
     registerStep1Desc: "Step 1 — create your login credentials",
     registerStep2Title: "Your details",
     registerStep2Desc: "Step 2 — all fields are required before you choose a payment plan",

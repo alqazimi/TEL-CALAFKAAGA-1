@@ -37,7 +37,7 @@ export const so: Translations = {
     profileSetup: "Dejinta profile-ka",
   },
   common: {
-    joinNow: "Ku Biir Hadda",
+    joinNow: "Is Diiwaangeli Hadda",
     goToDashboard: "Aad Dashboard-ka",
     loading: "Waa la rarayaa...",
     securePayments: "Lacag Bixin Amaan ah",
@@ -141,7 +141,7 @@ export const so: Translations = {
     heroFeature2: "Profile-yo La Xaqiijiyay",
     heroFeature3: "Qarsoodi & Amaan",
     heroFeature4: "Qiyamka Islaamka",
-    heroCta: "Ku Biir Hadda — laga bilaabo ${{price}}",
+    heroCta: "Is Diiwaangeli Hadda — laga bilaabo ${{price}}",
     seeHowItWorks: "Eeg sida uu u shaqeeyo",
     findMatchTitle: "Hel Lammaanahaaga",
     findMatchIam: "Waxaan ahay",
@@ -247,8 +247,8 @@ export const so: Translations = {
     testimonialQuote:
       "Waxaan ku kulanay Hel Calafkaaga waxaanan is guursanay isla sanadkaas, alxamdulillah. Habka wuxuu ahaa mid ixtiraam iyo dhab ah maalintii ugu horreysay.",
     testimonialAuthor: "Aisha & Yusuf — lammaane is guursaday",
-    joinNowPrice: "Ku Biir Hadda – ${{price}}",
-    registerTitle: "Ku biir {{name}}",
+    joinNowPrice: "Is Diiwaangeli Hadda – ${{price}}",
+    registerTitle: "Iska diiwaangeli {{name}}",
     registerStep1Desc: "Tallaabada 1 — abuur xogta gelitaankaaga",
     registerStep2Title: "Faahfaahintaada",
     registerStep2Desc: "Tallaabada 2 — dhammaan meelaha waa loo baahan yahay ka hor intaadan dooran qorshaha lacag bixinta",
