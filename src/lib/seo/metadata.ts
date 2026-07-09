@@ -74,11 +74,13 @@ export function rootMetadata(): Metadata {
     applicationName: SITE_BRAND_NAME,
     title: {
       default: siteTitle,
-      template: `%s | ${APP_NAME}`,
+      template: `%s | ${SITE_BRAND_NAME}`,
     },
     description: siteDescription,
     keywords: [...keywords],
     metadataBase: new URL(base),
+    creator: SITE_BRAND_NAME,
+    publisher: SITE_BRAND_NAME,
     alternates: {
       canonical: "/",
       languages: {

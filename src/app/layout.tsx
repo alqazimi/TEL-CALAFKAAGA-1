@@ -4,6 +4,7 @@ import { Providers } from "@/components/providers";
 import { PwaInstallCapture } from "@/components/pwa/pwa-install-capture";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { SiteJsonLd } from "@/components/seo/site-json-ld";
 import { rootMetadata } from "@/lib/seo/metadata";
 import "./globals.css";
 
@@ -30,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="so" suppressHydrationWarning className={`${inter.variable} ${cormorant.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased font-sans">
+        <SiteJsonLd />
         <PwaInstallCapture />
         <Providers>
           <Navbar />

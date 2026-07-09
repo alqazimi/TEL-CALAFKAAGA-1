@@ -47,11 +47,7 @@ export function SiteJsonLd() {
         "@type": "WebSite",
         "@id": `${siteOrigin}/#website`,
         name: SITE_BRAND_NAME,
-        alternateName: [
-          "Hel Calafkaaga Matchmaking",
-          "helcalafkaaga.com",
-          "www.helcalafkaaga.com",
-        ],
+        alternateName: ["Hel Calafkaaga Matchmaking"],
         url: siteUrl,
         description: SEO_SO.siteDescription,
         inLanguage: ["en", "so"],
