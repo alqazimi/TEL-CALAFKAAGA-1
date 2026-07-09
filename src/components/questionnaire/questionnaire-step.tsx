@@ -28,6 +28,8 @@ import { useTranslation } from "@/lib/i18n/context";
 import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
 import type { FieldConfig, StepConfig } from "./steps";
 import { GenderSelectCards } from "./gender-select-cards";
+import { UseMyLocationButton } from "./use-my-location-button";
+import { cityOptionsWithDetected } from "@/lib/location-match";
 
 const AUTO_ADVANCE_MS = 380;
 const AUTO_SAVE_MS = 1000;
@@ -312,6 +314,61 @@ export function QuestionnaireStep({
     [step, profile, onFieldIndexChange]
   );
 
+  const applyDetectedLocation = useCallback(
+    (country: string, city: string) => {
+      setSelects((prev) => ({ ...prev, country, city }));
+      setSelectedCountry(country);
+      if (
+        CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
+          country as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
+        )
+      ) {
+        setRadios((prev) => {
+          const next = { ...prev };
+          delete next.citizenshipStatus;
+          return next;
+        });
+      }
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next.country;
+        delete next.city;
+        return next;
+      });
+
+      setTimeout(() => {
+        const visible = getVisibleFields(
+          step,
+          profileRef.current,
+          formStateRef.current.radios,
+          { ...formStateRef.current.selects, country, city }
+        );
+        const cityIdx = visible.findIndex((field) => field.name === "city");
+        const currentName = visible[fieldIndexRef.current]?.name;
+
+        if (currentName === "country" && cityIdx >= 0) {
+          const nextIdx = Math.min(cityIdx + 1, visible.length - 1);
+          if (nextIdx >= visible.length - 1 && cityIdx + 1 >= visible.length) {
+            void completeStepRef.current();
+          } else {
+            onFieldIndexChange(nextIdx);
+          }
+          return;
+        }
+
+        if (currentName === "city") {
+          const idx = fieldIndexRef.current;
+          if (idx >= visible.length - 1) {
+            void completeStepRef.current();
+          } else {
+            onFieldIndexChange(idx + 1);
+          }
+        }
+      }, AUTO_ADVANCE_MS);
+    },
+    [step, onFieldIndexChange]
+  );
+
   const goToNextField = () => {
     if (!currentField) return;
     const error = validateField(currentField, profile, formState);
@@ -497,7 +554,10 @@ export function QuestionnaireStep({
         selects,
         profile?.country
       );
-      const cityOptions = getCitiesForCountry(countryForCities);
+      const cityOptions = cityOptionsWithDetected(
+        countryForCities,
+        selects[field.name] ?? ""
+      );
       if (cityOptions.length) {
         return renderSelectOptions(
           { ...field, options: cityOptions },
@@ -680,6 +740,23 @@ export function QuestionnaireStep({
           )}
 
           {renderFieldInput(currentField)}
+
+          {(currentField.name === "country" || currentField.name === "city") && (
+            <div className="space-y-3">
+              <UseMyLocationButton
+                onDetected={applyDetectedLocation}
+                disabled={isAdvancing}
+                className="w-full h-12 rounded-2xl border-dashed"
+              />
+              {selects.country && selects.city && (
+                <p className="text-sm text-muted-foreground text-center">
+                  {ui("locationDetectedHint")
+                    .replace("{city}", selects.city)
+                    .replace("{country}", selects.country)}
+                </p>
+              )}
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
 

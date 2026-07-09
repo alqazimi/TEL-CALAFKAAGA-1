@@ -659,6 +659,32 @@ const UI_TEXT = {
   selectPlaceholder: { en: "Select", so: "Dooro" },
   selectCity: { en: "Select city", so: "Dooro magaalada" },
   enterCity: { en: "Enter your city", so: "Geli magaaladaada" },
+  useMyLocation: { en: "Use my location", so: "Isticmaal goobtayda" },
+  detectingLocation: { en: "Detecting location…", so: "Goobta waa la raadinayaa…" },
+  locationDetected: {
+    en: "Location found — you can edit it if needed",
+    so: "Goobta waa la helay — waad wax ka beddeli kartaa haddii loo baahdo",
+  },
+  locationFailed: {
+    en: "Could not detect your location. Please choose manually.",
+    so: "Goobtaada lama ogaan karin. Fadlan gacanta ku dooro.",
+  },
+  locationPermissionDenied: {
+    en: "Location permission denied. Allow location in your browser, or choose manually.",
+    so: "Ogolaanshaha goobta waa la diiday. U oggolow browser-kaaga, ama gacanta ku dooro.",
+  },
+  locationUnsupported: {
+    en: "Your browser does not support location. Please choose manually.",
+    so: "Browser-kaagu ma taageero goobta. Fadlan gacanta ku dooro.",
+  },
+  locationCountryUnsupported: {
+    en: "We could not match your country. Please select it manually.",
+    so: "Dalkaaga lama jaan qaadin karin. Fadlan gacanta ku dooro.",
+  },
+  locationDetectedHint: {
+    en: "Detected: {{city}}, {{country}}",
+    so: "La ogaaday: {{city}}, {{country}}",
+  },
   // Questionnaire page header / flow
   profileQuestionnaire: { en: "Profile Questionnaire", so: "Su'aalaha Profile-ka" },
   part1CompleteSub: {
