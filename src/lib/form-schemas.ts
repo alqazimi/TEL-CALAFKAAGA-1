@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { TranslationPath } from "@/lib/i18n/translations";
+import { isValidContactPhone } from "@/lib/phone";
 
 export type TranslateFn = (
   key: TranslationPath,
@@ -39,8 +40,8 @@ export function createDetailsSchema(t: TranslateFn) {
     name: z.string().min(2, t("validation.nameRequired")),
     phone: z
       .string()
-      .min(8, t("validation.phoneRequired"))
-      .regex(/^[\d\s+\-()]+$/, t("validation.phoneInvalid")),
+      .min(1, t("validation.phoneRequired"))
+      .refine((value) => isValidContactPhone(value), t("validation.phoneInvalid")),
   });
 }
 

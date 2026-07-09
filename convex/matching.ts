@@ -169,10 +169,14 @@ export function calculateCompatibilityBreakdown(
   let maritalScore = 0;
   if (candidate.maritalStatus === "Never married" || candidate.maritalStatus === "Never Married") {
     maritalScore = 5;
-  } else if (candidate.maritalStatus === "Divorced" && userPrefs.acceptDivorcee === "Yes") {
-    maritalScore = 5;
-  } else if (candidate.maritalStatus === "Widowed" && userPrefs.acceptWidow === "Yes") {
-    maritalScore = 5;
+  } else if (candidate.maritalStatus === "Divorced") {
+    if (userPrefs.acceptDivorcee === "No") maritalScore = 0;
+    else if (userPrefs.acceptDivorcee === "Yes") maritalScore = 5;
+    else maritalScore = 4;
+  } else if (candidate.maritalStatus === "Widowed") {
+    if (userPrefs.acceptWidow === "No") maritalScore = 0;
+    else if (userPrefs.acceptWidow === "Yes") maritalScore = 5;
+    else maritalScore = 4;
   }
   push("maritalStatus", maritalScore, 5);
 

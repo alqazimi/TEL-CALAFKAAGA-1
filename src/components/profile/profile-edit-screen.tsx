@@ -22,6 +22,7 @@ import type { CurrentUser, Profile } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneNumberInput } from "@/components/ui/phone-number-input";
 import { FormField } from "@/components/ui/form-field";
 import { Badge } from "@/components/ui/badge";
 import { LazyImage } from "@/components/ui/lazy-image";
@@ -34,12 +35,16 @@ import { PremiumWaliCard } from "@/components/premium/premium-wali-card";
 import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 import { isOwnerRole, isPremiumMember } from "@/lib/access";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
+import { isValidContactPhone } from "@/lib/phone";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 const profileSchema = z.object({
   name: z.string().min(2),
-  phone: z.string().optional(),
+  phone: z
+    .string()
+    .optional()
+    .refine((value) => !value || isValidContactPhone(value), "invalid"),
 });
 
 type ProfileForm = z.infer<typeof profileSchema>;
@@ -123,11 +128,14 @@ export function ProfileEditScreen({
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
     values: { name: profile.name, phone: profile.phone ?? "" },
   });
+  const phoneValue = watch("phone") ?? "";
 
   const openGallery = (index: number) => {
     if (!allPhotoUrls.length) return;
@@ -292,8 +300,21 @@ export function ProfileEditScreen({
               <FormField label={t("profilePage.name")} htmlFor="name" error={errors.name?.message} required>
                 <Input id="name" {...register("name")} />
               </FormField>
-              <FormField label={t("profilePage.phone")} htmlFor="phone" hint={t("profilePage.phoneHint")}>
-                <Input id="phone" {...register("phone")} placeholder={t("profilePage.phonePlaceholder")} />
+              <FormField
+                label={t("profilePage.phone")}
+                htmlFor="phone"
+                hint={t("profilePage.phoneHint")}
+                error={errors.phone ? t("validation.phoneInvalid") : undefined}
+              >
+                <PhoneNumberInput
+                  value={phoneValue}
+                  profileCountry={profile.country}
+                  placeholder={t("profilePage.phonePlaceholder")}
+                  large={false}
+                  onChange={(value) =>
+                    setValue("phone", value, { shouldDirty: true, shouldValidate: true })
+                  }
+                />
               </FormField>
               <Button type="submit" disabled={isSubmitting} size="sm">
                 <Save className="h-4 w-4 mr-2" />

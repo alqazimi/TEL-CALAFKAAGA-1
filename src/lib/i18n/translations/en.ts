@@ -265,7 +265,7 @@ export const en = {
     female: "Female",
     phoneNumber: "Phone Number",
     namePlaceholder: "Your full name",
-    phonePlaceholder: "+254 7XX XXX XXX",
+    phonePlaceholder: "+252 61 XXX XXXX",
     continue: "Continue",
     continueToPayment: "Continue to Payment",
     continueToQuestionnaire: "Continue to Profile Questions",

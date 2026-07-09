@@ -3,7 +3,14 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { createUserProfile, ensureUserProfile } from "./lib/createProfile";
-import { splitQuestionnaireData } from "./lib/questionnaire";
+import {
+  CONTACT_COMPLETE_STEP,
+  CONTACT_IN_PROGRESS_STEP,
+  hasValidContact,
+  sanitizeContactProfileUpdates,
+  splitQuestionnaireData,
+} from "./lib/questionnaire";
+import { isValidContactPhone } from "./lib/phone";
 import { QUESTIONNAIRE_COMPLETE_STEP } from "./lib/profileEnrichment";
 import {
   assertStorageOwnership,
@@ -30,7 +37,7 @@ async function syncContactDetails(
   if (trimmedName.length < 2) {
     throw new Error("Full name is required");
   }
-  if (trimmedPhone.length < 8) {
+  if (!isValidContactPhone(trimmedPhone)) {
     throw new Error("A valid phone number is required");
   }
 
@@ -153,6 +160,15 @@ export const updateQuestionnaire = mutation({
       args.data as Record<string, unknown>
     );
 
+    sanitizeContactProfileUpdates(profileUpdates);
+
+    if (args.step > CONTACT_COMPLETE_STEP && !hasValidContact(profile, profileUpdates)) {
+      throw new Error("Please add your full name and phone number before continuing.");
+    }
+    if (args.step === CONTACT_COMPLETE_STEP && !hasValidContact(profile, profileUpdates)) {
+      throw new Error("Please add your full name and phone number before continuing.");
+    }
+
     const genderUpdate = profileUpdates.gender;
     if (genderUpdate === "male" || genderUpdate === "female") {
       await syncGenderSideEffects(ctx, userId, genderUpdate);
@@ -160,21 +176,10 @@ export const updateQuestionnaire = mutation({
 
     const nameUpdate = profileUpdates.name;
     const phoneUpdate = profileUpdates.phone;
-    if (typeof nameUpdate === "string") {
-      profileUpdates.name = nameUpdate.trim();
-    }
-    if (typeof phoneUpdate === "string") {
-      profileUpdates.phone = phoneUpdate.trim();
-    }
-    if (
-      typeof profileUpdates.name === "string" &&
-      profileUpdates.name.length >= 2 &&
-      typeof profileUpdates.phone === "string" &&
-      profileUpdates.phone.length >= 8
-    ) {
+    if (hasValidContact(profile, profileUpdates)) {
       await ctx.db.patch(userId, {
-        name: profileUpdates.name,
-        phone: profileUpdates.phone,
+        name: nameUpdate as string,
+        phone: phoneUpdate as string,
       });
     }
 
@@ -223,6 +228,8 @@ export const autoSaveProfile = mutation({
       args.data as Record<string, unknown>
     );
 
+    sanitizeContactProfileUpdates(profileUpdates);
+
     if (Object.keys(profileUpdates).length === 0 && !preferences) {
       return profile._id;
     }
@@ -232,29 +239,24 @@ export const autoSaveProfile = mutation({
       await syncGenderSideEffects(ctx, userId, genderUpdate);
     }
 
-    const nameUpdate = profileUpdates.name;
-    const phoneUpdate = profileUpdates.phone;
-    if (typeof nameUpdate === "string") {
-      profileUpdates.name = nameUpdate.trim();
-    }
-    if (typeof phoneUpdate === "string") {
-      profileUpdates.phone = phoneUpdate.trim();
-    }
-    if (
-      typeof profileUpdates.name === "string" &&
-      profileUpdates.name.length >= 2 &&
-      typeof profileUpdates.phone === "string" &&
-      profileUpdates.phone.length >= 8
-    ) {
+    if (hasValidContact(profile, profileUpdates)) {
       await ctx.db.patch(userId, {
-        name: profileUpdates.name,
-        phone: profileUpdates.phone,
+        name: profileUpdates.name as string,
+        phone: profileUpdates.phone as string,
       });
+    }
+
+    let stepToSave = args.step;
+    if (stepToSave >= CONTACT_COMPLETE_STEP && !hasValidContact(profile, profileUpdates)) {
+      stepToSave = Math.min(
+        profile.questionnaireStep ?? CONTACT_IN_PROGRESS_STEP,
+        CONTACT_IN_PROGRESS_STEP
+      );
     }
 
     const updates: Record<string, unknown> = {
       ...profileUpdates,
-      questionnaireStep: args.step,
+      questionnaireStep: stepToSave,
       lastSavedAt: Date.now(),
     };
 
@@ -262,7 +264,7 @@ export const autoSaveProfile = mutation({
       await ctx.db.patch(profile._id, updates);
     } else {
       await ctx.db.patch(profile._id, {
-        questionnaireStep: args.step,
+        questionnaireStep: stepToSave,
         lastSavedAt: Date.now(),
       });
     }
@@ -299,7 +301,7 @@ export const completeQuestionnaire = mutation({
     if (trimmedName.length < 2 || trimmedName === "User") {
       throw new Error("Please add your full name before completing your profile.");
     }
-    if (trimmedPhone.length < 8) {
+    if (!isValidContactPhone(trimmedPhone)) {
       throw new Error("Please add your phone number before completing your profile.");
     }
 
@@ -352,7 +354,7 @@ export const completeRegistrationDetails = mutation({
     if (trimmedName.length < 2) {
       throw new Error("Full name is required");
     }
-    if (trimmedPhone.length < 8) {
+    if (!isValidContactPhone(trimmedPhone)) {
       throw new Error("A valid phone number is required");
     }
 
@@ -419,6 +421,8 @@ export const saveProfileEdits = mutation({
     const { profileUpdates, preferences } = splitQuestionnaireData(
       args.data as Record<string, unknown>
     );
+
+    sanitizeContactProfileUpdates(profileUpdates);
 
     if (Object.keys(profileUpdates).length > 0) {
       await ctx.db.patch(profile._id, {

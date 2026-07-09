@@ -425,14 +425,6 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                             },
                           ]
                         : []),
-                      {
-                        label: t("adminDetail.acceptDivorcee"),
-                        value: detail.preferences.acceptDivorcee || "—",
-                      },
-                      {
-                        label: t("adminDetail.acceptWidow"),
-                        value: detail.preferences.acceptWidow || "—",
-                      },
                       ...(detail.profile.marrySomeoneWithChildren !== "No"
                         ? [{
                             label: t("adminDetail.acceptChildren"),

@@ -1,4 +1,5 @@
 import { enrichProfileUpdates } from "./profileEnrichment";
+import { isValidContactName, isValidContactPhone } from "./phone";
 
 /** Profile fields that may be written by the questionnaire. */
 const PROFILE_FIELD_KEYS = new Set([
@@ -66,3 +67,44 @@ export const PROFILE_DEFAULTS = {
   spousePrayerImportance: "",
   questionnaireStep: 1,
 } as const;
+
+/** 1-based step numbers (match frontend `currentStep + 1`). */
+export const CONTACT_IN_PROGRESS_STEP = 8;
+export const CONTACT_COMPLETE_STEP = 9;
+
+export function hasValidContact(
+  profile: { name?: string; phone?: string },
+  updates: Record<string, unknown> = {}
+): boolean {
+  const name =
+    typeof updates.name === "string"
+      ? updates.name
+      : profile.name ?? "";
+  const phone =
+    typeof updates.phone === "string"
+      ? updates.phone
+      : profile.phone ?? "";
+  return isValidContactName(name) && isValidContactPhone(phone);
+}
+
+/** Drop invalid or placeholder contact fields so autosave cannot wipe profile data. */
+export function sanitizeContactProfileUpdates(
+  updates: Record<string, unknown>
+): void {
+  if (typeof updates.name === "string") {
+    const name = updates.name.trim();
+    if (!isValidContactName(name)) {
+      delete updates.name;
+    } else {
+      updates.name = name;
+    }
+  }
+  if (typeof updates.phone === "string") {
+    const phone = updates.phone.trim();
+    if (!isValidContactPhone(phone)) {
+      delete updates.phone;
+    } else {
+      updates.phone = phone;
+    }
+  }
+}

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CountryCombobox } from "@/components/ui/country-combobox";
 import { CountryMultiCombobox } from "@/components/ui/country-multi-combobox";
+import { PhoneNumberInput } from "@/components/ui/phone-number-input";
 import { cn } from "@/lib/utils";
 import {
   buildStepData,
@@ -528,16 +529,28 @@ export function QuestionnaireStep({
       );
     }
 
+    if (field.type === "text" && field.name === "phone") {
+      return (
+        <PhoneNumberInput
+          value={textFields.phone ?? ""}
+          profileCountry={selectedCountry || profile?.country}
+          placeholder={t("auth.phonePlaceholder")}
+          onChange={(v) => {
+            setTextFields((prev) => ({ ...prev, phone: v }));
+            clearFieldError("phone");
+          }}
+        />
+      );
+    }
+
     if (field.type === "text") {
-      const isPhone = field.name === "phone";
       return (
         <Input
           value={textFields[field.name] ?? ""}
-          type={isPhone ? "tel" : "text"}
-          inputMode={isPhone ? "tel" : undefined}
-          autoComplete={isPhone ? "tel" : field.name === "name" ? "name" : undefined}
+          type="text"
+          autoComplete={field.name === "name" ? "name" : undefined}
           placeholder={
-            isPhone ? t("auth.phonePlaceholder") : t("auth.namePlaceholder")
+            field.name === "name" ? t("auth.namePlaceholder") : undefined
           }
           className="h-14 rounded-2xl text-lg px-5"
           onChange={(e) => {

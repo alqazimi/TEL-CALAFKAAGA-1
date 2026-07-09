@@ -1,5 +1,6 @@
 import type { FieldConfig, StepConfig } from "@/components/questionnaire/steps";
 import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
+import { isValidContactName, isValidContactPhone } from "@/lib/phone";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 
@@ -14,6 +15,15 @@ function legacySubstanceUse(smokes?: string): string | undefined {
   if (smokes === "Sometimes" || smokes === "Yes") return "Yes";
   if (smokes === "No") return "No";
   return smokes;
+}
+
+export function isContactFieldsComplete(
+  profile: { name?: string; phone?: string } | null | undefined,
+  textFields: Record<string, string>
+): boolean {
+  const name = textFields.name?.trim() ?? "";
+  const phone = textFields.phone?.trim() ?? "";
+  return isValidContactName(name) && isValidContactPhone(phone);
 }
 
 export function initFormState(
@@ -258,7 +268,14 @@ export function buildStepData(
         data[field.name] = value;
       }
     } else if (field.type === "text") {
-      data[field.name] = textFields[field.name]?.trim() ?? "";
+      const value = textFields[field.name]?.trim() ?? "";
+      if (field.name === "name" && isValidContactName(value)) {
+        data.name = value;
+      } else if (field.name === "phone" && isValidContactPhone(value)) {
+        data.phone = value;
+      } else if (field.name !== "name" && field.name !== "phone") {
+        data[field.name] = value;
+      }
     }
   }
 
@@ -286,14 +303,6 @@ export function buildStepData(
     radios.marrySomeoneWithChildren === "No"
   ) {
     preferences.acceptChildren = "No";
-  }
-
-  const maritalStatus = radios.maritalStatus ?? profile?.maritalStatus;
-  if (maritalStatus === "Divorced") {
-    preferences.acceptDivorcee = "Yes";
-  }
-  if (maritalStatus === "Widowed") {
-    preferences.acceptWidow = "Yes";
   }
 
   if (Object.keys(preferences).length > 0) {
@@ -339,10 +348,11 @@ export function validateField(
   if (field.type === "text") {
     const value = state.textFields[field.name]?.trim() ?? "";
     if (!value) return "This field is required";
-    if (field.name === "name" && value.length < 2) return "This field is required";
+    if (field.name === "name" && !isValidContactName(value)) return "This field is required";
     if (field.name === "phone") {
-      if (value.length < 8) return "This field is required";
-      if (!/^[\d\s+\-()]+$/.test(value)) return "Please enter a valid phone number";
+      if (!isValidContactPhone(value)) {
+        return value.length > 0 ? "Please enter a valid phone number" : "This field is required";
+      }
     }
     return null;
   }
@@ -399,7 +409,7 @@ export function getGlobalQuestionNumber(
 
 export function isFieldAnswered(
   field: FieldConfig,
-  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string; name?: string; phone?: string } | null | undefined,
   state: {
     radios: Record<string, string>;
     selects: Record<string, string>;
@@ -409,6 +419,11 @@ export function isFieldAnswered(
   }
 ): boolean {
   if (!isFieldVisible(field, profile, state.radios, state.selects)) return true;
+  if (field.name === "name" || field.name === "phone") {
+    const value = state.textFields[field.name]?.trim() ?? "";
+    if (field.name === "name") return isValidContactName(value);
+    return isValidContactPhone(value);
+  }
   return validateField(field, profile, state) === null;
 }
 

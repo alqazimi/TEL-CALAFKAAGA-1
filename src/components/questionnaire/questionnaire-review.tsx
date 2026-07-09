@@ -199,12 +199,6 @@ export function QuestionnaireReview({
         { label: "Preferred Countries", value: preferences.preferredCountries?.length ? preferences.preferredCountries.join(", ") : ui("anyValue") },
         { label: "Preferred Education", value: preferences.educationLevel || "—" },
         { label: "Preferred Religious Level", value: preferences.religiousLevel || "—" },
-        ...(profile.maritalStatus !== "Divorced"
-          ? [{ label: "Accept Divorcee", value: preferences.acceptDivorcee || "—" }]
-          : []),
-        ...(profile.maritalStatus !== "Widowed"
-          ? [{ label: "Accept Widow", value: preferences.acceptWidow || "—" }]
-          : []),
         ...(profile.marrySomeoneWithChildren !== "No"
           ? [{ label: "Accept Children", value: preferences.acceptChildren || "—" }]
           : []),

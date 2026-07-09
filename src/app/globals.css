@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-phone-number-input/style.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -189,4 +190,83 @@ html.pwa-standalone-marketing main {
   background: linear-gradient(90deg, var(--muted) 25%, var(--border) 50%, var(--muted) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+/* International phone input — matches app form styling */
+.PhoneInput {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.PhoneInput--large {
+  --phone-input-height: 3.5rem;
+}
+
+.PhoneInput--compact {
+  --phone-input-height: 3rem;
+}
+
+.PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--input);
+  transition: border-color 0.2s ease;
+}
+
+.PhoneInput--large .PhoneInputCountry {
+  border-radius: 1rem;
+  min-height: var(--phone-input-height);
+}
+
+.PhoneInputCountry:hover {
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+
+.PhoneInputCountry:focus-within {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent);
+}
+
+.PhoneInputCountryIcon {
+  width: 1.5rem;
+  height: 1rem;
+  box-shadow: none;
+  background: transparent;
+}
+
+.PhoneInputCountryIcon--border {
+  box-shadow: none;
+}
+
+.PhoneInputCountrySelect {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.PhoneInputCountrySelectArrow {
+  opacity: 0.45;
+  margin-left: 0.25rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-color: var(--muted-foreground);
+}
+
+.PhoneInputInput {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--input);
+}
+
+.PhoneInput--large .PhoneInputInput {
+  min-height: var(--phone-input-height);
 }

@@ -271,7 +271,7 @@ export const so: Translations = {
     female: "Naag",
     phoneNumber: "Lambarka Taleefanka",
     namePlaceholder: "Magacaaga oo buuxa",
-    phonePlaceholder: "+254 7XX XXX XXX",
+    phonePlaceholder: "+252 61 XXX XXXX",
     continue: "Sii wad",
     continueToPayment: "U gudub Lacag Bixinta",
     continueToQuestionnaire: "U gudub Su'aalaha Profile-ka",

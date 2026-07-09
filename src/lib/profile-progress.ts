@@ -2,6 +2,7 @@ import type { Profile } from "@/types";
 import { ABOUT_YOU_STEP_COUNT, CONTACT_STEP_INDEX, PHOTO_STEP_INDEX, STEPS } from "@/components/questionnaire/steps";
 
 import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
+import { isValidContactPhone } from "@/lib/phone";
 
 export interface Preferences {
   minAge?: number;
@@ -115,7 +116,7 @@ export function isPhotoComplete(profile: Profile): boolean {
 export function isContactComplete(profile: Profile): boolean {
   const name = profile.name?.trim() ?? "";
   const phone = profile.phone?.trim() ?? "";
-  return name.length >= 2 && name !== "User" && phone.length >= 8;
+  return name.length >= 2 && name !== "User" && isValidContactPhone(phone);
 }
 
 export function isPreferencesComplete(
@@ -123,9 +124,8 @@ export function isPreferencesComplete(
   prefs: Preferences | null | undefined
 ): boolean {
   if (!prefs) return false;
-  const divorceeOk =
-    profile.maritalStatus === "Divorced" || !!prefs.acceptDivorcee;
-  const widowOk = profile.maritalStatus === "Widowed" || !!prefs.acceptWidow;
+  const divorceeOk = true;
+  const widowOk = true;
   const childrenOk =
     profile.marrySomeoneWithChildren === "No" || !!prefs.acceptChildren;
   const appearanceOk =
@@ -226,7 +226,7 @@ export function getSectionStatus(
       !!prefs?.religiousLevel ||
       !!prefs?.partnerHijabLevel ||
       (prefs?.preferredCountries?.length ?? 0) > 0,
-    contact: !!profile.name?.trim() || !!profile.phone?.trim(),
+    contact: isContactComplete(profile),
     photo: !!profile.profileImageId,
   };
 

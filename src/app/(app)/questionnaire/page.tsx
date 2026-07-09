@@ -19,13 +19,14 @@ import {
   getVisibleFields,
   initFormState,
 } from "@/lib/questionnaire-form";
+import { isValidContactName, isValidContactPhone } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { QuestionnaireStep } from "@/components/questionnaire/questionnaire-step";
 import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-review";
 import { QuestionnairePhaseComplete } from "@/components/questionnaire/questionnaire-phase-complete";
 import { QuestionnairePhotoStep } from "@/components/questionnaire/questionnaire-photo-step";
 import { QuestionnaireShell } from "@/components/questionnaire/questionnaire-shell";
-import { STEPS, ABOUT_YOU_STEP_COUNT, CONTACT_STEP_INDEX, PARTNER_PREFERENCES_STEP_INDEX, PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
+import { STEPS, ABOUT_YOU_STEP_COUNT, CONTACT_STEP_INDEX, PARTNER_PREFERENCES_STEP_INDEX } from "@/components/questionnaire/steps";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
@@ -139,6 +140,15 @@ export default function QuestionnairePage() {
   const handleNext = async (stepData: Record<string, unknown>) => {
     if (currentStep === null) return;
 
+    if (currentStep === CONTACT_STEP_INDEX) {
+      const name = typeof stepData.name === "string" ? stepData.name : "";
+      const phone = typeof stepData.phone === "string" ? stepData.phone : "";
+      if (!isValidContactName(name) || !isValidContactPhone(phone)) {
+        toast.error(ui("answerAllRequired"));
+        return;
+      }
+    }
+
     try {
       if (!isReviewStep) {
         if (isEditMode) {
@@ -181,14 +191,10 @@ export default function QuestionnairePage() {
     if (stepConfig?.phase === "photo") {
       if (currentStep > 0) {
         const prevStep = currentStep - 1;
-        const prevFields = getVisibleFields(
-          STEPS[prevStep],
-          profile ?? null,
-          formStateForNav.radios,
-          formStateForNav.selects
-        );
         skipFieldResumeRef.current = true;
-        setFieldIndex(Math.max(0, prevFields.length - 1));
+        setFieldIndex(
+          getResumeFieldIndex(STEPS[prevStep], profile ?? null, formStateForNav)
+        );
         setFieldIndexInitializedForStep(null);
         setStepOverride(prevStep);
       }
