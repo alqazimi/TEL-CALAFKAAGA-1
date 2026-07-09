@@ -23,6 +23,7 @@ import { PaymentGate } from "@/components/payment/payment-gate";
 import type { Conversation, ChatMessage, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { isMemberOnboardingProfile, useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
 import { TrialBanner } from "@/components/payment/trial-banner";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
@@ -77,6 +78,7 @@ function ChatShell({ children }: { children: React.ReactNode }) {
 
 export default function ChatPage() {
   const { t } = useTranslation();
+  const { isStaff, isLoading: staffLoading } = useStaffRedirect();
   const [activeConversation, setActiveConversation] = useState<Id<"conversations"> | null>(null);
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
@@ -181,7 +183,7 @@ export default function ChatPage() {
     }
   };
 
-  if (profile === undefined) {
+  if (profile === undefined || staffLoading || isStaff) {
     return (
       <DashboardLayout>
         <ChatShell>
@@ -196,7 +198,7 @@ export default function ChatPage() {
     );
   }
 
-  if (profile && !profile.questionnaireComplete) {
+  if (profile && isMemberOnboardingProfile(profile)) {
     return (
       <DashboardLayout>
         <ProfileLockedGate

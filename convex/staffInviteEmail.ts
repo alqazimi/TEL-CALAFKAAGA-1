@@ -28,12 +28,18 @@ export const send = internalAction({
       to: [args.email],
       subject: "You've been invited to Hel Calafkaaga admin",
       text: [
+        "Hello,",
+        "",
         "You've been invited to join Hel Calafkaaga as an admin.",
         "",
-        "Open this link to set your password and accept the invite:",
+        "Open the link below to sign in or create your account and accept the invite:",
         inviteUrl,
         "",
-        "This link expires in 7 days. If you did not expect this email, you can ignore it.",
+        "This invite expires in 7 days.",
+        "",
+        "If you did not expect this email, you can ignore it.",
+        "",
+        "— Hel Calafkaaga",
       ].join("\n"),
     });
 

@@ -73,13 +73,14 @@ export function DashboardSidebar() {
   const appNavLinks = useAppNavLinks(profileComplete);
   const { t } = useTranslation();
   const homeHref = getAuthenticatedHomeRoute(user?.profile);
+  const isLoading = user === undefined;
 
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:top-16 lg:bottom-0 lg:left-0 lg:z-40 lg:border-r lg:border-border lg:bg-card/95 lg:backdrop-blur-xl">
       <div className="flex flex-col flex-1 px-4 py-6 overflow-y-auto">
         <BrandLogo href={isStaff ? "/admin" : homeHref} className="px-2 mb-6" />
 
-        {!isStaff && user?.profile && !profileComplete && (
+        {!isLoading && !isStaff && user?.profile && !profileComplete && (
           <div className="mb-4 rounded-xl bg-accent p-3 space-y-1.5">
             <p className="text-xs font-medium text-accent-foreground">
               {t("profileProgress.sidebarProgress", { percent: progress })}
@@ -94,7 +95,8 @@ export function DashboardSidebar() {
         )}
 
         <nav className="flex-1 space-y-1">
-          {!isStaff &&
+          {!isLoading &&
+            !isStaff &&
             appNavLinks.map((link) => {
               const Icon = iconMap[link.icon as AppNavIcon];
               const isActive =

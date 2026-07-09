@@ -10,7 +10,7 @@ import {
   requireOwner,
   verifyBootstrapCredentials,
 } from "./lib/adminAuth";
-import { isOwnerRole, isStaffRole } from "./lib/roles";
+import { isOwnerRole, isStaffRole, STAFF_PROFILE_COMPLETION_PATCH } from "./lib/roles";
 import { sendNotification } from "./lib/sendNotification";
 import { isPremiumMember, isBasicPaidMember } from "./lib/premium";
 
@@ -95,7 +95,10 @@ export const claimFirstAdmin = mutation({
     const profile = await getProfileForUser(ctx, userId);
     if (!profile) throw new Error("Profile not found.");
 
-    await ctx.db.patch(profile._id, { role: "owner", hasPaid: true, approved: true, verified: true });
+    await ctx.db.patch(profile._id, {
+      role: "owner",
+      ...STAFF_PROFILE_COMPLETION_PATCH,
+    });
     return { success: true };
   },
 });

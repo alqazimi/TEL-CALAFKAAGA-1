@@ -49,14 +49,31 @@ export function AppMobileNav() {
   const { t } = useTranslation();
   const user = useQuery(api.users.currentUser);
   const preferences = useQuery(api.profiles.getPreferences);
+  const isLoading = user === undefined;
+  const isStaff = isStaffRole(user?.profile?.role);
   const profileComplete = user?.profile?.questionnaireComplete ?? false;
   const profileProgress = user?.profile
     ? calculateProfileProgress(user.profile, preferences ?? undefined)
     : 0;
   const appNavLinks = useAppNavLinks(profileComplete).filter((l) => l.tab);
 
+  if (isLoading) {
+    return (
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-stretch justify-around px-1 py-2.5">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex flex-1 flex-col items-center gap-1">
+              <div className="h-5 w-5 rounded bg-muted animate-pulse" aria-hidden />
+              <div className="h-2.5 w-10 rounded bg-muted animate-pulse" aria-hidden />
+            </div>
+          ))}
+        </div>
+      </nav>
+    );
+  }
+
   // Admins and owners get admin-section navigation instead of member tabs.
-  if (isStaffRole(user?.profile?.role)) {
+  if (isStaff) {
     const onAdmin = pathname.startsWith("/admin");
     const onProfile = pathname === "/profile";
     const currentTab = searchParams.get("tab") ?? "users";

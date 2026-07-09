@@ -947,21 +947,17 @@ export const en = {
   adminInvites: {
     title: "Invite admin",
     description:
-      "Send an invite link by email. New admins set a password from the link — members cannot be promoted directly.",
+      "Send an admin invite by email. They'll receive instructions to set a password and join — members cannot be promoted directly.",
     emailLabel: "Admin email",
     emailPlaceholder: "admin@example.com",
     emailRequired: "Enter an email address.",
-    sendInvite: "Create invite",
-    sending: "Creating...",
+    sendInvite: "Send invite",
+    sending: "Sending...",
     sent: "Invite sent.",
-    sendFailed: "Could not create invite.",
-    created: "Invite created. Use Copy link to share it.",
-    createdCopied: "Invite created and link copied to clipboard.",
-    copyLink: "Copy link",
-    linkCopied: "Invite link copied to clipboard.",
-    linkCopyFailed: "Could not copy link.",
-    noEmailHint:
-      "No email setup needed — create the invite, then Copy link and send it via WhatsApp or any channel.",
+    sentTo: "Invite email sent to {{email}}.",
+    sendFailed: "Could not send invite.",
+    emailHint:
+      "The invite is emailed automatically. Ask them to check spam if it doesn't arrive within a few minutes.",
     recent: "Recent invites",
     statusPending: "Pending",
     statusAccepted: "Accepted",

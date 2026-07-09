@@ -20,6 +20,7 @@ import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { isMemberOnboardingProfile, useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isTrialExpired } from "@/lib/trial";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
@@ -28,6 +29,7 @@ import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 export default function LikesPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { isStaff, isLoading: staffLoading } = useStaffRedirect();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
@@ -95,7 +97,7 @@ export default function LikesPage() {
     [shortlistMatches, likedMatches, passedMatches, likedYouMatches, isPremium]
   );
 
-  if (profile === undefined) {
+  if (profile === undefined || staffLoading || isStaff) {
     return (
       <DashboardLayout>
         <div className="w-full max-w-lg mx-auto space-y-4" role="status">
@@ -106,7 +108,7 @@ export default function LikesPage() {
     );
   }
 
-  if (profile && !profile.questionnaireComplete) {
+  if (profile && isMemberOnboardingProfile(profile)) {
     return (
       <DashboardLayout>
         <ProfileLockedGate profile={profile} preferences={preferences} />

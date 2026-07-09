@@ -9,7 +9,7 @@ import {
   normalizeEmail,
   requireOwner,
 } from "./lib/adminAuth";
-import { isStaffRole } from "./lib/roles";
+import { isStaffRole, STAFF_PROFILE_COMPLETION_PATCH } from "./lib/roles";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -81,9 +81,6 @@ export const list = query({
         email: invite.email,
         role: invite.role,
         status,
-        // Only share the token for still-usable invites so the owner can copy
-        // the link manually (works without Resend email delivery).
-        token: status === "pending" ? invite.token : undefined,
         createdAt: invite.createdAt,
         expiresAt: invite.expiresAt,
         acceptedAt: invite.acceptedAt,
@@ -158,7 +155,7 @@ export const create = mutation({
       token,
     });
 
-    return { inviteId, email, token };
+    return { inviteId, email };
   },
 });
 
@@ -252,10 +249,7 @@ export const accept = mutation({
     if (!isStaffRole(profile.role)) {
       await ctx.db.patch(profile._id, {
         role: "admin",
-        approved: true,
-        verified: true,
-        hasPaid: true,
-        registrationComplete: true,
+        ...STAFF_PROFILE_COMPLETION_PATCH,
       });
     }
 

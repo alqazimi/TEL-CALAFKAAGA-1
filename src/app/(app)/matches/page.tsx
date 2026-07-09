@@ -21,6 +21,7 @@ import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { isMemberOnboardingProfile, useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
 import { TrialBanner } from "@/components/payment/trial-banner";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
@@ -50,6 +51,7 @@ function buildFilterArgs(filters: Record<string, string>) {
 export default function MatchesPage() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { isStaff, isLoading: staffLoading } = useStaffRedirect();
   const searchParams = useSearchParams();
   const focusUserId = searchParams.get("user") ?? undefined;
   const openedFocusRef = useRef<string | null>(null);
@@ -107,7 +109,7 @@ export default function MatchesPage() {
     }
   };
 
-  if (profile === undefined) {
+  if (profile === undefined || staffLoading || isStaff) {
     return (
       <DashboardLayout>
         <div className="w-full max-w-lg mx-auto space-y-4" role="status">
@@ -118,7 +120,7 @@ export default function MatchesPage() {
     );
   }
 
-  if (profile && !profile.questionnaireComplete) {
+  if (profile && isMemberOnboardingProfile(profile)) {
     return (
       <DashboardLayout>
         <ProfileLockedGate profile={profile} preferences={preferences} />

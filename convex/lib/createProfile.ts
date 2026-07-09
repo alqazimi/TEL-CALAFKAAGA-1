@@ -5,6 +5,7 @@ import {
   QUESTIONNAIRE_COMPLETE_STEP,
   religiousLevelFromPrayer,
 } from "./profileEnrichment";
+import { isStaffRole } from "./roles";
 import { getTrialEndsAt } from "./trial";
 
 type ProfileArgs = {
@@ -124,6 +125,18 @@ export async function ensureUserProfile(
     if (existing.questionnaireComplete && !existing.approved) {
       backfill.approved = true;
       backfill.verified = true;
+    }
+    if (isStaffRole(existing.role)) {
+      if (!existing.questionnaireComplete) {
+        backfill.questionnaireComplete = true;
+        backfill.questionnaireStep = QUESTIONNAIRE_COMPLETE_STEP;
+      }
+      if (existing.registrationComplete !== true) {
+        backfill.registrationComplete = true;
+      }
+      if (!existing.approved) backfill.approved = true;
+      if (!existing.verified) backfill.verified = true;
+      if (!existing.hasPaid) backfill.hasPaid = true;
     }
     if (Object.keys(backfill).length > 0) {
       await ctx.db.patch(existing._id, backfill);

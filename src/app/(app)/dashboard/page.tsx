@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import type { CurrentUser, MatchResult, MutualMatch } from "@/types";
+import type { MatchResult, MutualMatch } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +12,8 @@ import { ProfileCompletionCard } from "@/components/profile/profile-completion-c
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { NextStepCard } from "@/components/dashboard/next-step-card";
 import { TrialBanner } from "@/components/payment/trial-banner";
-import { hasPaidAccess, isPremiumMember, isStaffRole } from "@/lib/access";
+import { useStaffRedirect } from "@/hooks/use-staff-redirect";
+import { hasPaidAccess, isPremiumMember } from "@/lib/access";
 import { isInTrialPeriod } from "@/lib/trial";
 import { useTranslation } from "@/lib/i18n/context";
 import {
@@ -23,9 +24,8 @@ import {
 export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
+  const { user, isStaff, isLoading } = useStaffRedirect();
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-  const isStaff = isStaffRole(user?.profile?.role);
   const canViewMatches =
     user?.profile?.questionnaireComplete &&
     !isStaff &&
@@ -47,16 +47,12 @@ export default function DashboardPage() {
     profile.approved;
 
   useEffect(() => {
-    if (isStaff) {
-      router.replace("/admin");
-      return;
-    }
     if (shouldUseDiscoverHome) {
       router.replace("/matches");
     }
-  }, [isStaff, router, shouldUseDiscoverHome]);
+  }, [router, shouldUseDiscoverHome]);
 
-  if (user === undefined || isStaff || shouldUseDiscoverHome) {
+  if (user === undefined || isLoading || isStaff || shouldUseDiscoverHome) {
     return (
       <DashboardLayout>
         <div className="space-y-6 max-w-2xl" role="status">

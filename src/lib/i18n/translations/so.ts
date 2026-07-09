@@ -959,21 +959,17 @@ export const so: Translations = {
   adminInvites: {
     title: "Casuum maamule",
     description:
-      "U dir xiriir casuumaad email ahaan. Maamulayaasha cusub waxay furaha ka dejiyaan xiriirka — xubnaha si toos ah looma kor u qaadi karo.",
+      "U dir casuumaad maamul email ahaan. Waxay helayaan tilmaamo ay ku dejiyaan furaha oo ku biiraan — xubnaha si toos ah looma kor u qaadi karo.",
     emailLabel: "Emailka maamulaha",
     emailPlaceholder: "admin@example.com",
     emailRequired: "Geli cinwaanka emailka.",
-    sendInvite: "Samee casuumaad",
-    sending: "Waa la samaynayaa...",
+    sendInvite: "Dir casuumaad",
+    sending: "Waa la dirayaa...",
     sent: "Casuumaad waa la diray.",
-    sendFailed: "Casuumaad lama samayn karin.",
-    created: "Casuumaad waa la sameeyay. Isticmaal Nuqul xiriirka si aad u wadaagto.",
-    createdCopied: "Casuumaad waa la sameeyay, xiriirkana waa la nuqulay.",
-    copyLink: "Nuqul xiriirka",
-    linkCopied: "Xiriirka casuumaadda waa la nuqulay.",
-    linkCopyFailed: "Xiriirka lama nuquli karin.",
-    noEmailHint:
-      "Email dejin looma baahna — samee casuumaadda, ka dib Nuqul xiriirka una dir WhatsApp ama qaab kasta.",
+    sentTo: "Emailka casuumaadda waa loo diray {{email}}.",
+    sendFailed: "Casuumaad lama diri karin.",
+    emailHint:
+      "Casuumaadda si toos ah ayaa loo diraa email ahaan. Haddii aysan imaan dhowr daqiiqo gudahood, ka codso inay eegaan spam.",
     recent: "Casuumaadyadii ugu dambeeyay",
     statusPending: "Sugitaan",
     statusAccepted: "La aqbalay",
