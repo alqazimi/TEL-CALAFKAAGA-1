@@ -308,6 +308,7 @@ export interface Profile {
   languagesSpoken?: string[];
   citizenshipStatus?: string;
   financialReadiness?: string;
+  marriageWorkPreference?: string;
   wearsHijab?: boolean;
   hasBeard?: boolean;
   smokes?: string;

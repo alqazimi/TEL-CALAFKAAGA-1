@@ -49,7 +49,11 @@ export function isMarriageComplete(profile: Profile): boolean {
 }
 
 export function isEducationComplete(profile: Profile): boolean {
-  return !!profile.education && !!profile.occupation && !!profile.financialReadiness;
+  const employmentPreferenceComplete =
+    profile.gender === "female"
+      ? !!(profile.marriageWorkPreference || profile.financialReadiness)
+      : !!profile.financialReadiness;
+  return !!profile.education && !!profile.occupation && employmentPreferenceComplete;
 }
 
 export function isBasicComplete(profile: Profile): boolean {
@@ -194,7 +198,11 @@ export function getSectionStatus(
       !!profile.citizenshipStatus ||
       (profile.languagesSpoken?.length ?? 0) > 0,
     religious: !!profile.prayerFrequency,
-    education: !!profile.education || !!profile.occupation || !!profile.financialReadiness,
+    education:
+      !!profile.education ||
+      !!profile.occupation ||
+      !!profile.financialReadiness ||
+      !!profile.marriageWorkPreference,
     marriage:
       !!profile.maritalStatus ||
       !!profile.wantChildren ||

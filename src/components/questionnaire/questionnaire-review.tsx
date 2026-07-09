@@ -109,7 +109,14 @@ export function QuestionnaireReview({
   const educationItems = [
     { label: "Education", value: profile.education || "—" },
     { label: "Occupation", value: profile.occupation || "—" },
-    { label: "Financial Readiness", value: profile.financialReadiness || "—" },
+    ...(profile.gender === "male"
+      ? [{ label: "Financial Readiness", value: profile.financialReadiness || "—" }]
+      : [
+          {
+            label: "Work Preference After Marriage",
+            value: profile.marriageWorkPreference || profile.financialReadiness || "—",
+          },
+        ]),
   ];
 
   const marriageItems = [

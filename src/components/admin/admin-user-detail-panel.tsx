@@ -328,10 +328,22 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                         ? detail.profile.languagesSpoken.join(", ")
                         : "—",
                     },
-                    {
-                      label: t("adminDetail.financialReadiness"),
-                      value: detail.profile.financialReadiness || "—",
-                    },
+                    ...(detail.profile.gender === "male"
+                      ? [
+                          {
+                            label: t("adminDetail.financialReadiness"),
+                            value: detail.profile.financialReadiness || "—",
+                          },
+                        ]
+                      : [
+                          {
+                            label: t("adminDetail.marriageWorkPreference"),
+                            value:
+                              detail.profile.marriageWorkPreference ||
+                              detail.profile.financialReadiness ||
+                              "—",
+                          },
+                        ]),
                     { label: t("adminDetail.readyToRelocate"), value: detail.profile.readyToRelocate || "—" },
                     {
                       label: t("adminDetail.livingSituation"),

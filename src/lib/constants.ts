@@ -171,6 +171,14 @@ export const FINANCIAL_READINESS = [
   "Prefer not to say",
 ] as const;
 
+/** Women's work / home preference after marriage (employment step). */
+export const MARRIAGE_WORK_PREFERENCE = [
+  "Prefer to focus on home and family",
+  "Want to continue working after marriage",
+  "Open to either — depends on agreement",
+  "Prefer not to say",
+] as const;
+
 export const MAX_DISTANCE = [
   "Same City",
   "Same Country",

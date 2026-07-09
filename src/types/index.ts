@@ -32,6 +32,7 @@ export interface Profile {
   languagesSpoken?: string[];
   citizenshipStatus?: string;
   financialReadiness?: string;
+  marriageWorkPreference?: string;
   readyToRelocate?: string;
   marriageTimeline?: string;
   loveLanguage?: string;

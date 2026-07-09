@@ -48,6 +48,7 @@ export async function createUserProfile(
     languagesSpoken: [],
     citizenshipStatus: "",
     financialReadiness: "",
+    marriageWorkPreference: "",
     readyToRelocate: "",
     marriageTimeline: "",
     loveLanguage: "",

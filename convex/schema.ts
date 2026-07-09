@@ -53,6 +53,7 @@ export default defineSchema({
     languagesSpoken: v.optional(v.array(v.string())),
     citizenshipStatus: v.optional(v.string()),
     financialReadiness: v.optional(v.string()),
+    marriageWorkPreference: v.optional(v.string()),
     readyToRelocate: v.string(),
     marriageTimeline: v.string(),
     loveLanguage: v.optional(v.string()),

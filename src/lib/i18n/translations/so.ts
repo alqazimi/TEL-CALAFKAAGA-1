@@ -1017,6 +1017,7 @@ export const so: Translations = {
     citizenship: "Jinsiyad / Fiiso",
     languages: "Luuqadaha",
     financialReadiness: "Diyaargarowga Dhaqaale",
+    marriageWorkPreference: "Doorbidka Shaqada Guurka Kadib",
     livingSituation: "Xaaladda Nololeed",
     partnerBeard: "Doorbidka Gadka Lammaanaha",
     partnerHijabLevel: "Doorbidka Xijaab / Niqaab Lammaanaha",

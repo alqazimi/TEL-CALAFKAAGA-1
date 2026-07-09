@@ -1006,6 +1006,7 @@ export const en = {
     citizenship: "Citizenship / Visa",
     languages: "Languages",
     financialReadiness: "Financial Readiness",
+    marriageWorkPreference: "Work Preference After Marriage",
     livingSituation: "Living Situation",
     partnerBeard: "Partner Beard Preference",
     partnerHijabLevel: "Partner Hijab / Niqab Preference",

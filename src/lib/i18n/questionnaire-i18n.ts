@@ -143,6 +143,10 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     en: "Financial readiness for marriage",
     so: "Diyaargarowga dhaqaale ee guurka",
   },
+  marriageWorkPreference: {
+    en: "After marriage, what is your preference?",
+    so: "Guurka kadib, maxaad door bidaysaa?",
+  },
   pref_partnerBeard: {
     en: "Beard preference for your spouse",
     so: "Doorbidka gadka ee xaaskaaga",
@@ -316,6 +320,18 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   "Still building financially": {
     en: "Still building financially",
     so: "Weli dhaqaale ahaan waan dhismayaa",
+  },
+  "Prefer to focus on home and family": {
+    en: "Prefer to focus on home and family",
+    so: "Waxaan door bidayaa inaan guriga iyo qoyska diiradda saaro",
+  },
+  "Want to continue working after marriage": {
+    en: "Want to continue working after marriage",
+    so: "Waxaan rabaa inaan guurka kadib shaqeyto",
+  },
+  "Open to either — depends on agreement": {
+    en: "Open to either — depends on agreement",
+    so: "Labada heerba waan furan ahay — waxay ku xiran tahay heshiis",
   },
   // Max distance
   "Same City": { en: "Same City", so: "Isla Magaalada" },

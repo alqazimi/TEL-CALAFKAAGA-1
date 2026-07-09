@@ -72,6 +72,7 @@ export function initFormState(
   if (profile.polygynyOpenness) radios.polygynyOpenness = profile.polygynyOpenness;
   if (profile.citizenshipStatus) radios.citizenshipStatus = profile.citizenshipStatus;
   if (profile.financialReadiness) radios.financialReadiness = profile.financialReadiness;
+  if (profile.marriageWorkPreference) radios.marriageWorkPreference = profile.marriageWorkPreference;
 
   if (profile.readyToRelocate) radios.readyToRelocate = profile.readyToRelocate;
   if (profile.marriageTimeline) radios.marriageTimeline = profile.marriageTimeline;
