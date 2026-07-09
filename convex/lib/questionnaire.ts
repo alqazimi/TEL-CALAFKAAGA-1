@@ -30,6 +30,7 @@ const PROFILE_FIELD_KEYS = new Set([
   "hasCurrentWife",
   "openToSecondWife",
   "acceptManWithWife",
+  "acceptPreviouslyMarriedMan",
   "acceptFutureCoWife",
   "languagesSpoken",
   "citizenshipStatus",

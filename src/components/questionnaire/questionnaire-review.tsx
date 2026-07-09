@@ -8,7 +8,6 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
@@ -18,6 +17,7 @@ interface QuestionnaireReviewProps {
   profile: Profile;
   preferences: Preferences | null | undefined;
   onEditStep: (stepIndex: number) => void;
+  onEditGender?: () => void;
   onComplete: () => void;
   isEditMode?: boolean;
 }
@@ -31,7 +31,7 @@ function ReviewSection({
   title: string;
   stepIndex: number;
   items: { label: string; value: string }[];
-  onEdit: (stepIndex: number) => void;
+  onEdit: () => void;
 }) {
   const { reviewLabel, optionLabel, ui } = useQuestionnaireI18n();
   const filled = items.filter((i) => i.value && i.value !== "—");
@@ -41,7 +41,7 @@ function ReviewSection({
     <div className="rounded-2xl border border-border bg-muted/50 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="font-bold text-xl text-foreground">{reviewLabel(title)}</h3>
-        <Button variant="outline" size="sm" onClick={() => onEdit(stepIndex)} className="h-9 text-sm">
+        <Button variant="outline" size="sm" onClick={onEdit} className="h-9 text-sm">
           <Pencil className="h-3.5 w-3.5 mr-1" />
           {ui("edit")}
         </Button>
@@ -62,6 +62,7 @@ export function QuestionnaireReview({
   profile,
   preferences,
   onEditStep,
+  onEditGender,
   onComplete,
   isEditMode = false,
 }: QuestionnaireReviewProps) {
@@ -101,9 +102,6 @@ export function QuestionnaireReview({
     ...(profile.gender === "female"
       ? [{ label: "Wears Hijab", value: profile.wearsHijab !== undefined ? (profile.wearsHijab ? "Yes" : "No") : "—" }]
       : []),
-    ...(profile.gender === "male"
-      ? [{ label: "Has Beard", value: profile.hasBeard !== undefined ? (profile.hasBeard ? "Yes" : "No") : "—" }]
-      : []),
   ];
 
   const educationItems = [
@@ -125,7 +123,6 @@ export function QuestionnaireReview({
       ? [{ label: "Children", value: profile.children > 0 ? optionLabel("Yes") : optionLabel("No") }]
       : []),
     { label: "Want Children", value: profile.wantChildren ? optionLabel(profile.wantChildren) : "—" },
-    { label: "Family Involvement", value: profile.familyInvolvement ? optionLabel(profile.familyInvolvement) : "—" },
     ...(profile.gender === "male"
       ? [
           {
@@ -143,8 +140,10 @@ export function QuestionnaireReview({
         ]
       : [
           {
-            label: "Accept Man With Wife",
-            value: profile.acceptManWithWife ? optionLabel(profile.acceptManWithWife) : "—",
+            label: "Previously Married Man",
+            value: profile.acceptPreviouslyMarriedMan
+              ? optionLabel(profile.acceptPreviouslyMarriedMan)
+              : "—",
           },
           {
             label: "Accept Future Co-Wife",
@@ -171,15 +170,7 @@ export function QuestionnaireReview({
   ];
 
   const aboutItems = [
-    ...(profile.country &&
-    !CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
-      profile.country as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
-    )
-      ? [{ label: "Citizenship / Visa", value: profile.citizenshipStatus || "—" }]
-      : []),
     { label: "Languages", value: translateList(profile.languagesSpoken) },
-    { label: "Ready to Relocate", value: profile.readyToRelocate || "—" },
-    { label: "Living Situation", value: profile.livingSituation ? optionLabel(profile.livingSituation) : "—" },
     { label: "Marriage Timeline", value: profile.marriageTimeline || "—" },
     { label: "Love Language", value: profile.loveLanguage ? optionLabel(profile.loveLanguage) : "—" },
     { label: "Qualities", value: translateList(profile.qualities) },
@@ -234,22 +225,22 @@ export function QuestionnaireReview({
       <CardContent className="space-y-4 pb-28">
         <ReviewSection
           title="Gender"
-          stepIndex={0}
+          stepIndex={-1}
           items={[
             {
               label: "Gender",
               value: profile.gender === "female" ? "Female" : profile.gender === "male" ? "Male" : "—",
             },
           ]}
-          onEdit={onEditStep}
+          onEdit={() => (onEditGender ? onEditGender() : onEditStep(0))}
         />
-        <ReviewSection title="Basic Information" stepIndex={1} items={basicItems} onEdit={onEditStep} />
-        <ReviewSection title="Your Religious Practice" stepIndex={2} items={religiousItems} onEdit={onEditStep} />
-        <ReviewSection title="Education & Work" stepIndex={3} items={educationItems} onEdit={onEditStep} />
-        <ReviewSection title="Marriage & Family" stepIndex={5} items={marriageItems} onEdit={onEditStep} />
-        <ReviewSection title="Lifestyle" stepIndex={6} items={lifestyleItems} onEdit={onEditStep} />
-        <ReviewSection title="About You" stepIndex={7} items={aboutItems} onEdit={onEditStep} />
-        <ReviewSection title="Partner Preferences" stepIndex={8} items={prefItems} onEdit={onEditStep} />
+        <ReviewSection title="Basic Information" stepIndex={1} items={basicItems} onEdit={() => onEditStep(1)} />
+        <ReviewSection title="Your Religious Practice" stepIndex={2} items={religiousItems} onEdit={() => onEditStep(2)} />
+        <ReviewSection title="Education & Work" stepIndex={3} items={educationItems} onEdit={() => onEditStep(3)} />
+        <ReviewSection title="Marriage & Family" stepIndex={5} items={marriageItems} onEdit={() => onEditStep(5)} />
+        <ReviewSection title="Lifestyle" stepIndex={6} items={lifestyleItems} onEdit={() => onEditStep(6)} />
+        <ReviewSection title="About You" stepIndex={7} items={aboutItems} onEdit={() => onEditStep(7)} />
+        <ReviewSection title="Partner Preferences" stepIndex={8} items={prefItems} onEdit={() => onEditStep(8)} />
         <ReviewSection
           title="Profile Photo"
           stepIndex={PHOTO_STEP_INDEX}
@@ -259,7 +250,7 @@ export function QuestionnaireReview({
               value: profile.profileImageId || profile.imageUrl ? ui("uploaded") : "—",
             },
           ]}
-          onEdit={onEditStep}
+          onEdit={() => onEditStep(PHOTO_STEP_INDEX)}
         />
 
       </CardContent>

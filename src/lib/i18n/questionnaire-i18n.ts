@@ -154,9 +154,13 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     en: "Would you marry a man who already has a wife?",
     so: "Ma guursan lahayd nin horey xaas u lahaa?",
   },
+  acceptPreviouslyMarriedMan: {
+    en: "Would you accept a man who was previously married?",
+    so: "Ma aqbalaysaa nin horay guur usoo maray?",
+  },
   acceptFutureCoWife: {
     en: "Would you accept if your husband marries another wife later?",
-    so: "Ma aqbashaa in ninkaagu mustaqbalka guursado xaas kale?",
+    so: "Ma aqbalaysaa in ninkaagu mustaqbalka guursado xaas kale?",
   },
   languagesSpoken: {
     en: "Languages you speak",
@@ -282,7 +286,7 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   // Love languages
   "Words of Affirmation": {
     en: "Words of Affirmation",
-    so: "Erayo dhiira gali iyo amaan",
+    so: "Erayo dhiiri galin iyo amaan",
   },
   "Acts of Service": { en: "Acts of Service", so: "Ficil naxariis ah" },
   "Receiving Gifts": { en: "Receiving Gifts", so: "Hadiyadaha" },
@@ -382,11 +386,11 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   },
   "Want to continue working after marriage": {
     en: "Want to continue working after marriage",
-    so: "Waxaan rabaa inaan guurka kadib shaqeyto",
+    so: "In aan shaqaysto",
   },
   "Open to either — depends on agreement": {
     en: "Open to either — depends on agreement",
-    so: "Labada heerba waan furan ahay — waxay ku xiran tahay heshiis",
+    so: "Waxay ku xirantahay heshiis",
   },
   // Max distance
   "Same City": { en: "Same City", so: "Isla Magaalada" },

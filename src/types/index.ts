@@ -32,6 +32,7 @@ export interface Profile {
   hasCurrentWife?: string;
   openToSecondWife?: string;
   acceptManWithWife?: string;
+  acceptPreviouslyMarriedMan?: string;
   acceptFutureCoWife?: string;
   languagesSpoken?: string[];
   citizenshipStatus?: string;

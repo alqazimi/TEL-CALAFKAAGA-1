@@ -240,6 +240,10 @@ export default function QuestionnairePage() {
     currentStep !== null &&
     (fieldIndex > 0 || currentStep > 0);
 
+  const handleEditGender = () => {
+    router.push("/register/details?editGender=1");
+  };
+
   const handleEditStep = (stepIndex: number) => {
     setPhaseComplete(null);
     const stepConfig = STEPS[stepIndex];
@@ -432,6 +436,7 @@ export default function QuestionnairePage() {
               profile={profile}
               preferences={preferences}
               onEditStep={handleEditStep}
+              onEditGender={handleEditGender}
               onComplete={handleComplete}
               isEditMode={isEditMode}
             />

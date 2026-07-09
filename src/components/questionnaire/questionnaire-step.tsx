@@ -22,7 +22,7 @@ import {
 import { toast } from "sonner";
 import type { Preferences } from "@/lib/profile-progress";
 import type { Profile } from "@/types";
-import { getCitiesForCountry, CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
+import { getCitiesForCountry } from "@/lib/constants";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import { useTranslation } from "@/lib/i18n/context";
 import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
@@ -318,17 +318,6 @@ export function QuestionnaireStep({
     (country: string, city: string) => {
       setSelects((prev) => ({ ...prev, country, city }));
       setSelectedCountry(country);
-      if (
-        CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
-          country as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
-        )
-      ) {
-        setRadios((prev) => {
-          const next = { ...prev };
-          delete next.citizenshipStatus;
-          return next;
-        });
-      }
       setFieldErrors((prev) => {
         const next = { ...prev };
         delete next.country;
@@ -516,17 +505,6 @@ export function QuestionnaireStep({
             if (field.name === "country") {
               setSelectedCountry(v);
               setSelects((prev) => ({ ...prev, city: "" }));
-              if (
-                CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
-                  v as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
-                )
-              ) {
-                setRadios((prev) => {
-                  const next = { ...prev };
-                  delete next.citizenshipStatus;
-                  return next;
-                });
-              }
             }
             clearFieldError(field.name);
             clearFieldError("city");
@@ -742,11 +720,10 @@ export function QuestionnaireStep({
           {renderFieldInput(currentField)}
 
           {(currentField.name === "country" || currentField.name === "city") && (
-            <div className="space-y-3">
+            <div className="space-y-3 pt-1">
               <UseMyLocationButton
                 onDetected={applyDetectedLocation}
                 disabled={isAdvancing}
-                className="w-full h-12 rounded-2xl border-dashed"
               />
               {selects.country && selects.city && (
                 <p className="text-sm text-muted-foreground text-center">

@@ -49,6 +49,7 @@ export async function createUserProfile(
     hasCurrentWife: "",
     openToSecondWife: "",
     acceptManWithWife: "",
+    acceptPreviouslyMarriedMan: "",
     acceptFutureCoWife: "",
     languagesSpoken: [],
     citizenshipStatus: "",

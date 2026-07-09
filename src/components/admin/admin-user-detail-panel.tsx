@@ -291,8 +291,8 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                         ]
                       : [
                           {
-                            label: t("adminDetail.acceptManWithWife"),
-                            value: detail.profile.acceptManWithWife || "—",
+                            label: t("adminDetail.acceptPreviouslyMarriedMan"),
+                            value: detail.profile.acceptPreviouslyMarriedMan || "—",
                           },
                           {
                             label: t("adminDetail.acceptFutureCoWife"),

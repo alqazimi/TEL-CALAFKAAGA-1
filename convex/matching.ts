@@ -167,6 +167,8 @@ export function calculateCompatibilityBreakdown(
   push("children", childrenScore, 8);
 
   let maritalScore = 0;
+  const candidatePreviouslyMarried =
+    candidate.maritalStatus === "Divorced" || candidate.maritalStatus === "Widowed";
   if (candidate.maritalStatus === "Never married" || candidate.maritalStatus === "Never Married") {
     maritalScore = 5;
   } else if (candidate.maritalStatus === "Divorced") {
@@ -177,6 +179,15 @@ export function calculateCompatibilityBreakdown(
     if (userPrefs.acceptWidow === "No") maritalScore = 0;
     else if (userPrefs.acceptWidow === "Yes") maritalScore = 5;
     else maritalScore = 4;
+  }
+  if (
+    user.gender === "female" &&
+    candidatePreviouslyMarried &&
+    user.acceptPreviouslyMarriedMan
+  ) {
+    if (user.acceptPreviouslyMarriedMan === "No") maritalScore = 0;
+    else if (user.acceptPreviouslyMarriedMan === "Yes") maritalScore = Math.max(maritalScore, 5);
+    else maritalScore = Math.max(maritalScore, 4);
   }
   push("maritalStatus", maritalScore, 5);
 
@@ -333,17 +344,14 @@ function polygynyCompatibilityScore(user: Profile, candidate: Profile): number {
   const usesNewFields =
     !!man.hasCurrentWife ||
     !!man.openToSecondWife ||
-    !!woman.acceptManWithWife ||
     !!woman.acceptFutureCoWife;
 
   if (!usesNewFields) {
     return polygynyScore(user.polygynyOpenness, candidate.polygynyOpenness);
   }
 
-  const currentWifeScore = scorePolygynyAlignment(
-    man.hasCurrentWife === "Yes",
-    woman.acceptManWithWife
-  );
+  const currentWifeScore =
+    man.hasCurrentWife === "Yes" ? 0.5 : 1;
   const futureWifeScore = scorePolygynyAlignment(
     man.openToSecondWife === "Yes" || man.openToSecondWife === "Maybe",
     woman.acceptFutureCoWife,
@@ -389,6 +397,7 @@ export interface Profile {
   hasCurrentWife?: string;
   openToSecondWife?: string;
   acceptManWithWife?: string;
+  acceptPreviouslyMarriedMan?: string;
   acceptFutureCoWife?: string;
   languagesSpoken?: string[];
   citizenshipStatus?: string;

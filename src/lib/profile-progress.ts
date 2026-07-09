@@ -1,7 +1,6 @@
 import type { Profile } from "@/types";
 import { ABOUT_YOU_STEP_COUNT, CONTACT_STEP_INDEX, PHOTO_STEP_INDEX, STEPS } from "@/components/questionnaire/steps";
 
-import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { isValidContactPhone } from "@/lib/phone";
 
 export interface Preferences {
@@ -45,12 +44,11 @@ export function isMarriageComplete(profile: Profile): boolean {
     profile.gender === "male"
       ? !!(profile.hasCurrentWife && profile.openToSecondWife) ||
         !!profile.polygynyOpenness
-      : !!(profile.acceptManWithWife && profile.acceptFutureCoWife) ||
+      : !!(profile.acceptPreviouslyMarriedMan && profile.acceptFutureCoWife) ||
         !!profile.polygynyOpenness;
   return (
     !!profile.maritalStatus &&
     !!profile.wantChildren &&
-    !!profile.familyInvolvement &&
     polygynyOk
   );
 }
@@ -64,18 +62,12 @@ export function isEducationComplete(profile: Profile): boolean {
 }
 
 export function isBasicComplete(profile: Profile): boolean {
-  const needsCitizenship =
-    !!profile.country &&
-    !CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
-      profile.country as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
-    );
   return (
     profile.age > 0 &&
     !!profile.country &&
     !!profile.city &&
     profile.height > 0 &&
     profile.weight > 0 &&
-    (!needsCitizenship || !!profile.citizenshipStatus) &&
     (profile.languagesSpoken?.length ?? 0) > 0
   );
 }
@@ -85,16 +77,11 @@ export function isReligiousComplete(profile: Profile): boolean {
   if (profile.gender === "female") {
     return base && profile.wearsHijab !== undefined;
   }
-  if (profile.gender === "male") {
-    return base && profile.hasBeard !== undefined;
-  }
   return base;
 }
 
 export function isAboutYouComplete(profile: Profile): boolean {
   return (
-    !!profile.readyToRelocate &&
-    !!profile.livingSituation &&
     !!profile.marriageTimeline &&
     !!profile.loveLanguage &&
     (profile.qualities?.length ?? 0) > 0 &&
@@ -197,7 +184,6 @@ export function getSectionStatus(
       profile.age > 0 ||
       !!profile.country ||
       !!profile.city ||
-      !!profile.citizenshipStatus ||
       (profile.languagesSpoken?.length ?? 0) > 0,
     religious: !!profile.prayerFrequency,
     education:
@@ -208,16 +194,13 @@ export function getSectionStatus(
     marriage:
       !!profile.maritalStatus ||
       !!profile.wantChildren ||
-      !!profile.familyInvolvement ||
       !!profile.polygynyOpenness ||
       !!profile.hasCurrentWife ||
       !!profile.openToSecondWife ||
-      !!profile.acceptManWithWife ||
+      !!profile.acceptPreviouslyMarriedMan ||
       !!profile.acceptFutureCoWife,
     lifestyle: profile.smokes === "Yes" || profile.smokes === "No",
     about:
-      !!profile.readyToRelocate ||
-      !!profile.livingSituation ||
       !!profile.marriageTimeline ||
       !!profile.loveLanguage,
     preferences:

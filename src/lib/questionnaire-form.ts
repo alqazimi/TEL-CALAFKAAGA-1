@@ -1,5 +1,4 @@
 import type { FieldConfig, StepConfig } from "@/components/questionnaire/steps";
-import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { isValidContactName, isValidContactPhone } from "@/lib/phone";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
@@ -83,6 +82,9 @@ export function initFormState(
   if (profile.hasCurrentWife) radios.hasCurrentWife = profile.hasCurrentWife;
   if (profile.openToSecondWife) radios.openToSecondWife = profile.openToSecondWife;
   if (profile.acceptManWithWife) radios.acceptManWithWife = profile.acceptManWithWife;
+  if (profile.acceptPreviouslyMarriedMan) {
+    radios.acceptPreviouslyMarriedMan = profile.acceptPreviouslyMarriedMan;
+  }
   if (profile.acceptFutureCoWife) radios.acceptFutureCoWife = profile.acceptFutureCoWife;
   if (profile.citizenshipStatus) radios.citizenshipStatus = profile.citizenshipStatus;
   if (profile.financialReadiness) radios.financialReadiness = profile.financialReadiness;
@@ -287,15 +289,6 @@ export function buildStepData(
       const hasChildren = radios.hasChildren ?? getFieldValue("hasChildren", profile, radios, selects);
       data.children = hasChildren === "Yes" ? 1 : 0;
     }
-  }
-
-  const country = selects.country ?? profile?.country ?? "";
-  if (
-    CITIZENSHIP_NOT_REQUIRED_COUNTRIES.includes(
-      country as (typeof CITIZENSHIP_NOT_REQUIRED_COUNTRIES)[number]
-    )
-  ) {
-    data.citizenshipStatus = "";
   }
 
   if (

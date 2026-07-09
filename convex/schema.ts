@@ -53,6 +53,7 @@ export default defineSchema({
     hasCurrentWife: v.optional(v.string()),
     openToSecondWife: v.optional(v.string()),
     acceptManWithWife: v.optional(v.string()),
+    acceptPreviouslyMarriedMan: v.optional(v.string()),
     acceptFutureCoWife: v.optional(v.string()),
     languagesSpoken: v.optional(v.array(v.string())),
     citizenshipStatus: v.optional(v.string()),

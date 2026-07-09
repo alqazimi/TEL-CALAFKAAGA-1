@@ -268,7 +268,15 @@ export function ProfileEditScreen({
                 </div>
               ) : (
                 <>
-                  <p className="text-muted-foreground capitalize mt-1">{profile.gender}</p>
+                  <div className="flex items-center justify-center sm:justify-start gap-2 mt-1">
+                    <p className="text-muted-foreground capitalize">{profile.gender}</p>
+                    <Link
+                      href="/register/details?editGender=1"
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      {t("common.edit")}
+                    </Link>
+                  </div>
                   <TrustBadges profile={profile} className="mt-2 justify-center sm:justify-start" />
                 </>
               )}

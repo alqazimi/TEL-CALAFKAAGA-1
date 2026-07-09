@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
+import { ChevronLeft } from "lucide-react";
 import { api } from "../../../../../convex/_generated/api";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { RegisterStepIndicator } from "@/components/auth/register-step-indicator";
@@ -20,6 +21,8 @@ import { useTranslation } from "@/lib/i18n/context";
 
 export default function RegisterDetailsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEditGender = searchParams.get("editGender") === "1";
   const { t } = useTranslation();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const user = useQuery(api.users.currentUser);
@@ -33,10 +36,10 @@ export default function RegisterDetailsPage() {
       router.replace("/register");
       return;
     }
-    if (user?.profile?.registrationComplete !== false) {
+    if (!isEditGender && user?.profile?.registrationComplete !== false) {
       router.replace(getAuthenticatedHomeRoute(user?.profile ?? undefined));
     }
-  }, [authLoading, isAuthenticated, user?.profile, router]);
+  }, [authLoading, isAuthenticated, isEditGender, user?.profile, router]);
 
   useEffect(() => {
     const profileGender = user?.profile?.gender;
@@ -54,8 +57,14 @@ export default function RegisterDetailsPage() {
     setLoading(true);
     try {
       await completeGender({ gender });
-      toast.success(t("auth.registerGenderSuccess"));
-      router.push("/questionnaire?welcome=true");
+      toast.success(
+        isEditGender ? t("auth.genderUpdated") : t("auth.registerGenderSuccess")
+      );
+      if (isEditGender) {
+        router.push("/questionnaire?edit=1");
+      } else {
+        router.push("/questionnaire?welcome=true");
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : t("validation.saveDetailsFailed")
@@ -78,7 +87,7 @@ export default function RegisterDetailsPage() {
     );
   }
 
-  if (user?.profile?.registrationComplete !== false) {
+  if (!isEditGender && user?.profile?.registrationComplete !== false) {
     return (
       <div className="auth-bg flex min-h-[calc(100dvh-var(--app-header))] items-center justify-center px-4">
         <div className="w-full max-w-md space-y-4 text-center">
@@ -93,8 +102,10 @@ export default function RegisterDetailsPage() {
 
   return (
     <AuthShell
-      title={t("auth.registerStep2Title")}
-      description={t("auth.registerStep2Desc")}
+      title={isEditGender ? t("auth.changeGenderTitle") : t("auth.registerStep2Title")}
+      description={
+        isEditGender ? t("auth.changeGenderDesc") : t("auth.registerStep2Desc")
+      }
       footer={
         <p className="text-center text-sm text-muted-foreground">
           {t("auth.wrongAccount")}{" "}
@@ -104,9 +115,21 @@ export default function RegisterDetailsPage() {
         </p>
       }
     >
-      <RegisterStepIndicator step={2} />
+      {!isEditGender && <RegisterStepIndicator step={2} />}
 
       <div className="space-y-6">
+        {isEditGender && (
+          <Button
+            type="button"
+            variant="ghost"
+            className="px-0 -mt-2 text-muted-foreground hover:text-foreground"
+            onClick={() => router.back()}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            {t("common.back")}
+          </Button>
+        )}
+
         <GenderSelectCards
           value={gender}
           maleLabel={t("auth.male")}
@@ -115,6 +138,10 @@ export default function RegisterDetailsPage() {
           onChange={setGender}
         />
 
+        <p className="text-sm text-center text-muted-foreground">
+          {t("auth.genderChangeHint")}
+        </p>
+
         <Button
           type="button"
           className="w-full font-semibold"
@@ -122,7 +149,11 @@ export default function RegisterDetailsPage() {
           disabled={loading || !gender}
           onClick={() => void onContinue()}
         >
-          {loading ? t("auth.savingDetails") : t("auth.continueToQuestionnaire")}
+          {loading
+            ? t("auth.savingDetails")
+            : isEditGender
+              ? t("auth.saveGender")
+              : t("auth.continueToQuestionnaire")}
         </Button>
       </div>
     </AuthShell>

@@ -71,9 +71,6 @@ export const OCCUPATIONS = [
   "Full Time",
   "Part Time",
   "Business Owner",
-  "Student",
-  "Unemployed",
-  "Retired",
 ] as const;
 
 export const MARITAL_STATUS = [
