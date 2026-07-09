@@ -14,7 +14,6 @@ export interface Preferences {
   acceptDivorcee?: string;
   acceptWidow?: string;
   acceptChildren?: string;
-  maxDistance?: string;
   partnerBeard?: string;
   partnerHijabLevel?: string;
 }
@@ -126,9 +125,7 @@ export function isPreferencesComplete(
     prefs.minHeight !== undefined &&
     prefs.maxHeight !== undefined &&
     !!prefs.educationLevel &&
-    !!prefs.religiousLevel &&
     childrenOk &&
-    !!prefs.maxDistance &&
     (prefs.preferredCountries?.length ?? 0) > 0 &&
     divorceeOk &&
     widowOk
@@ -206,7 +203,6 @@ export function getSectionStatus(
     preferences:
       !!profile.spousePrayerImportance ||
       !!prefs?.educationLevel ||
-      !!prefs?.religiousLevel ||
       !!prefs?.partnerHijabLevel ||
       (prefs?.preferredCountries?.length ?? 0) > 0,
     contact: isContactComplete(profile),

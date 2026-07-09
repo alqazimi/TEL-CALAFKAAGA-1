@@ -2,7 +2,6 @@ import {
   AGE_OPTIONS,
   HEIGHT_OPTIONS,
   WEIGHT_OPTIONS,
-  RELIGIOUS_LEVELS,
   PRAYER_FREQUENCY,
   SPOUSE_PRAYER_IMPORTANCE,
   EDUCATION_LEVELS,
@@ -20,7 +19,6 @@ import {
   LANGUAGES_SPOKEN,
   FINANCIAL_READINESS,
   MARRIAGE_WORK_PREFERENCE,
-  MAX_DISTANCE,
   QUALITIES,
   HOBBIES,
 } from "@/lib/constants";
@@ -286,7 +284,6 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
       { name: "pref_maxHeight", label: "Preferred Max Height", type: "select", options: HEIGHT_OPTIONS, preferences: true, required: true },
       { name: "pref_preferredCountries", label: "Preferred Countries", type: "country-multi", preferences: true, required: true },
       { name: "pref_educationLevel", label: "Preferred Education", type: "radio", options: EDUCATION_LEVELS, preferences: true, required: true },
-      { name: "pref_religiousLevel", label: "Preferred Religious Level", type: "radio", options: RELIGIOUS_LEVELS, preferences: true, required: true },
       {
         name: "pref_acceptChildren",
         label: "Accept someone with children?",
@@ -296,7 +293,6 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
         hideWhen: { field: "marrySomeoneWithChildren", values: ["No"] },
         required: true,
       },
-      { name: "pref_maxDistance", label: "Maximum Distance", type: "radio", options: MAX_DISTANCE, preferences: true, required: true },
     ],
   },
 ];

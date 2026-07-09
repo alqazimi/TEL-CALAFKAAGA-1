@@ -45,6 +45,7 @@ export default function QuestionnairePage() {
   const updateQuestionnaire = useMutation(api.profiles.updateQuestionnaire);
   const autoSaveProfile = useMutation(api.profiles.autoSaveProfile);
   const saveProfileEdits = useMutation(api.profiles.saveProfileEdits);
+  const ensureProfile = useMutation(api.profiles.ensureProfile);
   const { ui } = useQuestionnaireI18n();
   const { t } = useTranslation();
   const welcome = searchParams.get("welcome") === "true";
@@ -58,16 +59,24 @@ export default function QuestionnairePage() {
     number | null
   >(null);
   const skipFieldResumeRef = useRef(false);
+  const ensureProfileAttemptedRef = useRef(false);
 
-  const autoStep = useMemo(() => {
+  useEffect(() => {
+    if (profile !== null || ensureProfileAttemptedRef.current) return;
+    ensureProfileAttemptedRef.current = true;
+    void ensureProfile().catch(() => {
+      ensureProfileAttemptedRef.current = false;
+    });
+  }, [profile, ensureProfile]);
+
+  const currentStep = useMemo(() => {
+    if (stepOverride !== null) return stepOverride;
     if (!profile) return null;
     if (isEditMode) return REVIEW_STEP_INDEX;
     if (profile.questionnaireComplete) return null;
-    const resume = getResumeStepIndex(profile, preferences);
+    const resume = getResumeStepIndex(profile, preferences ?? null);
     return resume >= REVIEW_STEP_INDEX ? REVIEW_STEP_INDEX : resume;
-  }, [profile, preferences, isEditMode]);
-
-  const currentStep = stepOverride ?? autoStep;
+  }, [stepOverride, profile, preferences, isEditMode]);
   const isReviewStep = currentStep === REVIEW_STEP_INDEX;
 
   const formStateForNav = useMemo(

@@ -45,31 +45,6 @@ function spousePrayerScore(
   return 3;
 }
 
-function distanceScore(
-  user: Profile,
-  userPrefs: Preferences,
-  candidate: Profile
-): number {
-  const maxDistance = userPrefs.maxDistance;
-  if (!maxDistance || maxDistance === "Worldwide") return 5;
-
-  const sameCountry =
-    user.country && candidate.country && user.country === candidate.country;
-  const sameCity =
-    sameCountry &&
-    user.city &&
-    candidate.city &&
-    user.city.toLowerCase() === candidate.city.toLowerCase();
-
-  if (maxDistance === "Same City") {
-    return sameCity ? 5 : sameCountry ? 2 : 0;
-  }
-  if (maxDistance === "Same Country") {
-    return sameCountry ? 5 : 0;
-  }
-  return 3;
-}
-
 function relocateScore(user: Profile, candidate: Profile): number {
   const userReady = user.readyToRelocate;
   const candReady = candidate.readyToRelocate;
@@ -102,10 +77,6 @@ export function calculateCompatibilityBreakdown(
   const relDiff = Math.abs(userRel - candRel);
   push("religion", Math.max(0, 25 - relDiff * 8), 25);
 
-  const prefRel = RELIGIOUS_SCORES[userPrefs.religiousLevel] ?? 2;
-  const prefDiff = Math.abs(prefRel - candRel);
-  push("religiousPreference", Math.max(0, 5 - prefDiff * 2), 5);
-
   push(
     "prayer",
     spousePrayerScore(user.spousePrayerImportance, candidate.prayerFrequency),
@@ -134,8 +105,6 @@ export function calculateCompatibilityBreakdown(
     countryScore = 4;
   }
   push("country", countryScore, 8);
-
-  push("distance", distanceScore(user, userPrefs, candidate), 5);
 
   let heightScore = 0;
   if (candidate.height >= userPrefs.minHeight && candidate.height <= userPrefs.maxHeight) {
@@ -416,10 +385,8 @@ export interface Preferences {
   preferredCountries: string[];
   acceptChildren: string;
   educationLevel: string;
-  religiousLevel: string;
   acceptDivorcee: string;
   acceptWidow: string;
-  maxDistance: string;
   preferredGender: "male" | "female";
   qualities: string[];
   hobbies: string[];

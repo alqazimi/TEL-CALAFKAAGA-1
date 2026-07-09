@@ -193,12 +193,6 @@ export const MARRIAGE_WORK_PREFERENCE = [
   "Prefer not to say",
 ] as const;
 
-export const MAX_DISTANCE = [
-  "Same City",
-  "Same Country",
-  "Worldwide",
-] as const;
-
 export const QUALITIES = [
   "Religious",
   "Honest",

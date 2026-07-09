@@ -189,11 +189,9 @@ export function QuestionnaireReview({
         { label: "Preferred Height", value: `${preferences.minHeight ?? "—"} – ${preferences.maxHeight ?? "—"} cm` },
         { label: "Preferred Countries", value: preferences.preferredCountries?.length ? preferences.preferredCountries.join(", ") : ui("anyValue") },
         { label: "Preferred Education", value: preferences.educationLevel || "—" },
-        { label: "Preferred Religious Level", value: preferences.religiousLevel || "—" },
         ...(profile.marrySomeoneWithChildren !== "No"
           ? [{ label: "Accept Children", value: preferences.acceptChildren || "—" }]
           : []),
-        { label: "Max Distance", value: preferences.maxDistance || "—" },
       ]
       : []),
   ];

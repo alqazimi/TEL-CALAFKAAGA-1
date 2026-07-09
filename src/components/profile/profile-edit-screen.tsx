@@ -26,6 +26,7 @@ import { PhoneNumberInput } from "@/components/ui/phone-number-input";
 import { FormField } from "@/components/ui/form-field";
 import { Badge } from "@/components/ui/badge";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { ProfilePhotoPreview } from "@/components/profile/profile-photo-preview";
 import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { ChangePasswordCard } from "@/components/profile/change-password-card";
@@ -206,20 +207,16 @@ export function ProfileEditScreen({
               <button
                 type="button"
                 onClick={() => openGallery(0)}
-                disabled={!profile.imageUrl}
+                disabled={!profile.imageUrl && !profile.profileImageId}
                 className="block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg disabled:cursor-default"
               >
-                {profile.imageUrl ? (
-                  <LazyImage
-                    src={profile.imageUrl}
-                    alt={profile.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-muted flex items-center justify-center text-3xl font-semibold">
-                    {profile.name.charAt(0)}
-                  </div>
-                )}
+                <ProfilePhotoPreview
+                  imageUrl={profile.imageUrl}
+                  hasStoredPhoto={!!profile.profileImageId}
+                  alt={profile.name}
+                  fallbackInitial={profile.name}
+                  className="h-full w-full"
+                />
               </button>
               {!isStaff && (
                 <>

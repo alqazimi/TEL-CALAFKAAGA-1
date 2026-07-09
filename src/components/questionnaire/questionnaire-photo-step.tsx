@@ -7,7 +7,7 @@ import { Camera, Loader2, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import type { Profile } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfilePhotoPreview } from "@/components/profile/profile-photo-preview";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 
 interface QuestionnairePhotoStepProps {
@@ -24,6 +24,7 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(profile.imageUrl ?? null);
   const hasPhoto = !!profile.profileImageId || !!previewUrl;
+  const displayUrl = previewUrl ?? profile.imageUrl ?? null;
 
   useEffect(() => {
     if (profile.imageUrl) {
@@ -78,12 +79,21 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
       </p>
 
       <div className="relative mb-8">
-        <Avatar className="h-40 w-40 sm:h-48 sm:w-48 border-4 border-background shadow-xl ring-2 ring-border">
-          <AvatarImage src={previewUrl ?? undefined} alt={profile.name} />
-          <AvatarFallback className="text-4xl bg-muted">
-            <User className="h-16 w-16 text-muted-foreground" />
-          </AvatarFallback>
-        </Avatar>
+        <div className="h-40 w-40 sm:h-48 sm:w-48 rounded-full overflow-hidden border-4 border-background shadow-xl ring-2 ring-border">
+          {displayUrl || profile.profileImageId ? (
+            <ProfilePhotoPreview
+              imageUrl={displayUrl}
+              hasStoredPhoto={!!profile.profileImageId}
+              alt={profile.name}
+              fallbackInitial={profile.name}
+              className="h-full w-full rounded-full"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-muted">
+              <User className="h-16 w-16 text-muted-foreground" />
+            </div>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}

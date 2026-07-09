@@ -194,27 +194,23 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     en: "Would you marry someone with children?",
     so: "Ma guursan lahayd qof carruur leh?",
   },
-  pref_minAge: { en: "Preferred Min Age", so: "Da'da ugu Yar ee la Doorbidayo" },
-  pref_maxAge: { en: "Preferred Max Age", so: "Da'da ugu Badan ee la Doorbidayo" },
+  pref_minAge: { en: "Preferred Min Age", so: "Da'da ugu Yar ee aad rabtid" },
+  pref_maxAge: { en: "Preferred Max Age", so: "Da'da ugu Badan ee aad rabtid" },
   pref_minHeight: {
     en: "Preferred Min Height",
-    so: "Dhererka ugu Gaaban ee la Doorbidayo",
+    so: "Dhererka ugu Gaaban ee aad rabtid",
   },
   pref_maxHeight: {
     en: "Preferred Max Height",
-    so: "Dhererka ugu Dheer ee la Doorbidayo",
+    so: "Dhererka ugu Dheer ee aad rabtid",
   },
   pref_preferredCountries: {
     en: "Preferred Countries",
-    so: "Dalalka la Doorbidayo",
+    so: "Dalalka aad rabtid",
   },
   pref_educationLevel: {
     en: "Preferred Education",
-    so: "Waxbarashada la Doorbidayo",
-  },
-  pref_religiousLevel: {
-    en: "Preferred Religious Level",
-    so: "Heerka Diineed ee la Doorbidayo",
+    so: "Waxbarashada aad rabtid",
   },
   pref_acceptDivorcee: {
     en: "Accept someone who is divorced?",
@@ -228,7 +224,6 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     en: "Accept someone with children?",
     so: "Ma aqbali lahayd qof carruur leh?",
   },
-  pref_maxDistance: { en: "Maximum Distance", so: "Masaafada ugu Badan" },
 };
 
 /** Option value translations keyed by the stored English value. */
@@ -245,7 +240,7 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   Rarely: { en: "Rarely", so: "Dhif iyo naadir" },
   // Spouse prayer importance
   "Very important": { en: "Very important", so: "Aad muhiim u ah" },
-  Preferred: { en: "Preferred", so: "La doorbidayo" },
+  Preferred: { en: "Preferred", so: "Aad rabtid" },
   "No preference": { en: "No preference", so: "Doorbid ma jiro" },
   // Education levels
   "High School": { en: "High School", so: "Dugsi Sare" },
@@ -334,14 +329,14 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   },
   "Prefer not to say": { en: "Prefer not to say", so: "Ma doonayo inaan sheego" },
   // Beard / hijab preferences
-  "Beard preferred": { en: "Beard preferred", so: "Gad la doorbido" },
+  "Beard preferred": { en: "Beard preferred", so: "Gad aad rabtid" },
   "Beard required": { en: "Beard required", so: "Gad waa loo baahan yahay" },
-  "No beard preferred": { en: "No beard preferred", so: "Gad la'aan la doorbido" },
-  "Hijab preferred": { en: "Hijab preferred", so: "Xijaab la doorbido" },
-  "Niqab preferred": { en: "Niqab preferred", so: "Niqaab la doorbido" },
+  "No beard preferred": { en: "No beard preferred", so: "Gad la'aan aad rabtid" },
+  "Hijab preferred": { en: "Hijab preferred", so: "Xijaab aad rabtid" },
+  "Niqab preferred": { en: "Niqab preferred", so: "Niqaab aad rabtid" },
   "Hijab or niqab preferred": {
     en: "Hijab or niqab preferred",
-    so: "Xijaab ama niqaab la doorbido",
+    so: "Xijaab ama niqaab aad rabtid",
   },
   // Languages
   Somali: { en: "Somali", so: "Soomaali" },
@@ -392,10 +387,6 @@ const OPTION_LABELS: Record<string, Bilingual> = {
     en: "Open to either — depends on agreement",
     so: "Waxay ku xirantahay heshiis",
   },
-  // Max distance
-  "Same City": { en: "Same City", so: "Isla Magaalada" },
-  "Same Country": { en: "Same Country", so: "Isla Dalka" },
-  Worldwide: { en: "Worldwide", so: "Adduunka oo dhan" },
   // Qualities
   Religious: { en: "Religious", so: "Diinsan" },
   Honest: { en: "Honest", so: "Daacad" },
@@ -494,18 +485,13 @@ const REVIEW_LABELS: Record<string, Bilingual> = {
     en: "Marry Someone With Children",
     so: "Guur Qof Carruur Leh",
   },
-  "Preferred Age": { en: "Preferred Age", so: "Da'da la Doorbidayo" },
-  "Preferred Height": { en: "Preferred Height", so: "Dhererka la Doorbidayo" },
-  "Preferred Countries": { en: "Preferred Countries", so: "Dalalka la Doorbidayo" },
-  "Preferred Education": { en: "Preferred Education", so: "Waxbarashada la Doorbidayo" },
-  "Preferred Religious Level": {
-    en: "Preferred Religious Level",
-    so: "Heerka Diineed la Doorbidayo",
-  },
+  "Preferred Age": { en: "Preferred Age", so: "Da'da aad rabtid" },
+  "Preferred Height": { en: "Preferred Height", so: "Dhererka aad rabtid" },
+  "Preferred Countries": { en: "Preferred Countries", so: "Dalalka aad rabtid" },
+  "Preferred Education": { en: "Preferred Education", so: "Waxbarashada aad rabtid" },
   "Accept Divorcee": { en: "Accept Divorcee", so: "Aqbal Qof La Furay" },
   "Accept Widow": { en: "Accept Widow", so: "Aqbal Qof Carmal ah" },
   "Accept Children": { en: "Accept Children", so: "Aqbal Carruur" },
-  "Max Distance": { en: "Max Distance", so: "Masaafada ugu Badan" },
   Photo: { en: "Photo", so: "Sawir" },
 };
 
@@ -555,7 +541,7 @@ const UI_TEXT = {
   },
   prefsSaved: {
     en: "Partner preferences saved",
-    so: "Doorbidyada lammaanaha waa la kaydiyay",
+    so: "Xulushada lamaanaha waa la kaydiyay",
   },
   part1Desc: {
     en: "Great work — you've finished telling us about yourself. Next, share what you're looking for in a spouse.",
@@ -563,7 +549,7 @@ const UI_TEXT = {
   },
   part2Desc: {
     en: "You've finished both parts of your profile. Review your answers one last time, then submit.",
-    so: "Waxaad dhammaysay labada qaybood ee profile-kaaga. Dib u eeg jawaabahaaga mar u dambaysa, ka dibna gudbi.",
+    so: "Waxaad dhammaysay labada qaybood ee profile-kaaga. Dib u eeg jawaabahaaga marka ugu dambeyso ka dibna gudbi.",
   },
   aboutYouChip: { en: "About you", so: "Wax kugu saabsan" },
   partnerPrefsChip: { en: "Partner preferences", so: "Doorbidyada lammaanaha" },

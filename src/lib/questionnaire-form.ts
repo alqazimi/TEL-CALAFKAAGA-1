@@ -100,11 +100,9 @@ export function initFormState(
     if (preferences.minHeight) selects.pref_minHeight = String(preferences.minHeight);
     if (preferences.maxHeight) selects.pref_maxHeight = String(preferences.maxHeight);
     if (preferences.educationLevel) radios.pref_educationLevel = preferences.educationLevel;
-    if (preferences.religiousLevel) radios.pref_religiousLevel = preferences.religiousLevel;
     if (preferences.acceptDivorcee) radios.pref_acceptDivorcee = preferences.acceptDivorcee;
     if (preferences.acceptWidow) radios.pref_acceptWidow = preferences.acceptWidow;
     if (preferences.acceptChildren) radios.pref_acceptChildren = preferences.acceptChildren;
-    if (preferences.maxDistance) radios.pref_maxDistance = preferences.maxDistance;
     if (preferences.partnerBeard) radios.pref_partnerBeard = preferences.partnerBeard;
     if (preferences.partnerHijabLevel) radios.pref_partnerHijabLevel = preferences.partnerHijabLevel;
     if (preferences.preferredCountries?.length) {

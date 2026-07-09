@@ -413,10 +413,6 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                         label: t("adminDetail.preferredEducation"),
                         value: detail.preferences.educationLevel || "—",
                       },
-                      {
-                        label: t("adminDetail.preferredReligiousLevel"),
-                        value: detail.preferences.religiousLevel || "—",
-                      },
                       ...(detail.profile.gender === "male"
                         ? [
                             {
@@ -431,10 +427,6 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                             value: detail.preferences.acceptChildren || "—",
                           }]
                         : []),
-                      {
-                        label: t("adminDetail.maxDistance"),
-                        value: detail.preferences.maxDistance || "—",
-                      },
                     ]}
                   />
                 </DetailSection>

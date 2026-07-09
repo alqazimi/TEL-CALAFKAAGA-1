@@ -181,6 +181,14 @@ export function QuestionnaireStep({
   const isLastField = safeFieldIndex >= visibleFields.length - 1;
 
   useEffect(() => {
+    setIsAdvancing(false);
+    if (autoAdvanceRef.current) {
+      clearTimeout(autoAdvanceRef.current);
+      autoAdvanceRef.current = null;
+    }
+  }, [stepId, safeFieldIndex]);
+
+  useEffect(() => {
     const state = initFormState(profileRef.current, preferencesRef.current);
     setSelectedCountry(state.selectedCountry);
     setMultiSelects(state.multiSelects);

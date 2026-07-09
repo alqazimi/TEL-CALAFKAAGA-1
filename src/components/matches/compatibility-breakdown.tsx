@@ -8,11 +8,9 @@ import type { TranslationPath } from "@/lib/i18n/translations";
 
 const COMPAT_LABEL_KEYS: Record<string, TranslationPath> = {
   religion: "premium.compatReligion",
-  religiousPreference: "premium.compatReligiousPreference",
   prayer: "premium.compatPrayer",
   age: "premium.compatAge",
   country: "premium.compatCountry",
-  distance: "premium.compatDistance",
   height: "premium.compatHeight",
   education: "premium.compatEducation",
   children: "premium.compatChildren",
