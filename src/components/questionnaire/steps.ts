@@ -18,7 +18,6 @@ import {
   FAMILY_INVOLVEMENT,
   LIVING_ARRANGEMENT_MALE,
   LIVING_ARRANGEMENT_FEMALE,
-  BEARD_PREFERENCE,
   HIJAB_LEVEL_PREFERENCE,
   POLYGYNY_OPENNESS,
   LANGUAGES_SPOKEN,
@@ -313,15 +312,6 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
         label: "How important is it that your spouse prays regularly?",
         type: "radio",
         options: SPOUSE_PRAYER_IMPORTANCE,
-        required: true,
-      },
-      {
-        name: "pref_partnerBeard",
-        label: "Beard preference for your spouse",
-        type: "radio",
-        options: BEARD_PREFERENCE,
-        preferences: true,
-        condition: { field: "gender", value: "female" },
         required: true,
       },
       {

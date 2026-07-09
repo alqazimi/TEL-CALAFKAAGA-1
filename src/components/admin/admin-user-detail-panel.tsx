@@ -417,14 +417,6 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                         label: t("adminDetail.preferredReligiousLevel"),
                         value: detail.preferences.religiousLevel || "—",
                       },
-                      ...(detail.profile.gender === "female"
-                        ? [
-                            {
-                              label: t("adminDetail.partnerBeard"),
-                              value: detail.preferences.partnerBeard || "—",
-                            },
-                          ]
-                        : []),
                       ...(detail.profile.gender === "male"
                         ? [
                             {

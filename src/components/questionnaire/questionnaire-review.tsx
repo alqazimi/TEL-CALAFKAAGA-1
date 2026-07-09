@@ -188,9 +188,6 @@ export function QuestionnaireReview({
 
   const prefItems = [
     { label: "Spouse Prayer Importance", value: profile.spousePrayerImportance || "—" },
-    ...(profile.gender === "female"
-      ? [{ label: "Partner Beard", value: preferences?.partnerBeard || "—" }]
-      : []),
     ...(profile.gender === "male"
       ? [{ label: "Partner Hijab / Niqab", value: preferences?.partnerHijabLevel || "—" }]
       : []),

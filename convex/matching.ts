@@ -259,13 +259,7 @@ function appearancePrefScore(
   candidate: Profile
 ): number {
   if (user.gender === "female") {
-    const pref = prefs.partnerBeard;
-    if (!pref || pref === "No preference") return 3;
-    if (candidate.hasBeard === true) return 3;
-    if (candidate.hasBeard === false) {
-      return pref === "Beard required" ? 1 : pref === "Beard preferred" ? 2 : 3;
-    }
-    return 2;
+    return 3;
   }
   if (user.gender === "male") {
     const pref = prefs.partnerHijabLevel;

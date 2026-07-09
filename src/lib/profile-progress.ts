@@ -129,11 +129,7 @@ export function isPreferencesComplete(
   const childrenOk =
     profile.marrySomeoneWithChildren === "No" || !!prefs.acceptChildren;
   const appearanceOk =
-    profile.gender === "female"
-      ? !!prefs.partnerBeard
-      : profile.gender === "male"
-        ? !!prefs.partnerHijabLevel
-        : true;
+    profile.gender === "male" ? !!prefs.partnerHijabLevel : true;
   return (
     !!profile.spousePrayerImportance &&
     !!profile.marrySomeoneWithChildren &&
@@ -228,7 +224,6 @@ export function getSectionStatus(
       !!profile.spousePrayerImportance ||
       !!prefs?.educationLevel ||
       !!prefs?.religiousLevel ||
-      !!prefs?.partnerBeard ||
       !!prefs?.partnerHijabLevel ||
       (prefs?.preferredCountries?.length ?? 0) > 0,
     contact: !!profile.name?.trim() || !!profile.phone?.trim(),

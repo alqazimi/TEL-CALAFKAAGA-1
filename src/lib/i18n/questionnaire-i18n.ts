@@ -282,11 +282,11 @@ const OPTION_LABELS: Record<string, Bilingual> = {
   // Love languages
   "Words of Affirmation": {
     en: "Words of Affirmation",
-    so: "Erayada Xaqiijinta",
+    so: "Erayo dhiira gali iyo amaan",
   },
-  "Acts of Service": { en: "Acts of Service", so: "Ficilada Adeegga" },
-  "Receiving Gifts": { en: "Receiving Gifts", so: "Helida Hadiyadaha" },
-  "Quality Time": { en: "Quality Time", so: "Waqtiga Tayada Leh" },
+  "Acts of Service": { en: "Acts of Service", so: "Ficil naxariis ah" },
+  "Receiving Gifts": { en: "Receiving Gifts", so: "Hadiyadaha" },
+  "Quality Time": { en: "Quality Time", so: "Waqtiga" },
   // Want children
   "Already have and open to more": {
     en: "Already have and open to more",
