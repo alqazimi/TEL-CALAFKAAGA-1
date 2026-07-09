@@ -18,7 +18,7 @@ import { QuestionnaireReview } from "@/components/questionnaire/questionnaire-re
 import { QuestionnairePhaseComplete } from "@/components/questionnaire/questionnaire-phase-complete";
 import { QuestionnairePhotoStep } from "@/components/questionnaire/questionnaire-photo-step";
 import { QuestionnaireShell } from "@/components/questionnaire/questionnaire-shell";
-import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX } from "@/components/questionnaire/steps";
+import { STEPS, ABOUT_YOU_STEP_COUNT, PARTNER_PREFERENCES_STEP_INDEX, PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
@@ -44,7 +44,7 @@ export default function QuestionnairePage() {
   const [stepOverride, setStepOverride] = useState<number | null>(
     isEditMode ? REVIEW_STEP_INDEX : null
   );
-  const [phaseComplete, setPhaseComplete] = useState<"about" | null>(null);
+  const [phaseComplete, setPhaseComplete] = useState<"about" | "partner" | null>(null);
 
   const autoStep = useMemo(() => {
     if (!profile) return null;
@@ -93,9 +93,16 @@ export default function QuestionnairePage() {
       }
 
       if (currentStep < REVIEW_STEP_INDEX) {
-        const nextStep = currentStep + 1;
+        if (!isEditMode && currentStep === ABOUT_YOU_STEP_COUNT - 1) {
+          setPhaseComplete("about");
+          return;
+        }
+        if (!isEditMode && currentStep === PHOTO_STEP_INDEX - 1) {
+          setPhaseComplete("partner");
+          return;
+        }
         setPhaseComplete(null);
-        setStepOverride(nextStep);
+        setStepOverride(currentStep + 1);
       }
     } catch {
       toast.error(ui("saveFailedToast"));
@@ -115,8 +122,15 @@ export default function QuestionnairePage() {
   };
 
   const handlePhaseContinue = () => {
-    setPhaseComplete(null);
-    setStepOverride(PARTNER_PREFERENCES_STEP_INDEX);
+    if (phaseComplete === "about") {
+      setPhaseComplete(null);
+      setStepOverride(PARTNER_PREFERENCES_STEP_INDEX);
+      return;
+    }
+    if (phaseComplete === "partner") {
+      setPhaseComplete(null);
+      setStepOverride(PHOTO_STEP_INDEX);
+    }
   };
 
   const handlePhotoContinue = async () => {
@@ -128,9 +142,6 @@ export default function QuestionnairePage() {
     try {
       if (!isEditMode) {
         await updateQuestionnaire({ step: STEPS.length, data: {} });
-        toast.success(ui("photoSavedToast"));
-      } else {
-        toast.success(ui("photoUpdatedToast"));
       }
       setStepOverride(REVIEW_STEP_INDEX);
     } catch {
@@ -157,6 +168,8 @@ export default function QuestionnairePage() {
   }, [isStaff, router]);
 
   const phaseLabel = useMemo(() => {
+    if (phaseComplete === "about") return ui("part1Complete");
+    if (phaseComplete === "partner") return ui("part2Complete");
     if (isReviewStep) return ui("badgeReview");
     if (!currentStep && currentStep !== 0) return ui("badgeQuestionnaire");
     const stepConfig = STEPS[currentStep!];
@@ -164,7 +177,7 @@ export default function QuestionnairePage() {
     if (stepConfig.phase === "photo") return ui("badgePhoto");
     if (stepConfig.phase === "partner") return ui("badgePart2");
     return `${ui("part1AboutPrefix")} · ${ui("stepWord")} ${currentStep! + 1}/${ABOUT_YOU_STEP_COUNT}`;
-  }, [currentStep, isReviewStep, ui]);
+  }, [currentStep, isReviewStep, phaseComplete, ui]);
 
   if (profile === undefined || isStaff) {
     return (

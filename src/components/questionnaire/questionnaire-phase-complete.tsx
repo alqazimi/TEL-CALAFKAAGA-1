@@ -61,7 +61,7 @@ export function QuestionnairePhaseComplete({
         className="w-full max-w-sm h-12 rounded-2xl text-base font-semibold"
         onClick={onContinue}
       >
-        {isAbout ? ui("continueToPartner") : ui("reviewAndSubmit")}
+        {isAbout ? ui("continueToPartner") : ui("continueToPhoto")}
         <ChevronRight className="ml-2 h-5 w-5" />
       </Button>
     </div>

@@ -476,6 +476,10 @@ const UI_TEXT = {
     en: "Review & Submit Profile",
     so: "Dib u eeg & Gudbi Profile-ka",
   },
+  continueToPhoto: {
+    en: "Add Your Photo",
+    so: "Ku dar Sawirkaaga",
+  },
   // Photo step
   photoTitle: { en: "Profile Photo", so: "Sawirka Profile-ka" },
   photoStepDesc: {

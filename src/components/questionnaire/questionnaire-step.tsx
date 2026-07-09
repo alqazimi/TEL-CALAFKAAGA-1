@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -116,7 +116,6 @@ export function QuestionnaireStep({
   const [textFields, setTextFields] = useState(initial.textFields);
   const [fieldIndex, setFieldIndex] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isAdvancing, setIsAdvancing] = useState(false);
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null);
@@ -183,15 +182,12 @@ export function QuestionnaireStep({
     }
     const data = buildStepData(step, profile, formStateRef.current);
     if (Object.keys(data).length === 0) return;
-    setSaveStatus("saving");
     try {
       await onAutoSave(data);
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 2000);
     } catch {
-      setSaveStatus("error");
+      toast.error(ui("saveFailed"));
     }
-  }, [onAutoSave, step, profile]);
+  }, [onAutoSave, step, profile, ui]);
 
   const scheduleAutoSave = useCallback(() => {
     if (!onAutoSave) return;
@@ -516,34 +512,12 @@ export function QuestionnaireStep({
 
   return (
     <div className="flex flex-col pb-28">
-      <div className="flex items-center justify-between gap-3 mb-6">
+      <div className="mb-6">
         <p className="text-sm font-medium text-muted-foreground">
           {ui("questionOf")
             .replace("{current}", String(safeFieldIndex + 1))
             .replace("{total}", String(visibleFields.length))}
         </p>
-        {onAutoSave && saveStatus !== "idle" && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            {saveStatus === "saving" && (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span>{ui("saving")}</span>
-              </>
-            )}
-            {saveStatus === "saved" && (
-              <>
-                <Cloud className="h-3.5 w-3.5 text-primary" />
-                <span className="text-primary">{ui("saved")}</span>
-              </>
-            )}
-            {saveStatus === "error" && (
-              <>
-                <CloudOff className="h-3.5 w-3.5 text-destructive" />
-                <span className="text-destructive">{ui("saveFailed")}</span>
-              </>
-            )}
-          </div>
-        )}
       </div>
 
       {visibleFields.length > 1 && (
