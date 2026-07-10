@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { AppMobileNav } from "@/components/layout/app-mobile-nav";
 import { isStandaloneDisplay } from "@/lib/pwa";
@@ -16,10 +16,19 @@ import { isStaffRole } from "@/lib/access";
  */
 export function PwaStandaloneNav() {
   const pathname = usePathname();
-  const user = useQuery(api.users.currentUser);
-  const standalone = isStandaloneDisplay();
+  const { isAuthenticated } = useConvexAuth();
+  const [standalone, setStandalone] = useState(false);
   const onMarketing =
     !!pathname && !isAppShellRoute(pathname) && !isAuthRoute(pathname);
+
+  useEffect(() => {
+    setStandalone(isStandaloneDisplay());
+  }, []);
+
+  const user = useQuery(
+    api.users.currentUser,
+    standalone && onMarketing && isAuthenticated ? {} : "skip"
+  );
   const isStaff = isStaffRole(user?.profile?.role);
 
   useEffect(() => {
@@ -36,7 +45,7 @@ export function PwaStandaloneNav() {
     document.documentElement.classList.toggle("pwa-standalone-marketing", onMarketing);
   }, [onMarketing, standalone]);
 
-  if (!standalone || !onMarketing) return null;
+  if (!standalone || !onMarketing || !isAuthenticated) return null;
   if (user === undefined) return null;
   if (isStaff) return null;
 

@@ -21,7 +21,10 @@ export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { isAuthenticated, isLoading } = useConvexAuth();
-  const user = useQuery(api.users.currentUser);
+  const user = useQuery(
+    api.users.currentUser,
+    isAuthenticated ? {} : "skip"
+  );
   const isStaff = isStaffRole(user?.profile?.role);
   const consoleHref = user
     ? getAuthenticatedHomeRoute(user.profile)

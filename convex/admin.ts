@@ -144,9 +144,8 @@ export const getStats = query({
     const caller = await getProfileForUser(ctx, userId);
     if (!caller || !isStaffRole(caller.role)) return null;
 
+    // Keep this light — collecting messages/matches can stall the admin console.
     const profiles = await ctx.db.query("profiles").collect();
-    const matches = await ctx.db.query("matches").collect();
-    const messages = await ctx.db.query("messages").collect();
     const payments = await ctx.db.query("payments").collect();
 
     const completedPayments = payments.filter((p) => p.status === "completed");
@@ -166,13 +165,15 @@ export const getStats = query({
       totalUsers: profiles.length,
       maleUsers: profiles.filter((p) => p.gender === "male").length,
       femaleUsers: profiles.filter((p) => p.gender === "female").length,
-      totalMatches: matches.filter((m) => m.status === "active").length,
-      totalMessages: messages.length,
+      totalMatches: 0,
+      totalMessages: 0,
       revenue,
       paidBasicCount,
       paidPremiumCount,
       unpaidCount,
-      pendingApproval: profiles.filter((p) => !p.approved).length,
+      pendingApproval: members.filter(
+        (p) => !p.questionnaireComplete || !p.approved
+      ).length,
       bannedUsers: profiles.filter((p) => p.banned).length,
       isOwner: isOwnerRole(caller.role),
     };
@@ -199,6 +200,7 @@ export const getAllUsers = query({
         v.literal("premium")
       )
     ),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -226,8 +228,8 @@ export const getAllUsers = query({
         const email = userCache.get(p.userId)?.email?.toLowerCase() ?? "";
         return (
           p.name.toLowerCase().includes(search) ||
-          p.country.toLowerCase().includes(search) ||
-          p.city.toLowerCase().includes(search) ||
+          (p.country ?? "").toLowerCase().includes(search) ||
+          (p.city ?? "").toLowerCase().includes(search) ||
           email.includes(search) ||
           (p.phone ?? "").toLowerCase().includes(search)
         );
@@ -267,8 +269,11 @@ export const getAllUsers = query({
       return a.name.localeCompare(b.name);
     });
 
+    const limit = Math.min(Math.max(args.limit ?? 100, 1), 200);
+    const page = profiles.slice(0, limit);
+
     return await Promise.all(
-      profiles.map(async (p) => {
+      page.map(async (p) => {
         let imageUrl = null;
         if (p.profileImageId) {
           imageUrl = await ctx.storage.getUrl(p.profileImageId);
@@ -297,7 +302,8 @@ export const getAllPayments = query({
     const allPayments = await ctx.db.query("payments").collect();
     const payments = allPayments
       .filter((p) => p.status === "completed")
-      .sort((a, b) => b.createdAt - a.createdAt);
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 100);
 
     return await Promise.all(
       payments.map(async (payment) => {
@@ -550,12 +556,11 @@ export const getAnalytics = query({
     await requireAdmin(ctx, userId);
 
     const profiles = await ctx.db.query("profiles").collect();
-    const matches = await ctx.db.query("matches").collect();
-    const payments = await ctx.db.query("payments").collect();
 
     const countryBreakdown: Record<string, number> = {};
     for (const p of profiles) {
-      countryBreakdown[p.country] = (countryBreakdown[p.country] ?? 0) + 1;
+      const country = p.country?.trim() || "Unknown";
+      countryBreakdown[country] = (countryBreakdown[country] ?? 0) + 1;
     }
 
     const monthlySignups: Record<string, number> = {};
@@ -564,21 +569,21 @@ export const getAnalytics = query({
       monthlySignups[month] = (monthlySignups[month] ?? 0) + 1;
     }
 
+    const paidMembers = profiles.filter(
+      (p) => !isStaffRole(p.role) && p.hasPaid
+    ).length;
+    const memberCount = profiles.filter((p) => !isStaffRole(p.role)).length;
+    const completeMembers = profiles.filter(
+      (p) => !isStaffRole(p.role) && p.questionnaireComplete
+    ).length;
+
     return {
       countryBreakdown,
       monthlySignups,
       matchRate:
-        profiles.length > 0
-          ? Math.round(
-              (matches.filter((m) => m.status === "active").length / profiles.length) * 100
-            )
-          : 0,
+        memberCount > 0 ? Math.round((completeMembers / memberCount) * 100) : 0,
       conversionRate:
-        profiles.length > 0
-          ? Math.round(
-              (payments.filter((p) => p.status === "completed").length / profiles.length) * 100
-            )
-          : 0,
+        memberCount > 0 ? Math.round((paidMembers / memberCount) * 100) : 0,
     };
   },
 });

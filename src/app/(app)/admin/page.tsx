@@ -26,6 +26,7 @@ import type {
 } from "@/types";
 import { AdminBootstrapPanel } from "@/components/admin/admin-bootstrap-panel";
 import { AdminMembersPanel } from "@/components/admin/admin-members-panel";
+import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,20 +83,33 @@ export default function AdminPage() {
 
   const currentUser = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
   const isStaff = isStaffRole(currentUser?.profile?.role);
-  const bootstrapStatus = useQuery(api.admin.getBootstrapStatus);
-  const stats = useQuery(api.admin.getStats) as AdminStats | null | undefined;
+  const bootstrapStatus = useQuery(
+    api.admin.getBootstrapStatus,
+    currentUser !== undefined && !isStaff ? {} : "skip"
+  );
+  const stats = useQuery(
+    api.admin.getStats,
+    currentUser !== undefined && isStaff ? {} : "skip"
+  ) as AdminStats | null | undefined;
   const users = useQuery(
     api.admin.getAllUsers,
-    isStaff
-      ? { search: search || undefined, role: roleFilter, payment: paymentFilter }
+    isStaff && activeTab === "users"
+      ? {
+          search: search || undefined,
+          role: roleFilter,
+          payment: paymentFilter,
+          limit: 100,
+        }
       : "skip"
   ) as AdminUser[] | undefined;
-  const analytics = useQuery(api.admin.getAnalytics, isStaff ? {} : "skip") as
-    | AdminAnalytics
-    | undefined;
-  const payments = useQuery(api.admin.getAllPayments, isStaff ? {} : "skip") as
-    | AdminPayment[]
-    | undefined;
+  const analytics = useQuery(
+    api.admin.getAnalytics,
+    isStaff && activeTab === "analytics" ? {} : "skip"
+  ) as AdminAnalytics | undefined;
+  const payments = useQuery(
+    api.admin.getAllPayments,
+    isStaff && activeTab === "payments" ? {} : "skip"
+  ) as AdminPayment[] | undefined;
   const reports = useQuery(
     api.moderation.listReports,
     isStaff && activeTab === "reports" ? {} : "skip"
@@ -105,10 +119,13 @@ export default function AdminPage() {
   const updateReportStatus = useMutation(api.moderation.updateReportStatus);
 
   useEffect(() => {
-    if (currentUser !== undefined && !isStaffRole(currentUser?.profile?.role)) {
-      router.replace(getAuthenticatedHomeRoute(currentUser?.profile));
-    }
-  }, [currentUser, router]);
+    if (currentUser === undefined) return;
+    if (isStaffRole(currentUser?.profile?.role)) return;
+    // First-time setup: stay on /admin to claim owner.
+    if (bootstrapStatus === undefined) return;
+    if (!bootstrapStatus.hasAdmins) return;
+    router.replace(getAuthenticatedHomeRoute(currentUser?.profile));
+  }, [bootstrapStatus, currentUser, router]);
 
   const setTab = (tab: AdminTab) => {
     router.replace(`/admin?tab=${tab}`, { scroll: false });
@@ -125,19 +142,27 @@ export default function AdminPage() {
     }
   };
 
-  if (currentUser === undefined || bootstrapStatus === undefined || stats === undefined) {
+  if (currentUser === undefined) {
     return (
       <DashboardLayout>
-        <div className="space-y-4">
+        <div className="space-y-4" role="status">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-28 w-full rounded-2xl" />
           <Skeleton className="h-72 w-full rounded-2xl" />
+          <p className="text-sm text-muted-foreground">{t("common.loadingData")}</p>
         </div>
       </DashboardLayout>
     );
   }
 
-  if (stats === null) {
+  if (!isStaff) {
+    if (bootstrapStatus === undefined) {
+      return (
+        <DashboardLayout>
+          <Skeleton className="h-72 w-full rounded-2xl" />
+        </DashboardLayout>
+      );
+    }
     return (
       <DashboardLayout>
         <div className="py-16">
@@ -147,9 +172,8 @@ export default function AdminPage() {
     );
   }
 
-  const canManageRoles = stats.isOwner;
-  const incompleteCount =
-    users?.filter((u) => !isStaffRole(u.role) && !u.questionnaireComplete).length ?? 0;
+  const canManageRoles = currentUser.profile?.role === "owner" || stats?.isOwner === true;
+  const incompleteCount = stats?.pendingApproval ?? 0;
   const openReports = reports?.filter((r) => r.status === "open").length ?? 0;
 
   const TAB_META: Record<
@@ -167,28 +191,29 @@ export default function AdminPage() {
     },
   };
 
+  const isOwner = canManageRoles;
   const overviewStats = [
     {
       label: t("adminPage.totalUsers"),
-      value: stats.totalUsers,
+      value: stats?.totalUsers ?? "—",
       hint: t("adminPage.statMembersHint"),
       icon: Users,
     },
     {
       label: t("adminPage.revenue"),
-      value: `$${(stats.revenue / 100).toFixed(0)}`,
+      value: stats ? `$${(stats.revenue / 100).toFixed(0)}` : "—",
       hint: t("adminPage.statRevenueHint"),
       icon: Wallet,
     },
     {
       label: t("adminPage.paidPremium"),
-      value: stats.paidPremiumCount,
+      value: stats?.paidPremiumCount ?? "—",
       hint: t("adminPage.statPremiumHint"),
       icon: Heart,
     },
     {
       label: t("adminPage.unpaid"),
-      value: stats.unpaidCount,
+      value: stats?.unpaidCount ?? "—",
       hint: t("adminPage.statUnpaidHint"),
       icon: CreditCard,
     },
@@ -199,13 +224,13 @@ export default function AdminPage() {
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {stats.isOwner ? t("adminPage.ownerConsole") : t("adminPage.adminConsole")}
+            {isOwner ? t("adminPage.ownerConsole") : t("adminPage.adminConsole")}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {t("adminPage.title")}
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            {stats.isOwner ? t("adminPage.ownerDesc") : t("adminPage.adminDesc")}
+            {isOwner ? t("adminPage.ownerDesc") : t("adminPage.adminDesc")}
           </p>
         </header>
 
@@ -216,7 +241,7 @@ export default function AdminPage() {
               className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]"
             >
               <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-foreground">
-                <stat.icon className="h-4.5 w-4.5 h-[18px] w-[18px]" />
+                <stat.icon className="h-[18px] w-[18px]" />
               </div>
               <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
               <p className="mt-0.5 text-sm font-medium text-foreground">{stat.label}</p>
@@ -225,7 +250,7 @@ export default function AdminPage() {
           ))}
         </section>
 
-        {(incompleteCount > 0 || openReports > 0 || stats.unpaidCount > 0) && (
+        {(incompleteCount > 0 || openReports > 0 || (stats?.unpaidCount ?? 0) > 0) && (
           <section className="rounded-2xl border border-border bg-muted/30 p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t("adminPage.needsAttention")}
@@ -245,7 +270,7 @@ export default function AdminPage() {
                   {t("adminPage.attentionIncomplete", { count: incompleteCount })}
                 </Button>
               )}
-              {stats.unpaidCount > 0 && (
+              {(stats?.unpaidCount ?? 0) > 0 && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -256,7 +281,7 @@ export default function AdminPage() {
                     setTab("users");
                   }}
                 >
-                  {t("adminPage.attentionUnpaid", { count: stats.unpaidCount })}
+                  {t("adminPage.attentionUnpaid", { count: stats!.unpaidCount })}
                 </Button>
               )}
               {openReports > 0 && (
@@ -304,6 +329,7 @@ export default function AdminPage() {
 
         {activeTab === "users" && (
           <div className="space-y-5">
+            {canManageRoles && <AdminStaffInvitesPanel />}
             <AdminMembersPanel
               users={users}
               search={search}

@@ -177,7 +177,7 @@ export function LandingPage() {
       {/* Hero */}
       <section className="relative min-h-[640px] sm:min-h-[720px] flex items-end sm:items-center overflow-hidden bg-[#4a0d1f]">
         <Image
-          src="/images/hero-couple.png"
+          src="/images/hero-couple.webp"
           alt=""
           fill
           priority

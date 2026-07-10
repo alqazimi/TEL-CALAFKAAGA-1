@@ -8,6 +8,9 @@ import { toast } from "sonner";
 /** Must match `session.inactiveDurationMs` in `convex/auth.ts`. */
 export const IDLE_LOGOUT_MS = 3 * 60 * 60 * 1000;
 
+/** Don't reset the idle timer more often than this (mousemove is very chatty). */
+const ACTIVITY_THROTTLE_MS = 30_000;
+
 const WINDOW_ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
   "mousemove",
   "mousedown",
@@ -24,6 +27,7 @@ export function IdleSessionGuard() {
   const { isAuthenticated } = useConvexAuth();
   const { signOut } = useAuthActions();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastResetRef = useRef(0);
   const signingOutRef = useRef(false);
 
   useEffect(() => {
@@ -51,6 +55,11 @@ export function IdleSessionGuard() {
 
     const resetTimer = () => {
       if (document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (now - lastResetRef.current < ACTIVITY_THROTTLE_MS && timerRef.current) {
+        return;
+      }
+      lastResetRef.current = now;
       clearTimer();
       timerRef.current = setTimeout(logout, IDLE_LOGOUT_MS);
     };
