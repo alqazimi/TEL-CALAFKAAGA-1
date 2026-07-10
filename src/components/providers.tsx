@@ -7,6 +7,7 @@ import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "sonner";
 import { getConvexClient, isConvexConfigured } from "@/lib/convex-client";
 import { ConvexAuthStatus } from "@/components/auth/convex-auth-status";
+import { IdleSessionGuard } from "@/components/auth/idle-session-guard";
 import { LanguageProvider } from "@/lib/i18n/context";
 import { RegisterServiceWorker } from "@/components/pwa/register-service-worker";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
@@ -31,6 +32,7 @@ export function Providers({ children }: { children: ReactNode }) {
           defaultTheme="light"
           enableSystem
         >
+          <IdleSessionGuard />
           <ConvexAuthStatus>{children}</ConvexAuthStatus>
           <RegisterServiceWorker />
           <PwaStandaloneNav />

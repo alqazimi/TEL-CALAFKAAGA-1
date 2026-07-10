@@ -34,6 +34,7 @@ import { BlockedUsersCard } from "@/components/safety/blocked-users-card";
 import { PremiumSupportCard } from "@/components/premium/premium-support-card";
 import { PremiumWaliCard } from "@/components/premium/premium-wali-card";
 import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
+import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { isOwnerRole, isPremiumMember } from "@/lib/access";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 import { isValidContactPhone } from "@/lib/phone";
@@ -118,6 +119,7 @@ export function ProfileEditScreen({
   const [galleryIndex, setGalleryIndex] = useState(0);
 
   const isPremium = isPremiumMember(profile);
+  const isOwner = isOwnerRole(profile.role);
   const extraUrls = profile.additionalImageUrls ?? [];
   const extraIds = profile.additionalImageIds ?? [];
   const allPhotoUrls = [profile.imageUrl, ...extraUrls].filter(
@@ -428,6 +430,17 @@ export function ProfileEditScreen({
                 </div>
               </ProfileSection>
             </>
+          )}
+
+          {isOwner && (
+            <ProfileSection
+              id="invite-admins"
+              title={t("adminInvites.title")}
+              description={t("adminInvites.description")}
+              defaultOpen
+            >
+              <AdminStaffInvitesPanel embedded />
+            </ProfileSection>
           )}
 
           <ProfileSection id="security" title={t("profilePage.securitySection")} defaultOpen={false}>

@@ -851,7 +851,7 @@ export const so: Translations = {
     ownerConsole: "Konsolka milkiilaha",
     adminConsole: "Konsolka maamulka",
     title: "Dashboard-ka Maamulka",
-    ownerDesc: "Adigu waxaad tahay milkiilaha — maamul xubnaha, lacag bixinta, oo casuum maamulayaal.",
+    ownerDesc: "Adigu waxaad tahay milkiilaha — maamul xubnaha, lacag bixinta, iyo warbixinnada.",
     adminDesc: "Maamul xubnaha, lacag bixinta, iyo dhaqdhaqaaqa platform-ka.",
     members: "Xubnaha",
     revenue: "Dakhliga",

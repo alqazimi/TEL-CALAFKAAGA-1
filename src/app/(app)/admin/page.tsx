@@ -26,7 +26,6 @@ import type {
 } from "@/types";
 import { AdminBootstrapPanel } from "@/components/admin/admin-bootstrap-panel";
 import { AdminMembersPanel } from "@/components/admin/admin-members-panel";
-import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -305,7 +304,6 @@ export default function AdminPage() {
 
         {activeTab === "users" && (
           <div className="space-y-5">
-            {canManageRoles && <AdminStaffInvitesPanel />}
             <AdminMembersPanel
               users={users}
               search={search}

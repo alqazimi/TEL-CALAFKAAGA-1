@@ -839,7 +839,7 @@ export const en = {
     ownerConsole: "Owner console",
     adminConsole: "Admin console",
     title: "Admin Dashboard",
-    ownerDesc: "You are the owner — manage members, payments, and invite admins.",
+    ownerDesc: "You are the owner — manage members, payments, and reports.",
     adminDesc: "Manage members, payments, and platform activity.",
     members: "Members",
     revenue: "Revenue",

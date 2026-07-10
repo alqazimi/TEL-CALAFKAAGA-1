@@ -4,6 +4,11 @@ import { createUserProfile } from "./lib/createProfile";
 import { MutationCtx } from "./_generated/server";
 import { ResendOTPPasswordReset } from "./ResendOTPPasswordReset";
 
+/** Log out after 3 hours without activity (refresh token / session idle). */
+const SESSION_INACTIVE_MS = 3 * 60 * 60 * 1000;
+/** Absolute max session length even with activity. */
+const SESSION_TOTAL_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
     Password({
@@ -23,6 +28,14 @@ export const { auth, signIn, signOut, store } = convexAuth({
       },
     }),
   ],
+  session: {
+    inactiveDurationMs: SESSION_INACTIVE_MS,
+    totalDurationMs: SESSION_TOTAL_MS,
+  },
+  jwt: {
+    // Short-lived access tokens; refreshed while the user stays active.
+    durationMs: 60 * 60 * 1000,
+  },
   callbacks: {
     async afterUserCreatedOrUpdated(ctx, { userId, profile }) {
       const mutationCtx = ctx as MutationCtx;

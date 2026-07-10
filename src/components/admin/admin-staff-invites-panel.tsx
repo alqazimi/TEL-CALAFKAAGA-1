@@ -36,7 +36,7 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
   return "outline";
 }
 
-export function AdminStaffInvitesPanel() {
+export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const invites = useQuery(api.staffInvites.list);
   const createInvite = useMutation(api.staffInvites.create);
@@ -104,6 +104,94 @@ export function AdminStaffInvitesPanel() {
     }
   };
 
+  const body = (
+    <div className="space-y-4">
+      <p className="text-xs text-muted-foreground">{t("adminInvites.emailHint")}</p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex-1 space-y-1.5">
+          <Label htmlFor="admin-invite-email">{t("adminInvites.emailLabel")}</Label>
+          <Input
+            id="admin-invite-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t("adminInvites.emailPlaceholder")}
+            autoComplete="off"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleCreate();
+            }}
+          />
+        </div>
+        <div className="flex items-end">
+          <Button
+            className="w-full sm:w-auto"
+            onClick={() => void handleCreate()}
+            disabled={submitting}
+          >
+            {submitting ? t("adminInvites.sending") : t("adminInvites.sendInvite")}
+          </Button>
+        </div>
+      </div>
+
+      {invites.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t("adminInvites.recent")}
+          </p>
+          <ul className="space-y-2">
+            {invites.slice(0, 8).map((invite) => (
+              <li
+                key={invite._id}
+                className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 space-y-1">
+                  <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                    <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{invite.email}</span>
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={statusVariant(invite.status)}>
+                      {formatInviteStatus(invite.status, t)}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {t("adminInvites.expires", {
+                        date: new Date(invite.expiresAt).toLocaleDateString(),
+                      })}
+                    </span>
+                  </div>
+                </div>
+                {invite.status === "pending" && (
+                  <div className="flex flex-wrap gap-1.5 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busyId === invite._id}
+                      onClick={() => void handleResend(invite._id)}
+                    >
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                      {t("adminInvites.resend")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busyId === invite._id}
+                      onClick={() => void handleRevoke(invite._id)}
+                    >
+                      <XCircle className="mr-1.5 h-3.5 w-3.5" />
+                      {t("adminInvites.revoke")}
+                    </Button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+
+  if (embedded) return body;
+
   return (
     <Card className="border-border shadow-none">
       <CardHeader className="pb-3">
@@ -112,92 +200,8 @@ export function AdminStaffInvitesPanel() {
           {t("adminInvites.title")}
         </CardTitle>
         <CardDescription>{t("adminInvites.description")}</CardDescription>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {t("adminInvites.emailHint")}
-        </p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <div className="flex-1 space-y-1.5">
-            <Label htmlFor="admin-invite-email">{t("adminInvites.emailLabel")}</Label>
-            <Input
-              id="admin-invite-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("adminInvites.emailPlaceholder")}
-              autoComplete="off"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void handleCreate();
-              }}
-            />
-          </div>
-          <div className="flex items-end">
-            <Button
-              className="w-full sm:w-auto"
-              onClick={() => void handleCreate()}
-              disabled={submitting}
-            >
-              {submitting ? t("adminInvites.sending") : t("adminInvites.sendInvite")}
-            </Button>
-          </div>
-        </div>
-
-        {invites.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {t("adminInvites.recent")}
-            </p>
-            <ul className="space-y-2">
-              {invites.slice(0, 8).map((invite) => (
-                <li
-                  key={invite._id}
-                  className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <p className="flex items-center gap-1.5 truncate text-sm font-medium">
-                      <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="truncate">{invite.email}</span>
-                    </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={statusVariant(invite.status)}>
-                        {formatInviteStatus(invite.status, t)}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {t("adminInvites.expires", {
-                          date: new Date(invite.expiresAt).toLocaleDateString(),
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                  {invite.status === "pending" && (
-                    <div className="flex flex-wrap gap-1.5 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busyId === invite._id}
-                        onClick={() => void handleResend(invite._id)}
-                      >
-                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                        {t("adminInvites.resend")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busyId === invite._id}
-                        onClick={() => void handleRevoke(invite._id)}
-                      >
-                        <XCircle className="mr-1.5 h-3.5 w-3.5" />
-                        {t("adminInvites.revoke")}
-                      </Button>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </CardContent>
+      <CardContent>{body}</CardContent>
     </Card>
   );
 }
