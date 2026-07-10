@@ -37,15 +37,6 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/icon-:size(\\d+)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=86400, stale-while-revalidate=604800",
-          },
-        ],
-      },
-      {
         source: "/apple-icon",
         headers: [
           {
