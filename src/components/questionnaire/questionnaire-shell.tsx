@@ -4,8 +4,10 @@ import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { ChevronLeft } from "lucide-react";
+import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadingTimeout } from "@/hooks/use-loading-timeout";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +31,7 @@ export function QuestionnaireShell({
   const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
   const { t } = useTranslation();
+  const stuck = useLoadingTimeout(isLoading, 8_000);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -39,14 +42,20 @@ export function QuestionnaireShell({
   if (isLoading) {
     return (
       <div className="min-h-dvh bg-background flex flex-col">
-        <Skeleton className="h-1 w-full rounded-none" />
-        <div className="px-5 py-6 max-w-xl mx-auto w-full space-y-6 flex-1">
-          <Skeleton className="h-6 w-32 mx-auto" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
-          <p className="text-center text-sm text-muted-foreground" role="status">
-            {t("common.loadingData")}
-          </p>
+        <div className="px-5 py-6 max-w-xl mx-auto w-full flex-1 flex flex-col justify-center">
+          {stuck ? (
+            <LoadingRecovery stuck />
+          ) : (
+            <div className="space-y-6">
+              <Skeleton className="h-1 w-full rounded-none" />
+              <Skeleton className="h-6 w-32 mx-auto" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-64 w-full rounded-2xl" />
+              <p className="text-center text-sm text-muted-foreground" role="status">
+                {t("common.loadingData")}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );

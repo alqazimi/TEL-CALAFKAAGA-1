@@ -7,6 +7,7 @@ import { api } from "../../../../convex/_generated/api";
 import type { MatchResult, MutualMatch } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { NextStepCard } from "@/components/dashboard/next-step-card";
@@ -67,11 +68,7 @@ export default function DashboardPage() {
   if (user === undefined || queriesLoading) {
     return (
       <DashboardLayout>
-        <div className="space-y-6 max-w-2xl" role="status">
-          <Skeleton className="h-8 w-48" aria-hidden />
-          <Skeleton className="h-40 w-full rounded-2xl" aria-hidden />
-          <p className="text-sm text-muted-foreground">{t("common.loadingData")}</p>
-        </div>
+        <MemberDataLoading pending />
       </DashboardLayout>
     );
   }

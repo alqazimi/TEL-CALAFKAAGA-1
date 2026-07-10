@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import type { CurrentUser, Profile } from "@/types";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { ProfileEditScreen } from "@/components/profile/profile-edit-screen";
@@ -23,10 +24,7 @@ export default function ProfilePage() {
   if (profile === undefined || currentUser === undefined) {
     return (
       <DashboardLayout>
-        <div className="max-w-2xl mx-auto space-y-4" role="status">
-          <Skeleton className="h-96 w-full" aria-hidden />
-          <p className="text-sm text-muted-foreground">{t("common.loadingData")}</p>
-        </div>
+        <MemberDataLoading pending />
       </DashboardLayout>
     );
   }

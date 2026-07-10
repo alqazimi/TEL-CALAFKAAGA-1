@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useConvexAuth } from "convex/react";
 import { Heart } from "lucide-react";
+import { useConvexAuth } from "convex/react";
 import { Button } from "@/components/ui/button";
+import { useLoadingTimeout } from "@/hooks/use-loading-timeout";
 import { useTranslation } from "@/lib/i18n/context";
 import {
   type PlanPreference,
@@ -21,6 +22,9 @@ type AuthRegisterCtaProps = {
   variant?: "default" | "secondary" | "outline" | "ghost";
 };
 
+/** Never leave Join/Register buttons disabled forever while auth initializes. */
+const AUTH_CTA_WAIT_MS = 2_000;
+
 export function AuthRegisterCta({
   registerHref,
   registerLabel,
@@ -31,6 +35,7 @@ export function AuthRegisterCta({
   variant = "default",
 }: AuthRegisterCtaProps) {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const authStuck = useLoadingTimeout(isLoading, AUTH_CTA_WAIT_MS);
   const { t } = useTranslation();
   const dashboardText = dashboardLabel ?? t("common.goToDashboard");
   const href = registerHref ?? registerHrefForPlan(plan);
@@ -39,7 +44,8 @@ export function AuthRegisterCta({
     if (plan) savePlanPreference(plan);
   };
 
-  if (isLoading) {
+  // Brief pulse only — after timeout treat as guest so CTAs stay clickable.
+  if (isLoading && !authStuck) {
     return (
       <Button size={size} variant={variant} className={className} disabled>
         {t("common.loading")}
@@ -47,7 +53,7 @@ export function AuthRegisterCta({
     );
   }
 
-  if (isAuthenticated) {
+  if (isAuthenticated && !isLoading) {
     return (
       <Button size={size} variant={variant} className={className} asChild>
         <Link href="/matches">

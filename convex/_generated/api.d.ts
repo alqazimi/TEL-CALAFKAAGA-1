@@ -20,6 +20,7 @@ import type * as lib_access from "../lib/access.js";
 import type * as lib_adminAuth from "../lib/adminAuth.js";
 import type * as lib_constants from "../lib/constants.js";
 import type * as lib_createProfile from "../lib/createProfile.js";
+import type * as lib_deleteUser from "../lib/deleteUser.js";
 import type * as lib_matchPresentation from "../lib/matchPresentation.js";
 import type * as lib_moderation from "../lib/moderation.js";
 import type * as lib_phone from "../lib/phone.js";
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   "lib/adminAuth": typeof lib_adminAuth;
   "lib/constants": typeof lib_constants;
   "lib/createProfile": typeof lib_createProfile;
+  "lib/deleteUser": typeof lib_deleteUser;
   "lib/matchPresentation": typeof lib_matchPresentation;
   "lib/moderation": typeof lib_moderation;
   "lib/phone": typeof lib_phone;

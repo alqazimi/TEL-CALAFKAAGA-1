@@ -29,6 +29,7 @@ import { TrialBanner } from "@/components/payment/trial-banner";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -211,12 +212,7 @@ export default function ChatPage() {
     return (
       <DashboardLayout>
         <ChatShell>
-          <div className="flex flex-1 flex-col gap-4" role="status">
-            <Skeleton className="flex-1 w-full rounded-none sm:rounded-2xl" aria-hidden />
-            <p className="text-center text-sm text-muted-foreground pb-4">
-              {t("common.loadingData")}
-            </p>
-          </div>
+          <MemberDataLoading pending />
         </ChatShell>
       </DashboardLayout>
     );

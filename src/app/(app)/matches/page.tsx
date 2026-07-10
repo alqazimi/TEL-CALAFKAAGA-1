@@ -8,6 +8,7 @@ import { Filter, LayoutGrid, Layers } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -133,10 +134,7 @@ export default function MatchesPage() {
   if (queriesLoading) {
     return (
       <DashboardLayout>
-        <div className="w-full max-w-lg mx-auto space-y-4" role="status">
-          <Skeleton className="h-[36rem] w-full rounded-2xl" aria-hidden />
-          <p className="text-center text-sm text-muted-foreground">{t("common.loadingData")}</p>
-        </div>
+        <MemberDataLoading pending />
       </DashboardLayout>
     );
   }

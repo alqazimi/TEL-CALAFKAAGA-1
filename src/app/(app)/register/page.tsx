@@ -43,11 +43,16 @@ export default function RegisterPage() {
   const onSubmitAccount = async (data: AccountForm) => {
     setLoading(true);
     try {
-      const result = await signIn("password", {
-        email: data.email,
-        password: data.password,
-        flow: "signUp",
-      });
+      const result = await Promise.race([
+        signIn("password", {
+          email: data.email,
+          password: data.password,
+          flow: "signUp",
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(t("common.loadingStuck"))), 20_000)
+        ),
+      ]);
 
       if (result.signingIn === false) {
         toast.error(t("validation.registrationFailed"));

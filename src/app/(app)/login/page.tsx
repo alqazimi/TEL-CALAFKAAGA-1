@@ -50,11 +50,16 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      const result = await signIn("password", {
-        email: normalizeAuthEmail(data.email),
-        password: data.password,
-        flow: "signIn",
-      });
+      const result = await Promise.race([
+        signIn("password", {
+          email: normalizeAuthEmail(data.email),
+          password: data.password,
+          flow: "signIn",
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(t("common.loadingStuck"))), 20_000)
+        ),
+      ]);
 
       if (result.signingIn === false) {
         toast.error(t("validation.invalidCredentials"));

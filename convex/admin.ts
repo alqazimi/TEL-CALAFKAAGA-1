@@ -15,6 +15,7 @@ import { assertProfileFullyComplete } from "./lib/profileCompleteness";
 import { QUESTIONNAIRE_COMPLETE_STEP } from "./lib/profileEnrichment";
 import { sendNotification } from "./lib/sendNotification";
 import { isPremiumMember } from "./lib/premium";
+import { deleteMemberAccount } from "./lib/deleteUser";
 
 function pendingApprovalPriority(
   profile: { approved: boolean; hasPersonalSupport?: boolean },
@@ -430,63 +431,18 @@ export const deleteUser = mutation({
     await requireAdmin(ctx, userId);
 
     const profile = await ctx.db.get(args.profileId);
-    if (!profile) return;
+    if (!profile) return { success: true, alreadyGone: true };
 
     if (isStaffRole(profile.role)) {
       throw new Error("Cannot delete an admin or owner account. Remove their role first.");
     }
 
-    const targetUserId = profile.userId;
-
-    const preferences = await ctx.db
-      .query("preferences")
-      .withIndex("by_userId", (q) => q.eq("userId", targetUserId))
-      .unique();
-    if (preferences) {
-      await ctx.db.delete(preferences._id);
+    if (profile.userId === userId) {
+      throw new Error("You cannot delete your own account from the admin panel.");
     }
 
-    const likesFrom = await ctx.db
-      .query("likes")
-      .withIndex("by_from", (q) => q.eq("fromUserId", targetUserId))
-      .collect();
-    const likesTo = await ctx.db
-      .query("likes")
-      .withIndex("by_to", (q) => q.eq("toUserId", targetUserId))
-      .collect();
-    for (const like of [...likesFrom, ...likesTo]) {
-      await ctx.db.delete(like._id);
-    }
-
-    const notifications = await ctx.db
-      .query("notifications")
-      .withIndex("by_user", (q) => q.eq("userId", targetUserId))
-      .collect();
-    for (const notification of notifications) {
-      await ctx.db.delete(notification._id);
-    }
-
-    const scoresA = await ctx.db
-      .query("compatibilityScores")
-      .withIndex("by_userA", (q) => q.eq("userA", targetUserId))
-      .collect();
-    const scoresB = await ctx.db
-      .query("compatibilityScores")
-      .withIndex("by_userB", (q) => q.eq("userB", targetUserId))
-      .collect();
-    for (const score of [...scoresA, ...scoresB]) {
-      await ctx.db.delete(score._id);
-    }
-
-    const uploads = await ctx.db
-      .query("userUploads")
-      .filter((q) => q.eq(q.field("userId"), targetUserId))
-      .collect();
-    for (const upload of uploads) {
-      await ctx.db.delete(upload._id);
-    }
-
-    await ctx.db.delete(args.profileId);
+    const result = await deleteMemberAccount(ctx, args.profileId);
+    return { success: true, deleted: result.deleted };
   },
 });
 
