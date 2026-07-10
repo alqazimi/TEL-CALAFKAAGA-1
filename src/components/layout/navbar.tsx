@@ -16,14 +16,11 @@ import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { useLoadingTimeout } from "@/hooks/use-loading-timeout";
 
 export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { isAuthenticated, isLoading } = useConvexAuth();
-  const authStuck = useLoadingTimeout(isLoading, 2_000);
-  const showAuthLoading = isLoading && !authStuck;
   const user = useQuery(
     api.users.currentUser,
     isAuthenticated && !isLoading ? {} : "skip"
@@ -82,9 +79,7 @@ export function Navbar() {
           <ThemeToggle />
 
           <div className="hidden sm:flex items-center gap-2">
-            {showAuthLoading ? (
-              <div className="h-10 w-32 rounded-xl bg-muted animate-pulse" aria-hidden />
-            ) : isAuthenticated && !isLoading ? (
+            {isAuthenticated && !isLoading ? (
               <>
                 {isStaff && (
                   <Button variant="outline" asChild className="border-border">
@@ -149,9 +144,7 @@ export function Navbar() {
               ))}
               <div className="flex flex-col gap-2 pt-3">
                 <LanguageToggle className="w-full justify-center" />
-                {showAuthLoading ? (
-                  <div className="h-10 w-full rounded-xl bg-muted animate-pulse" aria-hidden />
-                ) : isAuthenticated && !isLoading ? (
+                {isAuthenticated && !isLoading ? (
                   <>
                     {isStaff && (
                       <Button variant="outline" asChild className="w-full border-border">

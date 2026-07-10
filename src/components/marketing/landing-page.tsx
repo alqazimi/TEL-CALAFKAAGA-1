@@ -36,10 +36,11 @@ import {
 } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 
+/** Keep content visible without JS — opacity:0 hid the hero when Chrome SW blocked hydration. */
 const fadeUp = {
-  initial: { opacity: 0, y: 24 },
+  initial: { opacity: 1, y: 0 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 },
+  transition: { duration: 0.35 },
 };
 
 function AppPreviewMock() {
@@ -416,7 +417,7 @@ export function LandingPage() {
             {steps.map((step, i) => (
               <motion.div
                 key={step.title}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 0 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
@@ -462,7 +463,7 @@ export function LandingPage() {
             {stories.map((story) => (
               <motion.div
                 key={story.names}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 0 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 className="rounded-2xl border border-border bg-card p-6 shadow-md text-left"

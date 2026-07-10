@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { PwaInstallCapture } from "@/components/pwa/pwa-install-capture";
+import { ClearServiceWorkers } from "@/components/pwa/clear-service-workers";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { SiteJsonLd } from "@/components/seo/site-json-ld";
@@ -31,6 +32,7 @@ export default function RootLayout({
   return (
     <html lang="so" suppressHydrationWarning className={`${inter.variable} ${cormorant.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased font-sans">
+        <ClearServiceWorkers />
         <SiteJsonLd />
         <PwaInstallCapture />
         <Providers>
