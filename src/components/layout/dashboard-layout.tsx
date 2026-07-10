@@ -60,7 +60,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           <Button
             onClick={() => {
               void signOut().finally(() => {
-                router.replace("/login");
+                window.location.assign("/login");
               });
             }}
           >
@@ -71,6 +71,8 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
+  // Don't blank the shell forever — if auth is slow, still paint chrome;
+  // unauthenticated users are redirected above once loading finishes.
   if (isLoading) {
     return (
       <div className="min-h-screen dashboard-bg flex flex-col">
@@ -79,9 +81,6 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-8 space-y-4">
             <Skeleton className="h-8 w-48" aria-hidden />
             <Skeleton className="h-64 w-full max-w-3xl rounded-2xl" aria-hidden />
-            <p className="text-sm text-muted-foreground" role="status">
-              {t("common.loadingData")}
-            </p>
           </div>
         </div>
       </div>

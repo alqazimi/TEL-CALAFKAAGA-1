@@ -9,13 +9,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadingTimeout } from "@/hooks/use-loading-timeout";
 import { getAuthenticatedHomeRoute } from "@/lib/routes";
 
-/** Redirects signed-in users away from login/register pages. */
+/**
+ * Redirects signed-in users away from login/register.
+ * Never hide the form behind auth loading — Chrome guests must see login immediately
+ * (same class of bug as homepage "Fadlan sug...").
+ */
 export function GuestGate({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
   const user = useQuery(api.users.currentUser, isAuthenticated ? {} : "skip");
   const waitingOnUser = isAuthenticated && user === undefined;
-  const stuck = useLoadingTimeout(isLoading || waitingOnUser, 8_000);
+  const stuck = useLoadingTimeout(waitingOnUser, 8_000);
 
   useEffect(() => {
     if (isLoading || !isAuthenticated) return;
@@ -28,20 +32,16 @@ export function GuestGate({ children }: { children: ReactNode }) {
     router.replace(getAuthenticatedHomeRoute(user?.profile ?? undefined));
   }, [isAuthenticated, isLoading, router, user]);
 
-  // Auth hung — still show login/register so the site is usable.
-  if (isLoading && stuck) {
-    return <>{children}</>;
-  }
+  // Confirmed signed-in: wait for profile then redirect (or recovery if stuck).
+  if (isAuthenticated && !isLoading) {
+    if (waitingOnUser && stuck) {
+      return (
+        <div className="auth-bg flex min-h-[calc(100dvh-var(--app-header))] items-center justify-center px-4">
+          <LoadingRecovery stuck />
+        </div>
+      );
+    }
 
-  if (waitingOnUser && stuck) {
-    return (
-      <div className="auth-bg flex min-h-[calc(100dvh-var(--app-header))] items-center justify-center px-4">
-        <LoadingRecovery stuck />
-      </div>
-    );
-  }
-
-  if (isLoading || waitingOnUser) {
     return (
       <div className="auth-bg flex min-h-[calc(100dvh-var(--app-header))] items-center justify-center px-4">
         <Skeleton className="h-72 w-full max-w-md rounded-2xl" />
@@ -49,13 +49,6 @@ export function GuestGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (isAuthenticated) {
-    return (
-      <div className="auth-bg flex min-h-[calc(100dvh-var(--app-header))] items-center justify-center px-4">
-        <Skeleton className="h-72 w-full max-w-md rounded-2xl" />
-      </div>
-    );
-  }
-
+  // Guest or auth still resolving — always show login/register.
   return <>{children}</>;
 }
