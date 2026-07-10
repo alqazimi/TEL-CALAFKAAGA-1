@@ -1,13 +1,15 @@
 "use client";
 
-import { ReactNode, Suspense, useEffect } from "react";
+import { ReactNode, Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { AppShellHeader } from "@/components/layout/app-shell-header";
 import { AppMobileNav } from "@/components/layout/app-mobile-nav";
 import { TrialAccessSync } from "@/components/auth/trial-access-sync";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n/context";
 
 const mobileNavFallback = (
@@ -16,10 +18,24 @@ const mobileNavFallback = (
 
 const sidebarFallback = <div className="hidden lg:block lg:w-64 shrink-0" aria-hidden />;
 
+/** Don't leave the app shell stuck on auth forever. */
+const AUTH_WAIT_MS = 6_000;
+
 export function DashboardLayout({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const { signOut } = useAuthActions();
   const router = useRouter();
   const { t } = useTranslation();
+  const [waitedTooLong, setWaitedTooLong] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setWaitedTooLong(false);
+      return;
+    }
+    const timer = setTimeout(() => setWaitedTooLong(true), AUTH_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -27,12 +43,40 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  if (isLoading && waitedTooLong) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-6 text-center">
+        <p className="text-lg font-semibold">{t("setup.convexTimeoutTitle")}</p>
+        <p className="max-w-md text-sm text-muted-foreground">
+          {t("common.loadingStuck")}
+        </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => window.location.reload()}
+          >
+            {t("common.retry")}
+          </Button>
+          <Button
+            onClick={() => {
+              void signOut().finally(() => {
+                router.replace("/login");
+              });
+            }}
+          >
+            {t("common.signInAgain")}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen dashboard-bg flex flex-col">
         <AppShellHeader />
         <div className="flex flex-1 flex-col lg:pl-64 lg:pt-16">
-          <div className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-8 pb-[calc(var(--app-tabbar)+1rem)] lg:pb-8 space-y-4">
+          <div className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-8 space-y-4">
             <Skeleton className="h-8 w-48" aria-hidden />
             <Skeleton className="h-64 w-full max-w-3xl rounded-2xl" aria-hidden />
             <p className="text-sm text-muted-foreground" role="status">
@@ -40,9 +84,6 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             </p>
           </div>
         </div>
-        <Suspense fallback={mobileNavFallback}>
-          <AppMobileNav />
-        </Suspense>
       </div>
     );
   }

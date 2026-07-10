@@ -28,6 +28,7 @@ import { AdminBootstrapPanel } from "@/components/admin/admin-bootstrap-panel";
 import { AdminMembersPanel } from "@/components/admin/admin-members-panel";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
+import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { useLoadingTimeout } from "@/hooks/use-loading-timeout";
 import { isStaffRole } from "@/lib/access";
 import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { useTranslation } from "@/lib/i18n/context";
@@ -82,6 +84,7 @@ export default function AdminPage() {
   const [selectedProfileId, setSelectedProfileId] = useState<Id<"profiles"> | null>(null);
 
   const currentUser = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
+  const userTimedOut = useLoadingTimeout(currentUser === undefined, 8_000);
   const isStaff = isStaffRole(currentUser?.profile?.role);
   const bootstrapStatus = useQuery(
     api.admin.getBootstrapStatus,
@@ -145,12 +148,7 @@ export default function AdminPage() {
   if (currentUser === undefined) {
     return (
       <DashboardLayout>
-        <div className="space-y-4" role="status">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-28 w-full rounded-2xl" />
-          <Skeleton className="h-72 w-full rounded-2xl" />
-          <p className="text-sm text-muted-foreground">{t("common.loadingData")}</p>
-        </div>
+        <LoadingRecovery stuck={userTimedOut} />
       </DashboardLayout>
     );
   }

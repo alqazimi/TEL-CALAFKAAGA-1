@@ -8,11 +8,7 @@ import { toast } from "sonner";
 /** Must match `session.inactiveDurationMs` in `convex/auth.ts`. */
 export const IDLE_LOGOUT_MS = 3 * 60 * 60 * 1000;
 
-/** Don't reset the idle timer more often than this (mousemove is very chatty). */
-const ACTIVITY_THROTTLE_MS = 30_000;
-
 const WINDOW_ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
-  "mousemove",
   "mousedown",
   "keydown",
   "touchstart",
@@ -24,14 +20,13 @@ const WINDOW_ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
  * Server sessions also expire after the same idle window via Convex Auth.
  */
 export function IdleSessionGuard() {
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const { signOut } = useAuthActions();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastResetRef = useRef(0);
   const signingOutRef = useRef(false);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (isLoading || !isAuthenticated) return;
 
     const clearTimer = () => {
       if (timerRef.current) {
@@ -55,11 +50,6 @@ export function IdleSessionGuard() {
 
     const resetTimer = () => {
       if (document.visibilityState === "hidden") return;
-      const now = Date.now();
-      if (now - lastResetRef.current < ACTIVITY_THROTTLE_MS && timerRef.current) {
-        return;
-      }
-      lastResetRef.current = now;
       clearTimer();
       timerRef.current = setTimeout(logout, IDLE_LOGOUT_MS);
     };
@@ -78,7 +68,7 @@ export function IdleSessionGuard() {
       }
       document.removeEventListener("visibilitychange", resetTimer);
     };
-  }, [isAuthenticated, signOut]);
+  }, [isAuthenticated, isLoading, signOut]);
 
   return null;
 }

@@ -48,9 +48,12 @@ export function AppMobileNav() {
   const searchParams = useSearchParams();
   const { t } = useTranslation();
   const user = useQuery(api.users.currentUser);
-  const preferences = useQuery(api.profiles.getPreferences);
   const isLoading = user === undefined;
   const isStaff = isStaffRole(user?.profile?.role);
+  const preferences = useQuery(
+    api.profiles.getPreferences,
+    user !== undefined && !isStaff ? {} : "skip"
+  );
   const profileComplete = user?.profile?.questionnaireComplete ?? false;
   const profileProgress = user?.profile
     ? calculateProfileProgress(user.profile, preferences ?? undefined)

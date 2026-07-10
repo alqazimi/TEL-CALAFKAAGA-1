@@ -34,9 +34,16 @@ export default function LikesPage() {
   const tabParam = searchParams.get("tab");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
 
-  const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
-  const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-  const queriesLoading = isProfileQueriesLoading(profile, preferences);
+  const profile = useQuery(
+    api.profiles.getProfile,
+    !staffLoading && !isStaff ? {} : "skip"
+  ) as Profile | null | undefined;
+  const preferences = useQuery(
+    api.profiles.getPreferences,
+    !staffLoading && !isStaff ? {} : "skip"
+  ) as Preferences | null | undefined;
+  const queriesLoading =
+    !isStaff && isProfileQueriesLoading(profile, preferences);
 
   const profileReady =
     !!profile &&
@@ -101,7 +108,17 @@ export default function LikesPage() {
     [shortlistMatches, likedMatches, passedMatches, likedYouMatches, isPremium]
   );
 
-  if (queriesLoading || staffLoading || isStaff) {
+  if (staffLoading || isStaff) {
+    return (
+      <DashboardLayout>
+        <div className="w-full max-w-lg mx-auto space-y-4" role="status" aria-busy>
+          <Skeleton className="h-64 w-full rounded-2xl" aria-hidden />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (queriesLoading) {
     return (
       <DashboardLayout>
         <div className="w-full max-w-lg mx-auto space-y-4" role="status">

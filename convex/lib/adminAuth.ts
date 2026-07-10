@@ -2,14 +2,38 @@ import { QueryCtx, MutationCtx } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
 import { hasPaidAccess, isOwnerRole, isStaffRole } from "./roles";
 
+/** Fast existence check — avoids scanning every profile. */
+export async function hasAnyStaff(ctx: QueryCtx | MutationCtx): Promise<boolean> {
+  const owner = await ctx.db
+    .query("profiles")
+    .withIndex("by_role", (q) => q.eq("role", "owner"))
+    .first();
+  if (owner) return true;
+  const admin = await ctx.db
+    .query("profiles")
+    .withIndex("by_role", (q) => q.eq("role", "admin"))
+    .first();
+  return !!admin;
+}
+
 export async function countStaff(ctx: QueryCtx | MutationCtx): Promise<number> {
-  const profiles = await ctx.db.query("profiles").collect();
-  return profiles.filter((p) => isStaffRole(p.role)).length;
+  const owners = await ctx.db
+    .query("profiles")
+    .withIndex("by_role", (q) => q.eq("role", "owner"))
+    .collect();
+  const admins = await ctx.db
+    .query("profiles")
+    .withIndex("by_role", (q) => q.eq("role", "admin"))
+    .collect();
+  return owners.length + admins.length;
 }
 
 export async function countOwners(ctx: QueryCtx | MutationCtx): Promise<number> {
-  const profiles = await ctx.db.query("profiles").collect();
-  return profiles.filter((p) => isOwnerRole(p.role)).length;
+  const owners = await ctx.db
+    .query("profiles")
+    .withIndex("by_role", (q) => q.eq("role", "owner"))
+    .collect();
+  return owners.length;
 }
 
 export async function getProfileForUser(

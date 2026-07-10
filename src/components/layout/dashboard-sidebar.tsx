@@ -62,10 +62,16 @@ export function DashboardSidebar() {
   const searchParams = useSearchParams();
   const { signOut } = useAuthActions();
   const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
-  const preferences = useQuery(api.profiles.getPreferences);
-  const unreadCount = useQuery(api.notifications.getUnreadCount);
-
   const isStaff = isStaffRole(user?.profile?.role);
+  const preferences = useQuery(
+    api.profiles.getPreferences,
+    user !== undefined && !isStaff ? {} : "skip"
+  );
+  const unreadCount = useQuery(
+    api.notifications.getUnreadCount,
+    user !== undefined && !isStaff ? {} : "skip"
+  );
+
   const profileComplete = user?.profile?.questionnaireComplete ?? false;
   const progress = user?.profile
     ? calculateProfileProgress(user.profile, preferences ?? undefined)

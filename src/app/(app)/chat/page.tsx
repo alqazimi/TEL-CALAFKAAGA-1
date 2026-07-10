@@ -86,9 +86,16 @@ export default function ChatPage() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentUser = useQuery(api.users.currentUser);
-  const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
-  const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-  const queriesLoading = isProfileQueriesLoading(profile, preferences);
+  const profile = useQuery(
+    api.profiles.getProfile,
+    !staffLoading && !isStaff ? {} : "skip"
+  ) as Profile | null | undefined;
+  const preferences = useQuery(
+    api.profiles.getPreferences,
+    !staffLoading && !isStaff ? {} : "skip"
+  ) as Preferences | null | undefined;
+  const queriesLoading =
+    !isStaff && isProfileQueriesLoading(profile, preferences);
   const profileReady =
     !!profile &&
     !queriesLoading &&
@@ -188,7 +195,19 @@ export default function ChatPage() {
     }
   };
 
-  if (queriesLoading || staffLoading || isStaff) {
+  if (staffLoading || isStaff) {
+    return (
+      <DashboardLayout>
+        <ChatShell>
+          <div className="flex flex-1 flex-col gap-4" role="status" aria-busy>
+            <Skeleton className="flex-1 w-full rounded-none sm:rounded-2xl" aria-hidden />
+          </div>
+        </ChatShell>
+      </DashboardLayout>
+    );
+  }
+
+  if (queriesLoading) {
     return (
       <DashboardLayout>
         <ChatShell>

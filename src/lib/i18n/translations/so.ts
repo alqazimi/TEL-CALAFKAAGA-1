@@ -43,6 +43,10 @@ export const so: Translations = {
     goToDashboard: "Tag dashboard-ka",
     loading: "Fadlan sug...",
     loadingData: "Macluumaadka waa la soo rarayaa...",
+    loadingStuck:
+      "Way qaadatay waqti badan. Hubi internetka, ka dib isku day ama dib u gal.",
+    retry: "Isku day",
+    signInAgain: "Dib u gal",
     securePayments: "Lacag Bixin Amaan ah",
     oneTime: "hal mar",
     lifetimeAccess: "Helitaan Weligeed ah",

@@ -25,10 +25,14 @@ export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const { user, isStaff, isLoading } = useStaffRedirect();
-  const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-  const profile = user?.profile ?? null;
+  const preferences = useQuery(
+    api.profiles.getPreferences,
+    user !== undefined && !isStaff ? {} : "skip"
+  ) as Preferences | null | undefined;
+  // null = loaded with no profile; undefined = still loading user
+  const profile = user === undefined ? undefined : (user?.profile ?? null);
   const queriesLoading =
-    isLoading || isProfileQueriesLoading(profile ?? undefined, preferences);
+    isLoading || (!isStaff && isProfileQueriesLoading(profile, preferences));
 
   const profileReady = !!profile?.questionnaireComplete;
   const canViewMatches = profileReady && !isStaff && hasPaidAccess(profile);
@@ -49,7 +53,18 @@ export default function DashboardPage() {
     }
   }, [router, shouldUseDiscoverHome]);
 
-  if (user === undefined || queriesLoading || isStaff || shouldUseDiscoverHome) {
+  if (isStaff || shouldUseDiscoverHome) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6 max-w-2xl" role="status" aria-busy>
+          <Skeleton className="h-8 w-48" aria-hidden />
+          <Skeleton className="h-40 w-full rounded-2xl" aria-hidden />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (user === undefined || queriesLoading) {
     return (
       <DashboardLayout>
         <div className="space-y-6 max-w-2xl" role="status">

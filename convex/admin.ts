@@ -3,8 +3,8 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import {
-  countStaff,
   getProfileForUser,
+  hasAnyStaff,
   normalizeEmail,
   requireAdmin,
   requireOwner,
@@ -14,20 +14,7 @@ import { isOwnerRole, isStaffRole, STAFF_PROFILE_COMPLETION_PATCH } from "./lib/
 import { assertProfileFullyComplete } from "./lib/profileCompleteness";
 import { QUESTIONNAIRE_COMPLETE_STEP } from "./lib/profileEnrichment";
 import { sendNotification } from "./lib/sendNotification";
-import { isPremiumMember, isBasicPaidMember } from "./lib/premium";
-
-function buildPaidByUserMap(
-  completedPayments: { userId: string; amount: number }[]
-) {
-  const paidByUser = new Map<string, number>();
-  for (const payment of completedPayments) {
-    paidByUser.set(
-      payment.userId,
-      (paidByUser.get(payment.userId) ?? 0) + payment.amount
-    );
-  }
-  return paidByUser;
-}
+import { isPremiumMember } from "./lib/premium";
 
 function pendingApprovalPriority(
   profile: { approved: boolean; hasPersonalSupport?: boolean },
@@ -40,7 +27,7 @@ function pendingApprovalPriority(
 export const hasAnyAdmin = query({
   args: {},
   handler: async (ctx) => {
-    return (await countStaff(ctx)) > 0;
+    return await hasAnyStaff(ctx);
   },
 });
 
@@ -50,13 +37,13 @@ export const getBootstrapStatus = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       return {
-        hasAdmins: (await countStaff(ctx)) > 0,
+        hasAdmins: await hasAnyStaff(ctx),
         canClaim: false,
         reason: "not_authenticated" as const,
       };
     }
 
-    const hasStaff = (await countStaff(ctx)) > 0;
+    const hasStaff = await hasAnyStaff(ctx);
     if (hasStaff) {
       return { hasAdmins: true, canClaim: false, reason: "admins_exist" as const };
     }
@@ -87,7 +74,7 @@ export const claimFirstAdmin = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
-    if ((await countStaff(ctx)) > 0) {
+    if (await hasAnyStaff(ctx)) {
       throw new Error("An owner or admin already exists.");
     }
 
@@ -144,22 +131,17 @@ export const getStats = query({
     const caller = await getProfileForUser(ctx, userId);
     if (!caller || !isStaffRole(caller.role)) return null;
 
-    // Keep this light — collecting messages/matches can stall the admin console.
+    // Profiles only — avoid scanning payments/messages (was hanging the admin UI).
     const profiles = await ctx.db.query("profiles").collect();
-    const payments = await ctx.db.query("payments").collect();
-
-    const completedPayments = payments.filter((p) => p.status === "completed");
-    const revenue = completedPayments.reduce((sum, p) => sum + p.amount, 0);
-    const paidByUser = buildPaidByUserMap(completedPayments);
     const members = profiles.filter((p) => !isStaffRole(p.role));
 
-    const paidBasicCount = members.filter((p) =>
-      isBasicPaidMember(p, paidByUser.get(p.userId) ?? 0)
+    const paidBasicCount = members.filter(
+      (p) => p.hasPaid && !p.hasPersonalSupport
     ).length;
-    const paidPremiumCount = members.filter((p) =>
-      isPremiumMember(p, paidByUser.get(p.userId) ?? 0)
-    ).length;
+    const paidPremiumCount = members.filter((p) => !!p.hasPersonalSupport).length;
     const unpaidCount = members.filter((p) => !p.hasPaid).length;
+    // Approximate revenue from known plan prices (cents).
+    const revenue = paidBasicCount * 1000 + paidPremiumCount * 2000;
 
     return {
       totalUsers: profiles.length,
@@ -171,9 +153,7 @@ export const getStats = query({
       paidBasicCount,
       paidPremiumCount,
       unpaidCount,
-      pendingApproval: members.filter(
-        (p) => !p.questionnaireComplete || !p.approved
-      ).length,
+      pendingApproval: members.filter((p) => !p.questionnaireComplete).length,
       bannedUsers: profiles.filter((p) => p.banned).length,
       isOwner: isOwnerRole(caller.role),
     };
@@ -208,32 +188,31 @@ export const getAllUsers = query({
 
     await requireAdmin(ctx, userId);
 
-    let profiles = await ctx.db.query("profiles").collect();
+    const limit = Math.min(Math.max(args.limit ?? 80, 1), 150);
+    const search = args.search?.trim().toLowerCase();
 
-    const completedPayments = (await ctx.db.query("payments").collect()).filter(
-      (p) => p.status === "completed"
-    );
-    const paidByUser = buildPaidByUserMap(completedPayments);
+    // Fast path: recent profiles only (no full-table scan for the default list).
+    let profiles = search
+      ? await ctx.db.query("profiles").collect()
+      : await ctx.db.query("profiles").order("desc").take(Math.max(limit * 3, 120));
 
-    const userCache = new Map<string, { email?: string } | null>();
-    for (const profile of profiles) {
-      if (!userCache.has(profile.userId)) {
-        userCache.set(profile.userId, await ctx.db.get(profile.userId));
-      }
-    }
-
-    if (args.search) {
-      const search = args.search.toLowerCase();
-      profiles = profiles.filter((p) => {
-        const email = userCache.get(p.userId)?.email?.toLowerCase() ?? "";
-        return (
+    if (search) {
+      const matched: typeof profiles = [];
+      for (const p of profiles) {
+        const user = await ctx.db.get(p.userId);
+        const email = user?.email?.toLowerCase() ?? "";
+        if (
           p.name.toLowerCase().includes(search) ||
           (p.country ?? "").toLowerCase().includes(search) ||
           (p.city ?? "").toLowerCase().includes(search) ||
           email.includes(search) ||
           (p.phone ?? "").toLowerCase().includes(search)
-        );
-      });
+        ) {
+          matched.push(p);
+        }
+        if (matched.length >= limit * 2) break;
+      }
+      profiles = matched;
     }
 
     if (args.role && args.role !== "all") {
@@ -243,17 +222,15 @@ export const getAllUsers = query({
     if (args.payment && args.payment !== "all") {
       profiles = profiles.filter((p) => {
         if (isStaffRole(p.role)) return false;
-
-        const cents = paidByUser.get(p.userId) ?? 0;
         switch (args.payment) {
           case "unpaid":
             return !p.hasPaid;
           case "paid":
-            return p.hasPaid;
+            return !!p.hasPaid;
           case "premium":
-            return isPremiumMember(p, cents);
+            return !!p.hasPersonalSupport;
           case "basic":
-            return isBasicPaidMember(p, cents);
+            return !!p.hasPaid && !p.hasPersonalSupport;
           default:
             return true;
         }
@@ -261,15 +238,13 @@ export const getAllUsers = query({
     }
 
     profiles.sort((a, b) => {
-      const aCents = paidByUser.get(a.userId) ?? 0;
-      const bCents = paidByUser.get(b.userId) ?? 0;
       const priorityDiff =
-        pendingApprovalPriority(a, aCents) - pendingApprovalPriority(b, bCents);
+        pendingApprovalPriority(a, a.hasPersonalSupport ? 2000 : a.hasPaid ? 1000 : 0) -
+        pendingApprovalPriority(b, b.hasPersonalSupport ? 2000 : b.hasPaid ? 1000 : 0);
       if (priorityDiff !== 0) return priorityDiff;
-      return a.name.localeCompare(b.name);
+      return b._creationTime - a._creationTime;
     });
 
-    const limit = Math.min(Math.max(args.limit ?? 100, 1), 200);
     const page = profiles.slice(0, limit);
 
     return await Promise.all(
@@ -278,12 +253,11 @@ export const getAllUsers = query({
         if (p.profileImageId) {
           imageUrl = await ctx.storage.getUrl(p.profileImageId);
         }
-        const user = userCache.get(p.userId);
-        const paidCents = paidByUser.get(p.userId) ?? 0;
+        const user = await ctx.db.get(p.userId);
         return {
           ...p,
           imageUrl,
-          paidCents,
+          paidCents: p.hasPersonalSupport ? 2000 : p.hasPaid ? 1000 : 0,
           email: user?.email ?? null,
         };
       })
