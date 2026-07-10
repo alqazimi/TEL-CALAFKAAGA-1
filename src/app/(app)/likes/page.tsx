@@ -19,7 +19,8 @@ import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
-import { isMemberOnboardingProfile, useStaffRedirect } from "@/hooks/use-staff-redirect";
+import { useStaffRedirect } from "@/hooks/use-staff-redirect";
+import { isMemberProfileReady } from "@/lib/profile-progress";
 import { isTrialExpired } from "@/lib/trial";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
@@ -36,8 +37,8 @@ export default function LikesPage() {
   const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
 
-  const canQuery =
-    profile?.questionnaireComplete && hasPaidAccess(profile);
+  const profileReady = !!profile && isMemberProfileReady(profile, preferences);
+  const canQuery = profileReady && hasPaidAccess(profile);
   const isPremium = isPremiumMember(profile);
 
   const matchLists = useQuery(
@@ -107,7 +108,7 @@ export default function LikesPage() {
     );
   }
 
-  if (profile && isMemberOnboardingProfile(profile)) {
+  if (profile && (!profile.questionnaireComplete || !profileReady)) {
     return (
       <DashboardLayout>
         <ProfileLockedGate profile={profile} preferences={preferences} />

@@ -24,6 +24,7 @@ import type * as lib_matchPresentation from "../lib/matchPresentation.js";
 import type * as lib_moderation from "../lib/moderation.js";
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_premium from "../lib/premium.js";
+import type * as lib_profileCompleteness from "../lib/profileCompleteness.js";
 import type * as lib_profileEnrichment from "../lib/profileEnrichment.js";
 import type * as lib_questionnaire from "../lib/questionnaire.js";
 import type * as lib_queueMemberEmail from "../lib/queueMemberEmail.js";
@@ -73,6 +74,7 @@ declare const fullApi: ApiFromModules<{
   "lib/moderation": typeof lib_moderation;
   "lib/phone": typeof lib_phone;
   "lib/premium": typeof lib_premium;
+  "lib/profileCompleteness": typeof lib_profileCompleteness;
   "lib/profileEnrichment": typeof lib_profileEnrichment;
   "lib/questionnaire": typeof lib_questionnaire;
   "lib/queueMemberEmail": typeof lib_queueMemberEmail;

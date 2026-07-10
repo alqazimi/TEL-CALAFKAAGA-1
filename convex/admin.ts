@@ -11,6 +11,8 @@ import {
   verifyBootstrapCredentials,
 } from "./lib/adminAuth";
 import { isOwnerRole, isStaffRole, STAFF_PROFILE_COMPLETION_PATCH } from "./lib/roles";
+import { assertProfileFullyComplete } from "./lib/profileCompleteness";
+import { QUESTIONNAIRE_COMPLETE_STEP } from "./lib/profileEnrichment";
 import { sendNotification } from "./lib/sendNotification";
 import { isPremiumMember, isBasicPaidMember } from "./lib/premium";
 
@@ -400,7 +402,19 @@ export const approveUser = mutation({
       return;
     }
 
-    await ctx.db.patch(args.profileId, { approved: true, verified: true });
+    const preferences = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", profile.userId))
+      .unique();
+
+    assertProfileFullyComplete(profile, preferences);
+
+    await ctx.db.patch(args.profileId, {
+      approved: true,
+      verified: true,
+      questionnaireComplete: true,
+      questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
+    });
 
     await sendNotification(ctx, {
       userId: profile.userId,

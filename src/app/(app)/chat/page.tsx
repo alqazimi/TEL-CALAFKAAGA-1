@@ -22,7 +22,8 @@ import { PaymentGate } from "@/components/payment/payment-gate";
 import type { Conversation, ChatMessage, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess } from "@/lib/access";
-import { isMemberOnboardingProfile, useStaffRedirect } from "@/hooks/use-staff-redirect";
+import { useStaffRedirect } from "@/hooks/use-staff-redirect";
+import { isMemberProfileReady } from "@/lib/profile-progress";
 import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
 import { TrialBanner } from "@/components/payment/trial-banner";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
@@ -88,9 +89,11 @@ export default function ChatPage() {
   const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
 
+  const profileReady = !!profile && isMemberProfileReady(profile, preferences);
+
   const conversations = useQuery(
     api.messages.getConversations,
-    profile?.questionnaireComplete ? undefined : "skip"
+    profileReady ? undefined : "skip"
   ) as Conversation[] | undefined;
 
   const messages = useQuery(
@@ -115,7 +118,7 @@ export default function ChatPage() {
 
   useMarkNotificationsRead(
     ["message"],
-    !!profile?.questionnaireComplete,
+    profileReady,
     activeConv?.profile?.userId
   );
 
@@ -197,7 +200,7 @@ export default function ChatPage() {
     );
   }
 
-  if (profile && isMemberOnboardingProfile(profile)) {
+  if (profile && (!profile.questionnaireComplete || !profileReady)) {
     return (
       <DashboardLayout>
         <ProfileLockedGate

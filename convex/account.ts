@@ -22,10 +22,11 @@ export const changePassword = action({
       throw new Error("Not authenticated");
     }
 
-    const email = await ctx.runQuery(internal.users.getEmailForUser, { userId });
-    if (!email) {
+    const rawEmail = await ctx.runQuery(internal.users.getEmailForUser, { userId });
+    if (!rawEmail) {
       throw new Error("No email on account");
     }
+    const email = rawEmail.trim().toLowerCase();
 
     try {
       await retrieveAccount(ctx, {

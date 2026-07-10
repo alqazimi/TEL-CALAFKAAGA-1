@@ -274,6 +274,13 @@ export type EncouragementKey =
   | "encourageHalfway"
   | "encourageDefault";
 
+export function isMemberProfileReady(
+  profile: Profile,
+  prefs?: Preferences | null
+): boolean {
+  return calculateProfileProgress(profile, prefs) >= 100;
+}
+
 export function getEncouragementKey(
   profile: Profile,
   prefs?: Preferences | null

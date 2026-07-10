@@ -105,10 +105,10 @@ export function AdminStaffInvitesPanel() {
   };
 
   return (
-    <Card className="border-primary/20 bg-primary/5">
+    <Card className="border-border shadow-none">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <UserPlus className="h-4 w-4 text-primary" />
+          <UserPlus className="h-4 w-4" />
           {t("adminInvites.title")}
         </CardTitle>
         <CardDescription>{t("adminInvites.description")}</CardDescription>

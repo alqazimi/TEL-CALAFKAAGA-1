@@ -5,6 +5,7 @@ import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { requireActiveProfile, requireAuthUserId } from "./lib/access";
 import { hasPaidAccess } from "./lib/roles";
+import { isProfileFullyComplete } from "./lib/profileCompleteness";
 import { getBlockedUserIds, isEitherBlocked } from "./lib/moderation";
 import {
   buildMatchResult,
@@ -48,6 +49,12 @@ async function getMatchAccessProfile(ctx: QueryCtx) {
   if (!myProfile?.questionnaireComplete) return null;
   if (!hasPaidAccess(myProfile)) return null;
 
+  const preferences = await ctx.db
+    .query("preferences")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+  if (!isProfileFullyComplete(myProfile, preferences)) return null;
+
   return { userId, myProfile };
 }
 
@@ -90,7 +97,6 @@ async function loadProfilesForUserIds(
         .unique();
 
       if (!profile || profile.banned || !profile.questionnaireComplete) return null;
-      if (profile.gender === myProfile.gender) return null;
       if (!profile.profileImageId) return null;
       if (!profilePassesMatchFilters(profile, args)) return null;
 
@@ -421,6 +427,16 @@ export const likeUser = mutation({
     }
     if (!hasPaidAccess(myProfile)) {
       throw new Error("Complete payment to like profiles");
+    }
+
+    const preferences = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+    if (!isProfileFullyComplete(myProfile, preferences)) {
+      throw new Error(
+        "Finish all profile questions, phone number, and photo before liking members"
+      );
     }
 
     if (await isEitherBlocked(ctx, userId, args.toUserId)) {

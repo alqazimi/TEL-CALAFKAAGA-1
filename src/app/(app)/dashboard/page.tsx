@@ -18,6 +18,7 @@ import { useTranslation } from "@/lib/i18n/context";
 import {
   calculateProfileProgress,
   getRemainingProgressPercent,
+  isMemberProfileReady,
 } from "@/lib/profile-progress";
 
 export default function DashboardPage() {
@@ -25,10 +26,10 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const { user, isStaff, isLoading } = useStaffRedirect();
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-  const canViewMatches =
-    user?.profile?.questionnaireComplete &&
-    !isStaff &&
-    hasPaidAccess(user?.profile);
+  const profile = user?.profile;
+  const profileReady =
+    !!profile && isMemberProfileReady(profile, preferences);
+  const canViewMatches = profileReady && !isStaff && hasPaidAccess(profile);
   const matches = useQuery(
     api.matches.getMatches,
     canViewMatches ? {} : "skip"
@@ -38,9 +39,7 @@ export default function DashboardPage() {
     canViewMatches ? undefined : "skip"
   ) as MutualMatch[] | undefined;
 
-  const profile = user?.profile;
-  const shouldUseDiscoverHome =
-    profile?.questionnaireComplete && hasPaidAccess(profile);
+  const shouldUseDiscoverHome = profileReady && hasPaidAccess(profile);
 
   useEffect(() => {
     if (shouldUseDiscoverHome) {
@@ -61,7 +60,7 @@ export default function DashboardPage() {
   }
 
   const firstName = profile?.name?.split(" ")[0] ?? t("dashboard.guestName");
-  const isComplete = profile?.questionnaireComplete ?? false;
+  const isComplete = profileReady;
   const profileProgress = profile
     ? calculateProfileProgress(profile, preferences ?? undefined)
     : 0;

@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { hasPaidAccess, isStaffRole } from "./lib/roles";
+import { isProfileFullyComplete } from "./lib/profileCompleteness";
 
 export const getNotifications = query({
   args: {},
@@ -46,7 +47,12 @@ export const getMemberReminders = query({
 
     if (!profile || isStaffRole(profile.role)) return [];
 
-    if (!profile.questionnaireComplete) {
+    const preferences = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
+
+    if (!profile.questionnaireComplete || !isProfileFullyComplete(profile, preferences)) {
       return [{ id: "complete-profile" as const, href: "/questionnaire" }];
     }
 

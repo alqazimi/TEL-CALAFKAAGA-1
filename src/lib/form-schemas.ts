@@ -60,22 +60,18 @@ export function createForgotEmailSchema(t: TranslateFn) {
   });
 }
 
-export function createResetCodeSchema(t: TranslateFn) {
-  return z.object({
-    code: z
-      .string()
-      .regex(/^\d{6}$/, t("validation.codeMin6")),
-  });
-}
-
+/** Step 2 of password reset: OTP + new password (verified together by the server). */
 export function createResetPasswordSchema(t: TranslateFn) {
-  return z.object({
-    newPassword: z.string().min(8, t("validation.passwordMin8")),
-    confirmPassword: z.string().min(1, t("validation.confirmPasswordRequired")),
-  }).refine((data) => data.newPassword === data.confirmPassword, {
-    message: t("validation.passwordsMismatch"),
-    path: ["confirmPassword"],
-  });
+  return z
+    .object({
+      code: z.string().regex(/^\d{6}$/, t("validation.codeMin6")),
+      newPassword: z.string().min(8, t("validation.passwordMin8")),
+      confirmPassword: z.string().min(1, t("validation.confirmPasswordRequired")),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t("validation.passwordsMismatch"),
+      path: ["confirmPassword"],
+    });
 }
 
 export function createChangePasswordSchema(t: TranslateFn) {

@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { APP_NAME } from "@/lib/constants";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
+import { normalizeAuthEmail } from "@/lib/auth-email";
 import { createLoginSchema } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -50,7 +51,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const result = await signIn("password", {
-        email: data.email,
+        email: normalizeAuthEmail(data.email),
         password: data.password,
         flow: "signIn",
       });

@@ -1,0 +1,397 @@
+"use client";
+
+import { useState } from "react";
+import { useMutation } from "convex/react";
+import { toast } from "sonner";
+import {
+  Ban,
+  CheckCircle,
+  Eye,
+  Mail,
+  MessageCircle,
+  Phone,
+  Search,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
+import type { Profile as AdminUser } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { isOwnerRole, isStaffRole } from "@/lib/access";
+import { WHATSAPP_URL } from "@/lib/constants";
+import { useTranslation } from "@/lib/i18n/context";
+import type { TranslationPath } from "@/lib/i18n/translations";
+import { cn } from "@/lib/utils";
+
+type RoleFilter = "all" | "user" | "admin" | "owner";
+type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
+
+function isPremiumUser(user: AdminUser) {
+  return user.hasPersonalSupport === true || (user.paidCents ?? 0) >= 2000;
+}
+
+function memberStatus(user: AdminUser): {
+  labelKey: TranslationPath;
+  className: string;
+} {
+  if (user.banned) {
+    return {
+      labelKey: "adminPage.statusBanned",
+      className: "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300",
+    };
+  }
+  if (isStaffRole(user.role)) {
+    return {
+      labelKey: user.role === "owner" ? "adminPage.statusOwner" : "adminPage.statusAdmin",
+      className: "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
+    };
+  }
+  if (!user.questionnaireComplete) {
+    return {
+      labelKey: "adminPage.statusIncomplete",
+      className: "bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-200",
+    };
+  }
+  if (!user.hasPaid) {
+    return {
+      labelKey: "adminPage.statusUnpaid",
+      className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    };
+  }
+  if (isPremiumUser(user)) {
+    return {
+      labelKey: "adminPage.statusPremium",
+      className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
+    };
+  }
+  return {
+    labelKey: "adminPage.statusPaid",
+    className: "bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-300",
+  };
+}
+
+interface AdminMembersPanelProps {
+  users: AdminUser[] | undefined;
+  search: string;
+  onSearchChange: (value: string) => void;
+  roleFilter: RoleFilter;
+  onRoleFilterChange: (value: RoleFilter) => void;
+  paymentFilter: PaymentFilter;
+  onPaymentFilterChange: (value: PaymentFilter) => void;
+  currentProfileId?: Id<"profiles">;
+  canManageRoles: boolean;
+  onOpenUser: (profileId: Id<"profiles">) => void;
+}
+
+export function AdminMembersPanel({
+  users,
+  search,
+  onSearchChange,
+  roleFilter,
+  onRoleFilterChange,
+  paymentFilter,
+  onPaymentFilterChange,
+  currentProfileId,
+  canManageRoles,
+  onOpenUser,
+}: AdminMembersPanelProps) {
+  const { t } = useTranslation();
+  const approveUser = useMutation(api.admin.approveUser);
+  const banUser = useMutation(api.admin.banUser);
+  const deleteUser = useMutation(api.admin.deleteUser);
+  const setUserRole = useMutation(api.admin.setUserRole);
+  const [busyId, setBusyId] = useState<Id<"profiles"> | null>(null);
+
+  const canApproveMember = (user: AdminUser) =>
+    !!user.questionnaireComplete &&
+    !!user.profileImageId &&
+    !!user.phone?.trim();
+
+  const runAction = async (
+    profileId: Id<"profiles">,
+    action: () => Promise<unknown>,
+    successMessage: string
+  ) => {
+    setBusyId(profileId);
+    try {
+      await action();
+      toast.success(successMessage);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("adminPage.actionFailed"));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="h-11 rounded-xl border-border/80 bg-background pl-10"
+            placeholder={t("adminPage.searchPlaceholder")}
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">{t("adminPage.filterByRole")}</p>
+            <Select
+              value={roleFilter}
+              onValueChange={(value) => onRoleFilterChange(value as RoleFilter)}
+            >
+              <SelectTrigger className="h-10 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("adminPage.filterAllRoles")}</SelectItem>
+                <SelectItem value="user">{t("adminPage.filterMembers")}</SelectItem>
+                <SelectItem value="admin">{t("adminPage.filterAdmins")}</SelectItem>
+                <SelectItem value="owner">{t("adminPage.filterOwner")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">{t("adminPage.filterByPayment")}</p>
+            <Select
+              value={paymentFilter}
+              onValueChange={(value) => onPaymentFilterChange(value as PaymentFilter)}
+            >
+              <SelectTrigger className="h-10 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("adminPage.filterAllPayments")}</SelectItem>
+                <SelectItem value="unpaid">{t("adminPage.unpaid")}</SelectItem>
+                <SelectItem value="basic">{t("adminPage.paidBasic")}</SelectItem>
+                <SelectItem value="premium">{t("adminPage.paidPremium")}</SelectItem>
+                <SelectItem value="paid">{t("adminPage.filterAnyPaid")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">{t("adminPage.clickHint")}</p>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="hidden grid-cols-[minmax(0,1.4fr)_110px_100px_minmax(0,1fr)] gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+          <span>{t("adminPage.colMember")}</span>
+          <span>{t("adminPage.colStatus")}</span>
+          <span>{t("adminPage.colPayment")}</span>
+          <span className="text-right">{t("adminPage.colActions")}</span>
+        </div>
+
+        {users === undefined ? (
+          <div className="space-y-3 p-4">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
+            ))}
+          </div>
+        ) : users.length === 0 ? (
+          <div className="px-4 py-14 text-center">
+            <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">{t("adminPage.noUsers")}</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {users.map((user) => {
+              const status = memberStatus(user);
+              const busy = busyId === user._id;
+              const paymentLabel = isStaffRole(user.role)
+                ? t("adminPage.badgeStaff")
+                : user.hasPaid
+                  ? isPremiumUser(user)
+                    ? t("adminPage.paidPremium")
+                    : t("adminPage.paidBasic")
+                  : t("adminPage.unpaid");
+
+              return (
+                <li
+                  key={user._id}
+                  className={cn(
+                    "grid gap-3 px-4 py-4 transition-colors hover:bg-muted/30 lg:grid-cols-[minmax(0,1.4fr)_110px_100px_minmax(0,1fr)] lg:items-center",
+                  )}
+                >
+                  <button
+                    type="button"
+                    className="flex min-w-0 items-start gap-3 text-left"
+                    onClick={() => onOpenUser(user._id)}
+                  >
+                    <Avatar className="h-11 w-11 border border-border">
+                      <AvatarImage src={user.imageUrl ?? undefined} />
+                      <AvatarFallback className="bg-muted font-semibold">
+                        {user.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="min-w-0 space-y-0.5">
+                      <span className="block truncate font-semibold text-foreground">
+                        {user.name}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground capitalize">
+                        {user.gender}
+                        {[user.city, user.country].filter(Boolean).length > 0
+                          ? ` · ${[user.city, user.country].filter(Boolean).join(", ")}`
+                          : ""}
+                      </span>
+                      {user.email && (
+                        <span className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                          <Mail className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{user.email}</span>
+                        </span>
+                      )}
+                      {user.phone && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Phone className="h-3 w-3 shrink-0" />
+                          {user.phone}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+
+                  <div className="flex items-center gap-2 lg:block">
+                    <span className="text-xs font-medium text-muted-foreground lg:hidden">
+                      {t("adminPage.colStatus")}
+                    </span>
+                    <Badge className={cn("border-0 text-xs font-medium", status.className)}>
+                      {t(status.labelKey)}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-2 lg:block">
+                    <span className="text-xs font-medium text-muted-foreground lg:hidden">
+                      {t("adminPage.colPayment")}
+                    </span>
+                    <p className="text-sm font-medium text-foreground">{paymentLabel}</p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9 rounded-lg"
+                      onClick={() => onOpenUser(user._id)}
+                    >
+                      <Eye className="mr-1.5 h-3.5 w-3.5" />
+                      {t("adminPage.viewProfile")}
+                    </Button>
+
+                    {isPremiumUser(user) && !isStaffRole(user.role) && (
+                      <Button size="sm" variant="outline" className="h-9 rounded-lg" asChild>
+                        <a
+                          href={`${WHATSAPP_URL}?text=${encodeURIComponent(
+                            `Hi, I'm contacting you about Hel Calafkaaga — ${user.name}.`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <MessageCircle className="mr-1.5 h-3.5 w-3.5 text-[#25D366]" />
+                          WhatsApp
+                        </a>
+                      </Button>
+                    )}
+
+                    {!user.approved && !isStaffRole(user.role) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-9 rounded-lg"
+                        disabled={busy || !canApproveMember(user)}
+                        title={
+                          canApproveMember(user)
+                            ? t("adminPage.approveUser")
+                            : t("adminPage.approveIncomplete")
+                        }
+                        onClick={() =>
+                          void runAction(
+                            user._id,
+                            () => approveUser({ profileId: user._id }),
+                            t("adminPage.approveSuccess")
+                          )
+                        }
+                      >
+                        <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                        {t("adminPage.approveShort")}
+                      </Button>
+                    )}
+
+                    {canManageRoles && user.role === "admin" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-9 rounded-lg"
+                        disabled={busy}
+                        onClick={() =>
+                          void runAction(
+                            user._id,
+                            () => setUserRole({ profileId: user._id, role: "user" }),
+                            t("adminPage.demoted")
+                          )
+                        }
+                      >
+                        {t("adminPage.removeAdmin")}
+                      </Button>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9 rounded-lg"
+                      disabled={busy || isOwnerRole(user.role)}
+                      onClick={() =>
+                        void runAction(
+                          user._id,
+                          () => banUser({ profileId: user._id, banned: !user.banned }),
+                          user.banned ? t("adminPage.unbanSuccess") : t("adminPage.banSuccess")
+                        )
+                      }
+                    >
+                      <Ban className="mr-1.5 h-3.5 w-3.5" />
+                      {user.banned ? t("adminPage.unbanShort") : t("adminPage.banShort")}
+                    </Button>
+
+                    {!isStaffRole(user.role) && user._id !== currentProfileId && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-9 rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        disabled={busy}
+                        onClick={() => {
+                          if (!window.confirm(t("adminPage.deleteConfirm", { name: user.name }))) {
+                            return;
+                          }
+                          void runAction(
+                            user._id,
+                            () => deleteUser({ profileId: user._id }),
+                            t("adminPage.deleteSuccess")
+                          );
+                        }}
+                      >
+                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                        {t("adminPage.deleteShort")}
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}

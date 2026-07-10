@@ -7,6 +7,7 @@ import {
 } from "./profileEnrichment";
 import { isStaffRole } from "./roles";
 import { getTrialEndsAt } from "./trial";
+import { isProfileFullyComplete } from "./profileCompleteness";
 
 type ProfileArgs = {
   name: string;
@@ -122,10 +123,37 @@ export async function ensureUserProfile(
     ) {
       backfill.trialEndsAt = getTrialEndsAt();
     }
-    if (existing.questionnaireComplete && !existing.approved) {
-      backfill.approved = true;
-      backfill.verified = true;
+
+    // Incomplete members who were already approved must finish everything first.
+    if (!isStaffRole(existing.role)) {
+      const preferences = await ctx.db
+        .query("preferences")
+        .withIndex("by_userId", (q) => q.eq("userId", userId))
+        .unique();
+      const merged = { ...existing, ...backfill };
+      if (
+        (merged.approved || merged.questionnaireComplete) &&
+        !isProfileFullyComplete(merged, preferences)
+      ) {
+        backfill.approved = false;
+        backfill.verified = false;
+        backfill.questionnaireComplete = false;
+        if (
+          merged.questionnaireStep === undefined ||
+          merged.questionnaireStep >= QUESTIONNAIRE_COMPLETE_STEP
+        ) {
+          backfill.questionnaireStep = PROFILE_DEFAULTS.questionnaireStep;
+        }
+      } else if (
+        merged.questionnaireComplete &&
+        !merged.approved &&
+        isProfileFullyComplete(merged, preferences)
+      ) {
+        backfill.approved = true;
+        backfill.verified = true;
+      }
     }
+
     if (isStaffRole(existing.role)) {
       if (!existing.questionnaireComplete) {
         backfill.questionnaireComplete = true;

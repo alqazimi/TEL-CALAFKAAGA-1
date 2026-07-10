@@ -5,6 +5,8 @@ import {
   religiousLevelFromPrayer,
 } from "./lib/profileEnrichment";
 import { getTrialEndsAt } from "./lib/trial";
+import { isProfileFullyComplete } from "./lib/profileCompleteness";
+import { isStaffRole } from "./lib/roles";
 
 /** One-time backfill for profiles created before new fields were added. */
 export const backfillProfileFields = internalMutation({
@@ -29,10 +31,6 @@ export const backfillProfileFields = internalMutation({
       }
       if (!profile.religiousLevel?.trim() && profile.prayerFrequency?.trim()) {
         patch.religiousLevel = religiousLevelFromPrayer(profile.prayerFrequency);
-      }
-      if (profile.questionnaireComplete && !profile.approved) {
-        patch.approved = true;
-        patch.verified = true;
       }
       if (
         profile.questionnaireComplete &&
@@ -62,6 +60,52 @@ export const backfillProfileFields = internalMutation({
     }
 
     return { updated, total: profiles.length };
+  },
+});
+
+/**
+ * Revoke live access for members who were approved/marked complete
+ * without finishing questions, phone, and photo. They must finish to auto-approve.
+ */
+export const revokeIncompleteApprovals = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let revoked = 0;
+
+    for (const profile of profiles) {
+      if (isStaffRole(profile.role)) continue;
+      if (!profile.approved && !profile.questionnaireComplete) continue;
+
+      const preferences = await ctx.db
+        .query("preferences")
+        .withIndex("by_userId", (q) => q.eq("userId", profile.userId))
+        .unique();
+
+      if (isProfileFullyComplete(profile, preferences)) {
+        if (profile.questionnaireComplete && !profile.approved) {
+          await ctx.db.patch(profile._id, {
+            approved: true,
+            verified: true,
+          });
+        }
+        continue;
+      }
+
+      await ctx.db.patch(profile._id, {
+        approved: false,
+        verified: false,
+        questionnaireComplete: false,
+        questionnaireStep:
+          profile.questionnaireStep === undefined ||
+          profile.questionnaireStep >= QUESTIONNAIRE_COMPLETE_STEP
+            ? PROFILE_DEFAULTS.questionnaireStep
+            : profile.questionnaireStep,
+      });
+      revoked++;
+    }
+
+    return { revoked, total: profiles.length };
   },
 });
 

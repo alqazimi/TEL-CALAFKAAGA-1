@@ -12,6 +12,7 @@ import {
 } from "./lib/questionnaire";
 import { isValidContactPhone } from "./lib/phone";
 import { QUESTIONNAIRE_COMPLETE_STEP } from "./lib/profileEnrichment";
+import { assertProfileFullyComplete } from "./lib/profileCompleteness";
 import {
   assertStorageOwnership,
   requireActiveProfile,
@@ -294,19 +295,12 @@ export const completeQuestionnaire = mutation({
     await requireActiveProfile(ctx, userId);
 
     const profile = await ensureUserProfile(ctx, userId);
+    const preferences = await ctx.db
+      .query("preferences")
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
+      .unique();
 
-    if (!profile.profileImageId) {
-      throw new Error("Please upload a profile photo before completing your profile.");
-    }
-
-    const trimmedName = profile.name?.trim() ?? "";
-    const trimmedPhone = profile.phone?.trim() ?? "";
-    if (trimmedName.length < 2 || trimmedName === "User") {
-      throw new Error("Please add your full name before completing your profile.");
-    }
-    if (!isValidContactPhone(trimmedPhone)) {
-      throw new Error("Please add your phone number before completing your profile.");
-    }
+    assertProfileFullyComplete(profile, preferences);
 
     await ctx.db.patch(profile._id, {
       questionnaireComplete: true,
