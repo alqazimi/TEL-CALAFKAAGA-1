@@ -84,29 +84,6 @@ export const en = {
     goTo: "Go to photo {{n}}",
     tapToView: "Tap photo for full-screen gallery · swipe right to like, left to pass",
   },
-  pwa: {
-    title: "Install Hel Calafkaaga",
-    androidDesc: "Add the app to your home screen for faster access to matches and messages.",
-    iosDesc: "Add Hel Calafkaaga to your home screen — it works like an app on iPhone.",
-    install: "Install app",
-    installing: "Installing...",
-    notNow: "Not now",
-    showSteps: "Show me how",
-    hideSteps: "Hide steps",
-    iosStep1: "Open this site in Safari (not Instagram or Facebook browser).",
-    iosStep2: "Tap the Share button at the bottom of Safari.",
-    iosStep3: 'Scroll and tap "Add to Home Screen", then tap Add.',
-    installSuccess: "App installed",
-    androidHomeScreenHint:
-      "Look for the Hel Calafkaaga icon on your home screen. If you only see it in the app drawer, long-press the icon → Add to Home screen.",
-    iosInstalledHint:
-      "Open Hel Calafkaaga from your home screen — it works like a real app.",
-    androidStep1: "Use Chrome (not Instagram or Facebook browser).",
-    androidStep2: 'Tap the menu ⋮ at the top right of Chrome.',
-    androidStep3: 'Tap "Install app" or "Add to Home screen", then confirm.',
-    iosNoAutoInstall:
-      "On iPhone there is no Install button — you must use Safari Share → Add to Home Screen.",
-  },
   notFound: {
     title: "Page not found",
     subtitle: "The page you're looking for doesn't exist or may have been moved.",

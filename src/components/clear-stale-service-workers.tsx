@@ -1,10 +1,10 @@
 import Script from "next/script";
 
 /**
- * Runs before React. Clears broken Chrome service workers that can make
- * Google → site clicks hang forever (Firefox often never had a SW).
+ * Unregisters leftover service workers from the removed PWA.
+ * Safe no-op once none remain.
  */
-export function ClearServiceWorkers() {
+export function ClearStaleServiceWorkers() {
   const script = `
 (function () {
   try {
@@ -38,7 +38,7 @@ export function ClearServiceWorkers() {
 `;
 
   return (
-    <Script id="hel-clear-service-workers" strategy="beforeInteractive">
+    <Script id="hel-clear-stale-service-workers" strategy="beforeInteractive">
       {script}
     </Script>
   );

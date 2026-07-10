@@ -117,12 +117,6 @@ export function rootMetadata(): Metadata {
       images: ["/opengraph-image"],
     },
     robots: { index: true, follow: true },
-    appleWebApp: {
-      capable: true,
-      title: SITE_BRAND_NAME,
-      statusBarStyle: "black-translucent",
-    },
-    manifest: "/manifest.webmanifest",
     formatDetection: { telephone: false },
     other: {
       "og:site_name": SITE_BRAND_NAME,

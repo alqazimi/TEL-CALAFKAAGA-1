@@ -23,7 +23,6 @@ import { isStaffRole } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isAppShellRoute, getAuthenticatedHomeRoute } from "@/lib/routes";
-import { isStandaloneDisplay } from "@/lib/pwa";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -76,11 +75,8 @@ export function AppShellHeader() {
     };
   }, [siteMenuOpen]);
 
-  const isStaff = isStaffRole(user?.profile?.role);
-  const onMarketing = !isAppShellRoute(pathname);
-
-  // Staff should use the public site chrome on marketing pages, not the app dashboard shell.
-  if (onMarketing && (isStaff || !isStandaloneDisplay())) return null;
+  // App shell header is only for signed-in app routes (not marketing pages).
+  if (!isAppShellRoute(pathname)) return null;
 
   return (
     <>

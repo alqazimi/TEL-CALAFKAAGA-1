@@ -1,17 +1,13 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
-import { ReactNode } from "react";
 import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "sonner";
 import { getConvexClient, isConvexConfigured } from "@/lib/convex-client";
 import { ConvexAuthStatus } from "@/components/auth/convex-auth-status";
 import { IdleSessionGuard } from "@/components/auth/idle-session-guard";
 import { LanguageProvider } from "@/lib/i18n/context";
-import { RegisterServiceWorker } from "@/components/pwa/register-service-worker";
-import { InstallPrompt } from "@/components/pwa/install-prompt";
-import { PwaStandaloneNav } from "@/components/pwa/pwa-standalone-nav";
 
 export function Providers({ children }: { children: ReactNode }) {
   const convex = useMemo(() => getConvexClient(), []);
@@ -27,16 +23,9 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ConvexAuthProvider client={convex}>
       <LanguageProvider>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-        >
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <IdleSessionGuard />
           <ConvexAuthStatus>{children}</ConvexAuthStatus>
-          <RegisterServiceWorker />
-          <PwaStandaloneNav />
-          <InstallPrompt />
           <Toaster position="top-right" richColors />
         </ThemeProvider>
       </LanguageProvider>

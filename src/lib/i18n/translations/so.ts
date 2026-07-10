@@ -86,33 +86,6 @@ export const so: Translations = {
     goTo: "U gudub sawirka {{n}}",
     tapToView: "Taabo sawirka si aad u aragto gallery-ga buuxa · midig u jiid si aad u jeclaato, bidix si aad u gudubto",
   },
-  pwa: {
-    title: "Ku rakib Hel Calafkaaga",
-    androidDesc:
-      "Ku dar app-ka shaashadda guriga si aad si dhakhso leh ugu gasho isbarbardhigga iyo fariimaha.",
-    iosDesc:
-      "Ku dar Hel Calafkaaga shaashadda guriga — waxay u shaqaysaa sida app iPhone-ka.",
-    install: "Rakib app-ka",
-    installing: "Waa la rakibayaa...",
-    notNow: "Hadda ma aha",
-    showSteps: "I tus sida loo sameeyo",
-    hideSteps: "Qari tallaabooyinka",
-    iosStep1:
-      "Fur goobtan Safari (ma aha browser-ka Instagram ama Facebook).",
-    iosStep2: "Taabo badhanka Share ee hoose ee Safari.",
-    iosStep3:
-      'Hoos u dhaqaaq oo taabo "Add to Home Screen", ka dibna taabo Add.',
-    installSuccess: "App-ka waa la rakibay",
-    androidHomeScreenHint:
-      "Ka eeg calaamadda Hel Calafkaaga shaashadda guriga. Haddii ay ku jirto liiska app-yada oo keliya, taabo oo hay → “Add to Home screen”.",
-    iosInstalledHint:
-      "Ka fur Hel Calafkaaga shaashadda guriga — wuxuu u shaqeeyaa sida app dhab ah.",
-    androidStep1: "Isticmaal Chrome (ma aha browser-ka Instagram ama Facebook).",
-    androidStep2: "Taabo menu-ga ⋮ ee kore ee Chrome.",
-    androidStep3: 'Taabo "Install app" ama "Add to Home screen", ka dibna xaqiiji.',
-    iosNoAutoInstall:
-      "iPhone-ka ma jiro badhan Install — waa inaad isticmaashaa Safari Share → Add to Home Screen.",
-  },
   notFound: {
     title: "Bogga lama helin",
     subtitle: "Bogga aad raadinayso ma jiro ama waa la raray.",
