@@ -1,7 +1,7 @@
 export const APP_NAME = "Hel Calafkaaga";
 /** Full brand / business name — used for Google site name & Organization schema. */
 export const SITE_BRAND_NAME = "Hel Calafkaaga";
-export const PRODUCTION_SITE_URL = "https://helcalafkaaga.com";
+export const PRODUCTION_SITE_URL = "https://www.helcalafkaaga.com";
 export const APP_TAGLINE = "Find Your Perfect Match";
 export const APP_DESCRIPTION =
   "We connect serious men and women for marriage based on Islamic values, trust, and respect.";

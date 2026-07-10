@@ -150,7 +150,7 @@ Run `npm run convex:webhook-url` (uses `NEXT_PUBLIC_CONVEX_URL` from `.env.local
 
 ### 5. Google Search Console
 
-Domain `helcalafkaaga.com` — verification file is in `public/googleca20de5c3c61d824.html`.
+Domain `helcalafkaaga.com` — verify via Cloudflare DNS (or Search Console DNS TXT). No HTML verification file is required.
 
 ### Vercel
 

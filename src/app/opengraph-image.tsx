@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { APP_DESCRIPTION, SITE_BRAND_NAME } from "@/lib/constants";
 
-export const alt = `${SITE_BRAND_NAME} — Islamic Matchmaking`;
+export const alt = SITE_BRAND_NAME;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -76,7 +76,7 @@ export default function OpenGraphImage() {
             opacity: 0.7,
           }}
         >
-          helcalafkaaga.com
+          {SITE_BRAND_NAME}
         </div>
       </div>
     ),
