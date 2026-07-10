@@ -16,7 +16,6 @@ import { MatchProfileModal } from "@/components/matches/match-profile-modal";
 import { MatchSwipeDeck } from "@/components/matches/match-swipe-deck";
 import { MatchProfileCard } from "@/components/matches/match-profile-card";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
-import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
@@ -64,7 +63,7 @@ export default function MatchesPage() {
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
 
   const canQuery =
-    profile?.questionnaireComplete && profile.approved && hasPaidAccess(profile);
+    profile?.questionnaireComplete && hasPaidAccess(profile);
   const isPremium = isPremiumMember(profile);
 
   useMarkNotificationsRead(["match", "approval"], canQuery);
@@ -149,14 +148,6 @@ export default function MatchesPage() {
                 })
           }
         />
-      </DashboardLayout>
-    );
-  }
-
-  if (profile && !profile.approved) {
-    return (
-      <DashboardLayout>
-        <PendingApprovalGate isPremium={isPremiumMember(profile)} />
       </DashboardLayout>
     );
   }

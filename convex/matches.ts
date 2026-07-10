@@ -4,7 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { requireActiveProfile, requireAuthUserId } from "./lib/access";
-import { hasPaidAccess, isStaffRole } from "./lib/roles";
+import { hasPaidAccess } from "./lib/roles";
 import { getBlockedUserIds, isEitherBlocked } from "./lib/moderation";
 import {
   buildMatchResult,
@@ -47,7 +47,6 @@ async function getMatchAccessProfile(ctx: QueryCtx) {
 
   if (!myProfile?.questionnaireComplete) return null;
   if (!hasPaidAccess(myProfile)) return null;
-  if (!isStaffRole(myProfile.role) && !myProfile.approved) return null;
 
   return { userId, myProfile };
 }
@@ -90,7 +89,7 @@ async function loadProfilesForUserIds(
         .withIndex("by_userId", (q) => q.eq("userId", targetUserId))
         .unique();
 
-      if (!profile || profile.banned || !profile.approved) return null;
+      if (!profile || profile.banned || !profile.questionnaireComplete) return null;
       if (profile.gender === myProfile.gender) return null;
       if (!profile.profileImageId) return null;
       if (!profilePassesMatchFilters(profile, args)) return null;
@@ -385,7 +384,7 @@ export const getCompatibilityBreakdown = query({
       .withIndex("by_userId", (q) => q.eq("userId", args.targetUserId))
       .unique();
 
-    if (!candidate || candidate.banned || !candidate.approved) return null;
+    if (!candidate || candidate.banned || !candidate.questionnaireComplete) return null;
 
     const myPrefs = await ctx.db
       .query("preferences")
@@ -422,9 +421,6 @@ export const likeUser = mutation({
     }
     if (!hasPaidAccess(myProfile)) {
       throw new Error("Complete payment to like profiles");
-    }
-    if (!isStaffRole(myProfile.role) && !myProfile.approved) {
-      throw new Error("Your profile is pending admin approval");
     }
 
     if (await isEitherBlocked(ctx, userId, args.toUserId)) {

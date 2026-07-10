@@ -15,7 +15,6 @@ import {
   type SecondaryMatchList,
 } from "@/components/matches/match-lists-view";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
-import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
@@ -38,7 +37,7 @@ export default function LikesPage() {
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
 
   const canQuery =
-    profile?.questionnaireComplete && profile.approved && hasPaidAccess(profile);
+    profile?.questionnaireComplete && hasPaidAccess(profile);
   const isPremium = isPremiumMember(profile);
 
   const matchLists = useQuery(
@@ -137,14 +136,6 @@ export default function LikesPage() {
                 })
           }
         />
-      </DashboardLayout>
-    );
-  }
-
-  if (profile && !profile.approved) {
-    return (
-      <DashboardLayout>
-        <PendingApprovalGate isPremium={isPremiumMember(profile)} />
       </DashboardLayout>
     );
   }

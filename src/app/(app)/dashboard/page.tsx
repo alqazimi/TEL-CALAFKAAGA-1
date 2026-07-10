@@ -9,11 +9,10 @@ import type { Preferences } from "@/lib/profile-progress";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
-import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { NextStepCard } from "@/components/dashboard/next-step-card";
 import { TrialBanner } from "@/components/payment/trial-banner";
 import { useStaffRedirect } from "@/hooks/use-staff-redirect";
-import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { hasPaidAccess } from "@/lib/access";
 import { isInTrialPeriod } from "@/lib/trial";
 import { useTranslation } from "@/lib/i18n/context";
 import {
@@ -29,7 +28,6 @@ export default function DashboardPage() {
   const canViewMatches =
     user?.profile?.questionnaireComplete &&
     !isStaff &&
-    user?.profile?.approved &&
     hasPaidAccess(user?.profile);
   const matches = useQuery(
     api.matches.getMatches,
@@ -42,9 +40,7 @@ export default function DashboardPage() {
 
   const profile = user?.profile;
   const shouldUseDiscoverHome =
-    profile?.questionnaireComplete &&
-    hasPaidAccess(profile) &&
-    profile.approved;
+    profile?.questionnaireComplete && hasPaidAccess(profile);
 
   useEffect(() => {
     if (shouldUseDiscoverHome) {
@@ -66,8 +62,6 @@ export default function DashboardPage() {
 
   const firstName = profile?.name?.split(" ")[0] ?? t("dashboard.guestName");
   const isComplete = profile?.questionnaireComplete ?? false;
-  const hasPaid = hasPaidAccess(profile);
-  const awaitingApproval = isComplete && hasPaid && profile && !profile.approved;
   const profileProgress = profile
     ? calculateProfileProgress(profile, preferences ?? undefined)
     : 0;
@@ -96,11 +90,7 @@ export default function DashboardPage() {
           <TrialBanner profile={profile} />
         )}
 
-        {awaitingApproval && (
-          <PendingApprovalGate isPremium={isPremiumMember(profile)} className="py-0" />
-        )}
-
-        {user && !awaitingApproval && (
+        {user && (
           <NextStepCard user={user} matches={matches} mutualCount={myMatches?.length ?? 0} />
         )}
 

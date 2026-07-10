@@ -323,8 +323,8 @@ export const completeQuestionnaire = mutation({
       await sendNotification(ctx, {
         userId,
         type: "approval",
-        title: "Profile approved",
-        body: "Your profile is verified. You can now browse matches and connect with members.",
+        title: "Profile ready",
+        body: "Your profile is complete. You can now browse matches and connect with members.",
         sendEmail: true,
       });
     }

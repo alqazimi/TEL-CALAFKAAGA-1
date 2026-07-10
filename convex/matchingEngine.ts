@@ -19,10 +19,7 @@ export const recalculateScores = internalMutation({
 
     if (!userPrefs) return;
 
-    const allProfiles = await ctx.db
-      .query("profiles")
-      .withIndex("by_approved", (q) => q.eq("approved", true))
-      .collect();
+    const allProfiles = await ctx.db.query("profiles").collect();
 
     const oppositeGender =
       userProfile.gender === "male" ? "female" : "male";

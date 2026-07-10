@@ -54,10 +54,6 @@ export const getMemberReminders = query({
       return [{ id: "complete-payment" as const, href: "/payment" }];
     }
 
-    if (!profile.approved) {
-      return [{ id: "pending-approval" as const, href: "/dashboard" }];
-    }
-
     return [];
   },
 });

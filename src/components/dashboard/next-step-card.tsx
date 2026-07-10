@@ -16,7 +16,7 @@ import type { CurrentUser, MatchResult, MemberReminder, MemberReminderId } from 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { hasPaidAccess } from "@/lib/access";
 import { isInTrialPeriod } from "@/lib/trial";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
@@ -53,8 +53,6 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
   const isComplete = profile?.questionnaireComplete ?? false;
   const hasPaid = hasPaidAccess(profile);
   const inTrial = isInTrialPeriod(profile);
-  const isApproved = profile?.approved ?? false;
-  const isPremium = isPremiumMember(profile);
   const discoverCount = matches?.length ?? 0;
   const profileProgress = profile
     ? calculateProfileProgress(profile, preferences ?? undefined)
@@ -84,7 +82,7 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
     href = primaryReminder.href;
     action = t(copy.action);
     Icon = reminderIcons[primaryReminder.id];
-  } else if (isComplete && hasPaid && isApproved) {
+  } else if (isComplete && hasPaid) {
     title = t("dashboard.nextBrowseTitle");
     body =
       discoverCount > 0
@@ -98,7 +96,7 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
   }
 
   const showMatchPreview =
-    isComplete && hasPaid && isApproved && matches && matches.length > 0;
+    isComplete && hasPaid && matches && matches.length > 0;
 
   return (
     <div className="space-y-4">
@@ -135,12 +133,6 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
                   })}
                 </p>
               )}
-              {hasPaid && !isApproved && isPremium && (
-                <p className="text-xs text-violet-600 dark:text-violet-400 mt-2 flex items-center gap-1">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {t("dashboard.pendingApprovalPremiumDesc")}
-                </p>
-              )}
             </div>
           </div>
 
@@ -151,7 +143,7 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             </Button>
-            {isComplete && hasPaid && isApproved && (
+            {isComplete && hasPaid && (
               <div className="flex gap-4 text-sm text-muted-foreground">
                 <span>
                   <strong className="text-foreground">{discoverCount}</strong>{" "}
