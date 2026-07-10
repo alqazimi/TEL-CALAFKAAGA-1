@@ -21,7 +21,7 @@ import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
 import { useStaffRedirect } from "@/hooks/use-staff-redirect";
-import { isMemberProfileReady } from "@/lib/profile-progress";
+import { isMemberProfileReady, isProfileQueriesLoading } from "@/lib/profile-progress";
 import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
 import { TrialBanner } from "@/components/payment/trial-banner";
 import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
@@ -62,8 +62,12 @@ export default function MatchesPage() {
 
   const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
+  const queriesLoading = isProfileQueriesLoading(profile, preferences);
 
-  const profileReady = !!profile && isMemberProfileReady(profile, preferences);
+  const profileReady =
+    !!profile &&
+    !queriesLoading &&
+    (profile.questionnaireComplete || isMemberProfileReady(profile, preferences));
   const canQuery = profileReady && hasPaidAccess(profile);
   const isPremium = isPremiumMember(profile);
 
@@ -109,7 +113,7 @@ export default function MatchesPage() {
     }
   };
 
-  if (profile === undefined || staffLoading || isStaff) {
+  if (queriesLoading || staffLoading || isStaff) {
     return (
       <DashboardLayout>
         <div className="w-full max-w-lg mx-auto space-y-4" role="status">
@@ -120,7 +124,7 @@ export default function MatchesPage() {
     );
   }
 
-  if (profile && (!profile.questionnaireComplete || !profileReady)) {
+  if (profile && !profileReady) {
     return (
       <DashboardLayout>
         <ProfileLockedGate profile={profile} preferences={preferences} />

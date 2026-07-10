@@ -23,7 +23,7 @@ import type { Conversation, ChatMessage, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess } from "@/lib/access";
 import { useStaffRedirect } from "@/hooks/use-staff-redirect";
-import { isMemberProfileReady } from "@/lib/profile-progress";
+import { isMemberProfileReady, isProfileQueriesLoading } from "@/lib/profile-progress";
 import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
 import { TrialBanner } from "@/components/payment/trial-banner";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
@@ -88,8 +88,11 @@ export default function ChatPage() {
   const currentUser = useQuery(api.users.currentUser);
   const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-
-  const profileReady = !!profile && isMemberProfileReady(profile, preferences);
+  const queriesLoading = isProfileQueriesLoading(profile, preferences);
+  const profileReady =
+    !!profile &&
+    !queriesLoading &&
+    (profile.questionnaireComplete || isMemberProfileReady(profile, preferences));
 
   const conversations = useQuery(
     api.messages.getConversations,
@@ -185,7 +188,7 @@ export default function ChatPage() {
     }
   };
 
-  if (profile === undefined || staffLoading || isStaff) {
+  if (queriesLoading || staffLoading || isStaff) {
     return (
       <DashboardLayout>
         <ChatShell>
@@ -200,7 +203,7 @@ export default function ChatPage() {
     );
   }
 
-  if (profile && (!profile.questionnaireComplete || !profileReady)) {
+  if (profile && !profileReady) {
     return (
       <DashboardLayout>
         <ProfileLockedGate

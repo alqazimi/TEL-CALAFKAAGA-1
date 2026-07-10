@@ -281,6 +281,14 @@ export function isMemberProfileReady(
   return calculateProfileProgress(profile, prefs) >= 100;
 }
 
+/** True while Convex profile/preferences queries have not resolved yet. */
+export function isProfileQueriesLoading(
+  profile: Profile | null | undefined,
+  preferences: Preferences | null | undefined
+): boolean {
+  return profile === undefined || preferences === undefined;
+}
+
 export function getEncouragementKey(
   profile: Profile,
   prefs?: Preferences | null

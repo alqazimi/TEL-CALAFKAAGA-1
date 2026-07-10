@@ -18,7 +18,7 @@ import { useTranslation } from "@/lib/i18n/context";
 import {
   calculateProfileProgress,
   getRemainingProgressPercent,
-  isMemberProfileReady,
+  isProfileQueriesLoading,
 } from "@/lib/profile-progress";
 
 export default function DashboardPage() {
@@ -26,9 +26,11 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const { user, isStaff, isLoading } = useStaffRedirect();
   const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-  const profile = user?.profile;
-  const profileReady =
-    !!profile && isMemberProfileReady(profile, preferences);
+  const profile = user?.profile ?? null;
+  const queriesLoading =
+    isLoading || isProfileQueriesLoading(profile ?? undefined, preferences);
+
+  const profileReady = !!profile?.questionnaireComplete;
   const canViewMatches = profileReady && !isStaff && hasPaidAccess(profile);
   const matches = useQuery(
     api.matches.getMatches,
@@ -47,7 +49,7 @@ export default function DashboardPage() {
     }
   }, [router, shouldUseDiscoverHome]);
 
-  if (user === undefined || isLoading || isStaff || shouldUseDiscoverHome) {
+  if (user === undefined || queriesLoading || isStaff || shouldUseDiscoverHome) {
     return (
       <DashboardLayout>
         <div className="space-y-6 max-w-2xl" role="status">
