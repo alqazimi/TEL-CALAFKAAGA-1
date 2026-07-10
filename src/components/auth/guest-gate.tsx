@@ -17,12 +17,6 @@ export function GuestGate({ children }: { children: ReactNode }) {
   const waitingOnUser = isAuthenticated && user === undefined;
   const stuck = useLoadingTimeout(isLoading || waitingOnUser, 8_000);
 
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7871/ingest/6cf5a6b8-1f24-414d-9025-2210f130bf17',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7bb7f4'},body:JSON.stringify({sessionId:'7bb7f4',runId:'pre-fix',hypothesisId:'B',location:'guest-gate.tsx:state',message:'GuestGate state',data:{isLoading,isAuthenticated,waitingOnUser,stuck,userState:user===undefined?'undefined':user===null?'null':'loaded',hasProfile:!!user?.profile,role:user?.profile?.role??null},timestamp:Date.now()})}).catch(()=>{});
-  }, [isLoading, isAuthenticated, waitingOnUser, stuck, user]);
-  // #endregion
-
   useEffect(() => {
     if (isLoading || !isAuthenticated) return;
     if (user === undefined) return;

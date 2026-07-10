@@ -45,13 +45,6 @@ export function ConvexAuthStatus({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [isLoading]);
 
-  // #region agent log
-  useEffect(() => {
-    if (!mounted) return;
-    fetch('http://127.0.0.1:7871/ingest/6cf5a6b8-1f24-414d-9025-2210f130bf17',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7bb7f4'},body:JSON.stringify({sessionId:'7bb7f4',runId:'pre-fix',hypothesisId:'A',location:'convex-auth-status.tsx:state',message:'ConvexAuthStatus state',data:{isLoading,timedOut,dismissed,configured:isConvexConfigured(),host:typeof window!=='undefined'?window.location.host:null},timestamp:Date.now()})}).catch(()=>{});
-  }, [mounted, isLoading, timedOut, dismissed]);
-  // #endregion
-
   useEffect(() => {
     if (!timedOut || dismissed) return;
     // Bad/stale tokens often leave auth spinning — clear them once.

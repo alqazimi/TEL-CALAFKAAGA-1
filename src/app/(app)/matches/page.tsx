@@ -72,12 +72,6 @@ export default function MatchesPage() {
   const queriesLoading =
     !isStaff && isProfileQueriesLoading(profile, preferences);
 
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7871/ingest/6cf5a6b8-1f24-414d-9025-2210f130bf17',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7bb7f4'},body:JSON.stringify({sessionId:'7bb7f4',runId:'pre-fix',hypothesisId:'B',location:'matches/page.tsx:queries',message:'Matches page query gate',data:{staffLoading,isStaff,queriesLoading,profileState:profile===undefined?'undefined':profile===null?'null':'loaded',prefsState:preferences===undefined?'undefined':preferences===null?'null':'loaded',questionnaireComplete:profile?.questionnaireComplete??null},timestamp:Date.now()})}).catch(()=>{});
-  }, [staffLoading, isStaff, queriesLoading, profile, preferences]);
-  // #endregion
-
   const profileReady =
     !!profile &&
     !queriesLoading &&
