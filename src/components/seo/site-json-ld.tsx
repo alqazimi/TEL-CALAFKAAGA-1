@@ -13,6 +13,10 @@ function getCanonicalSiteUrl() {
   return `${base}/`;
 }
 
+/**
+ * Google site name preference — WebSite.name on the home page.
+ * @see https://developers.google.com/search/docs/appearance/site-names
+ */
 export function SiteJsonLd() {
   const siteUrl = getCanonicalSiteUrl();
   const siteOrigin = siteUrl.replace(/\/$/, "");
@@ -22,10 +26,20 @@ export function SiteJsonLd() {
     "@context": "https://schema.org",
     "@graph": [
       {
+        "@type": "WebSite",
+        "@id": `${siteOrigin}/#website`,
+        name: SITE_BRAND_NAME,
+        alternateName: ["HelCalafkaaga", "Hel Calaf"],
+        url: siteUrl,
+        description: SEO_SO.siteDescription,
+        inLanguage: ["so", "en"],
+        publisher: { "@id": `${siteOrigin}/#organization` },
+      },
+      {
         "@type": "Organization",
         "@id": `${siteOrigin}/#organization`,
         name: SITE_BRAND_NAME,
-        alternateName: ["Hel Calafkaaga Matchmaking"],
+        alternateName: ["HelCalafkaaga", "Hel Calaf"],
         url: siteOrigin,
         logo: {
           "@type": "ImageObject",
@@ -40,18 +54,8 @@ export function SiteJsonLd() {
           "@type": "ContactPoint",
           contactType: "customer support",
           telephone: WHATSAPP_DISPLAY,
-          availableLanguage: ["English", "Somali"],
+          availableLanguage: ["Somali", "English"],
         },
-      },
-      {
-        "@type": "WebSite",
-        "@id": `${siteOrigin}/#website`,
-        name: SITE_BRAND_NAME,
-        alternateName: ["Hel Calafkaaga Matchmaking"],
-        url: siteUrl,
-        description: SEO_SO.siteDescription,
-        inLanguage: ["en", "so"],
-        publisher: { "@id": `${siteOrigin}/#organization` },
       },
     ],
   };

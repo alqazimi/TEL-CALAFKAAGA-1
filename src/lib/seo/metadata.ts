@@ -3,7 +3,7 @@ import { APP_NAME, PRODUCTION_SITE_URL, SITE_BRAND_NAME } from "@/lib/constants"
 
 /** Primary SEO copy — Somali first (default site language). */
 export const SEO_SO = {
-  siteTitle: `${APP_NAME} — Adeegga Isbarbardhigga Guurka Islaamiga ah`,
+  siteTitle: APP_NAME,
   siteDescription:
     "Waxaan isku xirnaa rag iyo dumar dhab u ah guurka iyadoo lagu saleynayo qiyamka Islaamka, kalsoonida, iyo ixtiraam. Diiwaangeli, dhammaystir profile-kaaga, oo hel lammaane xalaal ah.",
   keywords: [
@@ -20,7 +20,7 @@ export const SEO_SO = {
   ],
   pages: {
     home: {
-      title: `${APP_NAME} — Hel Lammaanahaaga Xalaal ah`,
+      title: `${APP_NAME}`,
       description:
         "Hel lammaanaha noloshaada iyadoo lagu saleynayo diinta, iswaafajinta, iyo ixtiraamka. Diiwaangeli laga bilaabo $10.",
     },
@@ -81,6 +81,7 @@ export function rootMetadata(): Metadata {
     metadataBase: new URL(base),
     creator: SITE_BRAND_NAME,
     publisher: SITE_BRAND_NAME,
+    category: "lifestyle",
     alternates: {
       canonical: "/",
       languages: {
@@ -98,20 +99,20 @@ export function rootMetadata(): Metadata {
       alternateLocale: ["en_US"],
       url: `${base}/`,
       siteName: SITE_BRAND_NAME,
-      title: siteTitle,
+      title: SITE_BRAND_NAME,
       description: siteDescription,
       images: [
         {
           url: "/opengraph-image",
           width: 1200,
           height: 630,
-          alt: `${SITE_BRAND_NAME} — Isbarbardhigga Guurka Islaamiga ah`,
+          alt: SITE_BRAND_NAME,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: siteTitle,
+      title: SITE_BRAND_NAME,
       description: siteDescription,
       images: ["/opengraph-image"],
     },
@@ -123,6 +124,9 @@ export function rootMetadata(): Metadata {
     },
     manifest: "/manifest.webmanifest",
     formatDetection: { telephone: false },
+    other: {
+      "og:site_name": SITE_BRAND_NAME,
+    },
   };
 }
 
@@ -132,21 +136,29 @@ export function pageMetadata(
 ): Metadata {
   const { title, description } = SEO_SO.pages[page];
   const canonical = `${siteUrl()}${path}`;
+  const isHome = path === "/";
 
   return {
-    title,
+    title: isHome ? { absolute: SITE_BRAND_NAME } : title,
     description,
+    applicationName: SITE_BRAND_NAME,
     alternates: {
       canonical,
       languages: { so: canonical, en: canonical },
     },
     openGraph: {
-      title,
+      title: isHome ? SITE_BRAND_NAME : title,
       description,
       url: canonical,
       locale: "so_SO",
       alternateLocale: ["en_US"],
       siteName: SITE_BRAND_NAME,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: isHome ? SITE_BRAND_NAME : title,
+      description,
     },
   };
 }

@@ -9,7 +9,7 @@ import {
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: `${SITE_BRAND_NAME} — Islamic Matchmaking`,
+    name: SITE_BRAND_NAME,
     short_name: SITE_BRAND_NAME,
     description: APP_DESCRIPTION,
     start_url: "/matches?source=homescreen",

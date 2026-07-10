@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { useEffect } from "react";
 import { useConvexAuth } from "convex/react";
 import { Button } from "@/components/ui/button";
 import { useLoadingTimeout } from "@/hooks/use-loading-timeout";
@@ -39,6 +40,12 @@ export function AuthRegisterCta({
   const { t } = useTranslation();
   const dashboardText = dashboardLabel ?? t("common.goToDashboard");
   const href = registerHref ?? registerHrefForPlan(plan);
+
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7871/ingest/6cf5a6b8-1f24-414d-9025-2210f130bf17',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7bb7f4'},body:JSON.stringify({sessionId:'7bb7f4',runId:'pre-fix',hypothesisId:'A',location:'auth-register-cta.tsx:state',message:'AuthRegisterCta auth state',data:{isLoading,isAuthenticated,authStuck,branch:isLoading&&!authStuck?'disabled-loading':isAuthenticated&&!isLoading?'dashboard-link':'register-link'},timestamp:Date.now()})}).catch(()=>{});
+  }, [isLoading, isAuthenticated, authStuck]);
+  // #endregion
 
   const handleRegisterClick = () => {
     if (plan) savePlanPreference(plan);

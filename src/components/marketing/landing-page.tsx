@@ -195,27 +195,27 @@ export function LandingPage() {
             variants={{ animate: { transition: { staggerChildren: 0.1 } } }}
             className="max-w-2xl"
           >
-            <motion.p
-              variants={fadeUp}
-              className="mb-3 font-display text-sm font-semibold uppercase tracking-[0.2em] text-primary sm:text-base"
-            >
-              {SITE_BRAND_NAME}
-            </motion.p>
-
-            <motion.span
-              variants={fadeUp}
-              className="inline-flex items-center rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground mb-6"
-            >
-              {t("landing.badge")}
-            </motion.span>
-
             <motion.h1
               variants={fadeUp}
               className="font-display text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.1]"
             >
+              {SITE_BRAND_NAME}
+            </motion.h1>
+
+            <motion.span
+              variants={fadeUp}
+              className="mt-4 inline-flex items-center rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground"
+            >
+              {t("landing.badge")}
+            </motion.span>
+
+            <motion.p
+              variants={fadeUp}
+              className="mt-5 font-display text-2xl font-semibold tracking-tight text-white/95 sm:text-3xl lg:text-4xl leading-snug"
+            >
               {t("landing.heroTitle")}{" "}
               <span className="text-primary">{t("landing.heroHighlight")}</span>
-            </motion.h1>
+            </motion.p>
 
             <motion.p
               variants={fadeUp}
