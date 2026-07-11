@@ -6,6 +6,7 @@ import { useMutation } from "convex/react";
 import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import {
+  CheckCircle2,
   CreditCard,
   Flag,
   Heart,
@@ -272,6 +273,24 @@ export default function AdminPage() {
       icon: Users,
     },
     {
+      label: t("adminPage.approvedMen"),
+      value: stats?.approvedMale ?? "—",
+      hint: t("adminPage.statApprovedMenHint"),
+      icon: Users,
+    },
+    {
+      label: t("adminPage.approvedWomen"),
+      value: stats?.approvedFemale ?? "—",
+      hint: t("adminPage.statApprovedWomenHint"),
+      icon: Users,
+    },
+    {
+      label: t("adminPage.approvedTotal"),
+      value: stats?.approvedTotal ?? "—",
+      hint: t("adminPage.statApprovedTotalHint"),
+      icon: CheckCircle2,
+    },
+    {
       label: t("adminPage.paidPremium"),
       value:
         stats != null
@@ -491,6 +510,9 @@ export default function AdminPage() {
               onPaymentFilterChange={setPaymentFilter}
               reviewFilter={reviewFilter}
               onReviewFilterChange={setReviewFilter}
+              approvedMale={stats?.approvedMale}
+              approvedFemale={stats?.approvedFemale}
+              approvedTotal={stats?.approvedTotal}
               currentProfileId={currentUser?.profile?._id}
               canManageRoles={canManageRoles}
               onOpenUser={setSelectedProfileId}

@@ -142,6 +142,9 @@ interface AdminMembersPanelProps {
   onPaymentFilterChange: (value: PaymentFilter) => void;
   reviewFilter: ReviewFilter;
   onReviewFilterChange: (value: ReviewFilter) => void;
+  approvedMale?: number;
+  approvedFemale?: number;
+  approvedTotal?: number;
   currentProfileId?: Id<"profiles">;
   canManageRoles: boolean;
   onOpenUser: (profileId: Id<"profiles">) => void;
@@ -157,6 +160,9 @@ export function AdminMembersPanel({
   onPaymentFilterChange,
   reviewFilter,
   onReviewFilterChange,
+  approvedMale,
+  approvedFemale,
+  approvedTotal,
   currentProfileId,
   canManageRoles,
   onOpenUser,
@@ -309,6 +315,33 @@ export function AdminMembersPanel({
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/80 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/30">
+          <div className="text-center">
+            <p className="text-lg font-semibold tabular-nums text-foreground">
+              {approvedMale ?? "—"}
+            </p>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {t("adminPage.approvedMen")}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-semibold tabular-nums text-foreground">
+              {approvedFemale ?? "—"}
+            </p>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {t("adminPage.approvedWomen")}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-semibold tabular-nums text-foreground">
+              {approvedTotal ?? "—"}
+            </p>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {t("adminPage.approvedTotal")}
+            </p>
           </div>
         </div>
 

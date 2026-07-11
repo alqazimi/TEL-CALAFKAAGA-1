@@ -168,6 +168,12 @@ export const getStats = query({
     // Approximate revenue from known plan prices (cents).
     const revenue = paidBasicCount * 1000 + paidPremiumCount * 2000;
 
+    const approvedMembers = members.filter(
+      (p) => resolveReviewStatus(p) === "approved"
+    );
+    const approvedMale = approvedMembers.filter((p) => p.gender === "male").length;
+    const approvedFemale = approvedMembers.filter((p) => p.gender === "female").length;
+
     // Lightweight counts — capped scans to avoid hanging the admin UI.
     const matchSample = await ctx.db.query("matches").take(500);
     const messageSample = await ctx.db.query("messages").take(500);
@@ -177,6 +183,9 @@ export const getStats = query({
       totalUsers: profiles.length,
       maleUsers: profiles.filter((p) => p.gender === "male").length,
       femaleUsers: profiles.filter((p) => p.gender === "female").length,
+      approvedMale,
+      approvedFemale,
+      approvedTotal: approvedMembers.length,
       totalMatches: activeMatches,
       totalMessages: messageSample.length,
       revenue,

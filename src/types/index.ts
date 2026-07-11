@@ -162,6 +162,9 @@ export interface AdminStats {
   totalUsers: number;
   maleUsers: number;
   femaleUsers: number;
+  approvedMale?: number;
+  approvedFemale?: number;
+  approvedTotal?: number;
   totalMatches: number;
   totalMessages: number;
   revenue: number;
