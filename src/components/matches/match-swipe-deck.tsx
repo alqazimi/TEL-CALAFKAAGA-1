@@ -130,7 +130,7 @@ function SwipeCard({
         <Card className="overflow-hidden shadow-xl border-border/80">
           <button
             type="button"
-            className="relative block w-full h-[min(52vh,28rem)] bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10"
+            className="relative block w-full h-[min(58vh,34rem)] lg:h-[min(62vh,38rem)] bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10"
             onClick={() => openGallery(0)}
             disabled={!photos.length}
           >
@@ -156,11 +156,11 @@ function SwipeCard({
             )}
             <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/75 to-transparent" />
             <div className="absolute bottom-5 left-5 right-5 text-left text-white">
-              <p className="text-2xl font-semibold">
+              <p className="text-2xl font-semibold sm:text-3xl">
                 {match.name}, {match.age}
               </p>
-              <p className="text-sm text-white/90 flex items-center gap-1 mt-1">
-                <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <p className="text-sm text-white/90 flex items-center gap-1 mt-1 sm:text-base">
+                <MapPin className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
                 {location}
               </p>
             </div>

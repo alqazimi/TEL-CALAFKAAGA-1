@@ -115,7 +115,7 @@ export default function LikesPage() {
   if (staffLoading || isStaff) {
     return (
       <DashboardLayout>
-        <div className="w-full max-w-lg mx-auto space-y-4" role="status" aria-busy>
+        <div className="w-full max-w-6xl mx-auto space-y-4" role="status" aria-busy>
           <Skeleton className="h-64 w-full rounded-2xl" aria-hidden />
         </div>
       </DashboardLayout>
@@ -174,17 +174,17 @@ export default function LikesPage() {
   if (matchLists === undefined) {
     return (
       <DashboardLayout>
-        <Skeleton className="h-64 w-full max-w-lg mx-auto rounded-2xl" />
+        <Skeleton className="h-64 w-full max-w-6xl mx-auto rounded-2xl" />
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout>
-      <div className="space-y-5 max-w-lg mx-auto">
+      <div className="space-y-5 mx-auto w-full max-w-6xl">
         <div>
-          <h1 className="text-2xl font-semibold">{t("app.likes")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-2xl font-semibold sm:text-3xl">{t("app.likes")}</h1>
+          <p className="text-sm text-muted-foreground mt-1 sm:text-base">
             {listCounts > 0
               ? t("likesPage.summary", { count: listCounts })
               : t("likesPage.summaryEmpty")}

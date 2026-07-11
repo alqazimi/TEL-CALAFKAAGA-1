@@ -68,7 +68,7 @@ export function MatchProfileCard({
       transition={{ delay: index * 0.04, duration: 0.35 }}
     >
       <Card className="overflow-hidden group hover:shadow-xl hover:shadow-primary/8 transition-all duration-300 border-border/80">
-        <div className="relative h-64 sm:h-72 bg-muted">
+        <div className="relative h-72 sm:h-80 lg:h-[22rem] bg-muted">
           {match.imageUrl ? (
             <LazyImage
               src={match.imageUrl}
@@ -77,21 +77,21 @@ export function MatchProfileCard({
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 to-gold/10">
-              <Avatar className="h-20 w-20">
-                <AvatarFallback className="text-3xl font-display">
+              <Avatar className="h-24 w-24 sm:h-28 sm:w-28">
+                <AvatarFallback className="text-3xl font-display sm:text-4xl">
                   {match.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               {match.photoHidden && (
-                <p className="text-xs text-muted-foreground px-4 text-center">
+                <p className="text-xs text-muted-foreground px-4 text-center sm:text-sm">
                   {t("matchesPage.photoPrivate")}
                 </p>
               )}
             </div>
           )}
-          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4 text-white">
-            <h3 className="text-xl font-semibold tracking-tight">
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/75 to-transparent" />
+          <div className="absolute bottom-4 left-4 right-4 text-white sm:bottom-5 sm:left-5 sm:right-5">
+            <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
               {match.name}, {match.age}
             </h3>
           </div>
@@ -114,16 +114,16 @@ export function MatchProfileCard({
           </div>
         </div>
 
-        <CardContent className="p-5 space-y-4">
+        <CardContent className="p-5 space-y-4 sm:p-6">
           <TrustBadges profile={match} size="sm" />
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
             {facts.slice(0, 6).map((fact) => (
               <div
                 key={fact.label}
-                className="flex items-center gap-2 rounded-xl bg-muted/60 px-2.5 py-2 text-xs text-muted-foreground"
+                className="flex items-center gap-2 rounded-xl bg-muted/60 px-2.5 py-2.5 text-xs text-muted-foreground sm:text-sm"
               >
-                <fact.icon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <fact.icon className="h-3.5 w-3.5 shrink-0 text-primary sm:h-4 sm:w-4" />
                 <span className="truncate">{fact.label}</span>
               </div>
             ))}

@@ -139,7 +139,7 @@ export function MatchListsView({
             <p className="text-sm text-muted-foreground mt-2">{emptyDesc}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
             {current.map((match, i) => (
               <MatchProfileCard
                 key={match.userId}

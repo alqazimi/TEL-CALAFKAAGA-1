@@ -71,9 +71,9 @@ export function MatchProfileModal({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-card text-card-foreground rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-border"
+        className="bg-card text-card-foreground rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-border"
       >
-        <div className="relative h-56 bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
+        <div className="relative h-72 sm:h-80 md:h-[22rem] bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
           {gallery[0] ? (
             <button type="button" className="block h-full w-full" onClick={() => openGallery(0)}>
               <LazyImage src={gallery[0]} alt={match.name} className="h-full w-full object-cover" />
