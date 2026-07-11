@@ -79,10 +79,11 @@ export default function LoginPage() {
       <AuthShell
         title={t("auth.welcomeBack")}
         description={t("auth.signInDesc", { name: APP_NAME })}
+        eyebrow={t("auth.signInEyebrow")}
         footer={
           <p className="text-center text-sm text-muted-foreground">
             {t("auth.noAccount")}{" "}
-            <Link href="/register" className="font-medium text-primary hover:underline">
+            <Link href="/register" className="font-semibold text-primary hover:underline">
               {t("auth.createAccount")}
             </Link>
           </p>
@@ -94,7 +95,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  className="pl-11"
+                  className="h-13 rounded-2xl pl-11 text-[15px]"
                   {...register("email")}
                   placeholder={t("auth.emailPlaceholder")}
                   autoComplete="email"
@@ -109,7 +110,7 @@ export default function LoginPage() {
               labelAction={
                 <Link
                   href="/forgot-password"
-                  className="text-xs font-medium text-primary hover:underline"
+                  className="text-xs font-semibold text-primary hover:underline"
                 >
                   {t("auth.forgotPassword")}
                 </Link>
@@ -119,7 +120,7 @@ export default function LoginPage() {
                 <Input
                   id="password"
                   type="password"
-                  className="pl-11"
+                  className="h-13 rounded-2xl pl-11 text-[15px]"
                   {...register("password")}
                   placeholder={t("auth.passwordPlaceholder")}
                   autoComplete="current-password"
@@ -127,7 +128,12 @@ export default function LoginPage() {
               </InputIconWrapper>
             </FormField>
 
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            <Button
+              type="submit"
+              className="mt-1 h-13 w-full rounded-2xl text-base font-semibold shadow-md shadow-primary/20"
+              size="lg"
+              disabled={loading}
+            >
               {loading ? t("auth.signingIn") : t("auth.signIn")}
             </Button>
           </form>

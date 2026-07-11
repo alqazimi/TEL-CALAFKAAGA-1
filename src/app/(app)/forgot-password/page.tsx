@@ -182,7 +182,7 @@ export default function ForgotPasswordPage() {
               <Input
                 id="email"
                 type="email"
-                className="pl-11"
+                className="h-13 rounded-2xl pl-11 text-[15px]"
                 {...emailForm.register("email")}
                 placeholder={t("auth.emailPlaceholder")}
                 autoComplete="email"
@@ -190,7 +190,12 @@ export default function ForgotPasswordPage() {
             </InputIconWrapper>
           </FormField>
 
-          <Button type="submit" className="w-full font-semibold" size="lg" disabled={sending}>
+          <Button
+            type="submit"
+            className="h-13 w-full rounded-2xl text-base font-semibold shadow-md shadow-primary/20"
+            size="lg"
+            disabled={sending}
+          >
             {sending ? t("auth.sendingReset") : t("auth.sendResetCode")}
           </Button>
         </form>
@@ -207,7 +212,7 @@ export default function ForgotPasswordPage() {
                 type="text"
                 inputMode="numeric"
                 maxLength={6}
-                className="pl-11 tracking-[0.35em] text-center text-lg"
+                className="h-13 rounded-2xl pl-11 tracking-[0.35em] text-center text-lg"
                 {...resetForm.register("code")}
                 placeholder={t("auth.codePlaceholder")}
                 autoComplete="one-time-code"
@@ -224,7 +229,7 @@ export default function ForgotPasswordPage() {
               <Input
                 id="newPassword"
                 type="password"
-                className="pl-11"
+                className="h-13 rounded-2xl pl-11 text-[15px]"
                 {...resetForm.register("newPassword")}
                 placeholder={t("auth.passwordNewPlaceholder")}
                 autoComplete="new-password"
@@ -241,7 +246,7 @@ export default function ForgotPasswordPage() {
               <Input
                 id="confirmPassword"
                 type="password"
-                className="pl-11"
+                className="h-13 rounded-2xl pl-11 text-[15px]"
                 {...resetForm.register("confirmPassword")}
                 placeholder={t("auth.passwordConfirmPlaceholder")}
                 autoComplete="new-password"
@@ -249,7 +254,12 @@ export default function ForgotPasswordPage() {
             </InputIconWrapper>
           </FormField>
 
-          <Button type="submit" className="w-full font-semibold" size="lg" disabled={resetting}>
+          <Button
+            type="submit"
+            className="h-13 w-full rounded-2xl text-base font-semibold shadow-md shadow-primary/20"
+            size="lg"
+            disabled={resetting}
+          >
             {resetting ? t("auth.resetting") : t("auth.setNewPassword")}
           </Button>
 

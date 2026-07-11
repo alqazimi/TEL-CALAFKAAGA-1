@@ -107,6 +107,7 @@ export default function RegisterDetailsPage() {
       description={
         isEditGender ? t("auth.changeGenderDesc") : t("auth.registerStep2Desc")
       }
+      eyebrow={isEditGender ? undefined : t("auth.registerEyebrow")}
       footer={
         <p className="text-center text-sm text-muted-foreground">
           {t("auth.wrongAccount")}{" "}
@@ -145,7 +146,7 @@ export default function RegisterDetailsPage() {
 
         <Button
           type="button"
-          className="w-full font-semibold"
+          className="h-13 w-full rounded-2xl text-base font-semibold shadow-md shadow-primary/20"
           size="lg"
           disabled={loading || !gender}
           onClick={() => void onContinue()}

@@ -15,7 +15,6 @@ import { RegisterStepIndicator } from "@/components/auth/register-step-indicator
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
-import { APP_NAME } from "@/lib/constants";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { createAccountSchema } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
@@ -80,8 +79,9 @@ export default function RegisterPage() {
   return (
     <GuestGate>
       <AuthShell
-        title={t("auth.registerTitle", { name: APP_NAME })}
+        title={t("auth.registerHeading")}
         description={t("auth.registerStep1Desc")}
+        eyebrow={t("auth.registerEyebrow")}
         footer={
           <p className="text-center text-sm text-muted-foreground">
             {t("auth.alreadyHaveAccount")}{" "}
@@ -104,7 +104,7 @@ export default function RegisterPage() {
                 <Input
                   id="email"
                   type="email"
-                  className="pl-11"
+                  className="h-13 rounded-2xl pl-11 text-[15px]"
                   {...accountForm.register("email")}
                   placeholder={t("auth.emailPlaceholder")}
                   autoComplete="email"
@@ -122,7 +122,7 @@ export default function RegisterPage() {
                 <Input
                   id="password"
                   type="password"
-                  className="pl-11"
+                  className="h-13 rounded-2xl pl-11 text-[15px]"
                   {...accountForm.register("password")}
                   placeholder={t("auth.passwordNewPlaceholder")}
                   autoComplete="new-password"
@@ -140,7 +140,7 @@ export default function RegisterPage() {
                 <Input
                   id="confirmPassword"
                   type="password"
-                  className="pl-11"
+                  className="h-13 rounded-2xl pl-11 text-[15px]"
                   {...accountForm.register("confirmPassword")}
                   placeholder={t("auth.passwordConfirmPlaceholder")}
                   autoComplete="new-password"
@@ -148,7 +148,12 @@ export default function RegisterPage() {
               </InputIconWrapper>
             </FormField>
 
-            <Button type="submit" className="w-full font-semibold" size="lg" disabled={loading}>
+            <Button
+              type="submit"
+              className="mt-1 h-13 w-full rounded-2xl text-base font-semibold shadow-md shadow-primary/20"
+              size="lg"
+              disabled={loading}
+            >
               {loading ? t("auth.creatingAccount") : t("auth.continue")}
             </Button>
           </form>
