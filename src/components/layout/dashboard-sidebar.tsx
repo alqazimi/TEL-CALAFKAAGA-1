@@ -12,14 +12,8 @@ import {
   Bell,
   Shield,
   LogOut,
-  Users,
-  CreditCard,
-  TrendingUp,
-  Megaphone,
-  Flag,
   Home,
 } from "lucide-react";
-import type { TranslationPath } from "@/lib/i18n/translations";
 import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../convex/_generated/api";
 import type { CurrentUser } from "@/types";
@@ -34,6 +28,7 @@ import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { isStaffRole } from "@/lib/access";
 import { calculateProfileProgress } from "@/lib/profile-progress";
 import { useSignOut } from "@/hooks/use-sign-out";
+import { ADMIN_NAV_TABS, isAdminNavTab } from "@/lib/admin-nav";
 
 const iconMap = {
   LayoutDashboard,
@@ -44,21 +39,6 @@ const iconMap = {
   Sparkles,
   Bell,
 };
-
-const STAFF_NAV: {
-  tab: string;
-  labelKey: TranslationPath;
-  icon: typeof Users;
-}[] = [
-  { tab: "dashboard", labelKey: "adminPage.dashboard", icon: LayoutDashboard },
-  { tab: "users", labelKey: "adminPage.users", icon: Users },
-  { tab: "reports", labelKey: "adminPage.reports", icon: Flag },
-  { tab: "payments", labelKey: "adminPage.payments", icon: CreditCard },
-  { tab: "announcements", labelKey: "adminPage.announcements", icon: Megaphone },
-  { tab: "analytics", labelKey: "adminPage.analytics", icon: TrendingUp },
-  { tab: "audit", labelKey: "adminPage.auditLogs", icon: ClipboardList },
-  { tab: "settings", labelKey: "adminPage.settings", icon: Shield },
-];
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -83,6 +63,9 @@ export function DashboardSidebar() {
   const { t } = useTranslation();
   const homeHref = getAuthenticatedHomeRoute(user?.profile);
   const isLoading = user === undefined;
+  const currentTab = isAdminNavTab(searchParams.get("tab"))
+    ? searchParams.get("tab")!
+    : "dashboard";
 
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:top-16 lg:bottom-0 lg:left-0 lg:z-40 lg:border-r lg:border-border lg:bg-card/95 lg:backdrop-blur-xl">
@@ -90,13 +73,13 @@ export function DashboardSidebar() {
         <BrandLogo href={isStaff ? "/admin" : homeHref} className="px-2 mb-6" />
 
         {!isLoading && !isStaff && user?.profile && !profileComplete && (
-          <div className="mb-4 rounded-xl bg-accent p-3 space-y-1.5">
+          <div className="mb-4 space-y-1.5 rounded-xl bg-accent p-3">
             <p className="text-xs font-medium text-accent-foreground">
               {t("profileProgress.sidebarProgress", { percent: progress })}
             </p>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
-                className="h-full bg-primary rounded-full transition-all"
+                className="h-full rounded-full bg-primary transition-all"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -111,16 +94,17 @@ export function DashboardSidebar() {
               const isActive =
                 pathname === link.href ||
                 (link.href === "/likes" && pathname.startsWith("/likes")) ||
-                (!profileComplete && link.href === "/questionnaire" && pathname.startsWith("/questionnaire"));
+                (!profileComplete &&
+                  link.href === "/questionnaire" &&
+                  pathname.startsWith("/questionnaire"));
               const isLocked = "locked" in link && link.locked && !profileComplete;
-              const href = link.href;
 
               return (
                 <Link
                   key={link.href}
-                  href={href}
+                  href={link.href}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all",
+                    "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
                     isActive
                       ? "bg-accent text-accent-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -144,31 +128,30 @@ export function DashboardSidebar() {
                   {t("app.admin")}
                 </span>
               </div>
-              {STAFF_NAV.map((item) => {
+              {ADMIN_NAV_TABS.map((item) => {
                 const Icon = item.icon;
                 const onAdmin = pathname.startsWith("/admin");
-                const currentTab = searchParams.get("tab") ?? "dashboard";
                 const isActive = onAdmin && currentTab === item.tab;
                 return (
                   <Link
                     key={item.tab}
                     href={`/admin?tab=${item.tab}`}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all",
+                      "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
                       isActive
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
                     <Icon className="h-5 w-5 shrink-0" />
-                    {t(item.labelKey)}
+                    {t(item.titleKey)}
                   </Link>
                 );
               })}
               <Link
                 href="/profile"
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all mt-1",
+                  "mt-1 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
                   pathname === "/profile"
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -180,7 +163,7 @@ export function DashboardSidebar() {
               <Link
                 href="/"
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all",
+                  "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
                   pathname === "/"
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"

@@ -52,6 +52,12 @@ import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 import {
+  ADMIN_NAV_TAB_IDS,
+  ADMIN_NAV_TABS,
+  isAdminNavTab,
+  type AdminNavTab,
+} from "@/lib/admin-nav";
+import {
   PERSONAL_SUPPORT_PRICE,
   REGISTRATION_PRICE,
   SUPPORT_EMAIL,
@@ -71,18 +77,7 @@ type ReviewFilter =
   | "rejected"
   | "suspended";
 
-const ADMIN_TABS = [
-  "dashboard",
-  "users",
-  "messages",
-  "reports",
-  "payments",
-  "announcements",
-  "analytics",
-  "audit",
-  "settings",
-] as const;
-type AdminTab = (typeof ADMIN_TABS)[number];
+type AdminTab = AdminNavTab;
 
 function formatPaymentLabel(
   payment: AdminPayment,
@@ -107,9 +102,8 @@ export default function AdminPage() {
   const { t } = useTranslation();
 
   const tabParam = searchParams.get("tab");
-  const activeTab: AdminTab = ADMIN_TABS.includes(tabParam as AdminTab)
-    ? (tabParam as AdminTab)
-    : "dashboard";
+  const activeTab: AdminTab = isAdminNavTab(tabParam) ? tabParam : "dashboard";
+  const chatOpen = Boolean(searchParams.get("chat"));
   const profileParam = searchParams.get("profile");
   const selectedProfileId =
     profileParam && profileParam.length > 0
@@ -265,29 +259,12 @@ export default function AdminPage() {
   const TAB_META: Record<
     AdminTab,
     { title: TranslationPath; desc: TranslationPath; icon: typeof Users }
-  > = {
-    dashboard: {
-      title: "adminPage.dashboard",
-      desc: "adminPage.dashboardDesc",
-      icon: LayoutDashboard,
-    },
-    users: { title: "adminPage.users", desc: "adminPage.usersDesc", icon: Users },
-    messages: {
-      title: "adminPage.messagesTab",
-      desc: "adminPage.messagesTabDesc",
-      icon: MessageCircle,
-    },
-    payments: { title: "adminPage.payments", desc: "adminPage.paymentsDesc", icon: CreditCard },
-    analytics: { title: "adminPage.analytics", desc: "adminPage.analyticsDesc", icon: TrendingUp },
-    reports: { title: "adminPage.reports", desc: "adminPage.reportsDesc", icon: Flag },
-    announcements: {
-      title: "adminPage.announcements",
-      desc: "adminPage.announcementsDesc",
-      icon: Megaphone,
-    },
-    audit: { title: "adminPage.auditLogs", desc: "adminPage.auditLogsDesc", icon: ScrollText },
-    settings: { title: "adminPage.settings", desc: "adminPage.settingsDesc", icon: Settings },
-  };
+  > = Object.fromEntries(
+    ADMIN_NAV_TABS.map((item) => [
+      item.tab,
+      { title: item.titleKey, desc: item.descKey, icon: item.icon },
+    ])
+  ) as Record<AdminTab, { title: TranslationPath; desc: TranslationPath; icon: typeof Users }>;
 
   const isOwner = canManageRoles;
   const overviewStats = [
@@ -444,8 +421,14 @@ export default function AdminPage() {
           </section>
         )}
 
-        <nav className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 lg:hidden">
-          {ADMIN_TABS.map((tab) => {
+        <nav
+          className={cn(
+            "flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 lg:hidden",
+            chatOpen && "hidden"
+          )}
+          aria-label={t("app.admin")}
+        >
+          {ADMIN_NAV_TAB_IDS.map((tab) => {
             const meta = TAB_META[tab];
             const Icon = meta.icon;
             const active = activeTab === tab;

@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, Suspense, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
@@ -11,6 +11,10 @@ import { TrialAccessSync } from "@/components/auth/trial-access-sync";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n/context";
+import { useSafeQuery } from "@/lib/use-safe-query";
+import { api } from "../../../convex/_generated/api";
+import { isStaffRole } from "@/lib/access";
+import { cn } from "@/lib/utils";
 
 const mobileNavFallback = (
   <div className="lg:hidden fixed bottom-0 left-0 right-0 h-[3.25rem] border-t border-border bg-card" />
@@ -25,8 +29,13 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signOut } = useAuthActions();
   const router = useRouter();
+  const pathname = usePathname();
   const { t } = useTranslation();
   const [waitedTooLong, setWaitedTooLong] = useState(false);
+  const user = useSafeQuery(api.users.currentUser);
+  const isStaff = isStaffRole(user?.profile?.role);
+  // Admin mobile uses the in-page tab strip only (no bottom bar).
+  const adminMobileNoTabBar = isStaff && pathname.startsWith("/admin");
 
   useEffect(() => {
     if (!isLoading) {
@@ -71,8 +80,6 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // Don't blank the shell forever — if auth is slow, still paint chrome;
-  // unauthenticated users are redirected above once loading finishes.
   if (isLoading) {
     return (
       <div className="min-h-screen dashboard-bg flex flex-col">
@@ -97,11 +104,18 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
         <DashboardSidebar />
       </Suspense>
       <div className="flex flex-1 flex-col lg:pl-64 lg:pt-16">
-        <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 pb-[calc(var(--app-tabbar)+1rem)] lg:pb-8">
+        <div
+          className={cn(
+            "mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:pb-8",
+            adminMobileNoTabBar
+              ? "pb-6"
+              : "pb-[calc(var(--app-tabbar)+1rem)]"
+          )}
+        >
           {children}
         </div>
       </div>
-      <Suspense fallback={mobileNavFallback}>
+      <Suspense fallback={adminMobileNoTabBar ? null : mobileNavFallback}>
         <AppMobileNav />
       </Suspense>
     </div>
