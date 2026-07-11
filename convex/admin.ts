@@ -792,6 +792,17 @@ export const runProfileBackfill = mutation({
   },
 });
 
+/** Owner-only: rebuild all compatibility scores after algorithm weight changes. */
+export const recalculateAllMatchScores = mutation({
+  args: {},
+  handler: async (ctx): Promise<{ scheduled: number }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    await requireOwner(ctx, userId);
+    return await ctx.runMutation(internal.matchingEngine.recalculateAllScores, {});
+  },
+});
+
 export const getAuditLogs = query({
   args: {
     limit: v.optional(v.number()),

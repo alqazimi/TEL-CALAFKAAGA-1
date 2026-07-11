@@ -30,7 +30,8 @@ const TIMELINE_SCORES: Record<string, number> = {
   "No timeline": 1,
 };
 
-const COUNTRY_MAX_SCORE = 20;
+/** Country is a light preference (~8%), not a hard gate — other countries stay visible. */
+const COUNTRY_MAX_SCORE = 8;
 
 function spousePrayerScore(
   importance: string | undefined,

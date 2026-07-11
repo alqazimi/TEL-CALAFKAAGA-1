@@ -1,4 +1,5 @@
 import { internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { calculateCompatibility } from "./matching";
 import { isDiscoverable } from "./lib/reviewStatus";
@@ -90,5 +91,22 @@ export const recalculateScores = internalMutation({
         });
       }
     }
+  },
+});
+
+/** Recompute every discoverable member's stored scores (e.g. after weight changes). */
+export const recalculateAllScores = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let scheduled = 0;
+    for (const profile of profiles) {
+      if (!isDiscoverable(profile)) continue;
+      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
+        userId: profile.userId,
+      });
+      scheduled++;
+    }
+    return { scheduled };
   },
 });
