@@ -23,7 +23,7 @@ export default function GlobalError({
   const t = copy[locale].errorPage;
 
   return (
-    <html lang={locale}>
+    <html lang={locale} translate="no" className="notranslate">
       <body
         style={{
           margin: 0,

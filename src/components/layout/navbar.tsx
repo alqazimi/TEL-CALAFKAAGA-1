@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, LayoutDashboard, User, Home } from "lucide-react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -118,62 +117,55 @@ export function Navbar() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-t border-border"
-          >
-            <div className="px-4 py-4 space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "block px-4 py-3 text-sm font-medium rounded-xl transition-colors",
-                    isActive(link.href)
-                      ? "bg-accent text-primary"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <div className="flex flex-col gap-2 pt-3">
-                <LanguageToggle className="w-full justify-center" />
-                {isAuthenticated && !isLoading ? (
-                  <>
-                    {isStaff && (
-                      <Button variant="outline" asChild className="w-full border-border">
-                        <Link href="/" onClick={() => setOpen(false)}>
-                          <Home className="h-4 w-4" />
-                          {t("nav.home")}
-                        </Link>
-                      </Button>
-                    )}
-                    <Button asChild className="w-full">
-                      <Link href={consoleHref} onClick={() => setOpen(false)}>
-                        <LayoutDashboard className="h-4 w-4" />
-                        {isStaff ? t("app.admin") : t("nav.dashboard")}
+      {open ? (
+        <div className="lg:hidden border-t border-border motion-safe:animate-reveal">
+          <div className="px-4 py-4 space-y-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "block px-4 py-3 text-sm font-medium rounded-xl transition-colors",
+                  isActive(link.href)
+                    ? "bg-accent text-primary"
+                    : "hover:bg-muted"
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="flex flex-col gap-2 pt-3">
+              <LanguageToggle className="w-full justify-center" />
+              {isAuthenticated && !isLoading ? (
+                <>
+                  {isStaff && (
+                    <Button variant="outline" asChild className="w-full border-border">
+                      <Link href="/" onClick={() => setOpen(false)}>
+                        <Home className="h-4 w-4" />
+                        {t("nav.home")}
                       </Link>
                     </Button>
-                  </>
-                ) : (
-                  <Button variant="outline" asChild className="w-full border-primary text-primary">
-                    <Link href="/login" onClick={() => setOpen(false)}>
-                      <User className="h-4 w-4" />
-                      {t("nav.memberLogin")}
+                  )}
+                  <Button asChild className="w-full">
+                    <Link href={consoleHref} onClick={() => setOpen(false)}>
+                      <LayoutDashboard className="h-4 w-4" />
+                      {isStaff ? t("app.admin") : t("nav.dashboard")}
                     </Link>
                   </Button>
-                )}
-              </div>
+                </>
+              ) : (
+                <Button variant="outline" asChild className="w-full border-primary text-primary">
+                  <Link href="/login" onClick={() => setOpen(false)}>
+                    <User className="h-4 w-4" />
+                    {t("nav.memberLogin")}
+                  </Link>
+                </Button>
+              )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }

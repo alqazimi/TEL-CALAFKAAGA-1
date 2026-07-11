@@ -27,8 +27,21 @@ export function ErrorPageContent({
     console.error(error);
   }, [error]);
 
+  const recover = () => {
+    try {
+      reset();
+    } catch {
+      // ignore
+    }
+    // Hard navigation recovers better than soft reset after Google Translate DOM damage.
+    window.location.assign("/");
+  };
+
   return (
-    <div className="gradient-hero flex min-h-[calc(100dvh-var(--app-header)-12rem)] items-center justify-center px-4 py-16">
+    <div
+      translate="no"
+      className="notranslate gradient-hero flex min-h-[calc(100dvh-var(--app-header)-12rem)] items-center justify-center px-4 py-16"
+    >
       <div className="mx-auto max-w-lg text-center">
         <p className="text-5xl font-bold tracking-tight text-destructive/40 sm:text-6xl">!</p>
         <h1 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">
@@ -36,7 +49,7 @@ export function ErrorPageContent({
         </h1>
         <p className="mt-4 text-muted-foreground leading-relaxed">{FALLBACK.subtitle}</p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button size="lg" onClick={reset}>
+          <Button size="lg" onClick={recover}>
             <RefreshCw className="mr-2 h-4 w-4" />
             {FALLBACK.tryAgain}
           </Button>

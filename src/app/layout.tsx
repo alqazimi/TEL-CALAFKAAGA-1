@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { ClearStaleServiceWorkers } from "@/components/clear-stale-service-workers";
-import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
+import { SiteShell } from "@/components/layout/site-shell";
 import { rootMetadata } from "@/lib/seo/metadata";
 import "./globals.css";
 
@@ -28,14 +27,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="so" suppressHydrationWarning className={`${jakarta.variable} ${cormorant.variable} h-full`}>
+    // translate="no": Google Translate / in-app browsers rewrite the DOM and
+    // crash React on iPhone (removeChild), which shows "Waxbaa khaldamay".
+    <html
+      lang="so"
+      translate="no"
+      suppressHydrationWarning
+      className={`notranslate ${jakarta.variable} ${cormorant.variable} h-full`}
+    >
       <body className="min-h-full flex flex-col antialiased font-sans">
         {/* One-time cleanup for browsers that still have the old PWA worker */}
         <ClearStaleServiceWorkers />
         <Providers>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <SiteShell>{children}</SiteShell>
         </Providers>
       </body>
     </html>
