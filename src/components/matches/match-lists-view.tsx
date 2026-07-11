@@ -4,22 +4,17 @@ import { Bookmark, Heart, Sparkles, X } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { MatchProfileCard } from "@/components/matches/match-profile-card";
-import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 import type { MatchResult } from "@/types";
-import { PREMIUM_UPGRADE_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
 export type SecondaryMatchList = "shortlist" | "liked" | "likedYou" | "passed";
 
-const LIST_META: Record<
-  SecondaryMatchList,
-  { icon: typeof Bookmark; premium?: boolean }
-> = {
+const LIST_META: Record<SecondaryMatchList, { icon: typeof Bookmark }> = {
   shortlist: { icon: Bookmark },
   liked: { icon: Heart },
   passed: { icon: X },
-  likedYou: { icon: Sparkles, premium: true },
+  likedYou: { icon: Sparkles },
 };
 
 const LIST_IDS = Object.keys(LIST_META) as SecondaryMatchList[];
@@ -35,7 +30,8 @@ interface MatchListsViewProps {
   liked: MatchResult[];
   likedYou: MatchResult[];
   passed: MatchResult[];
-  isPremium: boolean;
+  /** Kept for callers; liked-you is available on Basic. */
+  isPremium?: boolean;
   onView: (match: MatchResult) => void;
   onAction: (userId: Id<"users">, action: "like" | "pass" | "shortlist") => void;
 }
@@ -47,7 +43,6 @@ export function MatchListsView({
   liked,
   likedYou,
   passed,
-  isPremium,
   onView,
   onAction,
 }: MatchListsViewProps) {
@@ -61,7 +56,6 @@ export function MatchListsView({
   };
 
   const current = lists[activeList];
-  const locked = activeList === "likedYou" && !isPremium;
 
   const emptyTitle =
     activeList === "shortlist"
@@ -115,25 +109,13 @@ export function MatchListsView({
                   {count}
                 </span>
               )}
-              {meta.premium && !isPremium && (
-                <span className="ml-1 text-[10px] opacity-70">✦</span>
-              )}
             </Button>
           );
         })}
       </div>
 
       <div className="mt-5">
-        {locked ? (
-          <div className="text-center py-10 space-y-4">
-            <Sparkles className="h-10 w-10 text-primary/50 mx-auto" />
-            <h3 className="font-semibold">{t("premium.likedYouLockedTitle")}</h3>
-            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-              {t("premium.likedYouLockedDesc", { price: PREMIUM_UPGRADE_PRICE })}
-            </p>
-            <PremiumUpgradeButton className="mx-auto" />
-          </div>
-        ) : current.length === 0 ? (
+        {current.length === 0 ? (
           <div className="text-center py-12">
             <p className="font-semibold">{emptyTitle}</p>
             <p className="text-sm text-muted-foreground mt-2">{emptyDesc}</p>

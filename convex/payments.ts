@@ -10,7 +10,7 @@ import {
 } from "./_generated/server";
 import { sendNotification } from "./lib/sendNotification";
 
-export const REGISTRATION_AMOUNT_CENTS = 1000;
+export const REGISTRATION_AMOUNT_CENTS = 500;
 export const PERSONAL_SUPPORT_AMOUNT_CENTS = 2000;
 
 const registrationTierValidator = v.union(
@@ -82,7 +82,7 @@ async function applyPaymentCompletion(
         title: "Payment successful",
         body: isPremium
           ? payment.paymentType === "premium_upgrade"
-            ? "Your premium plan is active. Enjoy who liked you and personal support."
+            ? "Your premium plan is active. WhatsApp support and match-search help are ready."
             : "Your registration and personal support plan are active. Browse matches from your dashboard."
           : "Your registration is complete. Browse matches from your dashboard.",
         sendEmail: true,
@@ -124,6 +124,28 @@ export const getProfileByUserId = internalQuery({
       .query("profiles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .unique();
+  },
+});
+
+/** Sum of completed registration / premium payments (excludes chat unlock). */
+export const getCompletedPlanPaidCents = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const payments = await ctx.db
+      .query("payments")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    return payments
+      .filter(
+        (p) =>
+          p.status === "completed" &&
+          (p.paymentType === "registration" ||
+            p.paymentType === "registration_premium" ||
+            p.paymentType === "premium_upgrade" ||
+            p.paymentType === undefined)
+      )
+      .reduce((sum, p) => sum + (p.amount ?? 0), 0);
   },
 });
 

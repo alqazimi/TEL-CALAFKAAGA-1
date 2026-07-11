@@ -12,9 +12,11 @@ export const WHATSAPP_NUMBER = "254793692710";
 export const WHATSAPP_DISPLAY = "+254 793 692710";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 export const SUPPORT_EMAIL = "hello@helcalafkaaga.com";
-export const REGISTRATION_PRICE = 10;
+/** Men basic registration (one-time). Women get basic free. */
+export const REGISTRATION_PRICE = 5;
 export const PERSONAL_SUPPORT_PRICE = 20;
 export const TRIAL_DAYS = 7;
+/** Typical upgrade for men who already paid basic ($5 → $20). Women free→premium pay full $20. */
 export const PREMIUM_UPGRADE_PRICE = PERSONAL_SUPPORT_PRICE - REGISTRATION_PRICE;
 export const MAX_PROFILE_PHOTOS = 5;
 /** @deprecated Use PERSONAL_SUPPORT_PRICE */
@@ -368,7 +370,7 @@ export const FAQ_ITEMS = [
   {
     question: "How much does Hel Calafkaaga cost?",
     answer:
-      "Standard registration is a one-time $10 fee. For $20, you also get personal support from trained experts. Both plans unlock full access to matches and messaging.",
+      "Men pay $5 for Basic or $20 for Premium. Women get Basic free and can upgrade to Premium ($20) for WhatsApp support and help finding a match. Both plans include the same app features (profile, matches, chat).",
   },
   {
     question: "How is my data protected?",

@@ -139,8 +139,8 @@ export const run = internalMutation({
           "reminder_trial_ending",
           "Your free week on Hel Calafkaaga is ending soon",
           daysLeft <= 0
-            ? "Your 7-day free trial has ended. Choose the $10 or $20 plan to keep browsing matches and messaging."
-            : `You have ${daysLeft} day${daysLeft === 1 ? "" : "s"} left in your free premium trial. After that, choose the $10 or $20 plan to continue.`,
+            ? "Your 7-day free trial has ended. Choose the $5 Basic or $20 Premium plan to keep browsing matches and messaging."
+            : `You have ${daysLeft} day${daysLeft === 1 ? "" : "s"} left in your free trial. After that, choose the $5 Basic or $20 Premium plan to continue.`,
           "View plans",
           daysLeft <= 0 ? "/payment" : "/matches"
         );
@@ -159,7 +159,7 @@ export const run = internalMutation({
           profile.userId,
           "reminder_payment",
           "Unlock matches on Hel Calafkaaga",
-          "Your free week has ended. Choose the $10 or $20 plan to keep browsing serious members and connecting with compatible matches.",
+          "Your free week has ended. Choose the $5 Basic or $20 Premium plan to keep browsing serious members and connecting with compatible matches.",
           "Choose plan",
           "/payment"
         );

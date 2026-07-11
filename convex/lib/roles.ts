@@ -28,7 +28,10 @@ export function hasPaidAccess(profile: {
   hasPaid: boolean;
   role: string;
   trialEndsAt?: number;
+  gender?: string;
 }): boolean {
+  // Women: Basic is free. Men need payment or an active trial.
+  if (profile.gender === "female") return true;
   return (
     profile.hasPaid || isStaffRole(profile.role) || isInTrialPeriod(profile)
   );

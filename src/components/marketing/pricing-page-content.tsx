@@ -46,6 +46,9 @@ export function PricingPageContent() {
             <p className="text-muted-foreground mt-3 text-center text-sm leading-relaxed">
               {t("pricing.basicDesc")}
             </p>
+            <p className="text-center text-xs font-medium text-primary mt-2">
+              {t("landing.womenFreeNote")}
+            </p>
             <ul className="mt-8 space-y-3">
               {basicFeatures.map((feature) => (
                 <li key={feature} className="flex items-start gap-3 text-sm">

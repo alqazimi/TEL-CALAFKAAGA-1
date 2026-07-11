@@ -6,7 +6,7 @@ export const HOME_SEO_TITLE = "Hel Calafkaaga | Hel Lammaanaha Noloshaada";
 
 /** Full meta description (search snippets). */
 export const HOME_SEO_DESCRIPTION =
-  "Hel lammaanaha noloshaada adigoo ku salaynaya diinta, iswaafajinta, iyo ixtiraamka. Isdiiwaangeli maanta, qiimuhuna wuxuu ka bilaabmaa $10.";
+  "Hel lammaanaha noloshaada adigoo ku salaynaya diinta, iswaafajinta, iyo ixtiraamka. Ragga: Basic $5 ama Premium $20. Haweenka: Basic bilaash.";
 
 /** Shorter social / OG description (no pricing line). */
 export const HOME_OG_DESCRIPTION =
@@ -48,12 +48,12 @@ export const SEO_SO = {
     pricing: {
       title: "Qiimaha",
       description:
-        "Diiwaangelinta Hel Calafkaaga: $10 caadi ama $20 taageero shakhsi ah. Hal lacag, helitaan buuxa oo isbarbardhig guur xalaal ah.",
+        "Diiwaangelinta Hel Calafkaaga: ragga Basic $5 ama Premium $20. Haweenka Basic bilaash.",
     },
     faq: {
       title: "Su'aalaha Inta Badan La Isweydiiyo",
       description:
-        "Jawaabo ku saabsan Hel Calafkaaga — guur xalaal, qiimaha ($10 / $20), qarsoodiga, iyo sida isbarbardhiggu u shaqeeyo.",
+        "Jawaabo ku saabsan Hel Calafkaaga — guur xalaal, qiimaha (Basic $5 / Premium $20, haween Basic bilaash), qarsoodiga, iyo sida isbarbardhiggu u shaqeeyo.",
     },
     contact: {
       title: "Nala Soo Xiriir",

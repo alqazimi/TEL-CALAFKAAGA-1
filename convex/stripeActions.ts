@@ -10,10 +10,7 @@ import {
   REGISTRATION_AMOUNT_CENTS,
 } from "./payments";
 import { hasPaidAccess } from "./lib/roles";
-import {
-  isPremiumMember,
-  PREMIUM_UPGRADE_AMOUNT_CENTS,
-} from "./lib/premium";
+import { isPremiumMember } from "./lib/premium";
 
 const registrationTierValidator = v.union(
   v.literal("basic"),
@@ -26,9 +23,9 @@ function getRegistrationCheckoutDetails(tier: "basic" | "premium") {
       amount: PERSONAL_SUPPORT_AMOUNT_CENTS,
       paymentType: "registration_premium" as const,
       registrationTier: "premium" as const,
-      productName: "Hel Calafkaaga Registration + Personal Support",
+      productName: "Hel Calafkaaga Premium",
       productDescription:
-        "Registration plus one-on-one guidance from trained experts to build a healthy marriage relationship",
+        "Full app access plus WhatsApp personal support and help finding your match",
     };
   }
 
@@ -36,8 +33,8 @@ function getRegistrationCheckoutDetails(tier: "basic" | "premium") {
     amount: REGISTRATION_AMOUNT_CENTS,
     paymentType: "registration" as const,
     registrationTier: "basic" as const,
-    productName: "Hel Calafkaaga Registration",
-    productDescription: "One-time registration — lifetime access to Hel Calafkaaga",
+    productName: "Hel Calafkaaga Basic Registration",
+    productDescription: "One-time registration — full access to matches and messaging",
   };
 }
 
@@ -55,11 +52,21 @@ export const createRegistrationCheckout = action({
 
     if (!profile) throw new Error("Profile not found");
     if (profile.banned) throw new Error("Account suspended");
-    if (profile.hasPaid) {
-      throw new Error("Already paid");
-    }
-    if (hasPaidAccess(profile)) {
-      throw new Error("You still have free access. Payment opens after your trial week.");
+
+    if (profile.gender === "female") {
+      if (args.tier === "basic") {
+        throw new Error("Basic is free for women. Choose Premium for WhatsApp support.");
+      }
+      if (isPremiumMember(profile)) {
+        throw new Error("Already on the premium plan");
+      }
+    } else {
+      if (profile.hasPaid) {
+        throw new Error("Already paid");
+      }
+      if (hasPaidAccess(profile)) {
+        throw new Error("You still have free access. Payment opens after your trial week.");
+      }
     }
 
     const checkout = getRegistrationCheckoutDetails(args.tier);
@@ -138,6 +145,17 @@ export const createPremiumUpgradeCheckout = action({
       throw new Error("Already on the premium plan");
     }
 
+    const paidCents = await ctx.runQuery(internal.payments.getCompletedPlanPaidCents, {
+      userId,
+    });
+    const amount = Math.max(
+      PERSONAL_SUPPORT_AMOUNT_CENTS - Math.min(paidCents, PERSONAL_SUPPORT_AMOUNT_CENTS),
+      0
+    );
+    if (amount <= 0) {
+      throw new Error("Already on the premium plan");
+    }
+
     const stripe = getStripe();
     const appUrl = getAppUrl();
 
@@ -148,11 +166,11 @@ export const createPremiumUpgradeCheckout = action({
           price_data: {
             currency: "usd",
             product_data: {
-              name: "Hel Calafkaaga Premium Upgrade",
+              name: "Hel Calafkaaga Premium",
               description:
-                "Upgrade to personal support — priority approval, who liked you, extra photos, and advisor guidance",
+                "WhatsApp personal support and help finding your match — same app features as Basic",
             },
-            unit_amount: PREMIUM_UPGRADE_AMOUNT_CENTS,
+            unit_amount: amount,
           },
           quantity: 1,
         },
@@ -174,12 +192,12 @@ export const createPremiumUpgradeCheckout = action({
     await ctx.runMutation(internal.payments.recordPendingPayment, {
       userId,
       stripeSessionId: session.id,
-      amount: PREMIUM_UPGRADE_AMOUNT_CENTS,
+      amount,
       paymentType: "premium_upgrade",
       registrationTier: "premium",
     });
 
-    return { url: session.url };
+    return { url: session.url, amount };
   },
 });
 
@@ -226,7 +244,7 @@ export const verifyCheckoutSession = action({
         amount:
           session.amount_total ??
           (isUpgrade
-            ? PREMIUM_UPGRADE_AMOUNT_CENTS
+            ? PERSONAL_SUPPORT_AMOUNT_CENTS - REGISTRATION_AMOUNT_CENTS
             : isPremium
               ? PERSONAL_SUPPORT_AMOUNT_CENTS
               : REGISTRATION_AMOUNT_CENTS),

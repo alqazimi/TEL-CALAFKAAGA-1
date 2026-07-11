@@ -15,7 +15,6 @@ import {
   profilePassesMatchFilters,
 } from "./lib/matchPresentation";
 import { sendNotification } from "./lib/sendNotification";
-import { isPremiumMember } from "./lib/premium";
 import { calculateCompatibilityBreakdown } from "./matching";
 import {
   MATCH_DISCOVER_LIMIT,
@@ -267,7 +266,7 @@ export const getReceivedLikes = query({
     if (!access) return [];
 
     const { userId, myProfile } = access;
-    if (!isPremiumMember(myProfile)) {
+    if (!hasPaidAccess(myProfile)) {
       return [];
     }
 
@@ -343,13 +342,12 @@ export const getMatchLists = query({
       .filter((l) => l.action === "pass")
       .slice(0, MATCH_LIST_LIMIT)
       .map((l) => l.toUserId);
-    const likedYouIds =
-      isPremiumMember(myProfile)
-        ? incomingLikes
-            .filter((l) => l.action === "like" && !activePartners.has(l.fromUserId))
-            .slice(0, MATCH_LIST_LIMIT)
-            .map((l) => l.fromUserId)
-        : [];
+    const likedYouIds = hasPaidAccess(myProfile)
+      ? incomingLikes
+          .filter((l) => l.action === "like" && !activePartners.has(l.fromUserId))
+          .slice(0, MATCH_LIST_LIMIT)
+          .map((l) => l.fromUserId)
+      : [];
 
     const uniqueIds = [
       ...new Set([...shortlistIds, ...likedIds, ...passedIds, ...likedYouIds]),
@@ -379,7 +377,7 @@ export const getCompatibilityBreakdown = query({
   handler: async (ctx, args) => {
     const access = await getMatchAccessProfile(ctx);
     if (!access) return null;
-    if (!isPremiumMember(access.myProfile)) return null;
+    if (!hasPaidAccess(access.myProfile)) return null;
 
     const candidate = await ctx.db
       .query("profiles")

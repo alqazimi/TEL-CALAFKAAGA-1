@@ -158,15 +158,17 @@ export const getStats = query({
     const members = profiles.filter((p) => !isStaffRole(p.role));
 
     const paidBasicCount = members.filter(
-      (p) => p.hasPaid && !p.hasPersonalSupport
+      (p) => p.hasPaid && !p.hasPersonalSupport && p.gender === "male"
     ).length;
     const paidPremiumCount = members.filter((p) => !!p.hasPersonalSupport).length;
-    const unpaidCount = members.filter((p) => !p.hasPaid).length;
-    const trialCount = members.filter(
-      (p) => !p.hasPaid && isInTrialPeriod(p)
+    const unpaidCount = members.filter(
+      (p) => p.gender === "male" && !p.hasPaid && !isInTrialPeriod(p)
     ).length;
-    // Approximate revenue from known plan prices (cents).
-    const revenue = paidBasicCount * 1000 + paidPremiumCount * 2000;
+    const trialCount = members.filter(
+      (p) => p.gender === "male" && !p.hasPaid && isInTrialPeriod(p)
+    ).length;
+    // Approximate revenue from known plan prices (cents). Women basic is free.
+    const revenue = paidBasicCount * 500 + paidPremiumCount * 2000;
 
     const approvedMembers = members.filter(
       (p) => resolveReviewStatus(p) === "approved"
@@ -306,8 +308,8 @@ export const getAllUsers = query({
 
     profiles.sort((a, b) => {
       const priorityDiff =
-        pendingApprovalPriority(a, a.hasPersonalSupport ? 2000 : a.hasPaid ? 1000 : 0) -
-        pendingApprovalPriority(b, b.hasPersonalSupport ? 2000 : b.hasPaid ? 1000 : 0);
+        pendingApprovalPriority(a, a.hasPersonalSupport ? 2000 : a.hasPaid ? 500 : 0) -
+        pendingApprovalPriority(b, b.hasPersonalSupport ? 2000 : b.hasPaid ? 500 : 0);
       if (priorityDiff !== 0) return priorityDiff;
       return b._creationTime - a._creationTime;
     });
@@ -324,7 +326,7 @@ export const getAllUsers = query({
         return {
           ...p,
           imageUrl,
-          paidCents: p.hasPersonalSupport ? 2000 : p.hasPaid ? 1000 : 0,
+          paidCents: p.hasPersonalSupport ? 2000 : p.hasPaid ? 500 : 0,
           email: user?.email ?? null,
         };
       })

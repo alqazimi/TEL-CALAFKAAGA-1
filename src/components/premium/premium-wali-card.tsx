@@ -12,9 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
-import { isPremiumMember } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
-import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 
 const waliSchema = z.object({
   waliName: z.string().optional(),
@@ -30,7 +28,6 @@ interface PremiumWaliCardProps {
 export function PremiumWaliCard({ profile }: PremiumWaliCardProps) {
   const { t } = useTranslation();
   const updateWali = useMutation(api.profiles.updateWaliContact);
-  const isPremium = isPremiumMember(profile);
 
   const {
     register,
@@ -65,32 +62,36 @@ export function PremiumWaliCard({ profile }: PremiumWaliCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          {isPremium ? t("premium.waliDesc") : t("premium.waliLockedDesc")}
+          {t("premium.waliDesc")}
         </p>
 
-        {isPremium ? (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              label={t("premium.waliName")}
-              htmlFor="waliName"
-              error={errors.waliName?.message}
-            >
-              <Input id="waliName" {...register("waliName")} placeholder={t("premium.waliNamePlaceholder")} />
-            </FormField>
-            <FormField
-              label={t("premium.waliPhone")}
-              htmlFor="waliPhone"
-              error={errors.waliPhone?.message}
-            >
-              <Input id="waliPhone" {...register("waliPhone")} placeholder={t("premium.waliPhonePlaceholder")} />
-            </FormField>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? t("profilePage.saving") : t("premium.waliSave")}
-            </Button>
-          </form>
-        ) : (
-          <PremiumUpgradeButton variant="outline" className="w-full" />
-        )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            label={t("premium.waliName")}
+            htmlFor="waliName"
+            error={errors.waliName?.message}
+          >
+            <Input
+              id="waliName"
+              {...register("waliName")}
+              placeholder={t("premium.waliNamePlaceholder")}
+            />
+          </FormField>
+          <FormField
+            label={t("premium.waliPhone")}
+            htmlFor="waliPhone"
+            error={errors.waliPhone?.message}
+          >
+            <Input
+              id="waliPhone"
+              {...register("waliPhone")}
+              placeholder={t("premium.waliPhonePlaceholder")}
+            />
+          </FormField>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? t("profilePage.saving") : t("premium.waliSave")}
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );

@@ -66,15 +66,17 @@ export function LandingPage() {
   ];
 
   const basicFeatures = [
-    t("landing.basicPlanDesc"),
-    t("landing.step3Title"),
-    t("landing.step4Title"),
+    t("landing.basicFeature1"),
+    t("landing.basicFeature2"),
+    t("landing.basicFeature3"),
+    t("landing.basicFeature4"),
+    t("landing.basicFeature5"),
   ];
 
   const premiumFeatures = [
-    t("landing.premiumPlanDesc"),
-    t("landing.whyPay3Title"),
-    t("landing.personalSupportTitle"),
+    t("landing.premiumFeature1"),
+    t("landing.premiumFeature2"),
+    t("landing.premiumFeature3"),
   ];
 
   return (
@@ -219,7 +221,10 @@ export function LandingPage() {
               {t("landing.pricingTitle")}
             </h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              {t("landing.pricingSubtitle", { premium: PERSONAL_SUPPORT_PRICE })}
+              {t("landing.pricingSubtitle", {
+                premium: PERSONAL_SUPPORT_PRICE,
+                basic: REGISTRATION_PRICE,
+              })}
             </p>
           </Reveal>
 
@@ -232,6 +237,9 @@ export function LandingPage() {
                 </span>
                 <span className="text-sm text-muted-foreground">{t("common.oneTime")}</span>
               </div>
+              <p className="mt-2 text-xs font-medium text-primary">
+                {t("landing.womenFreeNote")}
+              </p>
               <ul className="mt-6 space-y-3">
                 {basicFeatures.map((feature) => (
                   <li key={feature} className="flex gap-3 text-sm text-muted-foreground">

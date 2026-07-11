@@ -36,11 +36,10 @@ import { ChangePasswordCard } from "@/components/profile/change-password-card";
 import { BlockedUsersCard } from "@/components/safety/blocked-users-card";
 import { PremiumSupportCard } from "@/components/premium/premium-support-card";
 import { PremiumWaliCard } from "@/components/premium/premium-wali-card";
-import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { ContactAdminCard } from "@/components/support/contact-admin-card";
 import { isOwnerRole, isPremiumMember } from "@/lib/access";
-import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
+import { MAX_PROFILE_PHOTOS, PERSONAL_SUPPORT_PRICE, PREMIUM_UPGRADE_PRICE } from "@/lib/constants";
 import { isValidContactPhone } from "@/lib/phone";
 import { useTranslation } from "@/lib/i18n/context";
 import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
@@ -389,6 +388,12 @@ export function ProfileEditScreen({
                     isPremium={isPremium}
                     hasPaid={!!profile.hasPaid}
                     advisorReviewed={profile.advisorReviewed}
+                    canUpgrade={profile.gender === "female"}
+                    upgradePrice={
+                      profile.gender === "female"
+                        ? PERSONAL_SUPPORT_PRICE
+                        : PREMIUM_UPGRADE_PRICE
+                    }
                   />
                   <PremiumWaliCard profile={profile} />
                 </>
@@ -423,61 +428,54 @@ export function ProfileEditScreen({
                 </div>
               )}
               {!isStaff && profile.questionnaireComplete ? (
-                isPremium ? (
-                  <>
-                    <div className="grid grid-cols-4 gap-2">
-                      {extraUrls.map((url, index) => (
-                        <div key={url} className="relative aspect-square rounded-xl overflow-hidden">
-                          <button
-                            type="button"
-                            className="h-full w-full"
-                            onClick={() => openGallery(index + 1)}
-                          >
-                            <LazyImage src={url} alt="" className="h-full w-full object-cover" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void removeAdditionalPhoto({ storageId: extraIds[index] }).then(() =>
-                                toast.success(t("premium.photoRemoved"))
-                              )
-                            }
-                            className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-white"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                      {canAddMore && (
-                        <label
-                          htmlFor={extraInputId}
-                          className={`aspect-square cursor-pointer rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary text-[10px] gap-1 ${
-                            uploading ? "pointer-events-none opacity-60" : ""
-                          }`}
+                <>
+                  <div className="grid grid-cols-4 gap-2">
+                    {extraUrls.map((url, index) => (
+                      <div key={url} className="relative aspect-square rounded-xl overflow-hidden">
+                        <button
+                          type="button"
+                          className="h-full w-full"
+                          onClick={() => openGallery(index + 1)}
                         >
-                          <Camera className="h-4 w-4" />
-                          {t("premium.addPhoto")}
-                        </label>
-                      )}
-                    </div>
-                    <input
-                      id={extraInputId}
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      disabled={uploading}
-                      onChange={(e) => void handleExtraUpload(e)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {t("premium.photosCount", { count: totalPhotos, max: MAX_PROFILE_PHOTOS })}
-                    </p>
-                  </>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">{t("premium.photosLockedDesc")}</p>
-                    <PremiumUpgradeButton variant="outline" className="w-full" />
+                          <LazyImage src={url} alt="" className="h-full w-full object-cover" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void removeAdditionalPhoto({ storageId: extraIds[index] }).then(() =>
+                              toast.success(t("premium.photoRemoved"))
+                            )
+                          }
+                          className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-white"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    {canAddMore && (
+                      <label
+                        htmlFor={extraInputId}
+                        className={`aspect-square cursor-pointer rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary text-[10px] gap-1 ${
+                          uploading ? "pointer-events-none opacity-60" : ""
+                        }`}
+                      >
+                        <Camera className="h-4 w-4" />
+                        {t("premium.addPhoto")}
+                      </label>
+                    )}
                   </div>
-                )
+                  <input
+                    id={extraInputId}
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={uploading}
+                    onChange={(e) => void handleExtraUpload(e)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("premium.photosCount", { count: totalPhotos, max: MAX_PROFILE_PHOTOS })}
+                  </p>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">{t("profilePage.photosNeedProfile")}</p>
               )}

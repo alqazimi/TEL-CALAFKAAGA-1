@@ -10,10 +10,8 @@ import type { Profile } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
-import { isPremiumMember } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
-import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 
 interface PremiumPhotosCardProps {
   profile: Profile & {
@@ -31,7 +29,6 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
   const fileInputId = useId();
   const [uploading, setUploading] = useState(false);
 
-  const isPremium = isPremiumMember(profile);
   const extraUrls = profile.additionalImageUrls ?? [];
   const extraIds = profile.additionalImageIds ?? [];
   const totalPhotos = (profile.profileImageId ? 1 : 0) + extraIds.length;
@@ -74,54 +71,46 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          {isPremium
-            ? t("premium.photosDesc", { max: MAX_PROFILE_PHOTOS })
-            : t("premium.photosLockedDesc")}
+          {t("premium.photosDesc", { max: MAX_PROFILE_PHOTOS })}
         </p>
 
-        {isPremium ? (
-          <>
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {extraUrls.map((url, index) => (
-                <div key={url} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
-                  <LazyImage src={url} alt="" className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => void handleRemove(extraIds[index])}
-                    className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white"
-                    aria-label={t("common.a11yClose")}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-              {canAddMore && (
-                <label
-                  htmlFor={fileInputId}
-                  className={`aspect-square cursor-pointer rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors ${
-                    uploading ? "pointer-events-none opacity-60" : ""
-                  }`}
-                >
-                  <Camera className="h-5 w-5" />
-                  <span className="text-[10px] font-medium">{t("premium.addPhoto")}</span>
-                </label>
-              )}
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {extraUrls.map((url, index) => (
+            <div key={url} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+              <LazyImage src={url} alt="" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => void handleRemove(extraIds[index])}
+                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-white"
+                aria-label={t("common.a11yClose")}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             </div>
-            <input
-              id={fileInputId}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              disabled={uploading}
-              onChange={(e) => void handleUpload(e)}
-            />
-            <p className="text-xs text-muted-foreground">
-              {t("premium.photosCount", { count: totalPhotos, max: MAX_PROFILE_PHOTOS })}
-            </p>
-          </>
-        ) : (
-          <PremiumUpgradeButton variant="outline" className="w-full" />
-        )}
+          ))}
+          {canAddMore && (
+            <label
+              htmlFor={fileInputId}
+              className={`aspect-square cursor-pointer rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors ${
+                uploading ? "pointer-events-none opacity-60" : ""
+              }`}
+            >
+              <Camera className="h-5 w-5" />
+              <span className="text-[10px] font-medium">{t("premium.addPhoto")}</span>
+            </label>
+          )}
+        </div>
+        <input
+          id={fileInputId}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          disabled={uploading}
+          onChange={(e) => void handleUpload(e)}
+        />
+        <p className="text-xs text-muted-foreground">
+          {t("premium.photosCount", { count: totalPhotos, max: MAX_PROFILE_PHOTOS })}
+        </p>
       </CardContent>
     </Card>
   );

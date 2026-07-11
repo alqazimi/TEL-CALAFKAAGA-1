@@ -1064,7 +1064,9 @@ export default function AdminPage() {
               <CardContent className="space-y-2 text-sm">
                 <p>
                   <span className="text-muted-foreground">{t("adminPage.basicPlan")}: </span>
-                  <span className="font-semibold">${REGISTRATION_PRICE}</span>
+                  <span className="font-semibold">
+                    ${REGISTRATION_PRICE} ({t("landing.womenFreeNote")})
+                  </span>
                 </p>
                 <p>
                   <span className="text-muted-foreground">{t("adminPage.premiumPlan")}: </span>

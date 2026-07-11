@@ -319,9 +319,12 @@ export const completeQuestionnaire = mutation({
       reviewStatus: "pending_review",
       approved: false,
       verified: false,
-      ...(!profile.hasPaid && profile.trialEndsAt === undefined
-        ? { trialEndsAt: getTrialEndsAt() }
-        : {}),
+      // Women: Basic is free — no trial, grant access immediately.
+      ...(profile.gender === "female" && !profile.hasPaid
+        ? { hasPaid: true }
+        : !profile.hasPaid && profile.trialEndsAt === undefined
+          ? { trialEndsAt: getTrialEndsAt() }
+          : {}),
     });
 
     await sendNotification(ctx, {
@@ -541,10 +544,6 @@ export const updateWaliContact = mutation({
     const userId = await requireAuthUserId(ctx);
     const profile = await requireActiveProfile(ctx, userId);
 
-    if (!isPremiumMember(profile)) {
-      throw new Error("Wali contact is available on the premium plan");
-    }
-
     const waliName = args.waliName?.trim() ?? "";
     const waliPhone = args.waliPhone?.trim() ?? "";
 
@@ -570,10 +569,6 @@ export const addAdditionalPhoto = mutation({
     const userId = await requireAuthUserId(ctx);
     const profile = await requireActiveProfile(ctx, userId);
 
-    if (!isPremiumMember(profile)) {
-      throw new Error("Extra photos are available on the premium plan");
-    }
-
     await assertStorageOwnership(ctx, userId, args.storageId);
 
     const existing = profile.additionalImageIds ?? [];
@@ -598,10 +593,6 @@ export const removeAdditionalPhoto = mutation({
   handler: async (ctx, args) => {
     const userId = await requireAuthUserId(ctx);
     const profile = await requireActiveProfile(ctx, userId);
-
-    if (!isPremiumMember(profile)) {
-      throw new Error("Extra photos are available on the premium plan");
-    }
 
     const existing = profile.additionalImageIds ?? [];
     if (!existing.includes(args.storageId)) {
