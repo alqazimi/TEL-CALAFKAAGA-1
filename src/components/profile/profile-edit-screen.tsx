@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useState } from "react";
 import Link from "next/link";
 import { useMutation } from "convex/react";
 import { useForm } from "react-hook-form";
@@ -38,6 +38,7 @@ import { PremiumSupportCard } from "@/components/premium/premium-support-card";
 import { PremiumWaliCard } from "@/components/premium/premium-wali-card";
 import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
+import { ContactAdminCard } from "@/components/support/contact-admin-card";
 import { isOwnerRole, isPremiumMember } from "@/lib/access";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 import { isValidContactPhone } from "@/lib/phone";
@@ -74,8 +75,8 @@ export function ProfileEditScreen({
   const registerUpload = useMutation(api.profiles.registerUpload);
   const addAdditionalPhoto = useMutation(api.profiles.addAdditionalPhoto);
   const removeAdditionalPhoto = useMutation(api.profiles.removeAdditionalPhoto);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const extraInputRef = useRef<HTMLInputElement>(null);
+  const primaryInputId = useId();
+  const extraInputId = useId();
   const [uploading, setUploading] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -200,35 +201,63 @@ export function ProfileEditScreen({
         <div className="relative bg-gradient-to-br from-primary/10 via-accent/30 to-transparent px-5 pt-8 pb-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5">
             <div className="relative shrink-0">
-              <button
-                type="button"
-                onClick={() => openGallery(0)}
-                disabled={!profile.imageUrl && !profile.profileImageId}
-                className="block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg disabled:cursor-default"
-              >
-                <ProfilePhotoPreview
-                  imageUrl={profile.imageUrl}
-                  hasStoredPhoto={!!profile.profileImageId}
-                  alt={profile.name}
-                  fallbackInitial={profile.name}
-                  className="h-full w-full"
-                />
-              </button>
+              {profile.imageUrl || profile.profileImageId ? (
+                <button
+                  type="button"
+                  onClick={() => openGallery(0)}
+                  className="block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg"
+                >
+                  <ProfilePhotoPreview
+                    imageUrl={profile.imageUrl}
+                    hasStoredPhoto={!!profile.profileImageId}
+                    alt={profile.name}
+                    fallbackInitial={profile.name}
+                    className="h-full w-full"
+                  />
+                </button>
+              ) : !isStaff ? (
+                <label
+                  htmlFor={primaryInputId}
+                  className={`block h-28 w-28 cursor-pointer rounded-2xl overflow-hidden ring-4 ring-card shadow-lg ${
+                    uploading ? "pointer-events-none opacity-70" : ""
+                  }`}
+                >
+                  <ProfilePhotoPreview
+                    imageUrl={profile.imageUrl}
+                    hasStoredPhoto={!!profile.profileImageId}
+                    alt={profile.name}
+                    fallbackInitial={profile.name}
+                    className="h-full w-full pointer-events-none"
+                  />
+                </label>
+              ) : (
+                <div className="block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg">
+                  <ProfilePhotoPreview
+                    imageUrl={profile.imageUrl}
+                    hasStoredPhoto={!!profile.profileImageId}
+                    alt={profile.name}
+                    fallbackInitial={profile.name}
+                    className="h-full w-full"
+                  />
+                </div>
+              )}
               {!isStaff && (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="absolute -bottom-1 -right-1 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
+                  <label
+                    htmlFor={primaryInputId}
+                    className={`absolute -bottom-1 -right-1 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ${
+                      uploading ? "pointer-events-none opacity-60" : ""
+                    }`}
+                    aria-label={t("profilePage.changePhoto")}
                   >
                     <Camera className="h-4 w-4" />
-                  </button>
+                  </label>
                   <input
-                    ref={fileInputRef}
+                    id={primaryInputId}
                     type="file"
                     accept="image/*"
-                    className="hidden"
+                    className="sr-only"
+                    disabled={uploading}
                     onChange={(e) => void handlePrimaryUpload(e)}
                   />
                 </>
@@ -367,6 +396,32 @@ export function ProfileEditScreen({
             </TabsContent>
 
             <TabsContent value="photos" className="mt-5 space-y-4">
+              {!isStaff && (
+                <div className="rounded-2xl border border-border p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="font-semibold">{t("profilePage.primaryPhoto")}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {t("profilePage.primaryPhotoDesc")}
+                      </p>
+                    </div>
+                    <label htmlFor={primaryInputId}>
+                      <span
+                        className={`inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-xl border border-input bg-background px-3 text-sm font-medium ${
+                          uploading ? "pointer-events-none opacity-60" : ""
+                        }`}
+                      >
+                        <Camera className="h-4 w-4" />
+                        {uploading
+                          ? t("profilePage.uploading")
+                          : profile.profileImageId
+                            ? t("profilePage.changePhoto")
+                            : t("profilePage.uploadPhoto")}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
               {!isStaff && profile.questionnaireComplete ? (
                 isPremium ? (
                   <>
@@ -394,22 +449,23 @@ export function ProfileEditScreen({
                         </div>
                       ))}
                       {canAddMore && (
-                        <button
-                          type="button"
-                          onClick={() => extraInputRef.current?.click()}
-                          disabled={uploading}
-                          className="aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary text-[10px] gap-1"
+                        <label
+                          htmlFor={extraInputId}
+                          className={`aspect-square cursor-pointer rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary text-[10px] gap-1 ${
+                            uploading ? "pointer-events-none opacity-60" : ""
+                          }`}
                         >
                           <Camera className="h-4 w-4" />
                           {t("premium.addPhoto")}
-                        </button>
+                        </label>
                       )}
                     </div>
                     <input
-                      ref={extraInputRef}
+                      id={extraInputId}
                       type="file"
                       accept="image/*"
-                      className="hidden"
+                      className="sr-only"
+                      disabled={uploading}
                       onChange={(e) => void handleExtraUpload(e)}
                     />
                     <p className="text-xs text-muted-foreground">
@@ -424,6 +480,9 @@ export function ProfileEditScreen({
                 )
               ) : (
                 <p className="text-sm text-muted-foreground">{t("profilePage.photosNeedProfile")}</p>
+              )}
+              {!isStaff && (
+                <ContactAdminCard source="profile" defaultTopic="photo_upload" compact />
               )}
             </TabsContent>
 

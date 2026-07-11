@@ -56,6 +56,14 @@ export const sendContactMessage = action({
       throw new Error("Too many messages. Please try again later or use WhatsApp.");
     }
 
+    // Always store for the admin Contacts inbox (email is secondary).
+    await ctx.runMutation(internal.supportContacts.insertPublicContact, {
+      name,
+      email,
+      subject,
+      message,
+    });
+
     const apiKey = requireResendApiKey(process.env.AUTH_RESEND_KEY);
     const resend = new Resend(apiKey);
 
@@ -95,7 +103,7 @@ export const sendContactMessage = action({
 
     if (error) {
       console.error("Contact form Resend error:", error);
-      throw new Error("Could not send message. Please try WhatsApp instead.");
+      // Message is already saved for admin — don't fail the visitor.
     }
 
     return { ok: true as const };

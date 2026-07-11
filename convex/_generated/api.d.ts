@@ -54,6 +54,7 @@ import type * as staffInvites from "../staffInvites.js";
 import type * as stripeActions from "../stripeActions.js";
 import type * as stripeWebhook from "../stripeWebhook.js";
 import type * as stripeWebhookNode from "../stripeWebhookNode.js";
+import type * as supportContacts from "../supportContacts.js";
 import type * as users from "../users.js";
 
 import type {
@@ -109,6 +110,7 @@ declare const fullApi: ApiFromModules<{
   stripeActions: typeof stripeActions;
   stripeWebhook: typeof stripeWebhook;
   stripeWebhookNode: typeof stripeWebhookNode;
+  supportContacts: typeof supportContacts;
   users: typeof users;
 }>;
 

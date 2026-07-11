@@ -4,6 +4,7 @@ import {
   ClipboardList,
   CreditCard,
   Flag,
+  Headphones,
   LayoutDashboard,
   Megaphone,
   MessageCircle,
@@ -31,6 +32,12 @@ export const ADMIN_NAV_TABS = [
     titleKey: "adminPage.messagesTab" as TranslationPath,
     descKey: "adminPage.messagesTabDesc" as TranslationPath,
     icon: MessageCircle,
+  },
+  {
+    tab: "contacts",
+    titleKey: "adminPage.contactsTab" as TranslationPath,
+    descKey: "adminPage.contactsTabDesc" as TranslationPath,
+    icon: Headphones,
   },
   {
     tab: "reports",
@@ -87,6 +94,7 @@ export const ADMIN_MOBILE_PRIMARY_TABS = [
 ] as const satisfies ReadonlyArray<AdminNavTab>;
 
 export const ADMIN_MOBILE_MORE_TABS = [
+  "contacts",
   "reports",
   "payments",
   "announcements",

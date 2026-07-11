@@ -320,6 +320,42 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_pair", ["reporterId", "reportedUserId"]),
 
+  /** Member / visitor messages to staff (photo upload help, contact form, etc.). */
+  supportContacts: defineTable({
+    userId: v.optional(v.id("users")),
+    name: v.string(),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    topic: v.union(
+      v.literal("photo_upload"),
+      v.literal("account"),
+      v.literal("payment"),
+      v.literal("other"),
+      v.literal("contact_form")
+    ),
+    subject: v.string(),
+    message: v.string(),
+    imageId: v.optional(v.id("_storage")),
+    source: v.union(
+      v.literal("profile"),
+      v.literal("questionnaire"),
+      v.literal("contact_page"),
+      v.literal("other")
+    ),
+    status: v.union(
+      v.literal("open"),
+      v.literal("reviewed"),
+      v.literal("closed")
+    ),
+    adminNotes: v.optional(v.string()),
+    createdAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.id("users")),
+  })
+    .index("by_status", ["status"])
+    .index("by_user", ["userId"])
+    .index("by_createdAt", ["createdAt"]),
+
   memberEmailLog: defineTable({
     userId: v.id("users"),
     kind: v.union(

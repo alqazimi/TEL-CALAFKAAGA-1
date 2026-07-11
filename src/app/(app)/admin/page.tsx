@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   CreditCard,
   Flag,
+  Headphones,
   Heart,
   Mail,
   Megaphone,
@@ -36,6 +37,7 @@ import { AdminMembersPanel } from "@/components/admin/admin-members-panel";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
 import { AdminMessagesInbox } from "@/components/admin/admin-messages-inbox";
+import { AdminContactsInbox } from "@/components/admin/admin-contacts-inbox";
 import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -157,6 +159,12 @@ export default function AdminPage() {
     api.moderation.listReports,
     isStaff && (activeTab === "reports" || activeTab === "dashboard") ? {} : "skip"
   );
+  const supportContacts = useSafeQuery(
+    api.supportContacts.listSupportContacts,
+    isStaff && (activeTab === "contacts" || activeTab === "dashboard")
+      ? { status: "open" }
+      : "skip"
+  );
   const auditLogs = useSafeQuery(
     api.admin.getAuditLogs,
     isStaff && activeTab === "audit" ? { limit: 80 } : "skip"
@@ -255,6 +263,7 @@ export default function AdminPage() {
   const canManageRoles = currentUser.profile?.role === "owner" || stats?.isOwner === true;
   const pendingReviewCount = stats?.pendingApproval ?? 0;
   const openReports = reports?.filter((r) => r.status === "open").length ?? 0;
+  const openContacts = supportContacts?.length ?? 0;
 
   const TAB_META: Record<
     AdminTab,
@@ -337,6 +346,12 @@ export default function AdminPage() {
       hint: t("adminPage.statReportsHint"),
       icon: Flag,
     },
+    {
+      label: t("adminPage.openContacts"),
+      value: openContacts,
+      hint: t("adminPage.statContactsHint"),
+      icon: Headphones,
+    },
   ];
 
   return (
@@ -383,7 +398,7 @@ export default function AdminPage() {
           </section>
         )}
 
-        {(pendingReviewCount > 0 || openReports > 0 || (stats?.unpaidCount ?? 0) > 0) &&
+        {(pendingReviewCount > 0 || openReports > 0 || openContacts > 0 || (stats?.unpaidCount ?? 0) > 0) &&
           (activeTab === "dashboard" || activeTab === "users") && (
           <section className="rounded-2xl border border-border bg-muted/30 p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -430,6 +445,16 @@ export default function AdminPage() {
                   {t("adminPage.attentionReports", { count: openReports })}
                 </Button>
               )}
+              {openContacts > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-10 rounded-xl"
+                  onClick={() => setTab("contacts")}
+                >
+                  {t("adminPage.attentionContacts", { count: openContacts })}
+                </Button>
+              )}
             </div>
           </section>
         )}
@@ -444,8 +469,8 @@ export default function AdminPage() {
                 [
                   "users",
                   "messages",
+                  "contacts",
                   "reports",
-                  "payments",
                 ] as const
               ).map((tab) => {
                 const meta = TAB_META[tab];
@@ -857,6 +882,10 @@ export default function AdminPage() {
 
         {activeTab === "messages" && (
           <AdminMessagesInbox onOpenUser={openUserProfile} />
+        )}
+
+        {activeTab === "contacts" && (
+          <AdminContactsInbox onOpenUser={openUserProfile} />
         )}
 
         {activeTab === "reports" && (
