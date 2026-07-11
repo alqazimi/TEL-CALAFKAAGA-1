@@ -633,6 +633,165 @@ export const getRecentMessages = query({
   },
 });
 
+type AdminMemberCard = {
+  userId: Id<"users">;
+  name: string;
+  profileId: Id<"profiles"> | null;
+  imageUrl: string | null;
+  gender: string | null;
+};
+
+/** Inbox-style conversation list for admin moderation (Muzz-like). */
+export const getAdminConversations = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    await requireAdmin(ctx, userId);
+
+    const limit = Math.min(Math.max(args.limit ?? 40, 1), 80);
+    const conversations = await ctx.db.query("conversations").collect();
+    conversations.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+    const top = conversations.slice(0, limit);
+
+    const profileCache = new Map<string, AdminMemberCard>();
+    async function resolveMember(uid: Id<"users">): Promise<AdminMemberCard> {
+      const cached = profileCache.get(uid);
+      if (cached) return cached;
+      const peerProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_userId", (q) => q.eq("userId", uid))
+        .unique();
+      let imageUrl: string | null = null;
+      if (peerProfile?.profileImageId) {
+        imageUrl = await ctx.storage.getUrl(peerProfile.profileImageId);
+      }
+      const info: AdminMemberCard = {
+        userId: uid,
+        name: peerProfile?.name ?? "Unknown",
+        profileId: peerProfile?._id ?? null,
+        imageUrl,
+        gender: peerProfile?.gender ?? null,
+      };
+      profileCache.set(uid, info);
+      return info;
+    }
+
+    const rows = [];
+    for (const conversation of top) {
+      const [userA, userB] = conversation.participants;
+      if (!userA || !userB) continue;
+      const memberA = await resolveMember(userA);
+      const memberB = await resolveMember(userB);
+      const lastMessage = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation", (q) => q.eq("conversationId", conversation._id))
+        .order("desc")
+        .first();
+
+      rows.push({
+        conversationId: conversation._id,
+        lastMessageAt: conversation.lastMessageAt,
+        lastMessage: lastMessage
+          ? {
+              body:
+                lastMessage.message?.trim() ||
+                (lastMessage.imageId ? "[Image]" : ""),
+              hasImage: Boolean(lastMessage.imageId),
+              senderId: lastMessage.senderId,
+              createdAt: lastMessage.createdAt,
+            }
+          : null,
+        memberA,
+        memberB,
+      });
+    }
+
+    return rows;
+  },
+});
+
+/** Full chat thread for one conversation (admin read-only). */
+export const getAdminConversationThread = query({
+  args: {
+    conversationId: v.id("conversations"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    await requireAdmin(ctx, userId);
+
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) return null;
+
+    const limit = Math.min(Math.max(args.limit ?? 120, 1), 200);
+    const messagesAsc = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
+      .order("asc")
+      .take(limit);
+
+    const profileCache = new Map<string, AdminMemberCard>();
+    async function resolveMember(uid: Id<"users">): Promise<AdminMemberCard> {
+      const cached = profileCache.get(uid);
+      if (cached) return cached;
+      const peerProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_userId", (q) => q.eq("userId", uid))
+        .unique();
+      let imageUrl: string | null = null;
+      if (peerProfile?.profileImageId) {
+        imageUrl = await ctx.storage.getUrl(peerProfile.profileImageId);
+      }
+      const info: AdminMemberCard = {
+        userId: uid,
+        name: peerProfile?.name ?? "Unknown",
+        profileId: peerProfile?._id ?? null,
+        imageUrl,
+        gender: peerProfile?.gender ?? null,
+      };
+      profileCache.set(uid, info);
+      return info;
+    }
+
+    const [userA, userB] = conversation.participants;
+    const memberA = userA ? await resolveMember(userA) : null;
+    const memberB = userB ? await resolveMember(userB) : null;
+
+    const messages = [];
+    for (const msg of messagesAsc) {
+      let imageUrl: string | null = null;
+      if (msg.imageId) {
+        imageUrl = await ctx.storage.getUrl(msg.imageId);
+      }
+      const sender = await resolveMember(msg.senderId);
+      messages.push({
+        id: msg._id,
+        body: msg.message?.trim() || "",
+        imageUrl,
+        hasImage: Boolean(msg.imageId),
+        createdAt: msg.createdAt,
+        read: msg.read,
+        senderId: msg.senderId,
+        senderName: sender.name,
+        senderProfileId: sender.profileId,
+        senderImageUrl: sender.imageUrl,
+      });
+    }
+
+    return {
+      conversationId: conversation._id,
+      lastMessageAt: conversation.lastMessageAt,
+      memberA,
+      memberB,
+      messages,
+    };
+  },
+});
+
 export const setAdvisorReviewed = mutation({
   args: {
     profileId: v.id("profiles"),

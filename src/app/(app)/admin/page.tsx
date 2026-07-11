@@ -35,6 +35,7 @@ import { AdminBootstrapPanel } from "@/components/admin/admin-bootstrap-panel";
 import { AdminMembersPanel } from "@/components/admin/admin-members-panel";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
+import { AdminMessagesInbox } from "@/components/admin/admin-messages-inbox";
 import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -157,10 +158,6 @@ export default function AdminPage() {
   const reports = useSafeQuery(
     api.moderation.listReports,
     isStaff && (activeTab === "reports" || activeTab === "dashboard") ? {} : "skip"
-  );
-  const recentMessages = useSafeQuery(
-    api.admin.getRecentMessages,
-    isStaff && activeTab === "messages" ? { limit: 80 } : "skip"
   );
   const auditLogs = useSafeQuery(
     api.admin.getAuditLogs,
@@ -848,55 +845,7 @@ export default function AdminPage() {
         )}
 
         {activeTab === "messages" && (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">{t("adminPage.messagesTabHint")}</p>
-            {recentMessages === undefined ? (
-              <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-            ) : recentMessages === null || recentMessages.length === 0 ? (
-              <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-                {t("adminPage.noPlatformMessages")}
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {recentMessages.map((msg) => (
-                  <li
-                    key={msg.id}
-                    className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]"
-                  >
-                    <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
-                      <button
-                        type="button"
-                        className="font-semibold hover:underline"
-                        disabled={!msg.senderProfileId}
-                        onClick={() => {
-                          if (msg.senderProfileId) setSelectedProfileId(msg.senderProfileId);
-                        }}
-                      >
-                        {msg.senderName}
-                      </button>
-                      <span className="text-muted-foreground">→</span>
-                      <button
-                        type="button"
-                        className="font-medium hover:underline"
-                        disabled={!msg.peerProfileId}
-                        onClick={() => {
-                          if (msg.peerProfileId) setSelectedProfileId(msg.peerProfileId);
-                        }}
-                      >
-                        {msg.peerName}
-                      </button>
-                      <span className="text-[11px] text-muted-foreground">
-                        {new Date(msg.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="break-words text-sm text-foreground/90">
-                      {msg.hasImage && !msg.body ? t("adminDetail.imageMessage") : msg.body}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <AdminMessagesInbox onOpenUser={setSelectedProfileId} />
         )}
 
         {activeTab === "reports" && (
