@@ -480,11 +480,12 @@ export const rejectUser = mutation({
     await sendNotification(ctx, {
       userId: profile.userId,
       type: "approval",
-      title: "Profile needs updates",
+      title: "Sawirka profile-ka",
       body:
         args.reason?.trim() ||
-        "Your profile was not approved. Please update your details and contact support if you need help.",
+        "Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.",
       sendEmail: true,
+      emailCta: { label: "Cusboonaysii sawirka", path: "/profile" },
     });
 
     await writeAuditLog(ctx, {

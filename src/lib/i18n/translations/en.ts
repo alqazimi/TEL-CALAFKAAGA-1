@@ -914,7 +914,7 @@ export const en = {
     rejectUser: "Reject profile",
     rejectSuccess: "Profile rejected.",
     rejectConfirmTitle: "Reject this profile?",
-    rejectConfirm: "Reject {{name}}? They will be notified to update their profile.",
+    rejectConfirm: "Reject {{name}}? They will be told: Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.",
     deleteConfirmTitle: "Delete this member?",
     deleteConfirm: "Delete {{name}}? This cannot be undone.",
     banConfirmTitle: "Ban this member?",

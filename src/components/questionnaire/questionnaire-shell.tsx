@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { ChevronLeft } from "lucide-react";
 import { LoadingRecovery } from "@/components/auth/loading-recovery";
+import { LanguageToggle } from "@/components/layout/language-toggle";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadingTimeout } from "@/hooks/use-loading-timeout";
@@ -103,10 +104,8 @@ export function QuestionnaireShell({
               <p className="text-[11px] text-foreground/70 mt-0.5 truncate">{stepLabel}</p>
             ) : null}
           </div>
-          <div className="w-[4.5rem] shrink-0 text-right">
-            <span className="text-xs font-semibold tabular-nums text-primary">
-              {clamped}%
-            </span>
+          <div className="flex shrink-0 items-center justify-end">
+            <LanguageToggle className="h-9 gap-1 rounded-full px-2.5" />
           </div>
         </div>
         {(progressHint || timeLabel) && (

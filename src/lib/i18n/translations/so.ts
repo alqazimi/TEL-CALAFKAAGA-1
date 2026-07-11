@@ -905,7 +905,7 @@ export const so: Translations = {
     rejectUser: "Diid profile-ka",
     rejectSuccess: "Profile-ka waa la diiday.",
     rejectConfirmTitle: "Diid profile-kan?",
-    rejectConfirm: "Diid {{name}}? Waa loo ogeysiinayaa inay cusboonaysiiyaan profile-kooda.",
+    rejectConfirm: "Diid {{name}}? Waxaa loo diri doonaa: Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.",
     deleteConfirmTitle: "Tirtir xubnahan?",
     deleteConfirm: "Tirtir {{name}}? Tan dib looma celin karo.",
     banConfirmTitle: "Mamnuuc xubnahan?",
