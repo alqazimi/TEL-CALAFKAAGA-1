@@ -1,4 +1,5 @@
 import { GenericId } from "convex/values";
+import { internal } from "../_generated/api";
 import { MutationCtx } from "../_generated/server";
 import { PROFILE_DEFAULTS } from "./questionnaire";
 import {
@@ -13,6 +14,8 @@ type ProfileArgs = {
   gender: "male" | "female";
   phone?: string;
 };
+
+const SIGNUP_INCOMPLETE_REMINDER_MS = 30 * 60 * 1000;
 
 export async function createUserProfile(
   ctx: MutationCtx,
@@ -88,6 +91,13 @@ export async function createUserProfile(
     partnerBeard: "",
     partnerHijabLevel: "",
   });
+
+  // If they never finish the questionnaire, nudge by email after 30 minutes.
+  await ctx.scheduler.runAfter(
+    SIGNUP_INCOMPLETE_REMINDER_MS,
+    internal.memberEmailReminders.sendSignupIncompleteReminder,
+    { userId }
+  );
 
   return profileId;
 }

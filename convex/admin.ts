@@ -526,6 +526,51 @@ export const rejectUser = mutation({
   },
 });
 
+/** Ask a member to upload / replace their profile photo (does not reject them). */
+export const requestProfilePhoto = mutation({
+  args: {
+    profileId: v.id("profiles"),
+    message: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    await requireAdmin(ctx, userId);
+
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) throw new Error("Profile not found");
+    if (isStaffRole(profile.role)) {
+      throw new Error("Cannot request a photo from a staff account");
+    }
+
+    const body =
+      args.message?.trim() ||
+      "Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.";
+
+    await sendNotification(ctx, {
+      userId: profile.userId,
+      type: "approval",
+      title: "Sawirka profile-ka",
+      body,
+      sendEmail: true,
+      emailCta: { label: "Cusboonaysii sawirka", path: "/profile" },
+    });
+
+    await ctx.db.insert("memberEmailLog", {
+      userId: profile.userId,
+      kind: "request_profile_photo",
+      sentAt: Date.now(),
+    });
+
+    await writeAuditLog(ctx, {
+      actorUserId: userId,
+      action: "request_profile_photo",
+      targetUserId: profile.userId,
+      targetProfileId: args.profileId,
+    });
+  },
+});
+
 export const banUser = mutation({
   args: { profileId: v.id("profiles"), banned: v.boolean() },
   handler: async (ctx, args) => {

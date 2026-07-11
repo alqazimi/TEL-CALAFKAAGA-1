@@ -12,6 +12,7 @@ import {
   Headphones,
   Loader2,
   UserRound,
+  ImagePlus,
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -23,6 +24,8 @@ import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
 import { resolveReviewStatus } from "@/lib/review-status";
+import { toast } from "sonner";
+import { useState } from "react";
 
 interface AdminUserDetailPanelProps {
   profileId: Id<"profiles">;
@@ -80,6 +83,8 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
   const { t } = useTranslation();
   const detail = useSafeQuery(api.admin.getUserDetail, { profileId });
   const setAdvisorReviewed = useMutation(api.admin.setAdvisorReviewed);
+  const requestProfilePhoto = useMutation(api.admin.requestProfilePhoto);
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   const yesNo = (value: boolean | undefined) => {
     if (value === undefined) return "—";
@@ -207,6 +212,31 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                         {detail.profile.advisorReviewed
                           ? t("adminDetail.advisorReviewed")
                           : t("adminDetail.markAdvisorReviewed")}
+                      </Button>
+                    )}
+                    {!isStaffRole(detail.profile.role) && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs rounded-full"
+                        disabled={photoBusy}
+                        onClick={() => {
+                          setPhotoBusy(true);
+                          void requestProfilePhoto({ profileId })
+                            .then(() => toast.success(t("adminPage.requestPhotoSuccess")))
+                            .catch((error: unknown) => {
+                              toast.error(
+                                error instanceof Error
+                                  ? error.message
+                                  : t("adminPage.actionFailed")
+                              );
+                            })
+                            .finally(() => setPhotoBusy(false));
+                        }}
+                      >
+                        <ImagePlus className="mr-1 h-3.5 w-3.5" />
+                        {t("adminPage.requestPhotoShort")}
                       </Button>
                     )}
                   </div>

@@ -325,7 +325,9 @@ export default defineSchema({
     kind: v.union(
       v.literal("reminder_profile"),
       v.literal("reminder_payment"),
-      v.literal("reminder_trial_ending")
+      v.literal("reminder_trial_ending"),
+      v.literal("reminder_signup_incomplete"),
+      v.literal("request_profile_photo")
     ),
     sentAt: v.number(),
   }).index("by_user_kind", ["userId", "kind"]),

@@ -7,6 +7,7 @@ import {
   Ban,
   CheckCircle,
   Eye,
+  ImagePlus,
   Mail,
   MessageCircle,
   Phone,
@@ -163,6 +164,7 @@ export function AdminMembersPanel({
   const { t } = useTranslation();
   const approveUser = useMutation(api.admin.approveUser);
   const rejectUser = useMutation(api.admin.rejectUser);
+  const requestProfilePhoto = useMutation(api.admin.requestProfilePhoto);
   const banUser = useMutation(api.admin.banUser);
   const deleteUser = useMutation(api.admin.deleteUser);
   const setUserRole = useMutation(api.admin.setUserRole);
@@ -503,6 +505,26 @@ export function AdminMembersPanel({
                         onClick={() => setPendingConfirm({ type: "reject", user })}
                       >
                         {t("adminPage.rejectShort")}
+                      </Button>
+                    )}
+
+                    {!isStaffRole(user.role) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-9 rounded-lg"
+                        disabled={busy}
+                        title={t("adminPage.requestPhotoTitle")}
+                        onClick={() =>
+                          void runAction(
+                            user._id,
+                            () => requestProfilePhoto({ profileId: user._id }),
+                            t("adminPage.requestPhotoSuccess")
+                          )
+                        }
+                      >
+                        <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
+                        {t("adminPage.requestPhotoShort")}
                       </Button>
                     )}
 

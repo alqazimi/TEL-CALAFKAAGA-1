@@ -12,7 +12,9 @@ const MIN_AGE_MS = 24 * 60 * 60 * 1000;
 type ReminderKind =
   | "reminder_profile"
   | "reminder_payment"
-  | "reminder_trial_ending";
+  | "reminder_trial_ending"
+  | "reminder_signup_incomplete"
+  | "request_profile_photo";
 
 async function wasReminderSentRecently(
   ctx: MutationCtx,
@@ -64,6 +66,38 @@ async function queueReminderEmail(
   });
   await logReminderSent(ctx, userId, kind);
 }
+
+/** Fired 30 minutes after signup if the questionnaire is still incomplete. */
+export const sendSignupIncompleteReminder = internalMutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    if (!profile || profile.banned || isStaffRole(profile.role)) return;
+    if (profile.questionnaireComplete) return;
+
+    const alreadySent = await ctx.db
+      .query("memberEmailLog")
+      .withIndex("by_user_kind", (q) =>
+        q.eq("userId", args.userId).eq("kind", "reminder_signup_incomplete")
+      )
+      .take(1);
+    if (alreadySent.length > 0) return;
+
+    await queueReminderEmail(
+      ctx,
+      args.userId,
+      "reminder_signup_incomplete",
+      "Dhammaystir akoonkaaga Hel Calafkaaga",
+      "Waxaad sameysatay akoon, laakiin weli ma dhammaystirin profile-kaaga. Fadlan dhamee su'aalaha iyo sawirkaaga si aad u hesho isbarbardhigyo. / You created an account but have not finished your profile. Please complete the questionnaire and photo.",
+      "Dhammaystir profile-ka",
+      "/questionnaire"
+    );
+  },
+});
 
 export const run = internalMutation({
   args: {},
