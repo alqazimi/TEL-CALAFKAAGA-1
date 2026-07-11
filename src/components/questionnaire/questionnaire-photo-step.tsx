@@ -64,7 +64,7 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
   };
 
   return (
-    <div className="flex flex-col items-center text-center pb-36">
+    <div className="flex flex-col items-center text-center pb-40">
       <h2 className="text-[1.625rem] sm:text-3xl font-semibold tracking-tight leading-snug mb-3 w-full text-left">
         {ui("photoTitle")}
       </h2>
@@ -72,9 +72,14 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
         {ui("photoStepDesc")}
       </p>
 
-      {/* Preview only — overflow clip is on the INNER circle, not the file input */}
-      <div className="relative mb-6 h-40 w-40 sm:h-48 sm:w-48">
-        <div className="h-full w-full overflow-hidden rounded-full border-4 border-background shadow-xl ring-2 ring-border">
+      {/* Avatar is also a tappable upload target (clip on INNER only). */}
+      <ImageFileHitArea
+        disabled={uploading}
+        aria-label={ui("uploadPhotoAria")}
+        onChange={(e) => void handleImageUpload(e)}
+        className="relative mb-6 h-40 w-40 sm:h-48 sm:w-48 rounded-full"
+      >
+        <span className="block h-full w-full overflow-hidden rounded-full border-4 border-background shadow-xl ring-2 ring-border">
           {displayUrl || profile.profileImageId ? (
             <ProfilePhotoPreview
               imageUrl={displayUrl}
@@ -84,29 +89,33 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
               className="h-full w-full rounded-full"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-muted">
+            <span className="flex h-full w-full items-center justify-center bg-muted">
               <User className="h-16 w-16 text-muted-foreground" />
-            </div>
+            </span>
           )}
-          {uploading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+          {uploading ? (
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40">
               <Loader2 className="h-8 w-8 animate-spin text-white" />
-            </div>
+            </span>
+          ) : (
+            <span className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/45 py-2">
+              <Camera className="h-5 w-5 text-white" />
+            </span>
           )}
-        </div>
-      </div>
+        </span>
+      </ImageFileHitArea>
 
       <p className="text-lg font-medium text-foreground mb-2">{ui("uploadYourPhoto")}</p>
-      <p className="text-base text-muted-foreground max-w-sm leading-relaxed mb-5">
+      <p className="text-base text-muted-foreground max-w-sm leading-relaxed mb-6">
         {ui("photoHelp")}
       </p>
 
-      {/* Primary phone CTA — large, no overflow-hidden, input receives the tap */}
+      {/* Mid-page CTA — still above the fold on most phones */}
       <ImageFileHitArea
         disabled={uploading}
         aria-label={ui("uploadPhotoAria")}
         onChange={(e) => void handleImageUpload(e)}
-        className="mb-3 w-full max-w-sm rounded-2xl bg-primary text-primary-foreground shadow-md"
+        className="mb-8 w-full max-w-sm rounded-2xl bg-primary text-primary-foreground shadow-md"
       >
         <span className="flex h-14 w-full items-center justify-center gap-2 px-6 text-base font-semibold">
           {uploading ? (
@@ -123,31 +132,60 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
         </span>
       </ImageFileHitArea>
 
-      <ImageFileHitArea
-        disabled={uploading}
-        aria-label={ui("uploadPhotoAria")}
-        onChange={(e) => void handleImageUpload(e)}
-        className="mb-8 w-full max-w-sm rounded-2xl border border-input bg-background"
-      >
-        <span className="flex h-12 w-full items-center justify-center px-6 text-sm font-medium text-foreground">
-          {ui("choosePhoto")}
-        </span>
-      </ImageFileHitArea>
-
       <div className="w-full max-w-md">
         <ContactAdminCard source="questionnaire" defaultTopic="photo_upload" compact />
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/80 bg-background/95 backdrop-blur-md px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <div className="mx-auto max-w-xl">
-          <Button
-            onClick={handleContinue}
-            className="w-full h-14 min-h-14 rounded-2xl text-lg font-semibold"
-            size="lg"
-            disabled={uploading}
-          >
-            {ui("submitAndReview")}
-          </Button>
+      {/*
+        Sticky bottom: the upload control lives HERE so nothing can cover the tap
+        (previous bug: fixed “Continue” bar stole taps from Choose Photo).
+      */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/95 backdrop-blur-md px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto max-w-xl space-y-3">
+          {!hasPhoto ? (
+            <ImageFileHitArea
+              disabled={uploading}
+              aria-label={ui("uploadPhotoAria")}
+              onChange={(e) => void handleImageUpload(e)}
+              className="w-full rounded-2xl bg-primary text-primary-foreground shadow-md"
+            >
+              <span className="flex h-14 w-full items-center justify-center gap-2 px-6 text-lg font-semibold">
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    {ui("uploading")}
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-5 w-5" />
+                    {ui("choosePhoto")}
+                  </>
+                )}
+              </span>
+            </ImageFileHitArea>
+          ) : (
+            <>
+              <Button
+                onClick={handleContinue}
+                className="w-full h-14 min-h-14 rounded-2xl text-lg font-semibold"
+                size="lg"
+                disabled={uploading}
+              >
+                {ui("submitAndReview")}
+              </Button>
+              <ImageFileHitArea
+                disabled={uploading}
+                aria-label={ui("uploadPhotoAria")}
+                onChange={(e) => void handleImageUpload(e)}
+                className="w-full rounded-2xl border border-input bg-background"
+              >
+                <span className="flex h-12 w-full items-center justify-center gap-2 px-6 text-sm font-medium">
+                  <Camera className="h-4 w-4" />
+                  {ui("changePhoto")}
+                </span>
+              </ImageFileHitArea>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent, ReactNode } from "react";
+import { useId, type ChangeEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type ImageFileHitAreaProps = {
@@ -8,55 +8,58 @@ type ImageFileHitAreaProps = {
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
   className?: string;
+  /** Keep simple — long accept lists break the picker on some Android browsers. */
   accept?: string;
   "aria-label"?: string;
 };
 
 /**
- * Mobile-safe image picker for iPhone / Android / Safari / Firefox.
+ * Mobile-safe image picker (iPhone / Android / Safari / Chrome / Firefox).
  *
- * Critical rules (do not regress):
- * - Real `<input type="file">` must receive the tap (not a programmatic .click()).
- * - Do NOT put `overflow-hidden` / `hidden` / `sr-only` on the same box as the input.
- * - Clip photos on an INNER element only.
- * - `form="_hel_nofileform"` keeps the input out of any parent <form> so Firefox
- *   does not show “Leave this page?” after picking a photo.
+ * Rules that must not regress:
+ * - The user must tap the real `<input type="file">` (never `.click()` from JS).
+ * - Do not use `display:none`, `hidden`, or `sr-only` on the input.
+ * - Do not put `overflow-hidden` on the same box as the input (clip children only).
+ * - Keep `accept` short (`image/*`) — long MIME/extension lists silently fail on Android.
  */
 export function ImageFileHitArea({
   children,
   onChange,
   disabled = false,
   className,
-  accept = "image/*,image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp,.heic,.heif",
+  accept = "image/*",
   "aria-label": ariaLabel = "Upload photo",
 }: ImageFileHitAreaProps) {
+  const inputId = useId();
+
   return (
-    <div
+    <label
+      htmlFor={inputId}
       className={cn(
-        "relative cursor-pointer touch-manipulation select-none",
+        "relative block cursor-pointer touch-manipulation select-none",
         disabled && "pointer-events-none opacity-60",
         className
       )}
     >
-      <div className="pointer-events-none">{children}</div>
+      <span className="pointer-events-none block h-full w-full">{children}</span>
       <input
+        id={inputId}
         type="file"
         accept={accept}
         disabled={disabled}
         aria-label={ariaLabel}
-        // Disconnect from any surrounding form (Firefox leave-page warning).
+        // Keep out of any parent <form> (Firefox “Leave this page?” after pick).
         form="_hel_nofileform"
-        className="absolute inset-0 z-[60] m-0 block h-full w-full cursor-pointer p-0 opacity-0"
+        // Direct tap target over the whole label — required for iOS/Android.
+        className="absolute inset-0 z-[60] m-0 block h-full w-full max-w-none cursor-pointer border-0 p-0"
         style={{
           fontSize: 16,
           WebkitTapHighlightColor: "transparent",
-        }}
-        onClick={(e) => {
-          // Avoid bubbling into parent buttons/links.
-          e.stopPropagation();
+          // Fully transparent (0) is ignored by some Android WebViews.
+          opacity: 0.011,
         }}
         onChange={onChange}
       />
-    </div>
+    </label>
   );
 }
