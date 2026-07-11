@@ -41,18 +41,27 @@ async function reverseGeocodeCoords(latitude: number, longitude: number) {
 
   const address = data.address ?? {};
   const country = address.country?.trim() ?? "";
-  const city =
+  const cityCandidate =
     address.city ??
     address.town ??
     address.village ??
     address.municipality ??
+    address.city_district ??
+    address.suburb ??
     address.county ??
     address.state_district ??
+    address.state ??
     "";
+
+  let city = String(cityCandidate).trim();
+  // Last resort: first segment of display name (e.g. "Mogadishu, ...")
+  if (!city && data.display_name) {
+    city = data.display_name.split(",")[0]?.trim() ?? "";
+  }
 
   return {
     country,
-    city: String(city).trim(),
+    city,
     displayName: data.display_name ?? "",
   };
 }
@@ -98,8 +107,8 @@ export const reverseGeocode = action({
 });
 
 /**
- * Reverse-geocode GPS on the server and lock country/city on the profile.
- * Clients cannot set country/city manually through autosave.
+ * Reverse-geocode GPS on the server and save country/city + coords.
+ * Manual country/city is still allowed when GPS is unavailable.
  */
 export const verifyAndSaveLocation = action({
   args: {

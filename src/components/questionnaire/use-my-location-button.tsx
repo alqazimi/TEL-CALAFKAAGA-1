@@ -9,6 +9,7 @@ import {
   GeolocationUnsupportedError,
   getBrowserPosition,
   isGeolocationPermissionDenied,
+  isGeolocationTimeout,
 } from "@/lib/geolocation";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import { cn } from "@/lib/utils";
@@ -17,8 +18,10 @@ interface UseMyLocationButtonProps {
   onDetected: (country: string, city: string) => void;
   disabled?: boolean;
   className?: string;
-  /** Primary CTA label when location is required (default: useMyLocation). */
+  /** Emphasize GPS as the preferred option. */
   required?: boolean;
+  /** Called when GPS fails so the UI can show manual pickers. */
+  onFailed?: () => void;
 }
 
 export function UseMyLocationButton({
@@ -26,6 +29,7 @@ export function UseMyLocationButton({
   disabled,
   className,
   required,
+  onFailed,
 }: UseMyLocationButtonProps) {
   const verifyAndSaveLocation = useAction(api.geolocation.verifyAndSaveLocation);
   const { ui } = useQuestionnaireI18n();
@@ -44,12 +48,17 @@ export function UseMyLocationButton({
       onDetected(result.country, result.city);
       toast.success(ui("locationDetected"));
     } catch (error) {
+      onFailed?.();
       if (error instanceof GeolocationUnsupportedError) {
         toast.error(ui("locationUnsupported"));
         return;
       }
       if (isGeolocationPermissionDenied(error)) {
         toast.error(ui("locationPermissionDenied"));
+        return;
+      }
+      if (isGeolocationTimeout(error)) {
+        toast.error(ui("locationTimeout"));
         return;
       }
       const message = error instanceof Error ? error.message : "";

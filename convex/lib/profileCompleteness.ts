@@ -52,23 +52,11 @@ function hasText(value: string | undefined): boolean {
   return !!value?.trim();
 }
 
-function hasVerifiedLocation(profile: ProfileLike): boolean {
-  if (
-    typeof profile.locationVerifiedAt === "number" &&
-    profile.locationVerifiedAt > 0
-  ) {
-    return true;
-  }
-  // Legacy members who finished the questionnaire before GPS was required.
-  return profile.questionnaireComplete === true;
-}
-
 function isBasicComplete(profile: ProfileLike): boolean {
   return (
     (profile.age ?? 0) > 0 &&
     hasText(profile.country) &&
     hasText(profile.city) &&
-    hasVerifiedLocation(profile) &&
     (profile.height ?? 0) > 0 &&
     (profile.weight ?? 0) > 0 &&
     (profile.languagesSpoken?.length ?? 0) > 0
@@ -173,13 +161,6 @@ export function getProfileIncompleteReason(
   prefs?: PrefsLike
 ): string | null {
   if (!isBasicComplete(profile)) {
-    if (
-      hasText(profile.country) &&
-      hasText(profile.city) &&
-      !hasVerifiedLocation(profile)
-    ) {
-      return "Profile is incomplete: allow location access so we can verify where you live.";
-    }
     return "Profile is incomplete: basic information is missing.";
   }
   if (!isReligiousComplete(profile)) {

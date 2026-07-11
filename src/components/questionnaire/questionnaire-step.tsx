@@ -29,6 +29,7 @@ import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
 import type { FieldConfig, StepConfig } from "./steps";
 import { GenderSelectCards } from "./gender-select-cards";
 import { UseMyLocationButton } from "./use-my-location-button";
+import { cityOptionsWithDetected } from "@/lib/location-match";
 
 const AUTO_ADVANCE_MS = 380;
 const AUTO_SAVE_MS = 2000;
@@ -48,7 +49,6 @@ const ERROR_KEY_MAP: Record<string, QuestionnaireUiKey> = {
   "This field is required": "requiredField",
   "Please select at least one option": "selectAtLeastOne",
   "Please enter a valid phone number": "phoneInvalid",
-  "Allow location access to set where you live": "locationRequiredError",
 };
 
 function translateError(
@@ -148,8 +148,11 @@ export function QuestionnaireStep({
   const [locationVerifiedLocal, setLocationVerifiedLocal] = useState(
     () => typeof profile?.locationVerifiedAt === "number" && profile.locationVerifiedAt > 0
   );
-  const locationVerifiedLocalRef = useRef(locationVerifiedLocal);
-  locationVerifiedLocalRef.current = locationVerifiedLocal;
+  const [showManualLocation, setShowManualLocation] = useState(
+    () =>
+      !(typeof profile?.locationVerifiedAt === "number" && profile.locationVerifiedAt > 0) &&
+      !!(profile?.country && profile?.city)
+  );
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null);
   const skipAutoSaveRef = useRef(true);
@@ -271,16 +274,7 @@ export function QuestionnaireStep({
     if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
     const state = formStateRef.current;
     const visible = getVisibleFields(step, profile, state.radios, state.selects);
-    const profileForValidation =
-      locationVerifiedLocalRef.current && profile
-        ? {
-            ...profile,
-            locationVerifiedAt: profile.locationVerifiedAt ?? Date.now(),
-          }
-        : locationVerifiedLocalRef.current
-          ? { locationVerifiedAt: Date.now() }
-          : profile;
-    const errors = validateStepFields(step, profileForValidation, state);
+    const errors = validateStepFields(step, profile, state);
     if (Object.keys(errors).length > 0) {
       const firstErrorField = visible.find((f) => errors[f.name]);
       if (firstErrorField) {
@@ -344,6 +338,7 @@ export function QuestionnaireStep({
   const applyDetectedLocation = useCallback(
     (country: string, city: string) => {
       setLocationVerifiedLocal(true);
+      setShowManualLocation(false);
       setSelects((prev) => ({ ...prev, country, city }));
       setSelectedCountry(country);
       setFieldErrors((prev) => {
@@ -388,15 +383,6 @@ export function QuestionnaireStep({
 
   const goToNextField = () => {
     if (!currentField) return;
-    if (
-      (currentField.name === "country" || currentField.name === "city") &&
-      !locationVerified
-    ) {
-      setFieldErrors({
-        [currentField.name]: "Allow location access to set where you live",
-      });
-      return;
-    }
     const error = validateField(currentField, profile, formState);
     if (error) {
       setFieldErrors({ [currentField.name]: error });
@@ -535,9 +521,16 @@ export function QuestionnaireStep({
 
     if (field.type === "country-search") {
       if (field.name === "country") {
+        const allowManual = showManualLocation || locationVerified;
         return (
           <div className="space-y-4">
             <p className="text-base text-muted-foreground">{ui("locationRequiredHint")}</p>
+            <UseMyLocationButton
+              onDetected={applyDetectedLocation}
+              onFailed={() => setShowManualLocation(true)}
+              disabled={isAdvancing}
+              required
+            />
             {locationVerified && selects.country ? (
               <div className="rounded-2xl border-2 border-primary/25 bg-primary/[0.06] px-5 py-4 space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-primary">
@@ -549,11 +542,30 @@ export function QuestionnaireStep({
                 ) : null}
               </div>
             ) : null}
-            <UseMyLocationButton
-              onDetected={applyDetectedLocation}
-              disabled={isAdvancing}
-              required={!locationVerified}
-            />
+            {!allowManual ? (
+              <button
+                type="button"
+                className="w-full text-center text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
+                onClick={() => setShowManualLocation(true)}
+              >
+                {ui("chooseManually")}
+              </button>
+            ) : (
+              <div className="space-y-2 pt-1">
+                <p className="text-sm font-medium text-muted-foreground">{ui("chooseManually")}</p>
+                <CountryCombobox
+                  value={selects.country ?? ""}
+                  onChange={(v) => {
+                    setLocationVerifiedLocal(false);
+                    setSelects((prev) => ({ ...prev, country: v, city: "" }));
+                    setSelectedCountry(v);
+                    clearFieldError("country");
+                    clearFieldError("city");
+                    scheduleAutoAdvance(field);
+                  }}
+                />
+              </div>
+            )}
           </div>
         );
       }
@@ -562,12 +574,7 @@ export function QuestionnaireStep({
           value={selects[field.name] ?? ""}
           onChange={(v) => {
             setSelects((prev) => ({ ...prev, [field.name]: v }));
-            if (field.name === "country") {
-              setSelectedCountry(v);
-              setSelects((prev) => ({ ...prev, city: "" }));
-            }
             clearFieldError(field.name);
-            clearFieldError("city");
             scheduleAutoAdvance(field);
           }}
         />
@@ -587,9 +594,26 @@ export function QuestionnaireStep({
     }
 
     if (field.type === "select" && field.name === "city") {
+      const countryForCities = resolveCountryForCities(
+        selectedCountry,
+        selects,
+        profile?.country
+      );
+      const cityOptions = cityOptionsWithDetected(
+        countryForCities,
+        selects.city ?? ""
+      );
+      const allowManual = showManualLocation || locationVerified || !!selects.country;
+
       return (
         <div className="space-y-4">
           <p className="text-base text-muted-foreground">{ui("locationRequiredHint")}</p>
+          <UseMyLocationButton
+            onDetected={applyDetectedLocation}
+            onFailed={() => setShowManualLocation(true)}
+            disabled={isAdvancing}
+            required
+          />
           {locationVerified && selects.city ? (
             <div className="rounded-2xl border-2 border-primary/25 bg-primary/[0.06] px-5 py-4 space-y-1">
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">
@@ -601,11 +625,39 @@ export function QuestionnaireStep({
               ) : null}
             </div>
           ) : null}
-          <UseMyLocationButton
-            onDetected={applyDetectedLocation}
-            disabled={isAdvancing}
-            required={!locationVerified}
-          />
+          {allowManual ? (
+            cityOptions.length ? (
+              renderSelectOptions(
+                { ...field, options: cityOptions },
+                selects.city ?? "",
+                (v) => {
+                  setLocationVerifiedLocal(false);
+                  setSelects((prev) => ({ ...prev, city: v }));
+                  clearFieldError("city");
+                  scheduleAutoAdvance(field);
+                }
+              )
+            ) : (
+              <Input
+                value={selects.city ?? ""}
+                onChange={(e) => {
+                  setLocationVerifiedLocal(false);
+                  setSelects((prev) => ({ ...prev, city: e.target.value }));
+                  clearFieldError("city");
+                }}
+                placeholder={ui("enterCity")}
+                className="h-14 rounded-2xl text-lg px-5"
+              />
+            )
+          ) : (
+            <button
+              type="button"
+              className="w-full text-center text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
+              onClick={() => setShowManualLocation(true)}
+            >
+              {ui("chooseManually")}
+            </button>
+          )}
         </div>
       );
     }

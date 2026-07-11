@@ -67,13 +67,12 @@ export function splitQuestionnaireData(data: Record<string, unknown>) {
  * Applying those would wipe earlier answers when a stale save lands after a fuller one.
  */
 /**
- * Country/city must come from GPS verifyAndSaveLocation — never from client forms.
+ * GPS metadata must only come from verifyAndSaveLocation.
+ * Country/city may be set manually when GPS is unavailable.
  */
 export function stripClientLocationWrites(
   profileUpdates: Record<string, unknown>
 ): void {
-  delete profileUpdates.country;
-  delete profileUpdates.city;
   delete profileUpdates.locationLat;
   delete profileUpdates.locationLng;
   delete profileUpdates.locationAccuracyM;

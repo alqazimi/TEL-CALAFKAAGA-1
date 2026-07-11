@@ -46,10 +46,8 @@ export function initFormState(
   const textFields: Record<string, string> = {};
 
   if (profile.age > 0) selects.age = String(profile.age);
-  const locationVerified =
-    typeof profile.locationVerifiedAt === "number" && profile.locationVerifiedAt > 0;
-  if (locationVerified && profile.country) selects.country = profile.country;
-  if (locationVerified && profile.city) selects.city = profile.city;
+  if (profile.country) selects.country = profile.country;
+  if (profile.city) selects.city = profile.city;
   if (profile.height > 0) selects.height = formatHeightWeight(profile.height, "200+");
   if (profile.weight > 0) selects.weight = formatHeightWeight(profile.weight, "100+");
 
@@ -127,7 +125,7 @@ export function initFormState(
     multiSelects,
     textFields,
     bio: profile.bio ?? "",
-    selectedCountry: locationVerified ? (profile.country ?? "") : "",
+    selectedCountry: profile.country ?? "",
   };
 }
 
@@ -322,14 +320,6 @@ export function validateField(
 ): string | null {
   if (!isFieldVisible(field, profile, state.radios, state.selects)) return null;
   if (!field.required) return null;
-
-  if (field.name === "country" || field.name === "city") {
-    const verified =
-      typeof profile?.locationVerifiedAt === "number" && profile.locationVerifiedAt > 0;
-    if (!verified) {
-      return "Allow location access to set where you live";
-    }
-  }
 
   if (field.type === "textarea") {
     const value = field.name === "bio" ? state.bio : state.textFields[field.name] ?? "";

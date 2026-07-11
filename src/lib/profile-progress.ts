@@ -61,15 +61,10 @@ export function isEducationComplete(profile: Profile): boolean {
 }
 
 export function isBasicComplete(profile: Profile): boolean {
-  const locationOk =
-    (typeof profile.locationVerifiedAt === "number" &&
-      profile.locationVerifiedAt > 0) ||
-    profile.questionnaireComplete === true;
   return (
     profile.age > 0 &&
     !!profile.country &&
     !!profile.city &&
-    locationOk &&
     profile.height > 0 &&
     profile.weight > 0 &&
     (profile.languagesSpoken?.length ?? 0) > 0
