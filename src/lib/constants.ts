@@ -371,7 +371,7 @@ export const FAQ_ITEMS = [
   {
     question: "How much does Hel Calafkaaga cost?",
     answer:
-      "Men (new signups): Basic $5 or Premium $20. Existing members keep free Basic and can upgrade to Premium for $15. Women: Basic free; Premium upgrade $15.",
+      "Men (new signups): Basic $5 or Premium $20. Existing members keep free Basic and can upgrade to Premium for $15. Women: Basic free; Premium always $15.",
   },
   {
     question: "How is my data protected?",

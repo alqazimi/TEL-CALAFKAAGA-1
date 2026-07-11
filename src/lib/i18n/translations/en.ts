@@ -532,13 +532,13 @@ export const en = {
     q2: "How does matching work?",
     a2: "Our compatibility algorithm analyzes religion, age, location, education, lifestyle, and personality traits to find your best matches above 70% compatibility.",
     q3: "How much does Hel Calafkaaga cost?",
-    a3: "Existing members keep free Basic and can upgrade to Premium for $15. New men: Basic $5 or Premium $20 (women Basic free). Premium adds WhatsApp support and help finding your match.",
+    a3: "Existing members keep free Basic and can upgrade to Premium for $15. New men: Basic $5 or Premium $20. Women: Basic free; Premium always $15. Premium adds WhatsApp support and help finding your match.",
     q4: "How is my data protected?",
     a4: "We use industry-standard encryption and never share your personal data with third parties. Your privacy is our priority.",
     q5: "Can I delete my account?",
     a5: "Yes, you can delete your account at any time from your profile settings. All your data will be permanently removed.",
     q6: "What is Premium?",
-    a6: "Premium includes everything in Basic, plus personal WhatsApp support and staff help searching for your match. New Premium signup is $20; upgrade from Basic is $15.",
+    a6: "Premium includes everything in Basic, plus personal WhatsApp support and staff help searching for your match. New men Premium signup is $20; upgrade from Basic (and all women) is $15.",
     stillHaveQuestions: "Still have questions?",
     stillHaveQuestionsDesc: "Our team is happy to help before you join. Reach out anytime.",
     contactTeam: "Contact the team",
@@ -552,7 +552,7 @@ export const en = {
     premiumDesc:
       "WhatsApp support + we search for your match — $20 new signup, or $15 upgrade from Basic.",
     payOnce:
-      "Existing members: Basic free, Premium upgrade $15. New men: Basic $5 or Premium $20. Women: Basic free, Premium upgrade $15.",
+      "Existing members: Basic free, Premium upgrade $15. New men: Basic $5 or Premium $20. Women: Basic free, Premium always $15.",
     planChoiceLater:
       "New men choose Basic ($5) or Premium ($20) after their profile. Existing members keep Basic free and can upgrade to Premium for $15.",
     feature1: "Create profile & upload photo",

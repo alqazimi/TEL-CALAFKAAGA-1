@@ -16,10 +16,11 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
+import { PERSONAL_SUPPORT_PRICE, PREMIUM_UPGRADE_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { getPlanPreference, type PlanPreference } from "@/lib/plan-preference";
 import { cn } from "@/lib/utils";
+import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 
 type RegistrationTier = "basic" | "premium";
 
@@ -147,6 +148,7 @@ export function PaymentGate({
 }: PaymentGateProps) {
   const { t } = useTranslation();
   const [preferredPlan, setPreferredPlan] = useState<PlanPreference | null>(null);
+  const premiumDisplayPrice = freeBasic ? PREMIUM_UPGRADE_PRICE : PERSONAL_SUPPORT_PRICE;
 
   useEffect(() => {
     setPreferredPlan(getPlanPreference());
@@ -171,7 +173,7 @@ export function PaymentGate({
         <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto text-sm sm:text-base">
           {description ??
             (freeBasic
-              ? t("payment.womenPremiumDesc", { premium: PERSONAL_SUPPORT_PRICE })
+              ? t("payment.womenPremiumDesc", { premium: PREMIUM_UPGRADE_PRICE })
               : t("payment.choosePlan", {
                   premium: PERSONAL_SUPPORT_PRICE,
                   basic: REGISTRATION_PRICE,
@@ -252,7 +254,7 @@ export function PaymentGate({
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-primary">
-                  ${PERSONAL_SUPPORT_PRICE}
+                  ${premiumDisplayPrice}
                 </span>
                 <span className="text-sm text-muted-foreground font-medium">
                   {t("common.oneTime")}
@@ -278,11 +280,19 @@ export function PaymentGate({
               ))}
             </ul>
 
-            <PaymentCheckoutButton
-              tier="premium"
-              className="w-full"
-              labelPrice={PERSONAL_SUPPORT_PRICE}
-            />
+            {freeBasic ? (
+              <PremiumUpgradeButton
+                className="w-full"
+                size="lg"
+                price={PREMIUM_UPGRADE_PRICE}
+              />
+            ) : (
+              <PaymentCheckoutButton
+                tier="premium"
+                className="w-full"
+                labelPrice={PERSONAL_SUPPORT_PRICE}
+              />
+            )}
           </CardContent>
         </Card>
       </div>

@@ -538,7 +538,7 @@ export const so: Translations = {
     q2: "Isbarbardhiggu sidee u shaqeeyaa?",
     a2: "Algorithm-kayagu wuxuu falanqeeyaa diinta, da'da, goobta, waxbarashada, qaab nololeedka, iyo astaamaha shakhsiyadda si uu kuu helo isbarbardhigyada ugu fiican ee ka sarreeya 70%.",
     q3: "Hel Calafkaaga intee bay ku kacaysaa?",
-    a3: "Xubnaha jira: Basic bilaash, kor u qaadis Premium $15. Ragga cusub: Basic $5 ama Premium $20 (haweenka Basic bilaash). Premium waxay ku daraa taageero WhatsApp iyo raadinta lammaane.",
+    a3: "Xubnaha jira: Basic bilaash, kor u qaadis Premium $15. Ragga cusub: Basic $5 ama Premium $20. Haweenka: Basic bilaash; Premium had iyo jeer $15. Premium waxay ku daraa taageero WhatsApp iyo raadinta lammaane.",
     q4: "Xogtayda sidee loo ilaaliyaa?",
     a4: "Waxaan isticmaalnaa sir-qarin heer caalami ah oo aanan waligaa la wadaagin xogtaada shakhsi ahaaneed dhinacyada saddexaad. Qarsoodigaaga waa mudnaantayada.",
     q5: "Ma tirtiri karaa akoonkayga?",
@@ -558,7 +558,7 @@ export const so: Translations = {
     premiumDesc:
       "Taageero WhatsApp + raadinta lammaane — $20 diiwaangelin cusub, ama $15 kor u qaadis Basic.",
     payOnce:
-      "Xubnaha jira: Basic bilaash, Premium kor u qaadis $15. Ragga cusub: Basic $5 ama Premium $20. Haweenka: Basic bilaash, Premium $15.",
+      "Xubnaha jira: Basic bilaash, Premium kor u qaadis $15. Ragga cusub: Basic $5 ama Premium $20. Haweenka: Basic bilaash, Premium had iyo jeer $15.",
     planChoiceLater:
       "Ragga cusub waxay dooranayaan Basic ($5) ama Premium ($20). Xubnaha jira Basic bilaash — kor u qaadis Premium $15.",
     feature1: "Abuur akoonkaaga & dhammaystir profile-kaaga",

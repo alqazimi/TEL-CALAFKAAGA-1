@@ -18,15 +18,26 @@ const registrationTierValidator = v.union(
   v.literal("premium")
 );
 
-function getRegistrationCheckoutDetails(tier: "basic" | "premium") {
+function getRegistrationCheckoutDetails(
+  tier: "basic" | "premium",
+  gender?: string
+) {
   if (tier === "premium") {
+    // Women always pay the upgrade price ($15), never new-user Premium ($20).
+    const womenPremium = gender === "female";
     return {
-      amount: PERSONAL_SUPPORT_AMOUNT_CENTS,
-      paymentType: "registration_premium" as const,
+      amount: womenPremium
+        ? PREMIUM_UPGRADE_AMOUNT_CENTS
+        : PERSONAL_SUPPORT_AMOUNT_CENTS,
+      paymentType: womenPremium
+        ? ("premium_upgrade" as const)
+        : ("registration_premium" as const),
       registrationTier: "premium" as const,
       productName: "Hel Calafkaaga Premium",
-      productDescription:
-        "Full app access plus WhatsApp personal support and help finding your match",
+      productDescription: womenPremium
+        ? "WhatsApp personal support and help finding your match — upgrade from free Basic"
+        : "Full app access plus WhatsApp personal support and help finding your match",
+      metadataType: womenPremium ? ("premium_upgrade" as const) : ("registration" as const),
     };
   }
 
@@ -36,6 +47,7 @@ function getRegistrationCheckoutDetails(tier: "basic" | "premium") {
     registrationTier: "basic" as const,
     productName: "Hel Calafkaaga Basic Registration",
     productDescription: "One-time registration — full access to matches and messaging",
+    metadataType: "registration" as const,
   };
 }
 
@@ -70,7 +82,7 @@ export const createRegistrationCheckout = action({
       }
     }
 
-    const checkout = getRegistrationCheckoutDetails(args.tier);
+    const checkout = getRegistrationCheckoutDetails(args.tier, profile.gender);
     const stripe = getStripe();
     const appUrl = getAppUrl();
 
@@ -96,7 +108,7 @@ export const createRegistrationCheckout = action({
         cancel_url: `${appUrl}/payment?canceled=true`,
         metadata: {
           userId,
-          type: "registration",
+          type: checkout.metadataType,
           tier: checkout.registrationTier,
         },
       });
