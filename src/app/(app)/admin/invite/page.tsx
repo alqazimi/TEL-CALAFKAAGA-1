@@ -21,6 +21,7 @@ import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { createAccountSchema, createLoginSchema } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
 import { isStaffRole } from "@/lib/access";
+import { useSignOut } from "@/hooks/use-sign-out";
 
 type AccountForm = z.infer<ReturnType<typeof createAccountSchema>>;
 type LoginForm = z.infer<ReturnType<typeof createLoginSchema>>;
@@ -31,7 +32,8 @@ function AdminInviteContent() {
   const router = useRouter();
   const { t } = useTranslation();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const { signIn, signOut } = useAuthActions();
+  const { signIn } = useAuthActions();
+  const { signOut } = useSignOut();
   const acceptInvite = useMutation(api.staffInvites.accept);
 
   const invite = useQuery(api.staffInvites.getByToken, token ? { token } : "skip");

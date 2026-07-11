@@ -139,6 +139,21 @@ function isPreferencesComplete(profile: ProfileLike, prefs: PrefsLike): boolean 
   );
 }
 
+/**
+ * Core questionnaire answers filled (used to restore wrongly cleared complete flags).
+ * Does not require photo / phone / full preference set.
+ */
+export function hasSubstantialQuestionnaireAnswers(profile: ProfileLike): boolean {
+  return (
+    isBasicComplete(profile) &&
+    isReligiousComplete(profile) &&
+    isEducationComplete(profile) &&
+    isMarriageComplete(profile) &&
+    isLifestyleComplete(profile) &&
+    isAboutYouComplete(profile)
+  );
+}
+
 /** Why a member profile is not ready for live access / admin approval. */
 export function getProfileIncompleteReason(
   profile: ProfileLike,

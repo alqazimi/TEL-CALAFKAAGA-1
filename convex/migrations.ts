@@ -5,7 +5,10 @@ import {
   religiousLevelFromPrayer,
 } from "./lib/profileEnrichment";
 import { getTrialEndsAt } from "./lib/trial";
-import { isProfileFullyComplete } from "./lib/profileCompleteness";
+import {
+  hasSubstantialQuestionnaireAnswers,
+  isProfileFullyComplete,
+} from "./lib/profileCompleteness";
 import { isStaffRole } from "./lib/roles";
 
 /** One-time backfill for profiles created before new fields were added. */
@@ -64,8 +67,8 @@ export const backfillProfileFields = internalMutation({
 });
 
 /**
- * Revoke live access for members who were approved/marked complete
- * without finishing questions, phone, and photo. They must finish to auto-approve.
+ * Revoke live approval for members missing required fields.
+ * Does NOT clear questionnaireComplete (that wrongly marked finished members incomplete).
  */
 export const revokeIncompleteApprovals = internalMutation({
   args: {},
@@ -75,37 +78,49 @@ export const revokeIncompleteApprovals = internalMutation({
 
     for (const profile of profiles) {
       if (isStaffRole(profile.role)) continue;
-      if (!profile.approved && !profile.questionnaireComplete) continue;
+      if (!profile.approved) continue;
 
       const preferences = await ctx.db
         .query("preferences")
         .withIndex("by_userId", (q) => q.eq("userId", profile.userId))
         .unique();
 
-      if (isProfileFullyComplete(profile, preferences)) {
-        if (profile.questionnaireComplete && !profile.approved) {
-          await ctx.db.patch(profile._id, {
-            approved: true,
-            verified: true,
-          });
-        }
-        continue;
-      }
+      if (isProfileFullyComplete(profile, preferences)) continue;
 
       await ctx.db.patch(profile._id, {
         approved: false,
         verified: false,
-        questionnaireComplete: false,
-        questionnaireStep:
-          profile.questionnaireStep === undefined ||
-          profile.questionnaireStep >= QUESTIONNAIRE_COMPLETE_STEP
-            ? PROFILE_DEFAULTS.questionnaireStep
-            : profile.questionnaireStep,
       });
       revoked++;
     }
 
     return { revoked, total: profiles.length };
+  },
+});
+
+/**
+ * Restore questionnaireComplete for members who clearly finished the form
+ * but were cleared by the old auto-demote logic.
+ */
+export const restoreClearedQuestionnaireComplete = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let restored = 0;
+
+    for (const profile of profiles) {
+      if (isStaffRole(profile.role)) continue;
+      if (profile.questionnaireComplete) continue;
+      if (!hasSubstantialQuestionnaireAnswers(profile)) continue;
+
+      await ctx.db.patch(profile._id, {
+        questionnaireComplete: true,
+        questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
+      });
+      restored++;
+    }
+
+    return { restored, total: profiles.length };
   },
 });
 

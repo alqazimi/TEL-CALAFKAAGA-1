@@ -13,7 +13,6 @@ import {
   X,
   Home,
 } from "lucide-react";
-import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { CurrentUser } from "@/types";
@@ -25,11 +24,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { isAppShellRoute, getAuthenticatedHomeRoute } from "@/lib/routes";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { useSignOut } from "@/hooks/use-sign-out";
 import { cn } from "@/lib/utils";
 
 export function AppShellHeader() {
   const pathname = usePathname();
-  const { signOut } = useAuthActions();
+  const { signOut } = useSignOut();
   const [accountOpen, setAccountOpen] = useState(false);
   const [siteMenuOpen, setSiteMenuOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
