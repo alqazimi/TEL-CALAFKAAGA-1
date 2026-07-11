@@ -1,62 +1,23 @@
-import { ImageResponse } from "next/og";
-import { SITE_BRAND_NAME } from "@/lib/constants";
-
-/** Square brand logo for Google Organization schema (min ~112×112). */
-export const runtime = "edge";
-
+/** Square brand logo for Google Organization schema (min ~112×112). SVG preferred by Google. */
 export async function GET() {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #6b1220 0%, #a61b2b 55%, #c41e3a 100%)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#ffffff",
-            fontFamily: "Georgia, 'Times New Roman', serif",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 72,
-              fontWeight: 700,
-              letterSpacing: -1,
-              lineHeight: 1,
-            }}
-          >
-            HC
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              fontSize: 22,
-              fontWeight: 600,
-              letterSpacing: 0.5,
-              opacity: 0.95,
-            }}
-          >
-            {SITE_BRAND_NAME}
-          </div>
-        </div>
-      </div>
-    ),
-    {
-      width: 512,
-      height: 512,
-      headers: {
-        "Cache-Control": "public, max-age=86400, immutable",
-      },
-    }
-  );
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Hel Calafkaaga">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6b1220"/>
+      <stop offset="55%" stop-color="#a61b2b"/>
+      <stop offset="100%" stop-color="#c41e3a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <text x="256" y="236" text-anchor="middle" fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="700" letter-spacing="-1">HC</text>
+  <text x="256" y="292" text-anchor="middle" fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="600" letter-spacing="0.5" opacity="0.95">Hel Calafkaaga</text>
+</svg>`;
+
+  return new Response(svg, {
+    headers: {
+      "Content-Type": "image/svg+xml; charset=utf-8",
+      "Cache-Control": "public, max-age=86400, immutable",
+    },
+  });
 }
