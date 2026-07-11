@@ -51,7 +51,7 @@ export function AdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
 
   const thread = useSafeQuery(
     api.admin.getAdminConversationThread,
-    activeId ? { conversationId: activeId, limit: 150 } : "skip"
+    activeId ? { conversationId: activeId, limit: 500 } : "skip"
   );
 
   const filtered = useMemo(() => {
@@ -285,7 +285,17 @@ export function AdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
                     {t("adminPage.inboxEmptyThread")}
                   </p>
                 ) : (
-                  thread.messages.map((msg) => {
+                  <>
+                    {thread.truncated ? (
+                      <p className="rounded-xl bg-muted/60 px-3 py-2 text-center text-xs text-muted-foreground">
+                        {t("adminPage.inboxTruncated")}
+                      </p>
+                    ) : (
+                      <p className="text-center text-[11px] text-muted-foreground">
+                        {t("adminPage.inboxScrollHint")}
+                      </p>
+                    )}
+                    {thread.messages.map((msg) => {
                     const isMemberA = msg.senderId === thread.memberA?.userId;
                     return (
                       <div
@@ -366,7 +376,8 @@ export function AdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
                         )}
                       </div>
                     );
-                  })
+                  })}
+                  </>
                 )}
                 <div ref={threadEndRef} />
               </div>

@@ -727,12 +727,16 @@ export const getAdminConversationThread = query({
     const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) return null;
 
-    const limit = Math.min(Math.max(args.limit ?? 120, 1), 200);
-    const messagesAsc = await ctx.db
+    // Newest-first take, then reverse — so long chats still show recent messages,
+    // and scrolling up walks through history (same idea as member chat collect).
+    const limit = Math.min(Math.max(args.limit ?? 500, 1), 1000);
+    const newestFirst = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
-      .order("asc")
+      .order("desc")
       .take(limit);
+    const truncated = newestFirst.length >= limit;
+    const messagesAsc = [...newestFirst].reverse();
 
     const profileCache = new Map<string, AdminMemberCard>();
     async function resolveMember(uid: Id<"users">): Promise<AdminMemberCard> {
@@ -788,6 +792,7 @@ export const getAdminConversationThread = query({
       memberA,
       memberB,
       messages,
+      truncated,
     };
   },
 });

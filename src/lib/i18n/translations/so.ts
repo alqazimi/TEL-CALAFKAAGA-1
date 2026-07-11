@@ -886,6 +886,8 @@ export const so: Translations = {
     inboxSelectHint: "Ka dooro bidixda si aad u akhrido dhammaan fariimaha live.",
     inboxModerationView: "Aragtida kormeerka · live",
     inboxEmptyThread: "Sheekaysigani weli fariin ma laha.",
+    inboxScrollHint: "Kor u scroll garee si aad u akhrido fariimihii hore.",
+    inboxTruncated: "Waxaa la muujinayaa 500-kii fariimo ee ugu dambeeyay.",
     paymentsDesc: "Lacag bixinta dhammaystiran iyo dakhliga. Checkout-yada la iska dayay si toos ah ayaa loo nadiifiyaa.",
     analyticsDesc: "Arag dhaqdhaqaaqa platform-ka iyo aragtida beddelka.",
     announcementsDesc: "U dir ogeysiis dhammaan xubnaha.",

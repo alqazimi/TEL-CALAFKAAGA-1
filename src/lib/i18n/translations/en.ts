@@ -878,6 +878,8 @@ export const en = {
     inboxSelectHint: "Choose a chat on the left to read the full thread in real time.",
     inboxModerationView: "Moderation view · live",
     inboxEmptyThread: "This conversation has no messages yet.",
+    inboxScrollHint: "Scroll up to read earlier messages.",
+    inboxTruncated: "Showing the latest 500 messages in this chat.",
     paymentsDesc: "See who paid and how much. Abandoned checkouts are cleaned up automatically.",
     analyticsDesc: "Match rate, conversion, and where members are from.",
     announcementsDesc: "Send one message to every member.",
