@@ -414,6 +414,167 @@ export const getUserDetail = query({
   },
 });
 
+/** Moderation: recent messages + likes for one member. */
+export const getUserActivity = query({
+  args: {
+    profileId: v.id("profiles"),
+    messageLimit: v.optional(v.number()),
+    likeLimit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    await requireAdmin(ctx, userId);
+
+    const profile = await ctx.db.get(args.profileId);
+    if (!profile) return null;
+
+    const targetUserId = profile.userId;
+    const messageLimit = Math.min(Math.max(args.messageLimit ?? 40, 1), 80);
+    const likeLimit = Math.min(Math.max(args.likeLimit ?? 40, 1), 80);
+
+    const nameByUserId = new Map<string, { name: string; profileId: typeof profile._id | null }>();
+    async function resolvePeer(peerUserId: typeof targetUserId) {
+      const cached = nameByUserId.get(peerUserId);
+      if (cached) return cached;
+      const peerProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_userId", (q) => q.eq("userId", peerUserId))
+        .unique();
+      const info = {
+        name: peerProfile?.name ?? "Unknown",
+        profileId: peerProfile?._id ?? null,
+      };
+      nameByUserId.set(peerUserId, info);
+      return info;
+    }
+
+    const sentRaw = await ctx.db
+      .query("messages")
+      .withIndex("by_sender", (q) => q.eq("senderId", targetUserId))
+      .order("desc")
+      .take(messageLimit);
+
+    const matchesA = await ctx.db
+      .query("matches")
+      .withIndex("by_userA", (q) => q.eq("userA", targetUserId))
+      .collect();
+    const matchesB = await ctx.db
+      .query("matches")
+      .withIndex("by_userB", (q) => q.eq("userB", targetUserId))
+      .collect();
+    const matches = [...matchesA, ...matchesB];
+
+    const receivedRaw: {
+      _id: (typeof sentRaw)[number]["_id"];
+      conversationId: (typeof sentRaw)[number]["conversationId"];
+      senderId: typeof targetUserId;
+      message: string;
+      imageId?: (typeof sentRaw)[number]["imageId"];
+      createdAt: number;
+    }[] = [];
+
+    for (const match of matches.slice(0, 40)) {
+      const conversation = await ctx.db
+        .query("conversations")
+        .withIndex("by_match", (q) => q.eq("matchId", match._id))
+        .unique();
+      if (!conversation) continue;
+      const msgs = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation", (q) => q.eq("conversationId", conversation._id))
+        .order("desc")
+        .take(15);
+      for (const msg of msgs) {
+        if (msg.senderId === targetUserId) continue;
+        receivedRaw.push(msg);
+      }
+    }
+    receivedRaw.sort((a, b) => b.createdAt - a.createdAt);
+
+    async function enrichMessage(
+      msg: {
+        _id: (typeof sentRaw)[number]["_id"];
+        conversationId: (typeof sentRaw)[number]["conversationId"];
+        senderId: typeof targetUserId;
+        message: string;
+        imageId?: (typeof sentRaw)[number]["imageId"];
+        createdAt: number;
+      },
+      direction: "sent" | "received"
+    ) {
+      const conversation = await ctx.db.get(msg.conversationId);
+      const peerUserId =
+        conversation?.participants.find((id) => id !== targetUserId) ??
+        (direction === "sent" ? undefined : msg.senderId);
+      const peer = peerUserId ? await resolvePeer(peerUserId) : { name: "Unknown", profileId: null };
+      return {
+        id: msg._id,
+        direction,
+        body: msg.message?.trim() || (msg.imageId ? "[Image]" : ""),
+        hasImage: Boolean(msg.imageId),
+        createdAt: msg.createdAt,
+        peerName: peer.name,
+        peerProfileId: peer.profileId,
+      };
+    }
+
+    const sent = await Promise.all(
+      sentRaw.slice(0, messageLimit).map((m) => enrichMessage(m, "sent"))
+    );
+    const received = await Promise.all(
+      receivedRaw.slice(0, messageLimit).map((m) => enrichMessage(m, "received"))
+    );
+
+    const messages = [...sent, ...received]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, messageLimit);
+
+    const likesGivenRaw = await ctx.db
+      .query("likes")
+      .withIndex("by_from", (q) => q.eq("fromUserId", targetUserId))
+      .collect();
+    const likesReceivedRaw = await ctx.db
+      .query("likes")
+      .withIndex("by_to", (q) => q.eq("toUserId", targetUserId))
+      .collect();
+
+    const likesGiven = [];
+    for (const like of likesGivenRaw.filter((l) => l.action === "like").slice(0, likeLimit)) {
+      const peer = await resolvePeer(like.toUserId);
+      likesGiven.push({
+        id: like._id,
+        action: like.action,
+        peerName: peer.name,
+        peerProfileId: peer.profileId,
+      });
+    }
+
+    const likesReceived = [];
+    for (const like of likesReceivedRaw.filter((l) => l.action === "like").slice(0, likeLimit)) {
+      const peer = await resolvePeer(like.fromUserId);
+      likesReceived.push({
+        id: like._id,
+        action: like.action,
+        peerName: peer.name,
+        peerProfileId: peer.profileId,
+      });
+    }
+
+    const activeMatches = matches.filter((m) => m.status === "active").length;
+
+    return {
+      messages,
+      likesGiven,
+      likesReceived,
+      activeMatches,
+      messageCount: messages.length,
+      likesGivenCount: likesGivenRaw.filter((l) => l.action === "like").length,
+      likesReceivedCount: likesReceivedRaw.filter((l) => l.action === "like").length,
+    };
+  },
+});
+
 export const setAdvisorReviewed = mutation({
   args: {
     profileId: v.id("profiles"),

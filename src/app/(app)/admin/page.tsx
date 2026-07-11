@@ -1056,6 +1056,7 @@ export default function AdminPage() {
           <AdminUserDetailPanel
             profileId={selectedProfileId}
             onClose={() => setSelectedProfileId(null)}
+            onOpenUser={setSelectedProfileId}
           />
         )}
       </div>

@@ -13,6 +13,9 @@ import {
   Loader2,
   UserRound,
   ImagePlus,
+  Ban,
+  Heart,
+  CheckCircle,
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -26,10 +29,13 @@ import { useTranslation } from "@/lib/i18n/context";
 import { resolveReviewStatus } from "@/lib/review-status";
 import { toast } from "sonner";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { cn } from "@/lib/utils";
 
 interface AdminUserDetailPanelProps {
   profileId: Id<"profiles">;
   onClose: () => void;
+  onOpenUser?: (profileId: Id<"profiles">) => void;
 }
 
 function DetailSection({
@@ -79,16 +85,46 @@ function DetailGrid({
   );
 }
 
-export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPanelProps) {
+export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUserDetailPanelProps) {
   const { t } = useTranslation();
   const detail = useSafeQuery(api.admin.getUserDetail, { profileId });
+  const activity = useSafeQuery(api.admin.getUserActivity, { profileId });
   const setAdvisorReviewed = useMutation(api.admin.setAdvisorReviewed);
   const requestProfilePhoto = useMutation(api.admin.requestProfilePhoto);
+  const banUser = useMutation(api.admin.banUser);
+  const rejectUser = useMutation(api.admin.rejectUser);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [confirm, setConfirm] = useState<"ban" | "unban" | "reject" | null>(null);
 
   const yesNo = (value: boolean | undefined) => {
     if (value === undefined) return "—";
     return value ? t("adminDetail.yes") : t("adminDetail.no");
+  };
+
+  const review = detail?.profile ? resolveReviewStatus(detail.profile) : null;
+  const canModerate =
+    detail?.profile &&
+    !isStaffRole(detail.profile.role) &&
+    !isOwnerRole(detail.profile.role);
+
+  const runModeration = async (type: "ban" | "unban" | "reject") => {
+    if (!detail?.profile) return;
+    setActionBusy(true);
+    try {
+      if (type === "reject") {
+        await rejectUser({ profileId });
+        toast.success(t("adminPage.rejectSuccess"));
+      } else {
+        await banUser({ profileId, banned: type === "ban" });
+        toast.success(type === "ban" ? t("adminPage.banSuccess") : t("adminPage.unbanSuccess"));
+      }
+      setConfirm(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("adminPage.actionFailed"));
+    } finally {
+      setActionBusy(false);
+    }
   };
 
   return (
@@ -464,9 +500,199 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                   />
                 </DetailSection>
               )}
+
+              {canModerate && (
+                <DetailSection title={t("adminDetail.moderationTitle")}>
+                  <div className="flex flex-wrap gap-2">
+                    {(review === "pending_review" || review === "approved") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-lg"
+                        disabled={actionBusy}
+                        onClick={() => setConfirm("reject")}
+                      >
+                        {t("adminPage.rejectShort")}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-lg"
+                      disabled={actionBusy}
+                      onClick={() => setConfirm(detail.profile.banned ? "unban" : "ban")}
+                    >
+                      <Ban className="mr-1.5 h-3.5 w-3.5" />
+                      {detail.profile.banned ? t("adminPage.unbanShort") : t("adminPage.banShort")}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("adminDetail.moderationHint")}</p>
+                </DetailSection>
+              )}
+
+              <DetailSection title={t("adminDetail.activityTitle")}>
+                {!activity ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg border border-border bg-background p-2 text-center">
+                      <p className="text-lg font-semibold tabular-nums">{activity.messageCount}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("adminDetail.messagesLabel")}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-background p-2 text-center">
+                      <p className="text-lg font-semibold tabular-nums">{activity.likesGivenCount}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("adminDetail.likesGivenLabel")}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-background p-2 text-center">
+                      <p className="text-lg font-semibold tabular-nums">{activity.likesReceivedCount}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("adminDetail.likesReceivedLabel")}</p>
+                    </div>
+                  </div>
+                )}
+              </DetailSection>
+
+              <DetailSection title={t("adminDetail.recentMessages")}>
+                {!activity ? (
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                ) : activity.messages.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("adminDetail.noMessages")}</p>
+                ) : (
+                  <ul className="max-h-64 space-y-2 overflow-y-auto">
+                    {activity.messages.map((msg) => (
+                      <li
+                        key={msg.id}
+                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                      >
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px]",
+                              msg.direction === "sent"
+                                ? "border-sky-300 text-sky-700"
+                                : "border-violet-300 text-violet-700"
+                            )}
+                          >
+                            {msg.direction === "sent"
+                              ? t("adminDetail.messageSent")
+                              : t("adminDetail.messageReceived")}
+                          </Badge>
+                          <button
+                            type="button"
+                            className="font-medium text-foreground hover:underline"
+                            disabled={!msg.peerProfileId || !onOpenUser}
+                            onClick={() => {
+                              if (msg.peerProfileId && onOpenUser) onOpenUser(msg.peerProfileId);
+                            }}
+                          >
+                            {msg.peerName}
+                          </button>
+                          <span className="text-[11px] text-muted-foreground">
+                            {new Date(msg.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="break-words text-foreground/90">
+                          {msg.hasImage && !msg.body ? t("adminDetail.imageMessage") : msg.body}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </DetailSection>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailSection title={t("adminDetail.likesGiven")}>
+                  {!activity ? (
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                  ) : activity.likesGiven.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("adminDetail.noLikes")}</p>
+                  ) : (
+                    <ul className="max-h-48 space-y-1.5 overflow-y-auto">
+                      {activity.likesGiven.map((like) => (
+                        <li key={like.id}>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted"
+                            disabled={!like.peerProfileId || !onOpenUser}
+                            onClick={() => {
+                              if (like.peerProfileId && onOpenUser) onOpenUser(like.peerProfileId);
+                            }}
+                          >
+                            <Heart className="h-3.5 w-3.5 text-primary" />
+                            <span className="font-medium">{like.peerName}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </DetailSection>
+
+                <DetailSection title={t("adminDetail.likesReceived")}>
+                  {!activity ? (
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                  ) : activity.likesReceived.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("adminDetail.noLikes")}</p>
+                  ) : (
+                    <ul className="max-h-48 space-y-1.5 overflow-y-auto">
+                      {activity.likesReceived.map((like) => (
+                        <li key={like.id}>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted"
+                            disabled={!like.peerProfileId || !onOpenUser}
+                            onClick={() => {
+                              if (like.peerProfileId && onOpenUser) onOpenUser(like.peerProfileId);
+                            }}
+                          >
+                            <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                            <span className="font-medium">{like.peerName}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </DetailSection>
+              </div>
             </>
           )}
         </div>
+
+        {confirm && (
+          <ConfirmDialog
+            open
+            title={
+              confirm === "reject"
+                ? t("adminPage.rejectConfirmTitle")
+                : confirm === "ban"
+                  ? t("adminPage.banConfirmTitle")
+                  : t("adminPage.unbanConfirmTitle")
+            }
+            description={
+              confirm === "reject"
+                ? t("adminPage.rejectConfirm", { name: detail?.profile.name ?? "" })
+                : confirm === "ban"
+                  ? t("adminPage.banConfirm", { name: detail?.profile.name ?? "" })
+                  : t("adminPage.unbanConfirm", { name: detail?.profile.name ?? "" })
+            }
+            confirmLabel={
+              confirm === "reject"
+                ? t("adminPage.rejectShort")
+                : confirm === "ban"
+                  ? t("adminPage.banShort")
+                  : t("adminPage.unbanShort")
+            }
+            cancelLabel={t("common.cancel")}
+            tone={confirm === "unban" ? "warning" : "danger"}
+            busy={actionBusy}
+            onCancel={() => {
+              if (actionBusy) return;
+              setConfirm(null);
+            }}
+            onConfirm={() => void runModeration(confirm)}
+          />
+        )}
       </motion.div>
     </div>
   );
