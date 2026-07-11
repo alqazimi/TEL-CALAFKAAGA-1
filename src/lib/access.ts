@@ -43,6 +43,7 @@ export function isPremiumMember(
 ): boolean {
   if (!profile) return false;
   if (profile.hasPersonalSupport === true) return true;
+  // Legacy Premium was $20 — do not treat old $10 Basic payments as Premium.
   if ((profile.paidCents ?? 0) >= 2000) return true;
   return false;
 }

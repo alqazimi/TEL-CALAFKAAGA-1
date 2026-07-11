@@ -11,7 +11,10 @@ import {
 import { sendNotification } from "./lib/sendNotification";
 
 export const REGISTRATION_AMOUNT_CENTS = 500;
+/** New-user Premium registration — $20. */
 export const PERSONAL_SUPPORT_AMOUNT_CENTS = 2000;
+/** Upgrade from Basic to Premium — $15. */
+export const PREMIUM_UPGRADE_AMOUNT_CENTS = 1500;
 
 const registrationTierValidator = v.union(
   v.literal("basic"),

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
+import { PREMIUM_UPGRADE_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -14,12 +14,12 @@ export function PremiumUpgradeButton({
   className,
   size = "default",
   variant = "default",
-  price = PERSONAL_SUPPORT_PRICE,
+  price = PREMIUM_UPGRADE_PRICE,
 }: {
   className?: string;
   size?: "default" | "sm" | "lg";
   variant?: "default" | "outline";
-  /** Display price (women free→premium: $20; men basic→premium: often $15). */
+  /** Display price for Premium upgrade ($15). */
   price?: number;
 }) {
   const createUpgrade = useAction(api.stripeActions.createPremiumUpgradeCheckout);

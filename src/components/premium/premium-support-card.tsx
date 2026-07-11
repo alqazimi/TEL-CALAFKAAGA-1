@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Headphones, MessageCircle, Search, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PERSONAL_SUPPORT_PRICE, WHATSAPP_URL } from "@/lib/constants";
+import { PREMIUM_UPGRADE_PRICE, WHATSAPP_URL } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 
@@ -12,9 +12,9 @@ interface PremiumSupportCardProps {
   isPremium: boolean;
   hasPaid: boolean;
   advisorReviewed?: boolean;
-  /** Women on free basic still see the Premium upgrade. */
+  /** Women on free basic (or anyone with access) still see the Premium upgrade. */
   canUpgrade?: boolean;
-  /** Display price for upgrade CTA (women: $20, men who paid basic: $15). */
+  /** Display price for upgrade CTA ($15 from Basic). */
   upgradePrice?: number;
 }
 
@@ -23,7 +23,7 @@ export function PremiumSupportCard({
   hasPaid,
   advisorReviewed,
   canUpgrade = false,
-  upgradePrice = PERSONAL_SUPPORT_PRICE,
+  upgradePrice = PREMIUM_UPGRADE_PRICE,
 }: PremiumSupportCardProps) {
   const { t } = useTranslation();
 

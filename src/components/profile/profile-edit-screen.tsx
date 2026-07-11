@@ -39,7 +39,7 @@ import { PremiumWaliCard } from "@/components/premium/premium-wali-card";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { ContactAdminCard } from "@/components/support/contact-admin-card";
 import { isOwnerRole, isPremiumMember } from "@/lib/access";
-import { MAX_PROFILE_PHOTOS, PERSONAL_SUPPORT_PRICE, PREMIUM_UPGRADE_PRICE } from "@/lib/constants";
+import { MAX_PROFILE_PHOTOS, PREMIUM_UPGRADE_PRICE } from "@/lib/constants";
 import { isValidContactPhone } from "@/lib/phone";
 import { useTranslation } from "@/lib/i18n/context";
 import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
@@ -388,12 +388,8 @@ export function ProfileEditScreen({
                     isPremium={isPremium}
                     hasPaid={!!profile.hasPaid}
                     advisorReviewed={profile.advisorReviewed}
-                    canUpgrade={profile.gender === "female"}
-                    upgradePrice={
-                      profile.gender === "female"
-                        ? PERSONAL_SUPPORT_PRICE
-                        : PREMIUM_UPGRADE_PRICE
-                    }
+                    canUpgrade
+                    upgradePrice={PREMIUM_UPGRADE_PRICE}
                   />
                   <PremiumWaliCard profile={profile} />
                 </>

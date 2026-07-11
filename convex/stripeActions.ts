@@ -7,6 +7,7 @@ import { internal } from "./_generated/api";
 import { getAppUrl, getStripe } from "./lib/stripe";
 import {
   PERSONAL_SUPPORT_AMOUNT_CENTS,
+  PREMIUM_UPGRADE_AMOUNT_CENTS,
   REGISTRATION_AMOUNT_CENTS,
 } from "./payments";
 import { hasPaidAccess } from "./lib/roles";
@@ -145,16 +146,8 @@ export const createPremiumUpgradeCheckout = action({
       throw new Error("Already on the premium plan");
     }
 
-    const paidCents = await ctx.runQuery(internal.payments.getCompletedPlanPaidCents, {
-      userId,
-    });
-    const amount = Math.max(
-      PERSONAL_SUPPORT_AMOUNT_CENTS - Math.min(paidCents, PERSONAL_SUPPORT_AMOUNT_CENTS),
-      0
-    );
-    if (amount <= 0) {
-      throw new Error("Already on the premium plan");
-    }
+    // Upgrade from Basic → Premium is $15 (new-user Premium signup is $20).
+    const amount = PREMIUM_UPGRADE_AMOUNT_CENTS;
 
     const stripe = getStripe();
     const appUrl = getAppUrl();
@@ -244,7 +237,7 @@ export const verifyCheckoutSession = action({
         amount:
           session.amount_total ??
           (isUpgrade
-            ? PERSONAL_SUPPORT_AMOUNT_CENTS - REGISTRATION_AMOUNT_CENTS
+            ? PREMIUM_UPGRADE_AMOUNT_CENTS
             : isPremium
               ? PERSONAL_SUPPORT_AMOUNT_CENTS
               : REGISTRATION_AMOUNT_CENTS),

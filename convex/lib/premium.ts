@@ -1,13 +1,12 @@
 import {
   PERSONAL_SUPPORT_AMOUNT_CENTS,
-  REGISTRATION_AMOUNT_CENTS,
+  PREMIUM_UPGRADE_AMOUNT_CENTS,
 } from "../payments";
 
 export const MAX_PROFILE_PHOTOS = 5;
 export const MAX_ADDITIONAL_PHOTOS = MAX_PROFILE_PHOTOS - 1;
 
-export const PREMIUM_UPGRADE_AMOUNT_CENTS =
-  PERSONAL_SUPPORT_AMOUNT_CENTS - REGISTRATION_AMOUNT_CENTS;
+export { PREMIUM_UPGRADE_AMOUNT_CENTS };
 
 /** Premium = personal WhatsApp support + staff match search (not app feature locks). */
 export function isPremiumMember(
@@ -16,10 +15,8 @@ export function isPremiumMember(
 ): boolean {
   if (!profile) return false;
   if (profile.hasPersonalSupport === true) return true;
-  if (
-    paidCents !== undefined &&
-    paidCents >= PERSONAL_SUPPORT_AMOUNT_CENTS
-  ) {
+  // Legacy / new Premium registration was $20 (2000¢). Upgrades are $15 via hasPersonalSupport.
+  if (paidCents !== undefined && paidCents >= PERSONAL_SUPPORT_AMOUNT_CENTS) {
     return true;
   }
   return false;

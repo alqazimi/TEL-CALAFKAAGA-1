@@ -222,3 +222,42 @@ export const backfillReviewStatus = internalMutation({
     return { updated, total: profiles.length };
   },
 });
+
+/**
+ * One-time: grant free Basic to everyone already in the app.
+ * New signups after this still need to pay (men $5 Basic / women free).
+ * Premium upgrade remains paid ($15). New-user Premium signup is $20.
+ */
+export const grandfatherExistingMembersBasicAccess = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let updated = 0;
+    let skippedStaff = 0;
+    let alreadyPaid = 0;
+
+    for (const profile of profiles) {
+      if (isStaffRole(profile.role)) {
+        skippedStaff++;
+        continue;
+      }
+      if (profile.hasPaid) {
+        alreadyPaid++;
+        continue;
+      }
+      await ctx.db.patch(profile._id, {
+        hasPaid: true,
+        // Clear trial so PaymentGate / trial banners don't treat them as unpaid trial.
+        trialEndsAt: undefined,
+      });
+      updated++;
+    }
+
+    return {
+      updated,
+      alreadyPaid,
+      skippedStaff,
+      total: profiles.length,
+    };
+  },
+});
