@@ -23,10 +23,18 @@ import { isInTrialPeriod } from "./lib/trial";
 import { resolveReviewStatus } from "./lib/reviewStatus";
 
 function pendingApprovalPriority(
-  profile: { approved: boolean; reviewStatus?: string; hasPersonalSupport?: boolean },
+  profile: {
+    approved: boolean;
+    reviewStatus?: string;
+    questionnaireComplete?: boolean;
+    banned?: boolean;
+    role?: string;
+    hasPersonalSupport?: boolean;
+  },
   paidCents: number
 ): number {
-  if (profile.approved || profile.reviewStatus === "approved") return 2;
+  const review = resolveReviewStatus(profile);
+  if (review === "approved") return 2;
   return isPremiumMember(profile, paidCents) ? 0 : 1;
 }
 
@@ -176,14 +184,10 @@ export const getStats = query({
       paidPremiumCount,
       unpaidCount,
       trialCount,
-      pendingApproval: members.filter(
-        (p) =>
-          p.questionnaireComplete &&
-          !p.approved &&
-          p.reviewStatus !== "approved" &&
-          p.reviewStatus !== "rejected" &&
-          p.reviewStatus !== "suspended"
-      ).length,
+      pendingApproval: members.filter((p) => {
+        const review = resolveReviewStatus(p);
+        return review === "pending_review" || review === "rejected";
+      }).length,
       bannedUsers: profiles.filter((p) => p.banned).length,
       isOwner: isOwnerRole(caller.role),
     };

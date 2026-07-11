@@ -64,13 +64,13 @@ function memberStatus(user: AdminUser): {
       className: "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
     };
   }
-  if (!user.questionnaireComplete) {
+  const review = resolveReviewStatus(user);
+  if (review === "incomplete") {
     return {
       labelKey: "adminPage.statusIncomplete",
       className: "bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-200",
     };
   }
-  const review = resolveReviewStatus(user);
   if (review === "rejected") {
     return {
       labelKey: "adminPage.statusRejected",
@@ -136,15 +136,14 @@ export function AdminMembersPanel({
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
   const canApproveMember = (user: AdminUser) =>
-    !!user.questionnaireComplete &&
+    !isStaffRole(user.role) &&
+    resolveReviewStatus(user) !== "approved" &&
     !!user.profileImageId &&
-    !!user.phone?.trim() &&
-    resolveReviewStatus(user) !== "approved";
+    !!user.phone?.trim();
 
   const canRejectMember = (user: AdminUser) => {
     const review = resolveReviewStatus(user);
     return (
-      !!user.questionnaireComplete &&
       !isStaffRole(user.role) &&
       (review === "pending_review" || review === "approved")
     );
@@ -161,7 +160,18 @@ export function AdminMembersPanel({
       toast.success(successMessage);
       setPendingConfirm(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("adminPage.actionFailed"));
+      const raw =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "";
+      const message = raw
+        .replace(/^\[CONVEX[^\]]*\]\s*/i, "")
+        .replace(/^Uncaught Error:\s*/i, "")
+        .split("\n")[0]
+        ?.trim();
+      toast.error(message || t("adminPage.actionFailed"));
     } finally {
       setBusyId(null);
     }
@@ -399,8 +409,7 @@ export function AdminMembersPanel({
                     )}
 
                     {resolveReviewStatus(user) !== "approved" &&
-                      !isStaffRole(user.role) &&
-                      !!user.questionnaireComplete && (
+                      !isStaffRole(user.role) && (
                       <Button
                         size="sm"
                         variant="outline"

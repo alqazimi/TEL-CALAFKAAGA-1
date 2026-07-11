@@ -94,8 +94,12 @@ export function QuestionnaireReview({
       await completeQuestionnaire({});
       toast.success(ui("profileComplete"));
       onComplete();
-    } catch {
-      toast.error(ui("submitFailed"));
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message.replace(/^\[CONVEX[^\]]*\]\s*/i, "").replace(/^Uncaught Error:\s*/i, "").split("\n")[0]?.trim()
+          : "";
+      toast.error(message || ui("submitFailed"));
     } finally {
       setSubmitting(false);
     }

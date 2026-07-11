@@ -19,6 +19,12 @@ export function resolveReviewStatus(profile: ReviewProfile | null | undefined): 
   if (!profile) return "incomplete";
   if (profile.banned) return "suspended";
   if (isStaffRole(profile.role)) return "approved";
+
+  // Stale create-time "incomplete" after the member finished the form.
+  if (profile.reviewStatus === "incomplete" && profile.questionnaireComplete) {
+    return profile.approved ? "approved" : "pending_review";
+  }
+
   if (
     profile.reviewStatus === "incomplete" ||
     profile.reviewStatus === "pending_review" ||

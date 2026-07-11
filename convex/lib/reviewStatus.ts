@@ -11,7 +11,7 @@ export const REVIEW_STATUSES = [
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
 
 type ReviewProfile = {
-  reviewStatus?: ReviewStatus;
+  reviewStatus?: ReviewStatus | string;
   questionnaireComplete?: boolean;
   approved?: boolean;
   banned?: boolean;
@@ -26,7 +26,21 @@ type ReviewProfile = {
 export function resolveReviewStatus(profile: ReviewProfile): ReviewStatus {
   if (profile.banned) return "suspended";
   if (isStaffRole(profile.role)) return "approved";
-  if (profile.reviewStatus) return profile.reviewStatus;
+
+  // Stale create-time "incomplete" after the member finished the form.
+  if (profile.reviewStatus === "incomplete" && profile.questionnaireComplete) {
+    return profile.approved ? "approved" : "pending_review";
+  }
+
+  if (
+    profile.reviewStatus === "incomplete" ||
+    profile.reviewStatus === "pending_review" ||
+    profile.reviewStatus === "approved" ||
+    profile.reviewStatus === "rejected" ||
+    profile.reviewStatus === "suspended"
+  ) {
+    return profile.reviewStatus;
+  }
 
   if (profile.approved && profile.questionnaireComplete) return "approved";
   if (profile.questionnaireComplete) return "pending_review";

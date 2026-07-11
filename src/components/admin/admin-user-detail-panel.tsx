@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
+import { resolveReviewStatus } from "@/lib/review-status";
 
 interface AdminUserDetailPanelProps {
   profileId: Id<"profiles">;
@@ -169,10 +170,16 @@ export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPane
                   )}
                   <div className="flex flex-wrap gap-2 pt-1">
                     <TrustBadges profile={detail.profile} size="sm" />
-                    <Badge variant={detail.profile.questionnaireComplete ? "default" : "secondary"}>
-                      {detail.profile.questionnaireComplete
-                        ? t("adminDetail.profileComplete")
-                        : t("adminDetail.profileIncomplete")}
+                    <Badge
+                      variant={
+                        resolveReviewStatus(detail.profile) === "incomplete"
+                          ? "secondary"
+                          : "default"
+                      }
+                    >
+                      {resolveReviewStatus(detail.profile) === "incomplete"
+                        ? t("adminDetail.profileIncomplete")
+                        : t("adminDetail.profileComplete")}
                     </Badge>
                     {!isStaffRole(detail.profile.role) && (
                       <Badge variant={detail.profile.hasPaid ? "default" : "outline"}>

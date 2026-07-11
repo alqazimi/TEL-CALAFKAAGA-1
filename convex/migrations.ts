@@ -116,11 +116,38 @@ export const restoreClearedQuestionnaireComplete = internalMutation({
       await ctx.db.patch(profile._id, {
         questionnaireComplete: true,
         questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
+        approved: false,
+        reviewStatus: "pending_review",
       });
       restored++;
     }
 
     return { restored, total: profiles.length };
+  },
+});
+
+/**
+ * Fix finished members still stored as reviewStatus "incomplete"
+ * (create-time default never updated). Safe to run multiple times.
+ */
+export const syncStaleIncompleteReviewStatus = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let updated = 0;
+
+    for (const profile of profiles) {
+      if (isStaffRole(profile.role)) continue;
+      if (!profile.questionnaireComplete) continue;
+      if (profile.reviewStatus !== "incomplete") continue;
+
+      await ctx.db.patch(profile._id, {
+        reviewStatus: profile.approved ? "approved" : "pending_review",
+      });
+      updated++;
+    }
+
+    return { updated, total: profiles.length };
   },
 });
 
