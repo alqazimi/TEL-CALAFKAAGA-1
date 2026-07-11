@@ -400,7 +400,12 @@ export default function QuestionnairePage() {
   const currentStepConfig = !isReviewStep ? STEPS[currentStep] : null;
   const isPhotoPhase = currentStepConfig?.phase === "photo";
   const showWelcome =
-    welcome && currentStep === 0 && !isReviewStep && !phaseComplete && !isEditMode;
+    welcome &&
+    currentStep !== null &&
+    currentStep <= 1 &&
+    !isReviewStep &&
+    !phaseComplete &&
+    !isEditMode;
   const progressHint =
     !isReviewStep && progress < 100
       ? ui("profileCompleteFooter").replace("{p}", String(progress))

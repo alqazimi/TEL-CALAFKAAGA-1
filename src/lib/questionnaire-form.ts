@@ -54,7 +54,10 @@ export function initFormState(
   if (profile.religiousLevel) radios.religiousLevel = profile.religiousLevel;
   if (profile.prayerFrequency) radios.prayerFrequency = profile.prayerFrequency;
   if (profile.spousePrayerImportance) radios.spousePrayerImportance = profile.spousePrayerImportance;
-  if (profile.gender) radios.gender = profile.gender;
+  // Do not treat the signup placeholder gender as an answered choice.
+  if (profile.gender && profile.registrationComplete === true) {
+    radios.gender = profile.gender;
+  }
   if (profile.wearsHijab !== undefined) radios.wearsHijab = profile.wearsHijab ? "Yes" : "No";
   if (profile.hasBeard !== undefined) radios.hasBeard = profile.hasBeard ? "Yes" : "No";
 

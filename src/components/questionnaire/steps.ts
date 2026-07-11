@@ -61,8 +61,24 @@ export interface FieldConfig {
   labelKey?: string;
 }
 
-/** Part 1 — about the user (steps 1–7). Gender is collected during registration. */
+/** Part 1 — about the user. Gender is the first question (also collected at /register/details). */
+const GENDER_STEP: StepConfig = {
+  id: 0,
+  title: "About you",
+  description: "Choose man or woman to continue",
+  phase: "about",
+  fields: [
+    {
+      name: "gender",
+      label: "I am a",
+      type: "gender-select",
+      required: true,
+    },
+  ],
+};
+
 const ABOUT_YOU_STEPS: StepConfig[] = [
+  GENDER_STEP,
   {
     id: 1,
     title: "Basic Information",

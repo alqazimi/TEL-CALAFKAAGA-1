@@ -194,6 +194,9 @@ export const updateQuestionnaire = mutation({
       ...profileUpdates,
       questionnaireStep: args.step,
       lastSavedAt: Date.now(),
+      ...(genderUpdate === "male" || genderUpdate === "female"
+        ? { registrationComplete: true }
+        : {}),
     };
 
     await ctx.db.patch(profile._id, updates);
@@ -267,15 +270,17 @@ export const autoSaveProfile = mutation({
     const prevStep = profile.questionnaireStep ?? 0;
     const hasProfileFieldUpdates = Object.keys(profileUpdates).length > 0;
     const stepChanged = stepToSave !== prevStep;
+    const genderChosen = genderUpdate === "male" || genderUpdate === "female";
 
     // Skip hot lastSavedAt patches when nothing meaningful changed (OCC with score jobs).
-    if (!hasProfileFieldUpdates && !stepChanged) {
+    if (!hasProfileFieldUpdates && !stepChanged && !genderChosen) {
       // preferences-only path below still runs
-    } else if (hasProfileFieldUpdates) {
+    } else if (hasProfileFieldUpdates || genderChosen) {
       await ctx.db.patch(profile._id, {
         ...profileUpdates,
         questionnaireStep: stepToSave,
         lastSavedAt: Date.now(),
+        ...(genderChosen ? { registrationComplete: true } : {}),
       });
     } else if (stepChanged) {
       await ctx.db.patch(profile._id, {

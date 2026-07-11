@@ -37,17 +37,23 @@ export default function RegisterDetailsPage() {
       router.replace("/register");
       return;
     }
-    if (!isEditGender && user?.profile?.registrationComplete !== false) {
-      router.replace(getAuthenticatedHomeRoute(user?.profile ?? undefined));
-    }
-  }, [authLoading, isAuthenticated, isEditGender, user?.profile, router]);
+    // Wait for profile to load — do not treat "loading" as "already done".
+    if (user === undefined) return;
 
+    if (!isEditGender && user?.profile?.registrationComplete === true) {
+      router.replace(getAuthenticatedHomeRoute(user.profile));
+    }
+  }, [authLoading, isAuthenticated, isEditGender, user, router]);
+
+  // Only pre-select when editing an existing choice. New signups start blank
+  // so the silent male profile default cannot skip the man/woman choice.
   useEffect(() => {
+    if (!isEditGender) return;
     const profileGender = user?.profile?.gender;
     if (profileGender === "male" || profileGender === "female") {
       setGender(profileGender);
     }
-  }, [user?.profile?.gender]);
+  }, [isEditGender, user?.profile?.gender]);
 
   const onContinue = async () => {
     if (!gender) {
@@ -88,7 +94,7 @@ export default function RegisterDetailsPage() {
     );
   }
 
-  if (!isEditGender && user?.profile?.registrationComplete !== false) {
+  if (!isEditGender && user?.profile?.registrationComplete === true) {
     return (
       <div className="auth-bg flex min-h-[calc(100dvh-var(--app-header))] items-center justify-center px-4">
         <div className="w-full max-w-md space-y-4 text-center">

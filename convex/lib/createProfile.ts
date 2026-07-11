@@ -63,7 +63,7 @@ export async function createUserProfile(
     qualities: [],
     hobbies: [],
     questionnaireComplete: false,
-    questionnaireStep: 1,
+    questionnaireStep: 0,
     lastSavedAt: undefined,
     registrationComplete: false,
     hasPaid: false,
