@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -22,39 +21,37 @@ export function FAQAccordion({
 
   return (
     <div className="space-y-3 max-w-3xl mx-auto">
-      {items.map((item, index) => (
-        <motion.div
-          key={index}
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: index * 0.05 }}
-          className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm overflow-hidden"
-        >
-          <button
-            onClick={() => setOpenIndex(openIndex === index ? null : index)}
-            className="flex w-full items-center justify-between p-6 text-left"
+      {items.map((item, index) => {
+        const open = openIndex === index;
+        return (
+          <div
+            key={index}
+            className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm overflow-hidden motion-safe:animate-reveal"
+            style={{ animationDelay: `${index * 50}ms` }}
           >
-            <span className="font-bold pr-4">{item.question}</span>
-            <ChevronDown
-              className={cn(
-                "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",
-                openIndex === index && "rotate-180"
-              )}
-            />
-          </button>
-          {openIndex === index && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              className="px-6 pb-6"
+            <button
+              type="button"
+              onClick={() => setOpenIndex(open ? null : index)}
+              className="flex w-full items-center justify-between p-6 text-left"
+              aria-expanded={open}
             >
-              <p className="text-muted-foreground leading-relaxed">{item.answer}</p>
-            </motion.div>
-          )}
-        </motion.div>
-      ))}
-      {viewAllHref && viewAllLabel && (
+              <span className="font-bold pr-4">{item.question}</span>
+              <ChevronDown
+                className={cn(
+                  "h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-200",
+                  open && "rotate-180"
+                )}
+              />
+            </button>
+            {open ? (
+              <div className="px-6 pb-6">
+                <p className="text-muted-foreground leading-relaxed">{item.answer}</p>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+      {viewAllHref && viewAllLabel ? (
         <div className="pt-4 text-center">
           <Link
             href={viewAllHref}
@@ -63,7 +60,7 @@ export function FAQAccordion({
             {viewAllLabel}
           </Link>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

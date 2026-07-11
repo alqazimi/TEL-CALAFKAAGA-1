@@ -1,8 +1,8 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import {
   Shield,
   Lock,
@@ -28,13 +28,26 @@ import {
   WHATSAPP_URL,
 } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
+import { cn } from "@/lib/utils";
 
-const fadeIn = {
-  initial: { opacity: 0, y: 16 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-40px" },
-  transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
-};
+function Reveal({
+  children,
+  className,
+  delayMs = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  delayMs?: number;
+}) {
+  return (
+    <div
+      className={cn("motion-safe:animate-reveal", className)}
+      style={delayMs ? { animationDelay: `${delayMs}ms` } : undefined}
+    >
+      {children}
+    </div>
+  );
+}
 
 export function LandingPage() {
   const { t } = useTranslation();
@@ -66,7 +79,7 @@ export function LandingPage() {
 
   return (
     <div className="overflow-hidden">
-      {/* Hero — brand, one headline, one sentence, CTAs, full-bleed image */}
+      {/* Hero — always visible (no JS-opacity:0) so phones never show a blank screen */}
       <section className="relative min-h-[100svh] flex items-end sm:items-center overflow-hidden bg-[#120d0e]">
         <Image
           src="/images/hero-couple.webp"
@@ -77,17 +90,11 @@ export function LandingPage() {
           className="object-cover object-[68%_center] sm:object-[center_30%]"
           aria-hidden
         />
-        {/* Soft dark scrim only — keep the photo clear (no red tint) */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
 
         <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32 lg:px-8 w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="max-w-xl"
-          >
+          <Reveal className="max-w-xl">
             <p className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.05] drop-shadow-sm">
               {SITE_BRAND_NAME}
             </p>
@@ -116,30 +123,24 @@ export function LandingPage() {
                 <Link href="/how-it-works">{t("landing.seeHowItWorks")}</Link>
               </Button>
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
 
-      {/* Values — one purpose */}
       <section className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 gradient-hero">
         <div className="mx-auto max-w-5xl">
-          <motion.div {...fadeIn} className="text-center max-w-2xl mx-auto mb-14">
+          <Reveal className="text-center max-w-2xl mx-auto mb-14">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
               {t("landing.badge")}
             </h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
               {t("landing.previewSubtitle")}
             </p>
-          </motion.div>
+          </Reveal>
 
           <div className="grid gap-10 sm:grid-cols-3">
             {values.map((item, i) => (
-              <motion.div
-                key={item.title}
-                {...fadeIn}
-                transition={{ ...fadeIn.transition, delay: i * 0.08 }}
-                className="text-center sm:text-left"
-              >
+              <Reveal key={item.title} delayMs={i * 80} className="text-center sm:text-left">
                 <div className="mx-auto sm:mx-0 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <item.icon className="h-5 w-5" />
                 </div>
@@ -147,29 +148,23 @@ export function LandingPage() {
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                   {item.desc}
                 </p>
-              </motion.div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How it works */}
       <section className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 bg-muted/50">
         <div className="mx-auto max-w-6xl">
-          <motion.div {...fadeIn} className="text-center max-w-2xl mx-auto mb-16">
+          <Reveal className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
               {t("landing.howWorks")}
             </h2>
-          </motion.div>
+          </Reveal>
 
           <ol className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             {steps.map((step, i) => (
-              <motion.li
-                key={step.title}
-                {...fadeIn}
-                transition={{ ...fadeIn.transition, delay: i * 0.07 }}
-                className="relative"
-              >
+              <li key={step.title} className="relative motion-safe:animate-reveal" style={{ animationDelay: `${i * 70}ms` }}>
                 <span className="font-display text-4xl font-semibold text-primary/20">
                   {String(i + 1).padStart(2, "0")}
                 </span>
@@ -180,15 +175,14 @@ export function LandingPage() {
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
                   {step.desc}
                 </p>
-              </motion.li>
+              </li>
             ))}
           </ol>
         </div>
       </section>
 
-      {/* Compatibility — honest framing */}
       <section className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <motion.div {...fadeIn} className="mx-auto max-w-3xl text-center">
+        <Reveal className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-gold">
             {t("landing.stat1")}
           </p>
@@ -198,26 +192,22 @@ export function LandingPage() {
           <p className="mt-5 text-muted-foreground leading-relaxed text-base sm:text-lg">
             {t("landing.matchingDesc", { score: MIN_COMPATIBILITY_SCORE })}
           </p>
-        </motion.div>
+        </Reveal>
       </section>
 
-      {/* Pricing */}
       <section className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 bg-muted/50">
         <div className="mx-auto max-w-5xl">
-          <motion.div {...fadeIn} className="text-center max-w-2xl mx-auto mb-12">
+          <Reveal className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
               {t("landing.pricingTitle")}
             </h2>
             <p className="mt-4 text-muted-foreground leading-relaxed">
               {t("landing.pricingSubtitle", { premium: PERSONAL_SUPPORT_PRICE })}
             </p>
-          </motion.div>
+          </Reveal>
 
           <div className="grid gap-6 md:grid-cols-2">
-            <motion.div
-              {...fadeIn}
-              className="rounded-3xl border border-border bg-card p-8 shadow-md"
-            >
+            <Reveal className="rounded-3xl border border-border bg-card p-8 shadow-md">
               <h3 className="text-xl font-semibold">{t("landing.basicPlan")}</h3>
               <div className="mt-4 flex items-baseline gap-2">
                 <span className="font-display text-5xl font-semibold text-primary">
@@ -239,11 +229,10 @@ export function LandingPage() {
                 className="w-full mt-8"
                 variant="outline"
               />
-            </motion.div>
+            </Reveal>
 
-            <motion.div
-              {...fadeIn}
-              transition={{ ...fadeIn.transition, delay: 0.08 }}
+            <Reveal
+              delayMs={80}
               className="rounded-3xl border-2 border-primary bg-card p-8 shadow-xl shadow-primary/10 relative"
             >
               <Badge className="absolute -top-3 left-8 bg-gold text-gold-foreground border-0">
@@ -269,7 +258,7 @@ export function LandingPage() {
                 plan="premium"
                 className="w-full mt-8"
               />
-            </motion.div>
+            </Reveal>
           </div>
 
           <PlanChoiceNote className="max-w-2xl mx-auto mt-8" />
@@ -293,15 +282,14 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* FAQ */}
       <section className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <motion.div {...fadeIn} className="text-center mb-12">
+          <Reveal className="text-center mb-12">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
               {t("landing.faqTitle")}
             </h2>
             <p className="mt-4 text-muted-foreground">{t("landing.faqSubtitle")}</p>
-          </motion.div>
+          </Reveal>
           <FAQAccordion
             limit={4}
             viewAllHref="/faq"
@@ -310,12 +298,8 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Final CTA */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
-        <motion.div
-          {...fadeIn}
-          className="mx-auto max-w-4xl rounded-[2rem] bg-brand-dark px-8 py-12 sm:px-12 sm:py-16 text-center text-white relative overflow-hidden"
-        >
+        <Reveal className="mx-auto max-w-4xl rounded-[2rem] bg-brand-dark px-8 py-12 sm:px-12 sm:py-16 text-center text-white relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(201,162,39,0.18),transparent_55%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(16,185,129,0.2),transparent_50%)]" />
           <div className="relative">
@@ -342,7 +326,7 @@ export function LandingPage() {
               </Button>
             </div>
           </div>
-        </motion.div>
+        </Reveal>
       </section>
     </div>
   );

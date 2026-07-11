@@ -53,7 +53,7 @@ export function translate(
 
   return Object.entries(params).reduce(
     (result, [paramKey, paramValue]) =>
-      result.replaceAll(`{{${paramKey}}}`, String(paramValue)),
+      result.split(`{{${paramKey}}}`).join(String(paramValue)),
     value
   );
 }
