@@ -1,5 +1,6 @@
 const MAX_EDGE = 1920;
-const MAX_INPUT_BYTES = 40 * 1024 * 1024;
+/** Accept phone photos up to a normal 10MB; larger files are rejected before compress. */
+const MAX_INPUT_BYTES = 10 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 1.5 * 1024 * 1024;
 const MAX_RAW_UPLOAD_BYTES = 2 * 1024 * 1024;
 
@@ -9,7 +10,7 @@ const MAX_RAW_UPLOAD_BYTES = 2 * 1024 * 1024;
  */
 export async function prepareImageForUpload(file: File): Promise<File> {
   if (file.size > MAX_INPUT_BYTES) {
-    throw new Error("Image is too large. Please choose a photo under 40MB.");
+    throw new Error("Image is too large. Please choose a photo under 10MB.");
   }
 
   const type = file.type || guessMimeFromName(file.name);
