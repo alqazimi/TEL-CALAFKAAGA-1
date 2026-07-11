@@ -90,8 +90,14 @@ export function AdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-sm)]">
-      <div className="flex h-[min(72vh,720px)] min-h-[420px] flex-col sm:flex-row">
+    <div
+      className={cn(
+        "overflow-hidden bg-card shadow-[var(--shadow-sm)]",
+        "rounded-none border-0 sm:rounded-2xl sm:border sm:border-border",
+        "-mx-4 sm:mx-0"
+      )}
+    >
+      <div className="flex h-[min(78dvh,720px)] min-h-[480px] flex-col sm:h-[min(72vh,720px)] sm:min-h-[420px] sm:flex-row">
         <div
           className={cn(
             "flex w-full flex-col border-border sm:w-[340px] sm:border-r lg:w-[380px]",

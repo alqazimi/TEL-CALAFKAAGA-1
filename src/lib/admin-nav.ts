@@ -79,6 +79,26 @@ export type AdminNavTab = (typeof ADMIN_NAV_TABS)[number]["tab"];
 
 export const ADMIN_NAV_TAB_IDS = ADMIN_NAV_TABS.map((t) => t.tab) as AdminNavTab[];
 
+/** Primary phone bottom bar — keep to 3 + More for thumb reach. */
+export const ADMIN_MOBILE_PRIMARY_TABS = [
+  "dashboard",
+  "users",
+  "messages",
+] as const satisfies ReadonlyArray<AdminNavTab>;
+
+export const ADMIN_MOBILE_MORE_TABS = [
+  "reports",
+  "payments",
+  "announcements",
+  "analytics",
+  "audit",
+  "settings",
+] as const satisfies ReadonlyArray<AdminNavTab>;
+
 export function isAdminNavTab(value: string | null | undefined): value is AdminNavTab {
   return !!value && (ADMIN_NAV_TAB_IDS as string[]).includes(value);
+}
+
+export function isAdminMobilePrimaryTab(tab: AdminNavTab): boolean {
+  return (ADMIN_MOBILE_PRIMARY_TABS as readonly string[]).includes(tab);
 }

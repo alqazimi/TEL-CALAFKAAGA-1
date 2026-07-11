@@ -36,6 +36,7 @@ import { AdminMembersPanel } from "@/components/admin/admin-members-panel";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
 import { AdminMessagesInbox } from "@/components/admin/admin-messages-inbox";
+import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +53,6 @@ import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 import {
-  ADMIN_NAV_TAB_IDS,
   ADMIN_NAV_TABS,
   isAdminNavTab,
   type AdminNavTab,
@@ -341,34 +341,47 @@ export default function AdminPage() {
 
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="space-y-1">
+      <div
+        className={cn(
+          "mx-auto max-w-6xl space-y-5 sm:space-y-6",
+          !chatOpen && "pb-[calc(var(--app-tabbar)+0.75rem)] lg:pb-0"
+        )}
+      >
+        <header className={cn("space-y-1", chatOpen && "hidden lg:block")}>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             {isOwner ? t("adminPage.ownerConsole") : t("adminPage.adminConsole")}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {t("adminPage.title")}
+            {activeTab === "dashboard"
+              ? t("adminPage.title")
+              : t(TAB_META[activeTab].title)}
           </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            {isOwner ? t("adminPage.ownerDesc") : t("adminPage.adminDesc")}
+          <p className="max-w-2xl text-sm text-muted-foreground lg:block">
+            {activeTab === "dashboard"
+              ? isOwner
+                ? t("adminPage.ownerDesc")
+                : t("adminPage.adminDesc")
+              : t(TAB_META[activeTab].desc)}
           </p>
         </header>
 
-        <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {(activeTab === "dashboard" ? overviewStats : overviewStats.slice(0, 4)).map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]"
-            >
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-foreground">
-                <stat.icon className="h-[18px] w-[18px]" />
+        {activeTab === "dashboard" && (
+          <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {overviewStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-sm)] sm:p-4"
+              >
+                <div className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-foreground">
+                  <stat.icon className="h-[18px] w-[18px]" />
+                </div>
+                <p className="text-xl font-semibold tracking-tight sm:text-2xl">{stat.value}</p>
+                <p className="mt-0.5 text-sm font-medium text-foreground">{stat.label}</p>
+                <p className="mt-1 hidden text-xs text-muted-foreground sm:block">{stat.hint}</p>
               </div>
-              <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">{stat.label}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{stat.hint}</p>
-            </div>
-          ))}
-        </section>
+            ))}
+          </section>
+        )}
 
         {(pendingReviewCount > 0 || openReports > 0 || (stats?.unpaidCount ?? 0) > 0) &&
           (activeTab === "dashboard" || activeTab === "users") && (
@@ -381,7 +394,7 @@ export default function AdminPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="rounded-full"
+                  className="h-10 rounded-xl"
                   onClick={() => {
                     setRoleFilter("user");
                     setPaymentFilter("all");
@@ -396,7 +409,7 @@ export default function AdminPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="rounded-full"
+                  className="h-10 rounded-xl"
                   onClick={() => {
                     setRoleFilter("user");
                     setPaymentFilter("unpaid");
@@ -411,7 +424,7 @@ export default function AdminPage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="rounded-full"
+                  className="h-10 rounded-xl"
                   onClick={() => setTab("reports")}
                 >
                   {t("adminPage.attentionReports", { count: openReports })}
@@ -421,45 +434,42 @@ export default function AdminPage() {
           </section>
         )}
 
-        <nav
-          className={cn(
-            "flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 lg:hidden",
-            chatOpen && "hidden"
-          )}
-          aria-label={t("app.admin")}
-        >
-          {ADMIN_NAV_TAB_IDS.map((tab) => {
-            const meta = TAB_META[tab];
-            const Icon = meta.icon;
-            const active = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setTab(tab)}
-                className={cn(
-                  "inline-flex min-w-fit flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-foreground text-background shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{t(meta.title)}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        {activeTab !== "dashboard" && (
-          <section className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-tight">{t(TAB_META[activeTab].title)}</h2>
-            <p className="text-sm text-muted-foreground">{t(TAB_META[activeTab].desc)}</p>
+        {activeTab === "dashboard" && (
+          <section className="space-y-3 lg:hidden">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("adminPage.mobileQuickTitle")}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {(
+                [
+                  "users",
+                  "messages",
+                  "reports",
+                  "payments",
+                ] as const
+              ).map((tab) => {
+                const meta = TAB_META[tab];
+                const Icon = meta.icon;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setTab(tab)}
+                    className="flex min-h-[5.5rem] flex-col items-start justify-between rounded-2xl border border-border bg-card p-4 text-left shadow-[var(--shadow-sm)] transition-colors active:bg-muted"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="text-sm font-semibold">{t(meta.title)}</span>
+                  </button>
+                );
+              })}
+            </div>
           </section>
         )}
 
         {activeTab === "dashboard" && (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="hidden gap-4 sm:grid sm:grid-cols-2">
             <Card className="border-border shadow-none">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{t("adminPage.quickActions")}</CardTitle>
@@ -468,14 +478,14 @@ export default function AdminPage() {
                 <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTab("users")}>
                   {t("adminPage.users")}
                 </Button>
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTab("messages")}>
+                  {t("adminPage.messagesTab")}
+                </Button>
                 <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTab("reports")}>
                   {t("adminPage.reports")}
                 </Button>
                 <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTab("payments")}>
                   {t("adminPage.payments")}
-                </Button>
-                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTab("audit")}>
-                  {t("adminPage.auditLogs")}
                 </Button>
               </CardContent>
             </Card>
@@ -485,7 +495,7 @@ export default function AdminPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-semibold tabular-nums">{pendingReviewCount}</p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {t("adminPage.pendingReview")}
                 </p>
                 <Button
@@ -1072,6 +1082,11 @@ export default function AdminPage() {
           />
         )}
       </div>
+      <AdminMobileNav
+        activeTab={activeTab}
+        onSelectTab={setTab}
+        hidden={chatOpen}
+      />
     </DashboardLayout>
   );
 }
