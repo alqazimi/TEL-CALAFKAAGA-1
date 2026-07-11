@@ -78,12 +78,43 @@ export default defineSchema({
     waliName: v.optional(v.string()),
     waliPhone: v.optional(v.string()),
     banned: v.boolean(),
+    /**
+     * @deprecated Prefer `reviewStatus`. Kept for legacy documents and admin UI
+     * during the widen → migrate → narrow rollout.
+     */
     approved: v.boolean(),
+    /**
+     * Independent moderation state. Do not infer from questionnaire completion.
+     * Legacy docs without this field are resolved in `lib/reviewStatus.ts`.
+     */
+    reviewStatus: v.optional(
+      v.union(
+        v.literal("incomplete"),
+        v.literal("pending_review"),
+        v.literal("approved"),
+        v.literal("rejected"),
+        v.literal("suspended")
+      )
+    ),
+    /**
+     * Main photo visibility. Additional private photos use `privateImageIds`.
+     * Default when missing: visible to everyone (legacy behavior).
+     */
+    photoVisibility: v.optional(
+      v.union(
+        v.literal("everyone"),
+        v.literal("matches"),
+        v.literal("private")
+      )
+    ),
+    /** Photos only shareable after an explicit request/approval (future). */
+    privateImageIds: v.optional(v.array(v.id("_storage"))),
   })
     .index("by_userId", ["userId"])
     .index("by_gender", ["gender"])
     .index("by_country", ["country"])
     .index("by_approved", ["approved"])
+    .index("by_reviewStatus", ["reviewStatus"])
     .index("by_role", ["role"]),
 
   preferences: defineTable({
@@ -130,8 +161,15 @@ export default defineSchema({
     userA: v.id("users"),
     userB: v.id("users"),
     score: v.number(),
-    status: v.union(v.literal("active"), v.literal("unmatched")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("archived"),
+      v.literal("unmatched")
+    ),
     chatUnlocked: v.boolean(),
+    /** When each participant last opened this match (JSON map of userId → timestamp). */
+    seenAtByUser: v.optional(v.record(v.string(), v.number())),
+    archivedAt: v.optional(v.number()),
   })
     .index("by_userA", ["userA"])
     .index("by_userB", ["userB"]),
@@ -209,6 +247,18 @@ export default defineSchema({
     body: v.string(),
     createdAt: v.number(),
     createdBy: v.id("users"),
+    /** When set and > now (and sentAt unset), waiting for cron delivery. */
+    scheduledFor: v.optional(v.number()),
+    /** Set when notifications were fan-out to members. */
+    sentAt: v.optional(v.number()),
+    audience: v.optional(
+      v.union(
+        v.literal("all"),
+        v.literal("paid"),
+        v.literal("trial"),
+        v.literal("unpaid")
+      )
+    ),
   }),
 
   userUploads: defineTable({
@@ -256,6 +306,11 @@ export default defineSchema({
       v.literal("reviewed"),
       v.literal("dismissed")
     ),
+    priority: v.optional(
+      v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+    ),
+    adminNotes: v.optional(v.string()),
+    resolution: v.optional(v.string()),
     createdAt: v.number(),
     reviewedAt: v.optional(v.number()),
     reviewedBy: v.optional(v.id("users")),
@@ -274,4 +329,24 @@ export default defineSchema({
     ),
     sentAt: v.number(),
   }).index("by_user_kind", ["userId", "kind"]),
+
+  /** Abuse protection for public actions (contact, geolocation). */
+  rateLimitBuckets: defineTable({
+    key: v.string(),
+    windowStart: v.number(),
+    count: v.number(),
+  }).index("by_key", ["key"]),
+
+  /** Immutable staff action history for admin accountability. */
+  auditLogs: defineTable({
+    actorUserId: v.id("users"),
+    action: v.string(),
+    targetUserId: v.optional(v.id("users")),
+    targetProfileId: v.optional(v.id("profiles")),
+    metadata: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_actor", ["actorUserId"])
+    .index("by_targetUser", ["targetUserId"]),
 });

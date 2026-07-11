@@ -8,6 +8,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Profile } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ProfilePhotoPreview } from "@/components/profile/profile-photo-preview";
+import { prepareImageForUpload } from "@/lib/strip-image-exif";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 
 interface QuestionnairePhotoStepProps {
@@ -43,16 +44,17 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
 
     setUploading(true);
     try {
+      const prepared = await prepareImageForUpload(file);
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": prepared.type },
+        body: prepared,
       });
       const { storageId } = await result.json();
       await registerUpload({ storageId });
       await updateProfile({ profileImageId: storageId });
-      setPreviewUrl(URL.createObjectURL(file));
+      setPreviewUrl(URL.createObjectURL(prepared));
       toast.success(ui("photoUploaded"));
     } catch {
       toast.error(ui("uploadFailed"));

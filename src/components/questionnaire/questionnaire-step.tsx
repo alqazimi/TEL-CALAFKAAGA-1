@@ -150,7 +150,7 @@ export function QuestionnaireStep({
   const selectedCountryRef = useRef(initial.selectedCountry);
   const { register, watch, setValue } = useForm({ defaultValues: { bio: initial.bio } });
   const bio = watch("bio", initial.bio);
-  const { fieldLabel, optionLabel, ui } = useQuestionnaireI18n();
+  const { fieldLabel, fieldWhy, optionLabel, ui } = useQuestionnaireI18n();
   const { t } = useTranslation();
 
   const profileId = profile?._id ?? null;
@@ -712,6 +712,13 @@ export function QuestionnaireStep({
               <span className="text-destructive ml-0.5">*</span>
             )}
           </h2>
+
+          {fieldWhy(currentField.name) && (
+            <p className="text-sm text-muted-foreground leading-relaxed -mt-3 rounded-xl bg-muted/60 px-3.5 py-2.5 border border-border/50">
+              <span className="font-medium text-foreground/80">{ui("fieldWhyPrefix")}: </span>
+              {fieldWhy(currentField.name)}
+            </p>
+          )}
 
           {currentField.type === "multi-select" && currentField.maxSelect && (
             <p className="text-base text-muted-foreground -mt-2">

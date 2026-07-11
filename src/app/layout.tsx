@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { ClearStaleServiceWorkers } from "@/components/clear-stale-service-workers";
 import { Navbar } from "@/components/layout/navbar";
@@ -8,8 +8,8 @@ import { SiteJsonLd } from "@/components/seo/site-json-ld";
 import { rootMetadata } from "@/lib/seo/metadata";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
   display: "swap",
 });
@@ -29,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="so" suppressHydrationWarning className={`${inter.variable} ${cormorant.variable} h-full`}>
+    <html lang="so" suppressHydrationWarning className={`${jakarta.variable} ${cormorant.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased font-sans">
         {/* One-time cleanup for browsers that still have the old PWA worker */}
         <ClearStaleServiceWorkers />

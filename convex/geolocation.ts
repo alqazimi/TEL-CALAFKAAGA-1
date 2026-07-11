@@ -1,15 +1,46 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { action } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 const NOMINATIM_USER_AGENT =
   "HelCalafkaaga/1.0 (https://helcalafkaaga.com; hello@helcalafkaaga.com)";
+
+/** 30 lookups per authenticated user per hour */
+const GEO_LIMIT = 30;
+const GEO_WINDOW_MS = 60 * 60 * 1000;
 
 export const reverseGeocode = action({
   args: {
     latitude: v.number(),
     longitude: v.number(),
   },
-  handler: async (_ctx, args) => {
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    if (
+      !Number.isFinite(args.latitude) ||
+      !Number.isFinite(args.longitude) ||
+      args.latitude < -90 ||
+      args.latitude > 90 ||
+      args.longitude < -180 ||
+      args.longitude > 180
+    ) {
+      throw new Error("Invalid coordinates");
+    }
+
+    const rate = await ctx.runMutation(internal.rateLimit.checkAndIncrement, {
+      key: `geocode:${userId}`,
+      limit: GEO_LIMIT,
+      windowMs: GEO_WINDOW_MS,
+    });
+    if (!rate.allowed) {
+      throw new Error("Location lookup limit reached. Please try again later.");
+    }
+
     const params = new URLSearchParams({
       format: "json",
       lat: String(args.latitude),

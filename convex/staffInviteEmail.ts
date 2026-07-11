@@ -4,13 +4,14 @@ import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
 import { Resend } from "resend";
 import { getResendFromAddress, requireResendApiKey } from "./lib/resendOtp";
+import {
+  buildBrandedEmailHtml,
+  buildBrandedEmailText,
+  getEmailSiteUrl,
+} from "./lib/emailTemplate";
 
 function getInviteUrl(token: string): string {
-  const siteUrl = (process.env.SITE_URL ?? "https://helcalafkaaga.com").replace(
-    /\/$/,
-    ""
-  );
-  return `${siteUrl}/admin/invite?token=${encodeURIComponent(token)}`;
+  return `${getEmailSiteUrl()}/admin/invite?token=${encodeURIComponent(token)}`;
 }
 
 export const send = internalAction({
@@ -22,25 +23,21 @@ export const send = internalAction({
     const apiKey = requireResendApiKey(process.env.AUTH_RESEND_KEY);
     const resend = new Resend(apiKey);
     const inviteUrl = getInviteUrl(args.token);
+    const subject = "You've been invited to Hel Calafkaaga admin";
+    const emailArgs = {
+      title: "Admin invite",
+      body: "You've been invited to join Hel Calafkaaga as an admin. Open the link below to sign in or create your account and accept the invite.",
+      preheader: "Accept your Hel Calafkaaga admin invite",
+      cta: { label: "Accept invite", url: inviteUrl },
+      footerNote: "This invite expires in 7 days. If you did not expect this email, you can ignore it.",
+    };
 
     const { error } = await resend.emails.send({
       from: getResendFromAddress(),
       to: [args.email],
-      subject: "You've been invited to Hel Calafkaaga admin",
-      text: [
-        "Hello,",
-        "",
-        "You've been invited to join Hel Calafkaaga as an admin.",
-        "",
-        "Open the link below to sign in or create your account and accept the invite:",
-        inviteUrl,
-        "",
-        "This invite expires in 7 days.",
-        "",
-        "If you did not expect this email, you can ignore it.",
-        "",
-        "— Hel Calafkaaga",
-      ].join("\n"),
+      subject,
+      text: buildBrandedEmailText(emailArgs),
+      html: buildBrandedEmailHtml(emailArgs),
     });
 
     if (error) {

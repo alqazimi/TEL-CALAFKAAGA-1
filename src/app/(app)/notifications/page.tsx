@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -39,14 +39,20 @@ const typeIcons = {
 const typeColors = {
   like: "text-primary bg-accent",
   match: "text-primary bg-accent dark:bg-primary/20",
-  message: "text-blue-600 bg-blue-50 dark:bg-blue-950/30 dark:text-blue-400",
+  message: "text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400",
   announcement:
-    "text-purple-600 bg-purple-50 dark:bg-purple-950/30 dark:text-purple-400",
+    "text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-300",
   approval:
     "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400",
   payment:
     "text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400",
 };
+
+function startOfDay(ts: number) {
+  const d = new Date(ts);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
 
 function getNotificationHref(notification: Notification): string | null {
   switch (notification.type) {
@@ -55,8 +61,9 @@ function getNotificationHref(notification: Notification): string | null {
     case "like":
       return "/likes?tab=likedYou";
     case "match":
+      return "/chat?list=new";
     case "approval":
-      return "/likes?tab=liked";
+      return "/matches";
     case "payment":
       return "/payment";
     case "announcement":
@@ -64,6 +71,34 @@ function getNotificationHref(notification: Notification): string | null {
     default:
       return null;
   }
+}
+
+type NotifGroup = "unread" | "today" | "yesterday" | "earlier";
+
+function groupNotifications(notifications: Notification[]) {
+  const now = Date.now();
+  const today = startOfDay(now);
+  const yesterday = today - 24 * 60 * 60 * 1000;
+
+  const groups: Record<NotifGroup, Notification[]> = {
+    unread: [],
+    today: [],
+    yesterday: [],
+    earlier: [],
+  };
+
+  for (const n of notifications) {
+    if (!n.read) {
+      groups.unread.push(n);
+      continue;
+    }
+    const day = startOfDay(n.createdAt);
+    if (day === today) groups.today.push(n);
+    else if (day === yesterday) groups.yesterday.push(n);
+    else groups.earlier.push(n);
+  }
+
+  return groups;
 }
 
 export default function NotificationsPage() {
@@ -80,6 +115,10 @@ export default function NotificationsPage() {
   const markedAllRef = useRef(false);
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0;
+  const groups = useMemo(
+    () => (notifications ? groupNotifications(notifications) : null),
+    [notifications]
+  );
 
   useEffect(() => {
     if (notifications === undefined || markedAllRef.current) return;
@@ -99,6 +138,94 @@ export default function NotificationsPage() {
       </DashboardLayout>
     );
   }
+
+  const renderNotification = (notification: Notification, i: number) => {
+    const Icon = typeIcons[notification.type];
+    const colorClass = typeColors[notification.type];
+    const href = getNotificationHref(notification);
+
+    return (
+      <motion.div
+        key={notification._id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: Math.min(i * 0.03, 0.3) }}
+      >
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-md ${
+            !notification.read ? "border-primary/30 bg-accent/30" : ""
+          }`}
+          onClick={() => {
+            if (!notification.read) {
+              markAsRead({ notificationId: notification._id });
+            }
+            if (href) {
+              router.push(href);
+            }
+          }}
+        >
+          <CardContent className="p-4 flex items-start gap-4">
+            {notification.relatedImageUrl ? (
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarImage src={notification.relatedImageUrl} alt="" />
+                <AvatarFallback className="bg-muted">
+                  <Icon className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+            ) : (
+              <div
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${colorClass}`}
+              >
+                <Icon className="h-5 w-5" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold">{notification.title}</p>
+                {!notification.read && (
+                  <Badge variant="success" className="text-[10px]">
+                    {t("notificationsPage.new")}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {notification.body}
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                {formatDate(notification.createdAt)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  };
+
+  const sections: { key: NotifGroup; label: string; items: Notification[] }[] =
+    groups
+      ? [
+          {
+            key: "unread",
+            label: t("notificationsPage.groupUnread"),
+            items: groups.unread,
+          },
+          {
+            key: "today",
+            label: t("notificationsPage.groupToday"),
+            items: groups.today,
+          },
+          {
+            key: "yesterday",
+            label: t("notificationsPage.groupYesterday"),
+            items: groups.yesterday,
+          },
+          {
+            key: "earlier",
+            label: t("notificationsPage.groupEarlier"),
+            items: groups.earlier,
+          },
+        ]
+      : [];
 
   return (
     <DashboardLayout>
@@ -123,20 +250,20 @@ export default function NotificationsPage() {
             {reminders.map((reminder) => {
               const copy = reminderCopy[reminder.id];
               return (
-              <Card key={reminder.id} className="border-primary/20 bg-primary/5">
-                <CardContent className="p-4 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="font-semibold">{t(copy.title)}</p>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {t(copy.body)}
-                    </p>
-                  </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link href={reminder.href}>{t(copy.action)}</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            );
+                <Card key={reminder.id} className="border-primary/20 bg-primary/5">
+                  <CardContent className="p-4 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-semibold">{t(copy.title)}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {t(copy.body)}
+                      </p>
+                    </div>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href={reminder.href}>{t(copy.action)}</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
             })}
           </div>
         )}
@@ -152,78 +279,17 @@ export default function NotificationsPage() {
             </p>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {notifications.length > 0 && reminders.length > 0 && (
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                {t("notificationsPage.activity")}
-              </h2>
+          <div className="space-y-6">
+            {sections.map((section) =>
+              section.items.length === 0 ? null : (
+                <div key={section.key} className="space-y-3">
+                  <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    {section.label}
+                  </h2>
+                  {section.items.map((n, i) => renderNotification(n, i))}
+                </div>
+              )
             )}
-            {notifications.map((notification, i) => {
-              const Icon = typeIcons[notification.type];
-              const colorClass = typeColors[notification.type];
-              const href = getNotificationHref(notification);
-
-              return (
-                <motion.div
-                  key={notification._id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                >
-                  <Card
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      !notification.read
-                        ? "border-primary/30 bg-accent/30"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      if (!notification.read) {
-                        markAsRead({ notificationId: notification._id });
-                      }
-                      if (href) {
-                        router.push(href);
-                      }
-                    }}
-                  >
-                    <CardContent className="p-4 flex items-start gap-4">
-                      {notification.relatedImageUrl ? (
-                        <Avatar className="h-10 w-10 shrink-0">
-                          <AvatarImage
-                            src={notification.relatedImageUrl}
-                            alt=""
-                          />
-                          <AvatarFallback className="bg-muted">
-                            <Icon className="h-4 w-4" />
-                          </AvatarFallback>
-                        </Avatar>
-                      ) : (
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${colorClass}`}
-                        >
-                          <Icon className="h-5 w-5" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold">{notification.title}</p>
-                          {!notification.read && (
-                            <Badge variant="success" className="text-[10px]">
-                              {t("notificationsPage.new")}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          {notification.body}
-                        </p>
-                        <p className="text-xs text-muted-foreground/70 mt-1">
-                          {formatDate(notification.createdAt)}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
           </div>
         )}
       </div>

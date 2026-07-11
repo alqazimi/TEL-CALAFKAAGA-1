@@ -10,6 +10,8 @@ import {
   Briefcase,
   Bookmark,
   CalendarHeart,
+  Moon,
+  Ruler,
 } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,12 +23,19 @@ import { TrustBadges } from "@/components/profile/trust-badges";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import type { MatchResult } from "@/types";
 import { useTranslation } from "@/lib/i18n/context";
+import { cn } from "@/lib/utils";
 
 interface MatchProfileCardProps {
   match: MatchResult;
   index?: number;
   onView: () => void;
   onAction: (action: "like" | "pass" | "shortlist") => void;
+}
+
+function scoreTone(score: number) {
+  if (score >= 85) return "bg-emerald-600 text-white";
+  if (score >= 75) return "bg-primary text-primary-foreground";
+  return "bg-card text-foreground border border-border";
 }
 
 export function MatchProfileCard({
@@ -37,15 +46,29 @@ export function MatchProfileCard({
 }: MatchProfileCardProps) {
   const { t } = useTranslation();
   const location = [match.city, match.country].filter(Boolean).join(", ");
+  const facts = [
+    match.prayerFrequency
+      ? { icon: Moon, label: match.prayerFrequency }
+      : match.religiousLevel
+        ? { icon: Moon, label: match.religiousLevel }
+        : null,
+    location ? { icon: MapPin, label: location } : null,
+    match.height ? { icon: Ruler, label: `${match.height} cm` } : null,
+    match.marriageTimeline
+      ? { icon: CalendarHeart, label: match.marriageTimeline }
+      : null,
+    match.education ? { icon: GraduationCap, label: match.education } : null,
+    match.occupation ? { icon: Briefcase, label: match.occupation } : null,
+  ].filter((f): f is { icon: typeof MapPin; label: string } => f !== null);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: index * 0.04, duration: 0.35 }}
     >
-      <Card className="overflow-hidden group hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300">
-        <div className="relative h-52 bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
+      <Card className="overflow-hidden group hover:shadow-xl hover:shadow-primary/8 transition-all duration-300 border-border/80">
+        <div className="relative h-64 sm:h-72 bg-muted">
           {match.imageUrl ? (
             <LazyImage
               src={match.imageUrl}
@@ -53,16 +76,32 @@ export function MatchProfileCard({
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full items-center justify-center">
+            <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 to-gold/10">
               <Avatar className="h-20 w-20">
-                <AvatarFallback className="text-3xl">
+                <AvatarFallback className="text-3xl font-display">
                   {match.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
+              {match.photoHidden && (
+                <p className="text-xs text-muted-foreground px-4 text-center">
+                  {t("matchesPage.photoPrivate")}
+                </p>
+              )}
             </div>
           )}
+          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 to-transparent" />
+          <div className="absolute bottom-4 left-4 right-4 text-white">
+            <h3 className="text-xl font-semibold tracking-tight">
+              {match.name}, {match.age}
+            </h3>
+          </div>
           <div className="absolute top-3 right-3">
-            <Badge className="text-sm font-bold bg-primary text-primary-foreground border-0 shadow-lg">
+            <Badge
+              className={cn(
+                "text-sm font-bold border-0 shadow-lg",
+                scoreTone(match.score)
+              )}
+            >
               {match.score}%
             </Badge>
           </div>
@@ -75,16 +114,19 @@ export function MatchProfileCard({
           </div>
         </div>
 
-        <CardContent className="p-5 space-y-3">
-          <div>
-            <h3 className="text-lg font-bold">
-              {match.name}, {match.age}
-            </h3>
-            <p className="text-sm text-muted-foreground flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5 shrink-0" />
-              {location}
-            </p>
-            <TrustBadges profile={match} size="sm" className="mt-2" />
+        <CardContent className="p-5 space-y-4">
+          <TrustBadges profile={match} size="sm" />
+
+          <div className="grid grid-cols-2 gap-2">
+            {facts.slice(0, 6).map((fact) => (
+              <div
+                key={fact.label}
+                className="flex items-center gap-2 rounded-xl bg-muted/60 px-2.5 py-2 text-xs text-muted-foreground"
+              >
+                <fact.icon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="truncate">{fact.label}</span>
+              </div>
+            ))}
           </div>
 
           {match.bio && (
@@ -93,36 +135,20 @@ export function MatchProfileCard({
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            {match.religiousLevel && (
-              <Badge variant="outline" className="text-xs">
-                {match.religiousLevel}
-              </Badge>
-            )}
-            {match.marriageTimeline && (
-              <Badge variant="outline" className="text-xs">
-                <CalendarHeart className="h-3 w-3 mr-1" />
-                {match.marriageTimeline}
-              </Badge>
-            )}
-            <Badge variant="outline" className="text-xs">
-              <GraduationCap className="h-3 w-3 mr-1" />
-              {match.education}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              <Briefcase className="h-3 w-3 mr-1" />
-              {match.occupation}
-            </Badge>
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" size="sm" className="flex-1" onClick={onView}>
-              <Eye className="h-4 w-4 mr-1" />
-              {t("matchesPage.view")}
+          <div className="flex gap-2 pt-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 rounded-full shrink-0 border-rose-200 text-rose-600"
+              onClick={() => onAction("pass")}
+              aria-label={t("matchesPage.pass")}
+            >
+              <X className="h-4 w-4" />
             </Button>
             <Button
               size="sm"
               variant={match.shortlisted ? "secondary" : "outline"}
+              className="h-11 rounded-full"
               onClick={() => onAction("shortlist")}
               disabled={match.shortlisted}
               aria-label={t("matchesPage.shortlist")}
@@ -130,16 +156,22 @@ export function MatchProfileCard({
               <Bookmark className="h-4 w-4" />
             </Button>
             <Button
+              variant="outline"
               size="sm"
-              className="flex-1"
+              className="h-11 flex-1 rounded-full"
+              onClick={onView}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              {t("matchesPage.view")}
+            </Button>
+            <Button
+              size="sm"
+              className="h-11 flex-1 rounded-full"
               onClick={() => onAction("like")}
               disabled={match.liked}
             >
               <Heart className="h-4 w-4 mr-1" />
               {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => onAction("pass")}>
-              <X className="h-4 w-4" />
             </Button>
           </div>
         </CardContent>

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import {
@@ -14,14 +15,17 @@ import {
   ArrowLeft,
   Check,
   CheckCheck,
+  Archive,
 } from "lucide-react";
 import { LazyEmojiPicker, type EmojiClickData } from "@/components/chat/lazy-emoji-picker";
 import { api } from "../../../../convex/_generated/api";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
+import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { Conversation, ChatMessage, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
-import { hasPaidAccess } from "@/lib/access";
+import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { needsApprovalGate } from "@/lib/review-status";
 import { useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isMemberProfileReady, isProfileQueriesLoading } from "@/lib/profile-progress";
 import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
@@ -40,10 +44,17 @@ import { formatTime } from "@/lib/utils";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
+import { prepareImageForUpload } from "@/lib/strip-image-exif";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
 import { TrustBadges } from "@/components/profile/trust-badges";
+
+type MatchList = "active" | "new" | "archived";
+
+function isMatchList(value: string | null): value is MatchList {
+  return value === "active" || value === "new" || value === "archived";
+}
 
 function MessagesEmptyState() {
   const { t } = useTranslation();
@@ -79,6 +90,10 @@ function ChatShell({ children }: { children: React.ReactNode }) {
 
 export default function ChatPage() {
   const { t } = useTranslation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const listParam = searchParams.get("list");
+  const matchList: MatchList = isMatchList(listParam) ? listParam : "active";
   const { isStaff, isLoading: staffLoading } = useStaffRedirect();
   const [activeConversation, setActiveConversation] = useState<Id<"conversations"> | null>(null);
   const [message, setMessage] = useState("");
@@ -104,7 +119,7 @@ export default function ChatPage() {
 
   const conversations = useQuery(
     api.messages.getConversations,
-    profileReady ? undefined : "skip"
+    profileReady ? { list: matchList } : "skip"
   ) as Conversation[] | undefined;
 
   const messages = useQuery(
@@ -122,10 +137,25 @@ export default function ChatPage() {
   const setTyping = useMutation(api.messages.setTyping);
   const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
   const registerUpload = useMutation(api.profiles.registerUpload);
+  const markMatchSeen = useMutation(api.matches.markMatchSeen);
+  const archiveMatch = useMutation(api.matches.archiveMatch);
 
   const activeConv = conversations?.find((c) => c.conversationId === activeConversation);
   const myUserId = currentUser?.userId;
   const showMobileChat = activeConversation && activeConv;
+
+  const setMatchList = (list: MatchList) => {
+    setActiveConversation(null);
+    router.replace(`/chat?list=${list}`, { scroll: false });
+  };
+
+  const openConversation = (conv: Conversation) => {
+    if (!conv.conversationId) return;
+    setActiveConversation(conv.conversationId);
+    if (conv.isNew) {
+      void markMatchSeen({ matchId: conv.matchId });
+    }
+  };
 
   useMarkNotificationsRead(
     ["message"],
@@ -172,11 +202,12 @@ export default function ChatPage() {
     const file = e.target.files?.[0];
     if (!file || !activeConversation) return;
     try {
+      const prepared = await prepareImageForUpload(file);
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": prepared.type },
+        body: prepared,
       });
       const { storageId } = await result.json();
       await registerUpload({ storageId });
@@ -187,12 +218,6 @@ export default function ChatPage() {
       });
     } catch {
       toast.error(t("chatPage.uploadFailed"));
-    }
-  };
-
-  const openConversation = (conv: Conversation) => {
-    if (conv.conversationId) {
-      setActiveConversation(conv.conversationId);
     }
   };
 
@@ -256,6 +281,14 @@ export default function ChatPage() {
     );
   }
 
+  if (profile && needsApprovalGate(profile)) {
+    return (
+      <DashboardLayout>
+        <PendingApprovalGate isPremium={isPremiumMember(profile)} />
+      </DashboardLayout>
+    );
+  }
+
   if (conversations === undefined) {
     return (
       <DashboardLayout>
@@ -266,13 +299,18 @@ export default function ChatPage() {
     );
   }
 
-  if (conversations.length === 0) {
-    return (
-      <DashboardLayout>
-        <MessagesEmptyState />
-      </DashboardLayout>
-    );
-  }
+  const listTabs: { id: MatchList; label: string }[] = [
+    { id: "active", label: t("chatPage.listActive") },
+    { id: "new", label: t("chatPage.listNew") },
+    { id: "archived", label: t("chatPage.listArchived") },
+  ];
+
+  const emptyMessage =
+    matchList === "new"
+      ? t("chatPage.newEmpty")
+      : matchList === "archived"
+        ? t("chatPage.archivedEmpty")
+        : null;
 
   return (
     <DashboardLayout>
@@ -285,58 +323,92 @@ export default function ChatPage() {
               showMobileChat ? "hidden sm:flex" : "flex"
             )}
           >
-            <div className="px-4 py-3.5 border-b border-border">
-              <h2 className="text-sm font-bold">{t("chatPage.messages")}</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {conversations.length}{" "}
-                {conversations.length === 1
-                  ? t("chatPage.conversation")
-                  : t("chatPage.conversations")}
-              </p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
-              {conversations.map((conv) => {
-                const isActive = activeConversation === conv.conversationId;
-                return (
+            <div className="px-4 py-3.5 border-b border-border space-y-3">
+              <div>
+                <h2 className="text-sm font-bold">{t("chatPage.messages")}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {conversations.length}{" "}
+                  {conversations.length === 1
+                    ? t("chatPage.conversation")
+                    : t("chatPage.conversations")}
+                </p>
+              </div>
+              <div className="flex gap-1 rounded-xl bg-muted p-1">
+                {listTabs.map((tab) => (
                   <button
-                    key={conv.matchId}
+                    key={tab.id}
                     type="button"
-                    onClick={() => openConversation(conv)}
-                    disabled={!conv.conversationId}
+                    onClick={() => setMatchList(tab.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left",
-                      isActive
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-muted"
+                      "flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-colors",
+                      matchList === tab.id
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    <Avatar className="h-11 w-11 shrink-0">
-                      <AvatarImage src={conv.profile?.imageUrl ?? undefined} />
-                      <AvatarFallback className="bg-muted text-foreground font-medium">
-                        {conv.profile?.name?.charAt(0) ?? "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold truncate text-sm">
-                          {conv.profile?.name ?? t("chatPage.match")}
-                        </p>
-                        {conv.unreadCount > 0 && (
-                          <Badge className="text-[10px] h-5 min-w-5 px-1.5 shrink-0">
-                            {conv.unreadCount}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {conv.lastMessage ?? t("chatPage.sayHello")}
-                      </p>
-                    </div>
-                    {!conv.chatUnlocked && (
-                      <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    )}
+                    {tab.label}
                   </button>
-                );
-              })}
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {conversations.length === 0 ? (
+                <div className="px-3 py-10 text-center">
+                  {emptyMessage ? (
+                    <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+                  ) : (
+                    <MessagesEmptyState />
+                  )}
+                </div>
+              ) : (
+                conversations.map((conv) => {
+                  const isActive = activeConversation === conv.conversationId;
+                  return (
+                    <button
+                      key={conv.matchId}
+                      type="button"
+                      onClick={() => openConversation(conv)}
+                      disabled={!conv.conversationId}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left",
+                        isActive
+                          ? "bg-accent text-accent-foreground"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <Avatar className="h-11 w-11 shrink-0">
+                        <AvatarImage src={conv.profile?.imageUrl ?? undefined} />
+                        <AvatarFallback className="bg-muted text-foreground font-medium">
+                          {conv.profile?.name?.charAt(0) ?? "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-semibold truncate text-sm flex items-center gap-1.5">
+                            {conv.profile?.name ?? t("chatPage.match")}
+                            {conv.isNew && (
+                              <Badge variant="success" className="text-[9px] px-1.5 py-0">
+                                {t("notificationsPage.new")}
+                              </Badge>
+                            )}
+                          </p>
+                          {conv.unreadCount > 0 && (
+                            <Badge className="text-[10px] h-5 min-w-5 px-1.5 shrink-0">
+                              {conv.unreadCount}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {conv.lastMessage ?? t("chatPage.sayHello")}
+                        </p>
+                      </div>
+                      {!conv.chatUnlocked && (
+                        <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      )}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -378,15 +450,46 @@ export default function ChatPage() {
                     ) : null}
                   </div>
                   {activeConv.profile?.userId && (
-                    <ReportBlockMenu
-                      compact
-                      userId={activeConv.profile.userId}
-                      userName={activeConv.profile.name}
-                      reportContext={t("safety.reportFromChat", {
-                        name: activeConv.profile.name,
-                      })}
-                      onDone={() => setActiveConversation(null)}
-                    />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 rounded-xl"
+                        aria-label={
+                          matchList === "archived"
+                            ? t("chatPage.unarchive")
+                            : t("chatPage.archive")
+                        }
+                        onClick={async () => {
+                          try {
+                            await archiveMatch({
+                              matchId: activeConv.matchId,
+                              archived: matchList !== "archived",
+                            });
+                            setActiveConversation(null);
+                            toast.success(
+                              matchList === "archived"
+                                ? t("chatPage.unarchive")
+                                : t("chatPage.archive")
+                            );
+                          } catch {
+                            toast.error(t("chatPage.sendFailed"));
+                          }
+                        }}
+                      >
+                        <Archive className="h-4 w-4" />
+                      </Button>
+                      <ReportBlockMenu
+                        compact
+                        userId={activeConv.profile.userId}
+                        userName={activeConv.profile.name}
+                        reportContext={t("safety.reportFromChat", {
+                          name: activeConv.profile.name,
+                        })}
+                        onDone={() => setActiveConversation(null)}
+                      />
+                    </div>
                   )}
                 </div>
 

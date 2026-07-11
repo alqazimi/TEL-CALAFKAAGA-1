@@ -306,22 +306,22 @@ export const completeQuestionnaire = mutation({
       questionnaireComplete: true,
       questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
       lastSavedAt: Date.now(),
-      approved: true,
-      verified: true,
+      // Independent states — completing the form does NOT mean verified/approved.
+      reviewStatus: "pending_review",
+      approved: false,
+      verified: false,
       ...(!profile.hasPaid && profile.trialEndsAt === undefined
         ? { trialEndsAt: getTrialEndsAt() }
         : {}),
     });
 
-    if (!profile.approved) {
-      await sendNotification(ctx, {
-        userId,
-        type: "approval",
-        title: "Profile ready",
-        body: "Your profile is complete. You can now browse matches and connect with members.",
-        sendEmail: true,
-      });
-    }
+    await sendNotification(ctx, {
+      userId,
+      type: "approval",
+      title: "Profile submitted for review",
+      body: "Your questionnaire is complete. An admin will review your profile shortly. You will be notified when you can browse matches.",
+      sendEmail: true,
+    });
 
     await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
       userId,
@@ -393,6 +393,13 @@ export const updateProfile = mutation({
     bio: v.optional(v.string()),
     profileImageId: v.optional(v.id("_storage")),
     phone: v.optional(v.string()),
+    photoVisibility: v.optional(
+      v.union(
+        v.literal("everyone"),
+        v.literal("matches"),
+        v.literal("private")
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuthUserId(ctx);
@@ -404,6 +411,9 @@ export const updateProfile = mutation({
     if (args.name !== undefined) updates.name = args.name;
     if (args.bio !== undefined) updates.bio = args.bio;
     if (args.phone !== undefined) updates.phone = args.phone;
+    if (args.photoVisibility !== undefined) {
+      updates.photoVisibility = args.photoVisibility;
+    }
     if (args.profileImageId !== undefined) {
       await assertStorageOwnership(ctx, userId, args.profileImageId);
       updates.profileImageId = args.profileImageId;

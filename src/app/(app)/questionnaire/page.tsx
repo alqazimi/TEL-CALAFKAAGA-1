@@ -405,10 +405,26 @@ export default function QuestionnairePage() {
       ? ui("profileCompleteFooter").replace("{p}", String(progress))
       : undefined;
 
+  const displayStep = isReviewStep ? totalSteps : (currentStep ?? 0) + 1;
+  const stepLabel = ui("progressStepOf")
+    .replace("{step}", String(displayStep))
+    .replace("{total}", String(totalSteps));
+
+  const remainingSteps = Math.max(0, totalSteps - displayStep);
+  const estimatedMinutes = Math.max(1, Math.ceil(remainingSteps * 1.1));
+  const timeLabel =
+    !isReviewStep && remainingSteps > 0
+      ? remainingSteps <= 1
+        ? ui("progressAlmostDone")
+        : ui("progressMinutesLeft").replace("{m}", String(estimatedMinutes))
+      : undefined;
+
   return (
     <QuestionnaireShell
       progress={progress}
       phaseLabel={phaseLabel}
+      stepLabel={stepLabel}
+      timeLabel={timeLabel}
       progressHint={progressHint}
       onBack={canGoBack ? handleBack : undefined}
     >

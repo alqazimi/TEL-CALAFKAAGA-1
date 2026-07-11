@@ -12,6 +12,9 @@ import {
   Eye,
   Heart,
   MapPin,
+  Moon,
+  CalendarHeart,
+  Ruler,
   X,
 } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -138,12 +141,17 @@ function SwipeCard({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full items-center justify-center">
+              <div className="flex h-full flex-col items-center justify-center gap-2">
                 <Avatar className="h-24 w-24">
-                  <AvatarFallback className="text-4xl">
+                  <AvatarFallback className="text-4xl font-display">
                     {match.name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
+                {match.photoHidden && (
+                  <p className="text-xs text-muted-foreground px-6 text-center">
+                    {t("matchesPage.photoPrivate")}
+                  </p>
+                )}
               </div>
             )}
             <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/75 to-transparent" />
@@ -200,6 +208,28 @@ function SwipeCard({
 
           <CardContent className="p-5 space-y-4">
             <TrustBadges profile={match} size="sm" />
+            <div className="grid grid-cols-2 gap-2">
+              {(match.prayerFrequency || match.religiousLevel) && (
+                <div className="flex items-center gap-2 rounded-xl bg-muted/60 px-2.5 py-2 text-xs text-muted-foreground">
+                  <Moon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span className="truncate">
+                    {match.prayerFrequency || match.religiousLevel}
+                  </span>
+                </div>
+              )}
+              {match.height ? (
+                <div className="flex items-center gap-2 rounded-xl bg-muted/60 px-2.5 py-2 text-xs text-muted-foreground">
+                  <Ruler className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span>{match.height} cm</span>
+                </div>
+              ) : null}
+              {match.marriageTimeline ? (
+                <div className="flex items-center gap-2 rounded-xl bg-muted/60 px-2.5 py-2 text-xs text-muted-foreground col-span-2">
+                  <CalendarHeart className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span className="truncate">{match.marriageTimeline}</span>
+                </div>
+              ) : null}
+            </div>
             {match.bio && (
               <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
                 {match.bio}

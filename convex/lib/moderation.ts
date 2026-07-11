@@ -61,7 +61,10 @@ export async function unmatchBetweenUsers(
 
   for (const match of [...asA, ...asB]) {
     const other = match.userA === userA ? match.userB : match.userA;
-    if (other === userB && match.status === "active") {
+    if (
+      other === userB &&
+      (match.status === "active" || match.status === "archived")
+    ) {
       await ctx.db.patch(match._id, { status: "unmatched", chatUnlocked: false });
     }
   }

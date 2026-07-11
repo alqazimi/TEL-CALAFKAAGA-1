@@ -123,7 +123,11 @@ export function MatchProfileModal({
             <TrustBadges profile={match} className="mt-3" />
           </div>
 
-          <CompatibilityBreakdown targetUserId={match.userId} isPremium={isPremium} />
+          <CompatibilityBreakdown
+            targetUserId={match.userId}
+            isPremium={isPremium}
+            overallScore={match.score}
+          />
 
           {wali && (wali.waliName || wali.waliPhone) && (
             <div className="rounded-2xl border border-border bg-muted/40 p-4 space-y-2">

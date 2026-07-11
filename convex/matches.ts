@@ -1,13 +1,15 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { requireActiveProfile, requireAuthUserId } from "./lib/access";
 import { hasPaidAccess } from "./lib/roles";
 import { getBlockedUserIds, isEitherBlocked } from "./lib/moderation";
+import { isDiscoverable } from "./lib/reviewStatus";
 import {
   buildMatchResult,
+  canViewerSeePhotos,
   getActiveMatchPartnerIds,
   type MatchFilterArgs,
   profilePassesMatchFilters,
@@ -47,6 +49,7 @@ async function getMatchAccessProfile(ctx: QueryCtx) {
 
   if (!myProfile?.questionnaireComplete) return null;
   if (!hasPaidAccess(myProfile)) return null;
+  if (!isDiscoverable(myProfile)) return null;
 
   return { userId, myProfile };
 }
@@ -89,7 +92,7 @@ async function loadProfilesForUserIds(
         .withIndex("by_userId", (q) => q.eq("userId", targetUserId))
         .unique();
 
-      if (!profile || profile.banned || !profile.questionnaireComplete) return null;
+      if (!profile || profile.banned || !isDiscoverable(profile)) return null;
       if (!profile.profileImageId) return null;
       if (!profilePassesMatchFilters(profile, args)) return null;
 
@@ -102,7 +105,7 @@ async function loadProfilesForUserIds(
         targetUserId,
         score,
         interaction,
-        { includeGallery }
+        { includeGallery, viewerId: myProfile.userId }
       );
     })
   );
@@ -383,7 +386,7 @@ export const getCompatibilityBreakdown = query({
       .withIndex("by_userId", (q) => q.eq("userId", args.targetUserId))
       .unique();
 
-    if (!candidate || candidate.banned || !candidate.questionnaireComplete) return null;
+    if (!candidate || candidate.banned || !isDiscoverable(candidate)) return null;
 
     const myPrefs = await ctx.db
       .query("preferences")
@@ -406,6 +409,26 @@ export const getCompatibilityBreakdown = query({
   },
 });
 
+/** Find any match row between two users (either orientation). */
+async function findMatchBetweenUsers(
+  ctx: { db: MutationCtx["db"] },
+  userA: Id<"users">,
+  userB: Id<"users">
+) {
+  const asA = await ctx.db
+    .query("matches")
+    .withIndex("by_userA", (q) => q.eq("userA", userA))
+    .collect();
+  const foundAsA = asA.find((m) => m.userB === userB);
+  if (foundAsA) return foundAsA;
+
+  const asB = await ctx.db
+    .query("matches")
+    .withIndex("by_userA", (q) => q.eq("userA", userB))
+    .collect();
+  return asB.find((m) => m.userB === userA) ?? null;
+}
+
 export const likeUser = mutation({
   args: {
     toUserId: v.id("users"),
@@ -415,15 +438,30 @@ export const likeUser = mutation({
     const userId = await requireAuthUserId(ctx);
     const myProfile = await requireActiveProfile(ctx, userId);
 
+    if (args.toUserId === userId) {
+      throw new Error("You cannot interact with your own profile");
+    }
+
     if (!myProfile.questionnaireComplete) {
       throw new Error("Complete your questionnaire first");
     }
     if (!hasPaidAccess(myProfile)) {
       throw new Error("Complete payment to like profiles");
     }
+    if (!isDiscoverable(myProfile)) {
+      throw new Error("Your profile is pending review");
+    }
 
     if (await isEitherBlocked(ctx, userId, args.toUserId)) {
       throw new Error("You cannot interact with this user");
+    }
+
+    const targetProfile = await ctx.db
+      .query("profiles")
+      .withIndex("by_userId", (q) => q.eq("userId", args.toUserId))
+      .unique();
+    if (!targetProfile || !isDiscoverable(targetProfile)) {
+      throw new Error("This profile is not available");
     }
 
     const existing = await ctx.db
@@ -470,11 +508,64 @@ export const likeUser = mutation({
           q.eq("userA", userId).eq("userB", args.toUserId)
         )
         .unique();
+      const matchScore = score?.score ?? 0;
+
+      const existingMatch = await findMatchBetweenUsers(ctx, userId, args.toUserId);
+
+      if (existingMatch) {
+        const wasInactive = existingMatch.status !== "active";
+        if (wasInactive) {
+          await ctx.db.patch(existingMatch._id, {
+            status: "active",
+            score: matchScore,
+            chatUnlocked: false,
+          });
+        }
+
+        let conversation = await ctx.db
+          .query("conversations")
+          .withIndex("by_match", (q) => q.eq("matchId", existingMatch._id))
+          .unique();
+
+        if (!conversation) {
+          const convId = await ctx.db.insert("conversations", {
+            matchId: existingMatch._id,
+            participants: [existingMatch.userA, existingMatch.userB],
+            lastMessageAt: Date.now(),
+          });
+          conversation = await ctx.db.get(convId);
+        }
+
+        if (wasInactive) {
+          const otherProfile = await ctx.db
+            .query("profiles")
+            .withIndex("by_userId", (q) => q.eq("userId", args.toUserId))
+            .unique();
+
+          for (const uid of [userId, args.toUserId]) {
+            await sendNotification(ctx, {
+              userId: uid,
+              type: "match",
+              title: "New Match!",
+              body: `You matched with ${uid === userId ? otherProfile?.name : myProfile.name}!`,
+              relatedUserId: uid === userId ? args.toUserId : userId,
+              sendEmail: true,
+            });
+          }
+        }
+
+        return {
+          matched: true,
+          matchId: existingMatch._id,
+          conversationId: conversation?._id,
+          reactivated: wasInactive,
+        };
+      }
 
       const matchId = await ctx.db.insert("matches", {
         userA: userId,
         userB: args.toUserId,
-        score: score?.score ?? 0,
+        score: matchScore,
         status: "active",
         chatUnlocked: false,
       });
@@ -509,11 +600,16 @@ export const likeUser = mutation({
 });
 
 export const getMyMatches = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    list: v.optional(
+      v.union(v.literal("active"), v.literal("new"), v.literal("archived"))
+    ),
+  },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
 
+    const list = args.list ?? "active";
     const matchesA = await ctx.db
       .query("matches")
       .withIndex("by_userA", (q) => q.eq("userA", userId))
@@ -524,9 +620,16 @@ export const getMyMatches = query({
       .withIndex("by_userB", (q) => q.eq("userB", userId))
       .collect();
 
-    const allMatches = [...matchesA, ...matchesB].filter(
-      (m) => m.status === "active"
-    );
+    const allMatches = [...matchesA, ...matchesB].filter((m) => {
+      if (list === "archived") return m.status === "archived";
+      if (m.status !== "active") return false;
+      if (list === "new") {
+        const seen = m.seenAtByUser?.[userId];
+        return seen === undefined;
+      }
+      return true;
+    });
+
     const blockedIds = await getBlockedUserIds(ctx, userId);
 
     return (
@@ -540,9 +643,15 @@ export const getMyMatches = query({
             .withIndex("by_userId", (q) => q.eq("userId", otherId))
             .unique();
 
-          let imageUrl = null;
-          if (profile?.profileImageId) {
-            imageUrl = await ctx.storage.getUrl(profile.profileImageId);
+          let imageUrl: string | null = null;
+          let photoHidden = false;
+          if (profile) {
+            const visible = await canViewerSeePhotos(ctx, userId, profile);
+            if (visible && profile.profileImageId) {
+              imageUrl = await ctx.storage.getUrl(profile.profileImageId);
+            } else if (profile.profileImageId) {
+              photoHidden = true;
+            }
           }
 
           const conversation = await ctx.db
@@ -550,17 +659,89 @@ export const getMyMatches = query({
             .withIndex("by_match", (q) => q.eq("matchId", m._id))
             .unique();
 
+          const isNew = m.status === "active" && m.seenAtByUser?.[userId] === undefined;
+
           return {
             matchId: m._id,
             conversationId: conversation?._id,
             score: m.score,
             chatUnlocked: m.chatUnlocked,
+            status: m.status,
+            isNew,
+            lastMessageAt: conversation?.lastMessageAt ?? m._creationTime,
             profile: profile
-              ? { ...profile, imageUrl, userId: otherId }
+              ? {
+                  name: profile.name,
+                  age: profile.age,
+                  country: profile.country,
+                  city: profile.city,
+                  imageUrl,
+                  photoHidden,
+                  userId: otherId,
+                  reviewStatus: profile.reviewStatus,
+                  approved: profile.approved,
+                }
               : null,
           };
         })
       )
-    ).filter((m): m is NonNullable<typeof m> => m !== null);
+    )
+      .filter((m): m is NonNullable<typeof m> => m !== null)
+      .sort((a, b) => b.lastMessageAt - a.lastMessageAt);
+  },
+});
+
+export const markMatchSeen = mutation({
+  args: { matchId: v.id("matches") },
+  handler: async (ctx, args) => {
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
+
+    const match = await ctx.db.get(args.matchId);
+    if (!match) throw new Error("Match not found");
+    if (match.userA !== userId && match.userB !== userId) {
+      throw new Error("Not authorized");
+    }
+
+    await ctx.db.patch(args.matchId, {
+      seenAtByUser: {
+        ...(match.seenAtByUser ?? {}),
+        [userId]: Date.now(),
+      },
+    });
+  },
+});
+
+export const archiveMatch = mutation({
+  args: {
+    matchId: v.id("matches"),
+    archived: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuthUserId(ctx);
+    await requireActiveProfile(ctx, userId);
+
+    const match = await ctx.db.get(args.matchId);
+    if (!match) throw new Error("Match not found");
+    if (match.userA !== userId && match.userB !== userId) {
+      throw new Error("Not authorized");
+    }
+    if (match.status === "unmatched") {
+      throw new Error("This match is no longer available");
+    }
+
+    if (args.archived) {
+      await ctx.db.patch(args.matchId, {
+        status: "archived",
+        archivedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.patch(args.matchId, {
+        status: "active",
+        archivedAt: undefined,
+      });
+    }
+
+    return { ok: true as const };
   },
 });

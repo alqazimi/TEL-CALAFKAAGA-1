@@ -9,6 +9,7 @@ import {
   getBlockedUserIds,
   unmatchBetweenUsers,
 } from "./lib/moderation";
+import { writeAuditLog } from "./lib/auditLog";
 
 const reportReasonValidator = v.union(
   v.literal("fake_profile"),
@@ -223,7 +224,11 @@ export const listReports = query({
           reason: report.reason,
           details: report.details ?? "",
           status: report.status,
+          priority: report.priority ?? "medium",
+          adminNotes: report.adminNotes ?? "",
+          resolution: report.resolution ?? "",
           createdAt: report.createdAt,
+          reviewedAt: report.reviewedAt,
           reportedUserId: report.reportedUserId,
           reportedName: reported?.name ?? "Unknown",
           reportedProfileId: reported?._id ?? null,
@@ -239,6 +244,11 @@ export const updateReportStatus = mutation({
   args: {
     reportId: v.id("reports"),
     status: v.union(v.literal("reviewed"), v.literal("dismissed")),
+    priority: v.optional(
+      v.union(v.literal("low"), v.literal("medium"), v.literal("high"))
+    ),
+    adminNotes: v.optional(v.string()),
+    resolution: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuthUserId(ctx);
@@ -251,7 +261,26 @@ export const updateReportStatus = mutation({
       status: args.status,
       reviewedAt: Date.now(),
       reviewedBy: userId,
+      ...(args.priority !== undefined ? { priority: args.priority } : {}),
+      ...(args.adminNotes !== undefined
+        ? { adminNotes: args.adminNotes.trim().slice(0, 2000) }
+        : {}),
+      ...(args.resolution !== undefined
+        ? { resolution: args.resolution.trim().slice(0, 1000) }
+        : {}),
     });
+
+    await writeAuditLog(ctx, {
+      actorUserId: userId,
+      action: "update_report",
+      targetUserId: report.reportedUserId,
+      metadata: {
+        reportId: args.reportId,
+        status: args.status,
+        priority: args.priority,
+      },
+    });
+
     return { updated: true };
   },
 });

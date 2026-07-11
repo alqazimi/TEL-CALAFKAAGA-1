@@ -17,6 +17,34 @@ export type MatchFilterArgs = {
   marriageTimeline?: string;
 };
 
+export type PhotoVisibility = "everyone" | "matches" | "private";
+
+export function resolvePhotoVisibility(
+  profile: Pick<Doc<"profiles">, "photoVisibility">
+): PhotoVisibility {
+  return profile.photoVisibility ?? "everyone";
+}
+
+/**
+ * Whether the viewer may see the member's main/gallery photos.
+ * Owner always sees their own photos.
+ */
+export async function canViewerSeePhotos(
+  ctx: QueryCtx,
+  viewerId: Id<"users"> | null,
+  profile: Doc<"profiles">
+): Promise<boolean> {
+  if (viewerId && viewerId === profile.userId) return true;
+
+  const visibility = resolvePhotoVisibility(profile);
+  if (visibility === "everyone") return true;
+  if (visibility === "private") return false;
+
+  // matches-only
+  if (!viewerId) return false;
+  return hasActiveMatch(ctx, viewerId, profile.userId);
+}
+
 export function profilePassesMatchFilters(
   profile: Doc<"profiles">,
   args: MatchFilterArgs
@@ -60,17 +88,29 @@ export async function buildMatchResult(
   userId: Id<"users">,
   score: number,
   interaction?: Doc<"likes"> | null,
-  options?: { includeGallery?: boolean }
-) {
-  let imageUrl = null;
-  if (profile.profileImageId) {
-    imageUrl = await ctx.storage.getUrl(profile.profileImageId);
+  options?: {
+    includeGallery?: boolean;
+    viewerId?: Id<"users"> | null;
   }
+) {
+  const viewerId = options?.viewerId ?? null;
+  const photosVisible = await canViewerSeePhotos(ctx, viewerId, profile);
 
-  const additionalImageUrls =
-    options?.includeGallery === false
-      ? []
-      : await resolveAdditionalImageUrls(ctx, profile);
+  let imageUrl: string | null = null;
+  let additionalImageUrls: string[] = [];
+  let photoHidden = false;
+
+  if (photosVisible) {
+    if (profile.profileImageId) {
+      imageUrl = await ctx.storage.getUrl(profile.profileImageId);
+    }
+    additionalImageUrls =
+      options?.includeGallery === false
+        ? []
+        : await resolveAdditionalImageUrls(ctx, profile);
+  } else {
+    photoHidden = !!profile.profileImageId;
+  }
 
   return {
     userId,
@@ -89,10 +129,14 @@ export async function buildMatchResult(
     bio: profile.bio,
     imageUrl,
     additionalImageUrls,
+    photoHidden,
+    photoVisibility: resolvePhotoVisibility(profile),
     score,
     liked: interaction?.action === "like",
     shortlisted: interaction?.action === "shortlist",
     verified: profile.verified,
+    approved: profile.approved,
+    reviewStatus: profile.reviewStatus,
     hasPaid: profile.hasPaid,
     hasPersonalSupport: profile.hasPersonalSupport ?? false,
     advisorReviewed: profile.advisorReviewed ?? false,

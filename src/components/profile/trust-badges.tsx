@@ -1,17 +1,21 @@
 "use client";
 
-import { BadgeCheck, ClipboardCheck, CreditCard, Headphones, Sparkles } from "lucide-react";
+import { BadgeCheck, ClipboardCheck, Clock, CreditCard, Headphones, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/i18n/context";
+import { resolveReviewStatus, type ReviewStatus } from "@/lib/review-status";
 import { cn } from "@/lib/utils";
 
 export interface TrustBadgeProfile {
   verified?: boolean;
   approved?: boolean;
+  reviewStatus?: ReviewStatus | string;
   hasPaid?: boolean;
   hasPersonalSupport?: boolean;
   advisorReviewed?: boolean;
   questionnaireComplete?: boolean;
+  banned?: boolean;
+  role?: string;
 }
 
 interface TrustBadgesProps {
@@ -23,16 +27,25 @@ interface TrustBadgesProps {
 export function TrustBadges({ profile, size = "md", className }: TrustBadgesProps) {
   const { t } = useTranslation();
   const compact = size === "sm";
-  const isVerified = profile.verified ?? profile.approved;
+  const reviewStatus = resolveReviewStatus(profile);
 
   const badges = [
-    isVerified
+    reviewStatus === "approved"
       ? {
-          key: "verified",
-          label: t("trustBadges.verified"),
+          key: "approved",
+          label: t("trustBadges.approved"),
           icon: BadgeCheck,
           className:
             "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/40",
+        }
+      : null,
+    reviewStatus === "pending_review"
+      ? {
+          key: "pending",
+          label: t("trustBadges.pendingReview"),
+          icon: Clock,
+          className:
+            "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-200/60 dark:border-amber-900/40",
         }
       : null,
     profile.hasPersonalSupport
@@ -41,7 +54,7 @@ export function TrustBadges({ profile, size = "md", className }: TrustBadgesProp
           label: t("trustBadges.premium"),
           icon: Sparkles,
           className:
-            "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300 border-violet-200/60 dark:border-violet-900/40",
+            "bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200 border-amber-200/60 dark:border-amber-900/40",
         }
       : null,
     profile.advisorReviewed
@@ -50,7 +63,7 @@ export function TrustBadges({ profile, size = "md", className }: TrustBadgesProp
           label: t("trustBadges.advisorReviewed"),
           icon: Headphones,
           className:
-            "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-200/60 dark:border-amber-900/40",
+            "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-200/60 dark:border-sky-900/40",
         }
       : null,
     profile.hasPaid && !profile.hasPersonalSupport
@@ -59,16 +72,16 @@ export function TrustBadges({ profile, size = "md", className }: TrustBadgesProp
           label: t("trustBadges.paidMember"),
           icon: CreditCard,
           className:
-            "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-200/60 dark:border-sky-900/40",
+            "bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 border-emerald-200/60 dark:border-emerald-900/40",
         }
       : null,
-    profile.questionnaireComplete
+    profile.questionnaireComplete && reviewStatus !== "approved"
       ? {
           key: "complete",
           label: t("trustBadges.profileComplete"),
           icon: ClipboardCheck,
           className:
-            "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300 border-violet-200/60 dark:border-violet-900/40",
+            "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300 border-slate-200/60 dark:border-slate-800/40",
         }
       : null,
   ].filter((badge): badge is NonNullable<typeof badge> => badge !== null);

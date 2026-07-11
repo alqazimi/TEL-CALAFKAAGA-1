@@ -10,12 +10,19 @@ import {
 import { hasPaidAccess } from "./lib/roles";
 import { getBlockedUserIds, isEitherBlocked } from "./lib/moderation";
 import { sendNotification } from "./lib/sendNotification";
+import { canViewerSeePhotos } from "./lib/matchPresentation";
 
 export const getConversations = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    list: v.optional(
+      v.union(v.literal("active"), v.literal("new"), v.literal("archived"))
+    ),
+  },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
+
+    const list = args.list ?? "active";
 
     const matchesA = await ctx.db
       .query("matches")
@@ -27,9 +34,14 @@ export const getConversations = query({
       .withIndex("by_userB", (q) => q.eq("userB", userId))
       .collect();
 
-    const activeMatches = [...matchesA, ...matchesB].filter(
-      (m) => m.status === "active"
-    );
+    const filteredMatches = [...matchesA, ...matchesB].filter((m) => {
+      if (list === "archived") return m.status === "archived";
+      if (m.status !== "active") return false;
+      if (list === "new") {
+        return m.seenAtByUser?.[userId] === undefined;
+      }
+      return true;
+    });
 
     const myProfile = await ctx.db
       .query("profiles")
@@ -41,7 +53,7 @@ export const getConversations = query({
 
     return (
       await Promise.all(
-        activeMatches.map(async (m) => {
+        filteredMatches.map(async (m) => {
           const otherId = m.userA === userId ? m.userB : m.userA;
           if (blockedIds.has(otherId)) return null;
 
@@ -50,9 +62,15 @@ export const getConversations = query({
             .withIndex("by_userId", (q) => q.eq("userId", otherId))
             .unique();
 
-          let imageUrl = null;
-          if (profile?.profileImageId) {
-            imageUrl = await ctx.storage.getUrl(profile.profileImageId);
+          let imageUrl: string | null = null;
+          let photoHidden = false;
+          if (profile) {
+            const visible = await canViewerSeePhotos(ctx, userId, profile);
+            if (visible && profile.profileImageId) {
+              imageUrl = await ctx.storage.getUrl(profile.profileImageId);
+            } else if (profile.profileImageId) {
+              photoHidden = true;
+            }
           }
 
           const conversation = await ctx.db
@@ -81,14 +99,20 @@ export const getConversations = query({
               ).filter((msg) => !msg.read && msg.senderId !== userId).length
             : 0;
 
+          const isNew =
+            m.status === "active" && m.seenAtByUser?.[userId] === undefined;
+
           return {
             matchId: m._id,
             conversationId: conversation?._id,
             chatUnlocked: paid || m.chatUnlocked,
+            status: m.status,
+            isNew,
             profile: profile
               ? {
                   name: profile.name,
                   imageUrl,
+                  photoHidden,
                   userId: otherId,
                   verified: profile.verified,
                   hasPaid: profile.hasPaid,
@@ -98,10 +122,13 @@ export const getConversations = query({
             lastMessage: lastMessage?.message ?? null,
             lastMessageAt: conversation?.lastMessageAt ?? 0,
             unreadCount,
+            score: m.score,
           };
         })
       )
-    ).filter((c): c is NonNullable<typeof c> => c !== null);
+    )
+      .filter((c): c is NonNullable<typeof c> => c !== null)
+      .sort((a, b) => b.lastMessageAt - a.lastMessageAt);
   },
 });
 

@@ -10,10 +10,15 @@ import {
   Heart,
   Mail,
   Megaphone,
+  MessageCircle,
   Phone,
+  ScrollText,
+  Settings,
   TrendingUp,
   Users,
   Wallet,
+  LayoutDashboard,
+  Clock,
 } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -43,11 +48,28 @@ import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
+import {
+  PERSONAL_SUPPORT_PRICE,
+  REGISTRATION_PRICE,
+  SUPPORT_EMAIL,
+  TRIAL_DAYS,
+  WHATSAPP_DISPLAY,
+  WHATSAPP_URL,
+} from "@/lib/constants";
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
 type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
 
-const ADMIN_TABS = ["users", "payments", "analytics", "reports", "announcements"] as const;
+const ADMIN_TABS = [
+  "dashboard",
+  "users",
+  "reports",
+  "payments",
+  "announcements",
+  "analytics",
+  "audit",
+  "settings",
+] as const;
 type AdminTab = (typeof ADMIN_TABS)[number];
 
 function formatPaymentLabel(
@@ -75,13 +97,19 @@ export default function AdminPage() {
   const tabParam = searchParams.get("tab");
   const activeTab: AdminTab = ADMIN_TABS.includes(tabParam as AdminTab)
     ? (tabParam as AdminTab)
-    : "users";
+    : "dashboard";
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
-  const [announcement, setAnnouncement] = useState({ title: "", body: "" });
+  const [announcement, setAnnouncement] = useState({
+    title: "",
+    body: "",
+    audience: "all" as "all" | "paid" | "trial" | "unpaid",
+    scheduledForLocal: "",
+  });
   const [selectedProfileId, setSelectedProfileId] = useState<Id<"profiles"> | null>(null);
+  const [reportNotes, setReportNotes] = useState<Record<string, string>>({});
 
   const currentUser = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
   const userTimedOut = useLoadingTimeout(currentUser === undefined, 8_000);
@@ -115,7 +143,11 @@ export default function AdminPage() {
   ) as AdminPayment[] | undefined;
   const reports = useQuery(
     api.moderation.listReports,
-    isStaff && activeTab === "reports" ? {} : "skip"
+    isStaff && (activeTab === "reports" || activeTab === "dashboard") ? {} : "skip"
+  );
+  const auditLogs = useQuery(
+    api.admin.getAuditLogs,
+    isStaff && activeTab === "audit" ? { limit: 80 } : "skip"
   );
   const banUser = useMutation(api.admin.banUser);
   const createAnnouncement = useMutation(api.admin.createAnnouncement);
@@ -137,9 +169,33 @@ export default function AdminPage() {
   const handleAnnouncement = async () => {
     if (!announcement.title || !announcement.body) return;
     try {
-      await createAnnouncement(announcement);
-      toast.success(t("adminPage.announcementSent"));
-      setAnnouncement({ title: "", body: "" });
+      const scheduledFor = announcement.scheduledForLocal
+        ? new Date(announcement.scheduledForLocal).getTime()
+        : undefined;
+      if (
+        announcement.scheduledForLocal &&
+        (scheduledFor === undefined || Number.isNaN(scheduledFor))
+      ) {
+        toast.error(t("adminPage.scheduleInvalid"));
+        return;
+      }
+      const result = await createAnnouncement({
+        title: announcement.title,
+        body: announcement.body,
+        audience: announcement.audience,
+        scheduledFor,
+      });
+      toast.success(
+        result?.scheduled
+          ? t("adminPage.announcementScheduled")
+          : t("adminPage.announcementSent")
+      );
+      setAnnouncement({
+        title: "",
+        body: "",
+        audience: "all",
+        scheduledForLocal: "",
+      });
     } catch {
       toast.error(t("adminPage.announcementFailed"));
     }
@@ -171,13 +227,18 @@ export default function AdminPage() {
   }
 
   const canManageRoles = currentUser.profile?.role === "owner" || stats?.isOwner === true;
-  const incompleteCount = stats?.pendingApproval ?? 0;
+  const pendingReviewCount = stats?.pendingApproval ?? 0;
   const openReports = reports?.filter((r) => r.status === "open").length ?? 0;
 
   const TAB_META: Record<
     AdminTab,
     { title: TranslationPath; desc: TranslationPath; icon: typeof Users }
   > = {
+    dashboard: {
+      title: "adminPage.dashboard",
+      desc: "adminPage.dashboardDesc",
+      icon: LayoutDashboard,
+    },
     users: { title: "adminPage.users", desc: "adminPage.usersDesc", icon: Users },
     payments: { title: "adminPage.payments", desc: "adminPage.paymentsDesc", icon: CreditCard },
     analytics: { title: "adminPage.analytics", desc: "adminPage.analyticsDesc", icon: TrendingUp },
@@ -187,6 +248,8 @@ export default function AdminPage() {
       desc: "adminPage.announcementsDesc",
       icon: Megaphone,
     },
+    audit: { title: "adminPage.auditLogs", desc: "adminPage.auditLogsDesc", icon: ScrollText },
+    settings: { title: "adminPage.settings", desc: "adminPage.settingsDesc", icon: Settings },
   };
 
   const isOwner = canManageRoles;
@@ -198,22 +261,49 @@ export default function AdminPage() {
       icon: Users,
     },
     {
+      label: t("adminPage.paidPremium"),
+      value:
+        stats != null
+          ? (stats.paidBasicCount ?? 0) + (stats.paidPremiumCount ?? 0)
+          : "—",
+      hint: t("adminPage.statPaidHint"),
+      icon: CreditCard,
+    },
+    {
+      label: t("adminPage.trialMembers"),
+      value: stats?.trialCount ?? "—",
+      hint: t("adminPage.statTrialHint"),
+      icon: Clock,
+    },
+    {
       label: t("adminPage.revenue"),
       value: stats ? `$${(stats.revenue / 100).toFixed(0)}` : "—",
       hint: t("adminPage.statRevenueHint"),
       icon: Wallet,
     },
     {
-      label: t("adminPage.paidPremium"),
-      value: stats?.paidPremiumCount ?? "—",
-      hint: t("adminPage.statPremiumHint"),
+      label: t("adminPage.pendingReview"),
+      value: stats?.pendingApproval ?? "—",
+      hint: t("adminPage.statPendingHint"),
+      icon: Flag,
+    },
+    {
+      label: t("adminPage.activeMatches"),
+      value: stats?.totalMatches ?? "—",
+      hint: t("adminPage.statMatchesHint"),
       icon: Heart,
     },
     {
-      label: t("adminPage.unpaid"),
-      value: stats?.unpaidCount ?? "—",
-      hint: t("adminPage.statUnpaidHint"),
-      icon: CreditCard,
+      label: t("adminPage.messages"),
+      value: stats?.totalMessages ?? "—",
+      hint: t("adminPage.statMessagesHint"),
+      icon: MessageCircle,
+    },
+    {
+      label: t("adminPage.openReports"),
+      value: openReports,
+      hint: t("adminPage.statReportsHint"),
+      icon: Flag,
     },
   ];
 
@@ -233,7 +323,7 @@ export default function AdminPage() {
         </header>
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {overviewStats.map((stat) => (
+          {(activeTab === "dashboard" ? overviewStats : overviewStats.slice(0, 4)).map((stat) => (
             <div
               key={stat.label}
               className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]"
@@ -248,13 +338,14 @@ export default function AdminPage() {
           ))}
         </section>
 
-        {(incompleteCount > 0 || openReports > 0 || (stats?.unpaidCount ?? 0) > 0) && (
+        {(pendingReviewCount > 0 || openReports > 0 || (stats?.unpaidCount ?? 0) > 0) &&
+          (activeTab === "dashboard" || activeTab === "users") && (
           <section className="rounded-2xl border border-border bg-muted/30 p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {t("adminPage.needsAttention")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {incompleteCount > 0 && (
+              {pendingReviewCount > 0 && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -265,7 +356,7 @@ export default function AdminPage() {
                     setTab("users");
                   }}
                 >
-                  {t("adminPage.attentionIncomplete", { count: incompleteCount })}
+                  {t("adminPage.attentionPending", { count: pendingReviewCount })}
                 </Button>
               )}
               {(stats?.unpaidCount ?? 0) > 0 && (
@@ -296,7 +387,7 @@ export default function AdminPage() {
           </section>
         )}
 
-        <nav className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5">
+        <nav className="flex gap-1 overflow-x-auto rounded-2xl border border-border bg-card p-1.5 lg:hidden">
           {ADMIN_TABS.map((tab) => {
             const meta = TAB_META[tab];
             const Icon = meta.icon;
@@ -320,10 +411,58 @@ export default function AdminPage() {
           })}
         </nav>
 
-        <section className="space-y-1">
-          <h2 className="text-lg font-semibold tracking-tight">{t(TAB_META[activeTab].title)}</h2>
-          <p className="text-sm text-muted-foreground">{t(TAB_META[activeTab].desc)}</p>
-        </section>
+        {activeTab !== "dashboard" && (
+          <section className="space-y-1">
+            <h2 className="text-lg font-semibold tracking-tight">{t(TAB_META[activeTab].title)}</h2>
+            <p className="text-sm text-muted-foreground">{t(TAB_META[activeTab].desc)}</p>
+          </section>
+        )}
+
+        {activeTab === "dashboard" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card className="border-border shadow-none">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{t("adminPage.quickActions")}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTab("users")}>
+                  {t("adminPage.users")}
+                </Button>
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTab("reports")}>
+                  {t("adminPage.reports")}
+                </Button>
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTab("payments")}>
+                  {t("adminPage.payments")}
+                </Button>
+                <Button size="sm" variant="outline" className="rounded-xl" onClick={() => setTab("audit")}>
+                  {t("adminPage.auditLogs")}
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="border-border shadow-none">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{t("adminPage.reviewQueue")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-semibold tabular-nums">{pendingReviewCount}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t("adminPage.pendingReview")}
+                </p>
+                <Button
+                  size="sm"
+                  className="mt-4 rounded-xl"
+                  onClick={() => {
+                    setRoleFilter("user");
+                    setPaymentFilter("all");
+                    setTab("users");
+                  }}
+                >
+                  {t("adminPage.reviewProfiles")}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {activeTab === "users" && (
           <div className="space-y-5">
@@ -401,6 +540,9 @@ export default function AdminPage() {
                 <p className="mt-2 text-4xl font-semibold tracking-tight">
                   {analytics?.matchRate ?? 0}%
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("adminPage.matchRateHint")}
+                </p>
               </CardContent>
             </Card>
             <Card className="border-border shadow-none">
@@ -409,8 +551,148 @@ export default function AdminPage() {
                 <p className="mt-2 text-4xl font-semibold tracking-tight">
                   {analytics?.conversionRate ?? 0}%
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("adminPage.conversionRateHint")}
+                </p>
               </CardContent>
             </Card>
+
+            <Card className="border-border shadow-none">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{t("adminPage.genderSplit")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const gender = analytics?.genderBreakdown ?? {
+                    male: 0,
+                    female: 0,
+                    unknown: 0,
+                  };
+                  const entries = [
+                    { key: "male", label: t("adminPage.genderMale"), count: gender.male },
+                    { key: "female", label: t("adminPage.genderFemale"), count: gender.female },
+                    {
+                      key: "unknown",
+                      label: t("adminPage.genderUnknown"),
+                      count: gender.unknown,
+                    },
+                  ].filter((e) => e.count > 0);
+                  const max = Math.max(...entries.map((e) => e.count), 1);
+                  if (entries.length === 0) {
+                    return (
+                      <p className="text-sm text-muted-foreground">{t("adminPage.noAnalytics")}</p>
+                    );
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {entries.map((entry) => (
+                        <div key={entry.key} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">{entry.label}</span>
+                            <span className="text-muted-foreground">{entry.count}</span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-primary/80"
+                              style={{ width: `${(entry.count / max) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            <Card className="border-border shadow-none">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{t("adminPage.reviewSplit")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const review = analytics?.reviewBreakdown ?? {};
+                  const labels: Record<string, TranslationPath> = {
+                    incomplete: "adminPage.statusIncomplete",
+                    pending_review: "adminPage.statusPendingReview",
+                    approved: "adminPage.reviewApproved",
+                    rejected: "adminPage.statusRejected",
+                    suspended: "adminPage.statusBanned",
+                  };
+                  const displayLabel = (key: string) =>
+                    t(labels[key] ?? "adminPage.noAnalytics");
+                  const entries = Object.entries(review)
+                    .filter(([, count]) => count > 0)
+                    .sort(([, a], [, b]) => b - a);
+                  const max = Math.max(...entries.map(([, c]) => c), 1);
+                  if (entries.length === 0) {
+                    return (
+                      <p className="text-sm text-muted-foreground">{t("adminPage.noAnalytics")}</p>
+                    );
+                  }
+                  return (
+                    <div className="space-y-3">
+                      {entries.map(([key, count]) => (
+                        <div key={key} className="space-y-1.5">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">{displayLabel(key)}</span>
+                            <span className="text-muted-foreground">{count}</span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-foreground/70"
+                              style={{ width: `${(count / max) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            <Card className="border-border shadow-none sm:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{t("adminPage.monthlySignups")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const entries = Object.entries(analytics?.monthlySignups ?? {})
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .slice(-12);
+                  const max = Math.max(...entries.map(([, c]) => c), 1);
+                  if (entries.length === 0) {
+                    return (
+                      <p className="text-sm text-muted-foreground">{t("adminPage.noAnalytics")}</p>
+                    );
+                  }
+                  return (
+                    <div className="flex items-end gap-2 h-40">
+                      {entries.map(([month, count]) => (
+                        <div
+                          key={month}
+                          className="flex flex-1 flex-col items-center justify-end gap-1 min-w-0 h-full"
+                        >
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                            {count}
+                          </span>
+                          <div
+                            className="w-full max-w-10 rounded-t-md bg-primary/75"
+                            style={{ height: `${Math.max(8, (count / max) * 100)}%` }}
+                            title={`${month}: ${count}`}
+                          />
+                          <span className="text-[10px] text-muted-foreground truncate w-full text-center">
+                            {month.slice(5)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
             <Card className="border-border shadow-none sm:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">{t("adminPage.usersByCountry")}</CardTitle>
@@ -474,8 +756,44 @@ export default function AdminPage() {
                   rows={4}
                 />
               </div>
+              <div className="space-y-2">
+                <Label>{t("adminPage.announcementAudience")}</Label>
+                <div className="flex flex-wrap gap-2">
+                  {(["all", "paid", "trial", "unpaid"] as const).map((audience) => (
+                    <Button
+                      key={audience}
+                      type="button"
+                      size="sm"
+                      variant={announcement.audience === audience ? "default" : "outline"}
+                      className="rounded-full"
+                      onClick={() => setAnnouncement({ ...announcement, audience })}
+                    >
+                      {t(`adminPage.audience_${audience}` as TranslationPath)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("adminPage.announcementSchedule")}</Label>
+                <Input
+                  type="datetime-local"
+                  className="rounded-xl"
+                  value={announcement.scheduledForLocal}
+                  onChange={(e) =>
+                    setAnnouncement({
+                      ...announcement,
+                      scheduledForLocal: e.target.value,
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("adminPage.announcementScheduleHint")}
+                </p>
+              </div>
               <Button className="rounded-xl" onClick={() => void handleAnnouncement()}>
-                {t("adminPage.sendToAll")}
+                {announcement.scheduledForLocal
+                  ? t("adminPage.scheduleSend")
+                  : t("adminPage.sendToAll")}
               </Button>
             </CardContent>
           </Card>
@@ -531,55 +849,168 @@ export default function AdminPage() {
                   )}
                   <p className="text-xs text-muted-foreground">
                     {new Date(report.createdAt).toLocaleString()}
+                    {" · "}
+                    {t("adminPage.priority")}: {report.priority ?? "medium"}
                   </p>
                   {report.status === "open" && (
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-lg"
-                        onClick={() =>
-                          void updateReportStatus({
-                            reportId: report._id,
-                            status: "reviewed",
-                          })
+                    <div className="space-y-3">
+                      <Textarea
+                        className="rounded-xl text-sm"
+                        rows={2}
+                        placeholder={t("adminPage.adminNotesPh")}
+                        value={reportNotes[report._id] ?? ""}
+                        onChange={(e) =>
+                          setReportNotes((prev) => ({
+                            ...prev,
+                            [report._id]: e.target.value,
+                          }))
                         }
-                      >
-                        {t("adminPage.markReviewed")}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-lg"
-                        onClick={() =>
-                          void updateReportStatus({
-                            reportId: report._id,
-                            status: "dismissed",
-                          })
-                        }
-                      >
-                        {t("adminPage.dismissReport")}
-                      </Button>
-                      {report.reportedProfileId && !report.reportedBanned && (
+                      />
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
-                          variant="destructive"
+                          variant="outline"
                           className="rounded-lg"
                           onClick={() =>
-                            void banUser({
-                              profileId: report.reportedProfileId!,
-                              banned: true,
-                            })
+                            void updateReportStatus({
+                              reportId: report._id,
+                              status: "reviewed",
+                              priority: "high",
+                              adminNotes: reportNotes[report._id],
+                              resolution: "reviewed",
+                            }).then(() => toast.success(t("adminPage.reportUpdated")))
                           }
                         >
-                          {t("adminPage.banFromReport")}
+                          {t("adminPage.markReviewed")}
                         </Button>
-                      )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="rounded-lg"
+                          onClick={() =>
+                            void updateReportStatus({
+                              reportId: report._id,
+                              status: "dismissed",
+                              priority: "low",
+                              adminNotes: reportNotes[report._id],
+                              resolution: "dismissed",
+                            }).then(() => toast.success(t("adminPage.reportUpdated")))
+                          }
+                        >
+                          {t("adminPage.dismiss")}
+                        </Button>
+                        {report.reportedProfileId && !report.reportedBanned && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="rounded-lg"
+                            onClick={() =>
+                              void banUser({
+                                profileId: report.reportedProfileId!,
+                                banned: true,
+                              }).then(() => toast.success(t("adminPage.userBanned")))
+                            }
+                          >
+                            {t("adminPage.banUser")}
+                          </Button>
+                        )}
+                      </div>
                     </div>
+                  )}
+                  {report.adminNotes && report.status !== "open" && (
+                    <p className="text-xs text-muted-foreground border-t border-border pt-2">
+                      {t("adminPage.adminNotes")}: {report.adminNotes}
+                    </p>
                   )}
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {activeTab === "audit" && (
+          <div className="space-y-3">
+            {auditLogs === undefined ? (
+              <Skeleton className="h-40 w-full rounded-2xl" />
+            ) : auditLogs.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border py-14 text-center">
+                <ScrollText className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">{t("adminPage.noAuditLogs")}</p>
+              </div>
+            ) : (
+              auditLogs.map((log) => (
+                <div
+                  key={log._id}
+                  className="rounded-2xl border border-border bg-card p-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">
+                      {log.actorName}{" "}
+                      <span className="font-normal text-muted-foreground">· {log.action}</span>
+                    </p>
+                    {log.targetName && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {t("adminPage.auditTarget")}: {log.targetName}
+                      </p>
+                    )}
+                    {log.metadata && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate">{log.metadata}</p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground shrink-0">
+                    {new Date(log.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card className="border-border shadow-none">
+              <CardHeader>
+                <CardTitle className="text-base">{t("adminPage.settingsPricing")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p>
+                  <span className="text-muted-foreground">{t("adminPage.basicPlan")}: </span>
+                  <span className="font-semibold">${REGISTRATION_PRICE}</span>
+                </p>
+                <p>
+                  <span className="text-muted-foreground">{t("adminPage.premiumPlan")}: </span>
+                  <span className="font-semibold">${PERSONAL_SUPPORT_PRICE}</span>
+                </p>
+                <p>
+                  <span className="text-muted-foreground">{t("adminPage.trialLength")}: </span>
+                  <span className="font-semibold">
+                    {TRIAL_DAYS} {t("adminPage.days")}
+                  </span>
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-border shadow-none">
+              <CardHeader>
+                <CardTitle className="text-base">{t("adminPage.settingsSupport")}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  {SUPPORT_EMAIL}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <a
+                    href={WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {WHATSAPP_DISPLAY}
+                  </a>
+                </p>
+              </CardContent>
+            </Card>
           </div>
         )}
 

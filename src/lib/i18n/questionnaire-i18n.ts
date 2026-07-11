@@ -65,6 +65,74 @@ const STEP_TEXT: Record<number, { title: Bilingual; description: Bilingual }> = 
   },
 };
 
+/** Why each answer helps matching — keyed by FieldConfig.name. */
+const FIELD_WHY: Record<string, Bilingual> = {
+  age: {
+    en: "Helps us suggest partners in a realistic age range for marriage.",
+    so: "Waxay naga caawisaa inaannu soo jeedinno lammaane da'doodu ku habboon tahay guurka.",
+  },
+  country: {
+    en: "Location matters for meeting families and planning a shared life.",
+    so: "Goobtu waa muhiim marka qoysaska la kulmayo iyo qorsheynta nolosha wadaagga.",
+  },
+  city: {
+    en: "City helps members understand proximity and lifestyle context.",
+    so: "Magaaladu waxay ka caawisaa xubnaha inay fahmaan u dhawaanshaha iyo qaab-nololeedka.",
+  },
+  prayerFrequency: {
+    en: "Faith practice is one of the strongest signals for a compatible marriage.",
+    so: "Cibaadadu waa mid ka mid ah calaamadaha ugu xooggan ee guur iswaafajin leh.",
+  },
+  wearsHijab: {
+    en: "Helps match expectations around religious practice and modesty.",
+    so: "Waxay caawisaa iswaafajinta rajooyinka ku saabsan cibaadada iyo xishoodka.",
+  },
+  hasBeard: {
+    en: "A simple preference signal some members care about in a spouse.",
+    so: "Calaamad doorbid ah oo xubnaha qaar ay ka daneynayaan lammaanaha.",
+  },
+  education: {
+    en: "Education often shapes values, conversation, and life goals.",
+    so: "Waxbarashadu waxay inta badan qaabaysaa qiyamka, wadahadalka, iyo himilooyinka nolosha.",
+  },
+  occupation: {
+    en: "Shows readiness and lifestyle for building a household together.",
+    so: "Waxay muujinaysaa diyaargarowga iyo qaab-nololeedka dhisidda qoys.",
+  },
+  maritalStatus: {
+    en: "Honesty here protects everyone and sets clear expectations.",
+    so: "Daacadnimadu halkan waxay ilaalinaysaa qof kasta oo waxay dejinaysaa rajooyin cad.",
+  },
+  marriageTimeline: {
+    en: "Aligning on when you want to marry reduces mismatched expectations.",
+    so: "Iswaafajinta goorta aad rabto inaad guursato waxay yareynaysaa rajooyin khaldan.",
+  },
+  wantChildren: {
+    en: "Family plans are central to a lasting marriage conversation.",
+    so: "Qorshayaasha qoysku waa udub-dhexaadka wadahadalka guurka waara.",
+  },
+  minAge: {
+    en: "Sets the age window you are open to considering.",
+    so: "Waxay dejinaysaa da'da aad diyaar u tahay inaad tixgeliso.",
+  },
+  maxAge: {
+    en: "Sets the age window you are open to considering.",
+    so: "Waxay dejinaysaa da'da aad diyaar u tahay inaad tixgeliso.",
+  },
+  preferredCountries: {
+    en: "Narrows discover to places you are willing to connect with.",
+    so: "Waxay ku xaddidaysaa raadinta meelaha aad diyaar u tahay inaad kula xiriirto.",
+  },
+  partnerHijabLevel: {
+    en: "Matches your preference for a spouse’s religious presentation.",
+    so: "Waxay iswaafajinaysaa doorbidkaaga muuqaalka diineed ee lammaanaha.",
+  },
+  bio: {
+    en: "A short introduction helps serious members start a respectful conversation.",
+    so: "Hordhac gaaban ayaa ka caawiya xubnaha dhabta ah inay bilaabaan wadahadal ixtiraam leh.",
+  },
+};
+
 /** Question labels keyed by FieldConfig.name. */
 const FIELD_LABELS: Record<string, Bilingual> = {
   gender: { en: "I am a", so: "Waxaan ahay" },
@@ -687,18 +755,34 @@ const UI_TEXT = {
     en: "Part 2 — What you're looking for in a spouse",
     so: "Qaybta 2aad — Waxa aad ka doonayso lamaanahaaga",
   },
-  part1AboutPrefix: {
-    en: "Part 1 — About you",
-    so: "Qaybta 1aad — Wax kugu saabsan",
+  profileCompleteFooter: {
+    en: "{p}% complete · Auto-saves as you go",
+    so: "{p}% dhammaystiran · Si toos ah ayuu u kaydsanayaa",
+  },
+  progressStepOf: {
+    en: "Step {step} of {total}",
+    so: "Tallaabada {step} ee {total}",
+  },
+  progressMinutesLeft: {
+    en: "About {m} min remaining",
+    so: "Qiyaastii {m} daqiiqo ayaa hadhay",
+  },
+  progressAlmostDone: {
+    en: "Almost done",
+    so: "Ku dhow inaad dhammayso",
+  },
+  fieldWhyPrefix: {
+    en: "Why we ask",
+    so: "Maxaan u weydiinaynaa",
   },
   badgeReview: { en: "Review", so: "Dib u eegis" },
   badgePhoto: { en: "Photo", so: "Sawir" },
   badgePart2: { en: "Part 2", so: "Qaybta 2aad" },
   badgeQuestionnaire: { en: "Questionnaire", so: "Su'aalo" },
   stepWord: { en: "Step", so: "Tallaabo" },
-  profileCompleteFooter: {
-    en: "{p}% profile complete · Auto-saves as you go",
-    so: "{p}% profile-ka ayaa dhammaystiran · Si toos ah ayuu u kaydsanayaa",
+  part1AboutPrefix: {
+    en: "Part 1 — About you",
+    so: "Qaybta 1aad — Wax kugu saabsan",
   },
   part2CalloutTitle: {
     en: "Part 2: What you want in a spouse",
@@ -735,24 +819,24 @@ const UI_TEXT = {
     so: "Sawirka waa la cusboonaysiiyay.",
   },
   profileCompleteTitle: {
-    en: "Profile Complete",
-    so: "Profile-ku waa Dhammaystiran",
+    en: "Profile submitted",
+    so: "Profile-ka waa la gudbiyay",
   },
   profileReadySub: {
-    en: "Your profile is ready. Start browsing matches when you find someone you like.",
-    so: "Profile-kaagu waa diyaar. Bilow inaad eegto isbarbardhigga markaad qof jeclaato.",
+    en: "Your questionnaire is complete. An admin will review your profile shortly — you will be notified when you can browse matches.",
+    so: "Su'aalaha waa dhammeeyeen. Admin ayaa dhawaan dib u eegi doona profile-kaaga — waa lagu ogeysiin doonaa markaad eegi karto isbarbardhigga.",
   },
   profileReadyPaySub: {
-    en: "Your profile is ready. Start browsing matches — enjoy your free premium week.",
-    so: "Profile-kaagu waa diyaar. Bilow inaad eegto isbarbardhigga — ku raaxayso toddobaadkaaga premium ee bilaashka ah.",
+    en: "Your questionnaire is complete. Enjoy your free trial while we review your profile — you will be notified when matches unlock.",
+    so: "Su'aalaha waa dhammeeyeen. Ku raaxayso tijaabada bilaashka ah inta aan dib u eegno profile-kaaga — waa lagu ogeysiin doonaa marka isbarbardhiggu furmo.",
   },
   welcomeQuestionnaireTitle: {
-    en: "Welcome! Let's build your profile",
-    so: "Ku soo dhawoow! Aan dhisno profile-kaaga",
+    en: "Welcome! Let's build your marriage profile",
+    so: "Ku soo dhawoow! Aan dhisno profile-kaaga guurka",
   },
   welcomeQuestionnaireSub: {
-    en: "Answer one question at a time. Your progress saves automatically — you can leave and come back anytime.",
-    so: "Hal su'aal marba ka jawaab. Horumarkaaga si toos ah ayaa loo kaydiyaa — waad ka bixi kartaa oo dib ugu soo noqon kartaa.",
+    en: "Answer one question at a time. Progress saves automatically — leave and return anytime. This usually takes about 8–12 minutes.",
+    so: "Hal su'aal marba ka jawaab. Horumarka si toos ah ayaa loo kaydiyaa — waad ka bixi kartaa oo dib ugu soo noqon kartaa. Badanaa waxay qaadataa 8–12 daqiiqo.",
   },
   viewMatches: { en: "View Matches", so: "Eeg Kuwa Ku Habboon" },
   myProfile: { en: "My Profile", so: "Profile-kayga" },
@@ -794,6 +878,11 @@ export function useQuestionnaireI18n() {
     [locale]
   );
 
+  const fieldWhy = useCallback(
+    (name: string) => FIELD_WHY[name]?.[locale as Locale] ?? null,
+    [locale]
+  );
+
   const optionLabel = useCallback(
     (value: string) => OPTION_LABELS[value]?.[locale as Locale] ?? value,
     [locale]
@@ -814,6 +903,7 @@ export function useQuestionnaireI18n() {
     stepTitle,
     stepDescription,
     fieldLabel,
+    fieldWhy,
     optionLabel,
     reviewLabel,
     ui,

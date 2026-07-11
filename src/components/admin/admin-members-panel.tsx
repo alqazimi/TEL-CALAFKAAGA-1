@@ -32,6 +32,7 @@ import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { WHATSAPP_URL } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
+import { resolveReviewStatus } from "@/lib/review-status";
 import { cn } from "@/lib/utils";
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
@@ -61,6 +62,19 @@ function memberStatus(user: AdminUser): {
     return {
       labelKey: "adminPage.statusIncomplete",
       className: "bg-orange-100 text-orange-800 dark:bg-orange-950/50 dark:text-orange-200",
+    };
+  }
+  const review = resolveReviewStatus(user);
+  if (review === "rejected") {
+    return {
+      labelKey: "adminPage.statusRejected",
+      className: "bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300",
+    };
+  }
+  if (review === "pending_review") {
+    return {
+      labelKey: "adminPage.statusPendingReview",
+      className: "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
     };
   }
   if (!user.hasPaid) {
@@ -108,6 +122,7 @@ export function AdminMembersPanel({
 }: AdminMembersPanelProps) {
   const { t } = useTranslation();
   const approveUser = useMutation(api.admin.approveUser);
+  const rejectUser = useMutation(api.admin.rejectUser);
   const banUser = useMutation(api.admin.banUser);
   const deleteUser = useMutation(api.admin.deleteUser);
   const setUserRole = useMutation(api.admin.setUserRole);
@@ -116,7 +131,17 @@ export function AdminMembersPanel({
   const canApproveMember = (user: AdminUser) =>
     !!user.questionnaireComplete &&
     !!user.profileImageId &&
-    !!user.phone?.trim();
+    !!user.phone?.trim() &&
+    resolveReviewStatus(user) !== "approved";
+
+  const canRejectMember = (user: AdminUser) => {
+    const review = resolveReviewStatus(user);
+    return (
+      !!user.questionnaireComplete &&
+      !isStaffRole(user.role) &&
+      (review === "pending_review" || review === "approved")
+    );
+  };
 
   const runAction = async (
     profileId: Id<"profiles">,
@@ -305,7 +330,9 @@ export function AdminMembersPanel({
                       </Button>
                     )}
 
-                    {!user.approved && !isStaffRole(user.role) && (
+                    {resolveReviewStatus(user) !== "approved" &&
+                      !isStaffRole(user.role) &&
+                      !!user.questionnaireComplete && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -326,6 +353,32 @@ export function AdminMembersPanel({
                       >
                         <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
                         {t("adminPage.approveShort")}
+                      </Button>
+                    )}
+
+                    {canRejectMember(user) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-9 rounded-lg"
+                        disabled={busy}
+                        title={t("adminPage.rejectUser")}
+                        onClick={() => {
+                          if (
+                            !window.confirm(
+                              t("adminPage.rejectConfirm", { name: user.name })
+                            )
+                          ) {
+                            return;
+                          }
+                          void runAction(
+                            user._id,
+                            () => rejectUser({ profileId: user._id }),
+                            t("adminPage.rejectSuccess")
+                          );
+                        }}
+                      >
+                        {t("adminPage.rejectShort")}
                       </Button>
                     )}
 

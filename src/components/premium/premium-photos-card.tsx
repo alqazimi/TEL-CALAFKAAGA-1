@@ -13,6 +13,7 @@ import { LazyImage } from "@/components/ui/lazy-image";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 import { isPremiumMember } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
+import { prepareImageForUpload } from "@/lib/strip-image-exif";
 import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 
 interface PremiumPhotosCardProps {
@@ -43,11 +44,12 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
 
     setUploading(true);
     try {
+      const prepared = await prepareImageForUpload(file);
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": prepared.type },
+        body: prepared,
       });
       const { storageId } = await result.json();
       await registerUpload({ storageId });

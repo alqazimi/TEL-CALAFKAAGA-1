@@ -13,7 +13,8 @@ export const STAFF_PROFILE_COMPLETION_PATCH = {
   registrationComplete: true as const,
   questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
   approved: true as const,
-  verified: true as const,
+  verified: false as const,
+  reviewStatus: "approved" as const,
   hasPaid: true as const,
 };
 

@@ -50,11 +50,14 @@ const STAFF_NAV: {
   labelKey: TranslationPath;
   icon: typeof Users;
 }[] = [
+  { tab: "dashboard", labelKey: "adminPage.dashboard", icon: LayoutDashboard },
   { tab: "users", labelKey: "adminPage.users", icon: Users },
-  { tab: "payments", labelKey: "adminPage.payments", icon: CreditCard },
-  { tab: "analytics", labelKey: "adminPage.analytics", icon: TrendingUp },
   { tab: "reports", labelKey: "adminPage.reports", icon: Flag },
+  { tab: "payments", labelKey: "adminPage.payments", icon: CreditCard },
   { tab: "announcements", labelKey: "adminPage.announcements", icon: Megaphone },
+  { tab: "analytics", labelKey: "adminPage.analytics", icon: TrendingUp },
+  { tab: "audit", labelKey: "adminPage.auditLogs", icon: ClipboardList },
+  { tab: "settings", labelKey: "adminPage.settings", icon: Shield },
 ];
 
 export function DashboardSidebar() {
@@ -144,7 +147,7 @@ export function DashboardSidebar() {
               {STAFF_NAV.map((item) => {
                 const Icon = item.icon;
                 const onAdmin = pathname.startsWith("/admin");
-                const currentTab = searchParams.get("tab") ?? "users";
+                const currentTab = searchParams.get("tab") ?? "dashboard";
                 const isActive = onAdmin && currentTab === item.tab;
                 return (
                   <Link

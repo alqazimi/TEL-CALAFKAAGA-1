@@ -67,6 +67,8 @@ export async function createUserProfile(
     hasPaid: false,
     banned: false,
     approved: false,
+    reviewStatus: "incomplete",
+    photoVisibility: "everyone",
   });
 
   await ctx.db.insert("preferences", {
@@ -135,7 +137,8 @@ export async function ensureUserProfile(
         backfill.registrationComplete = true;
       }
       if (!existing.approved) backfill.approved = true;
-      if (!existing.verified) backfill.verified = true;
+      if (!existing.verified) backfill.verified = false;
+      if (existing.reviewStatus !== "approved") backfill.reviewStatus = "approved";
       if (!existing.hasPaid) backfill.hasPaid = true;
     }
     if (Object.keys(backfill).length > 0) {

@@ -62,6 +62,14 @@ export interface Profile {
   isPremium?: boolean;
   banned: boolean;
   approved: boolean;
+  reviewStatus?:
+    | "incomplete"
+    | "pending_review"
+    | "approved"
+    | "rejected"
+    | "suspended";
+  photoVisibility?: "everyone" | "matches" | "private";
+  privateImageIds?: Id<"_storage">[];
   imageUrl?: string | null;
   paidCents?: number;
   email?: string | null;
@@ -80,6 +88,8 @@ export interface MatchResult {
   prayerFrequency?: string;
   imageUrl: string | null;
   additionalImageUrls?: string[];
+  photoHidden?: boolean;
+  photoVisibility?: "everyone" | "matches" | "private";
   score: number;
   liked?: boolean;
   shortlisted?: boolean;
@@ -98,9 +108,13 @@ export interface Conversation {
   matchId: Id<"matches">;
   conversationId?: Id<"conversations">;
   chatUnlocked: boolean;
+  status?: "active" | "archived" | "unmatched";
+  isNew?: boolean;
+  score?: number;
   profile: {
     name: string;
     imageUrl: string | null;
+    photoHidden?: boolean;
     userId: Id<"users">;
     verified?: boolean;
     hasPaid?: boolean;
@@ -154,6 +168,7 @@ export interface AdminStats {
   paidBasicCount: number;
   paidPremiumCount: number;
   unpaidCount: number;
+  trialCount?: number;
   pendingApproval: number;
   bannedUsers: number;
   isOwner: boolean;
@@ -176,6 +191,11 @@ export interface AdminPayment {
 export interface AdminAnalytics {
   countryBreakdown: Record<string, number>;
   monthlySignups: Record<string, number>;
+  genderBreakdown?: Record<string, number>;
+  reviewBreakdown?: Record<string, number>;
+  trialMembers?: number;
+  paidMembers?: number;
+  memberCount?: number;
   matchRate: number;
   conversionRate: number;
 }
@@ -191,5 +211,18 @@ export interface MutualMatch {
   conversationId?: Id<"conversations">;
   score: number;
   chatUnlocked: boolean;
-  profile: (Profile & { userId: Id<"users"> }) | null;
+  status?: "active" | "archived" | "unmatched";
+  isNew?: boolean;
+  lastMessageAt?: number;
+  profile: {
+    name: string;
+    age?: number;
+    country?: string;
+    city?: string;
+    imageUrl: string | null;
+    photoHidden?: boolean;
+    userId: Id<"users">;
+    reviewStatus?: string;
+    approved?: boolean;
+  } | null;
 }

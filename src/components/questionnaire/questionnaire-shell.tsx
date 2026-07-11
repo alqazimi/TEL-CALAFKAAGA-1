@@ -15,6 +15,10 @@ interface QuestionnaireShellProps {
   children: ReactNode;
   progress: number;
   phaseLabel: string;
+  /** e.g. "Step 3 of 10" */
+  stepLabel?: string;
+  /** e.g. "About 4 min remaining" */
+  timeLabel?: string;
   progressHint?: string;
   onBack?: () => void;
   className?: string;
@@ -24,6 +28,8 @@ export function QuestionnaireShell({
   children,
   progress,
   phaseLabel,
+  stepLabel,
+  timeLabel,
   progressHint,
   onBack,
   className,
@@ -32,6 +38,7 @@ export function QuestionnaireShell({
   const router = useRouter();
   const { t } = useTranslation();
   const stuck = useLoadingTimeout(isLoading, 8_000);
+  const clamped = Math.min(100, Math.max(0, progress));
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -47,7 +54,7 @@ export function QuestionnaireShell({
             <LoadingRecovery stuck />
           ) : (
             <div className="space-y-6">
-              <Skeleton className="h-1 w-full rounded-none" />
+              <Skeleton className="h-1.5 w-full rounded-full" />
               <Skeleton className="h-6 w-32 mx-auto" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-64 w-full rounded-2xl" />
@@ -65,10 +72,10 @@ export function QuestionnaireShell({
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
-      <div className="h-1 w-full bg-muted shrink-0">
+      <div className="h-1.5 w-full bg-muted shrink-0" role="progressbar" aria-valuenow={clamped} aria-valuemin={0} aria-valuemax={100}>
         <div
-          className="h-full bg-primary transition-all duration-500 ease-out"
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+          className="h-full bg-primary transition-all duration-500 ease-out rounded-r-full"
+          style={{ width: `${clamped}%` }}
         />
       </div>
 
@@ -88,16 +95,31 @@ export function QuestionnaireShell({
           ) : (
             <div className="w-10 shrink-0" />
           )}
-          <p className="flex-1 text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground truncate">
-            {phaseLabel}
-          </p>
-          <div className="w-[4.5rem] shrink-0" aria-hidden />
+          <div className="flex-1 text-center min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground truncate">
+              {phaseLabel}
+            </p>
+            {stepLabel ? (
+              <p className="text-[11px] text-foreground/70 mt-0.5 truncate">{stepLabel}</p>
+            ) : null}
+          </div>
+          <div className="w-[4.5rem] shrink-0 text-right">
+            <span className="text-xs font-semibold tabular-nums text-primary">
+              {clamped}%
+            </span>
+          </div>
         </div>
-        {progressHint ? (
-          <p className="border-t border-border/40 py-2 text-center text-xs text-muted-foreground">
-            {progressHint}
-          </p>
-        ) : null}
+        {(progressHint || timeLabel) && (
+          <div className="border-t border-border/40 py-2 px-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            {progressHint ? <span>{progressHint}</span> : null}
+            {progressHint && timeLabel ? (
+              <span className="text-border" aria-hidden>
+                ·
+              </span>
+            ) : null}
+            {timeLabel ? <span>{timeLabel}</span> : null}
+          </div>
+        )}
       </header>
 
       <main

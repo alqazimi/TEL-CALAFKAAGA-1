@@ -28,6 +28,7 @@ export async function sendResendEmail(args: {
   to: string;
   subject: string;
   text: string;
+  html?: string;
 }): Promise<void> {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -40,6 +41,7 @@ export async function sendResendEmail(args: {
       to: [args.to],
       subject: args.subject,
       text: args.text,
+      ...(args.html ? { html: args.html } : {}),
     }),
   });
 

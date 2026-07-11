@@ -151,3 +151,47 @@ export const stripLegacyQuestionnaireFields = internalMutation({
     return { preferencesUpdated, profilesUpdated };
   },
 });
+
+/**
+ * Backfill independent `reviewStatus` from legacy approved/banned/questionnaire flags.
+ * Safe to run multiple times. Does not change approved/verified booleans.
+ */
+export const backfillReviewStatus = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let updated = 0;
+
+    for (const profile of profiles) {
+      if (profile.reviewStatus) continue;
+
+      let reviewStatus:
+        | "incomplete"
+        | "pending_review"
+        | "approved"
+        | "rejected"
+        | "suspended";
+
+      if (profile.banned) {
+        reviewStatus = "suspended";
+      } else if (isStaffRole(profile.role) || profile.approved) {
+        reviewStatus = "approved";
+      } else if (profile.questionnaireComplete) {
+        // Legacy auto-approved members already have approved=true above.
+        // Remaining complete-but-unapproved → pending.
+        reviewStatus = "pending_review";
+      } else {
+        reviewStatus = "incomplete";
+      }
+
+      await ctx.db.patch(profile._id, {
+        reviewStatus,
+        // Clear misleading verified flag; approval is the trust gate.
+        ...(profile.verified ? { verified: false } : {}),
+      });
+      updated++;
+    }
+
+    return { updated, total: profiles.length };
+  },
+});

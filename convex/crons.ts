@@ -18,4 +18,11 @@ crons.interval(
   {}
 );
 
+crons.interval(
+  "deliver scheduled announcements",
+  { minutes: 5 },
+  internal.admin.deliverScheduledAnnouncements,
+  {}
+);
+
 export default crons;

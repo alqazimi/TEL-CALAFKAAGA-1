@@ -16,10 +16,12 @@ import {
   type SecondaryMatchList,
 } from "@/components/matches/match-lists-view";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
+import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
+import { needsApprovalGate } from "@/lib/review-status";
 import { useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isMemberProfileReady, isProfileQueriesLoading } from "@/lib/profile-progress";
 import { isTrialExpired } from "@/lib/trial";
@@ -50,7 +52,8 @@ export default function LikesPage() {
     !!profile &&
     !queriesLoading &&
     (profile.questionnaireComplete || isMemberProfileReady(profile, preferences));
-  const canQuery = profileReady && hasPaidAccess(profile);
+  const canQuery =
+    profileReady && hasPaidAccess(profile) && !needsApprovalGate(profile);
   const isPremium = isPremiumMember(profile);
 
   const matchLists = useQuery(
@@ -156,6 +159,14 @@ export default function LikesPage() {
                 })
           }
         />
+      </DashboardLayout>
+    );
+  }
+
+  if (profile && needsApprovalGate(profile)) {
+    return (
+      <DashboardLayout>
+        <PendingApprovalGate isPremium={isPremium} />
       </DashboardLayout>
     );
   }

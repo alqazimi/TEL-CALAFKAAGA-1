@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation } from "convex/react";
 import { useForm } from "react-hook-form";
@@ -9,12 +9,15 @@ import { z } from "zod";
 import { toast } from "sonner";
 import {
   Camera,
-  ChevronDown,
   Crown,
+  Eye,
+  EyeOff,
+  Lock,
   Mail,
   Pencil,
   Save,
   Shield,
+  Users,
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -26,6 +29,7 @@ import { PhoneNumberInput } from "@/components/ui/phone-number-input";
 import { FormField } from "@/components/ui/form-field";
 import { Badge } from "@/components/ui/badge";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProfilePhotoPreview } from "@/components/profile/profile-photo-preview";
 import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
 import { TrustBadges } from "@/components/profile/trust-badges";
@@ -39,6 +43,7 @@ import { isOwnerRole, isPremiumMember } from "@/lib/access";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 import { isValidContactPhone } from "@/lib/phone";
 import { useTranslation } from "@/lib/i18n/context";
+import { prepareImageForUpload } from "@/lib/strip-image-exif";
 import { cn } from "@/lib/utils";
 
 const profileSchema = z.object({
@@ -50,48 +55,6 @@ const profileSchema = z.object({
 });
 
 type ProfileForm = z.infer<typeof profileSchema>;
-
-function ProfileSection({
-  id,
-  title,
-  description,
-  defaultOpen = true,
-  children,
-}: {
-  id: string;
-  title: string;
-  description?: string;
-  defaultOpen?: boolean;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <section className="border-b border-border last:border-0">
-      <button
-        type="button"
-        id={id}
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-muted/40 transition-colors"
-        aria-expanded={open}
-      >
-        <div>
-          <h3 className="text-base font-semibold">{title}</h3>
-          {description && (
-            <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
-          )}
-        </div>
-        <ChevronDown
-          className={cn(
-            "h-5 w-5 shrink-0 text-muted-foreground transition-transform",
-            open && "rotate-180"
-          )}
-        />
-      </button>
-      {open && <div className="px-5 pb-5 pt-0 space-y-4">{children}</div>}
-    </section>
-  );
-}
 
 interface ProfileEditScreenProps {
   profile: Profile & { imageUrl?: string | null; additionalImageUrls?: string[] };
@@ -117,9 +80,11 @@ export function ProfileEditScreen({
   const [uploading, setUploading] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
 
   const isPremium = isPremiumMember(profile);
   const isOwner = isOwnerRole(profile.role);
+  const photoVisibility = profile.photoVisibility ?? "everyone";
   const extraUrls = profile.additionalImageUrls ?? [];
   const extraIds = profile.additionalImageIds ?? [];
   const allPhotoUrls = [profile.imageUrl, ...extraUrls].filter(
@@ -151,11 +116,12 @@ export function ProfileEditScreen({
     if (!file) return;
     setUploading(true);
     try {
+      const prepared = await prepareImageForUpload(file);
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": prepared.type },
+        body: prepared,
       });
       const { storageId } = await result.json();
       await registerUpload({ storageId });
@@ -173,11 +139,12 @@ export function ProfileEditScreen({
     if (!file) return;
     setUploading(true);
     try {
+      const prepared = await prepareImageForUpload(file);
       const uploadUrl = await generateUploadUrl();
       const result = await fetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": prepared.type },
+        body: prepared,
       });
       const { storageId } = await result.json();
       await registerUpload({ storageId });
@@ -199,6 +166,41 @@ export function ProfileEditScreen({
       toast.error(t("profilePage.updateFailed"));
     }
   };
+
+  const setPhotoVisibility = async (
+    value: "everyone" | "matches" | "private"
+  ) => {
+    setSavingPrivacy(true);
+    try {
+      await updateProfile({ photoVisibility: value });
+      toast.success(t("profilePage.privacyUpdated"));
+    } catch {
+      toast.error(t("profilePage.updateFailed"));
+    } finally {
+      setSavingPrivacy(false);
+    }
+  };
+
+  const privacyOptions = [
+    {
+      value: "everyone" as const,
+      icon: Eye,
+      title: t("profilePage.photoEveryone"),
+      desc: t("profilePage.photoEveryoneDesc"),
+    },
+    {
+      value: "matches" as const,
+      icon: Users,
+      title: t("profilePage.photoMatches"),
+      desc: t("profilePage.photoMatchesDesc"),
+    },
+    {
+      value: "private" as const,
+      icon: EyeOff,
+      title: t("profilePage.photoPrivate"),
+      desc: t("profilePage.photoPrivateDesc"),
+    },
+  ];
 
   return (
     <>
@@ -297,51 +299,84 @@ export function ProfileEditScreen({
           )}
         </div>
 
-        <CardContent className="p-0">
-          <ProfileSection
-            id="account"
-            title={t("profilePage.editProfile")}
-            description={t("profilePage.accountSectionDesc")}
-          >
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <FormField label={t("profilePage.name")} htmlFor="name" error={errors.name?.message} required>
-                <Input id="name" {...register("name")} />
-              </FormField>
-              <FormField
-                label={t("profilePage.phone")}
-                htmlFor="phone"
-                hint={t("profilePage.phoneHint")}
-                error={errors.phone ? t("validation.phoneInvalid") : undefined}
-              >
-                <PhoneNumberInput
-                  value={phoneValue}
-                  profileCountry={profile.country}
-                  placeholder={t("profilePage.phonePlaceholder")}
-                  large={false}
-                  onChange={(value) =>
-                    setValue("phone", value, { shouldDirty: true, shouldValidate: true })
-                  }
-                />
-              </FormField>
-              <Button type="submit" disabled={isSubmitting} size="sm">
-                <Save className="h-4 w-4 mr-2" />
-                {isSubmitting ? t("profilePage.saving") : t("profilePage.saveChanges")}
-              </Button>
-            </form>
-          </ProfileSection>
+        <CardContent className="p-4 sm:p-5">
+          <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 h-auto gap-1">
+              <TabsTrigger value="profile">{t("profilePage.tabProfile")}</TabsTrigger>
+              <TabsTrigger value="photos">{t("profilePage.tabPhotos")}</TabsTrigger>
+              <TabsTrigger value="privacy">{t("profilePage.tabPrivacy")}</TabsTrigger>
+              <TabsTrigger value="account">{t("profilePage.tabAccount")}</TabsTrigger>
+            </TabsList>
 
-          {!isStaff && profile.questionnaireComplete && (
-            <>
-              <ProfileSection
-                id="photos"
-                title={t("premium.photosTitle")}
-                description={
-                  isPremium
-                    ? t("premium.photosDesc", { max: MAX_PROFILE_PHOTOS })
-                    : t("premium.photosLockedDesc")
-                }
-              >
-                {isPremium ? (
+            <TabsContent value="profile" className="mt-5 space-y-5">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <FormField label={t("profilePage.name")} htmlFor="name" error={errors.name?.message} required>
+                  <Input id="name" {...register("name")} />
+                </FormField>
+                <FormField
+                  label={t("profilePage.phone")}
+                  htmlFor="phone"
+                  hint={t("profilePage.phoneHint")}
+                  error={errors.phone ? t("validation.phoneInvalid") : undefined}
+                >
+                  <PhoneNumberInput
+                    value={phoneValue}
+                    profileCountry={profile.country}
+                    placeholder={t("profilePage.phonePlaceholder")}
+                    large={false}
+                    onChange={(value) =>
+                      setValue("phone", value, { shouldDirty: true, shouldValidate: true })
+                    }
+                  />
+                </FormField>
+                <Button type="submit" disabled={isSubmitting} size="sm">
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSubmitting ? t("profilePage.saving") : t("profilePage.saveChanges")}
+                </Button>
+              </form>
+
+              {!isStaff && profile.questionnaireComplete && (
+                <div className="rounded-2xl border border-border p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold">{t("profilePage.profileDetails")}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {t("profilePage.detailsSectionDesc")}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href="/questionnaire?edit=1">
+                        <Pencil className="h-4 w-4 mr-2" />
+                        {t("profilePage.editDetails")}
+                      </Link>
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><span className="text-muted-foreground">{t("profilePage.age")}</span><p className="font-medium">{profile.age}</p></div>
+                    <div><span className="text-muted-foreground">{t("profilePage.height")}</span><p className="font-medium">{profile.height} cm</p></div>
+                    <div><span className="text-muted-foreground">{t("profilePage.country")}</span><p className="font-medium">{profile.country}</p></div>
+                    <div><span className="text-muted-foreground">{t("profilePage.city")}</span><p className="font-medium">{profile.city}</p></div>
+                    <div><span className="text-muted-foreground">{t("profilePage.education")}</span><p className="font-medium">{profile.education}</p></div>
+                    <div><span className="text-muted-foreground">{t("profilePage.occupation")}</span><p className="font-medium">{profile.occupation}</p></div>
+                  </div>
+                </div>
+              )}
+
+              {!isStaff && profile.questionnaireComplete && (
+                <>
+                  <PremiumSupportCard
+                    isPremium={isPremium}
+                    hasPaid={!!profile.hasPaid}
+                    advisorReviewed={profile.advisorReviewed}
+                  />
+                  <PremiumWaliCard profile={profile} />
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="photos" className="mt-5 space-y-4">
+              {!isStaff && profile.questionnaireComplete ? (
+                isPremium ? (
                   <>
                     <div className="grid grid-cols-4 gap-2">
                       {extraUrls.map((url, index) => (
@@ -390,68 +425,69 @@ export function ProfileEditScreen({
                     </p>
                   </>
                 ) : (
-                  <PremiumUpgradeButton variant="outline" className="w-full" />
-                )}
-              </ProfileSection>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">{t("premium.photosLockedDesc")}</p>
+                    <PremiumUpgradeButton variant="outline" className="w-full" />
+                  </div>
+                )
+              ) : (
+                <p className="text-sm text-muted-foreground">{t("profilePage.photosNeedProfile")}</p>
+              )}
+            </TabsContent>
 
-              <ProfileSection id="premium" title={t("premium.activeTitle")} defaultOpen={!isPremium}>
-                <PremiumSupportCard
-                  isPremium={isPremium}
-                  hasPaid={!!profile.hasPaid}
-                  advisorReviewed={profile.advisorReviewed}
-                />
-              </ProfileSection>
-
-              <ProfileSection id="wali" title={t("premium.waliTitle")} defaultOpen={false}>
-                <PremiumWaliCard profile={profile} />
-              </ProfileSection>
-
-              <ProfileSection
-                id="details"
-                title={t("profilePage.profileDetails")}
-                description={t("profilePage.detailsSectionDesc")}
-                defaultOpen={false}
-              >
-                <div className="flex justify-end mb-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/questionnaire?edit=1">
-                      <Pencil className="h-4 w-4 mr-2" />
-                      {t("profilePage.editDetails")}
-                    </Link>
-                  </Button>
+            <TabsContent value="privacy" className="mt-5 space-y-4">
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-primary" />
+                  {t("profilePage.photoPrivacyTitle")}
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t("profilePage.photoPrivacyDesc")}
+                </p>
+              </div>
+              <div className="space-y-2">
+                {privacyOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    disabled={savingPrivacy || isStaff}
+                    onClick={() => void setPhotoVisibility(option.value)}
+                    className={cn(
+                      "w-full flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors",
+                      photoVisibility === option.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/50"
+                    )}
+                  >
+                    <option.icon className="h-5 w-5 shrink-0 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm">{option.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                        {option.desc}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {!isStaff && (
+                <div className="pt-2">
+                  <h3 className="font-semibold mb-3">{t("profilePage.safetySection")}</h3>
+                  <BlockedUsersCard embedded />
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-muted-foreground">{t("profilePage.age")}</span><p className="font-medium">{profile.age}</p></div>
-                  <div><span className="text-muted-foreground">{t("profilePage.height")}</span><p className="font-medium">{profile.height} cm</p></div>
-                  <div><span className="text-muted-foreground">{t("profilePage.country")}</span><p className="font-medium">{profile.country}</p></div>
-                  <div><span className="text-muted-foreground">{t("profilePage.city")}</span><p className="font-medium">{profile.city}</p></div>
-                  <div><span className="text-muted-foreground">{t("profilePage.education")}</span><p className="font-medium">{profile.education}</p></div>
-                  <div><span className="text-muted-foreground">{t("profilePage.occupation")}</span><p className="font-medium">{profile.occupation}</p></div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="account" className="mt-5 space-y-5">
+              {currentUser.email && (
+                <div className="rounded-2xl border border-border p-4">
+                  <p className="text-xs text-muted-foreground">{t("profilePage.email")}</p>
+                  <p className="font-medium mt-1">{currentUser.email}</p>
                 </div>
-              </ProfileSection>
-            </>
-          )}
-
-          {isOwner && (
-            <ProfileSection
-              id="invite-admins"
-              title={t("adminInvites.title")}
-              description={t("adminInvites.description")}
-              defaultOpen
-            >
-              <AdminStaffInvitesPanel embedded />
-            </ProfileSection>
-          )}
-
-          <ProfileSection id="security" title={t("profilePage.securitySection")} defaultOpen={false}>
-            <ChangePasswordCard embedded />
-          </ProfileSection>
-
-          {!isStaff && (
-            <ProfileSection id="safety" title={t("profilePage.safetySection")} defaultOpen={false}>
-              <BlockedUsersCard embedded />
-            </ProfileSection>
-          )}
+              )}
+              <ChangePasswordCard embedded />
+              {isOwner && <AdminStaffInvitesPanel embedded />}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 

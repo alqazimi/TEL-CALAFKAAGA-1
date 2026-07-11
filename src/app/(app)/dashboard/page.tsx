@@ -43,7 +43,7 @@ export default function DashboardPage() {
   ) as MatchResult[] | undefined;
   const myMatches = useQuery(
     api.matches.getMyMatches,
-    canViewMatches ? undefined : "skip"
+    canViewMatches ? {} : "skip"
   ) as MutualMatch[] | undefined;
 
   const shouldUseDiscoverHome = profileReady && hasPaidAccess(profile);

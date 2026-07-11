@@ -1,6 +1,7 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { calculateCompatibility } from "./matching";
+import { isDiscoverable } from "./lib/reviewStatus";
 
 export const recalculateScores = internalMutation({
   args: { userId: v.id("users") },
@@ -10,11 +11,11 @@ export const recalculateScores = internalMutation({
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .unique();
 
-    if (!userProfile || !userProfile.questionnaireComplete) return;
+    if (!userProfile || !isDiscoverable(userProfile)) return;
 
     const userPrefs = await ctx.db
       .query("preferences")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .withIndex("by_userId", (q) => q.eq("userId", userProfile.userId))
       .unique();
 
     if (!userPrefs) return;
@@ -28,8 +29,7 @@ export const recalculateScores = internalMutation({
       (p) =>
         p.userId !== args.userId &&
         p.gender === oppositeGender &&
-        p.questionnaireComplete &&
-        !p.banned
+        isDiscoverable(p)
     );
 
     for (const candidate of candidates) {
