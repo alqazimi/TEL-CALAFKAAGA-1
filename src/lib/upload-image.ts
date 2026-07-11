@@ -11,22 +11,30 @@ export function resetFileInput(input: HTMLInputElement | null | undefined) {
 
 function looksLikeImage(file: File): boolean {
   if (file.type.startsWith("image/")) return true;
-  // Android cameras / share sheets often omit or use octet-stream
   if (
     (!file.type || file.type === "application/octet-stream") &&
     IMAGE_EXT.test(file.name)
   ) {
     return true;
   }
-  // Some pickers send empty name + image MIME already handled above;
-  // empty type + empty name: still try if size looks like a photo.
-  if (!file.type && !file.name && file.size > 0) return true;
+  if (!file.type && file.size > 0 && IMAGE_EXT.test(file.name)) return true;
   return false;
 }
 
+function friendlyUploadError(error: unknown): string {
+  if (!(error instanceof Error) || !error.message) {
+    return "Upload failed. Please try again.";
+  }
+  const raw = error.message
+    .replace(/^\[CONVEX[^\]]*\]\s*/i, "")
+    .replace(/^Uncaught Error:\s*/i, "")
+    .split("\n")[0]
+    ?.trim();
+  return raw || "Upload failed. Please try again.";
+}
+
 /**
- * Strip EXIF, POST to a Convex storage upload URL, return the storage id.
- * Throws if the HTTP upload fails or Convex does not return a storageId.
+ * Compress + strip EXIF, POST to Convex storage, return storage id.
  */
 export async function uploadImageToConvex(
   file: File,
@@ -36,16 +44,27 @@ export async function uploadImageToConvex(
     throw new Error("Please choose an image file.");
   }
 
-  const prepared = await prepareImageForUpload(file);
+  let prepared: File;
+  try {
+    prepared = await prepareImageForUpload(file);
+  } catch (error) {
+    throw new Error(friendlyUploadError(error));
+  }
+
   const uploadUrl = await generateUploadUrl();
-  const result = await fetch(uploadUrl, {
-    method: "POST",
-    headers: { "Content-Type": prepared.type || "image/jpeg" },
-    body: prepared,
-  });
+  let result: Response;
+  try {
+    result = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": prepared.type || "image/jpeg" },
+      body: prepared,
+    });
+  } catch {
+    throw new Error("Upload failed. Check your connection and try again.");
+  }
 
   if (!result.ok) {
-    throw new Error("Upload failed. Please try again.");
+    throw new Error("Upload failed. Please try a smaller JPG or PNG.");
   }
 
   let body: { storageId?: string } = {};

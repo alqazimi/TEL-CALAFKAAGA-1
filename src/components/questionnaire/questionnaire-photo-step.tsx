@@ -38,7 +38,10 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
       const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
       await registerUpload({ storageId });
       await updateProfile({ profileImageId: storageId });
-      setLocalPreview(URL.createObjectURL(file));
+      setLocalPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(file);
+      });
       toast.success(ui("photoUploaded"));
     } catch (error) {
       const message =
@@ -48,7 +51,6 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
       toast.error(message);
     } finally {
       setUploading(false);
-      // Allow selecting the same photo again (otherwise onChange never fires).
       resetFileInput(input);
     }
   };

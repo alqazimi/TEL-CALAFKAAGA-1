@@ -1,15 +1,15 @@
-const MAX_EDGE = 3072;
-const JPEG_QUALITY = 0.92;
-/** Allow large phone photos; we re-encode down before upload. */
-const MAX_INPUT_BYTES = 50 * 1024 * 1024;
+const MAX_EDGE = 1920;
+const MAX_INPUT_BYTES = 40 * 1024 * 1024;
+const MAX_OUTPUT_BYTES = 1.5 * 1024 * 1024;
+const MAX_RAW_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 /**
- * Re-encode an image via canvas so EXIF / GPS metadata is stripped before upload.
- * Accepts large phone photos and most common formats; output is a clear JPEG.
+ * Re-encode an image as a clear, reasonably sized JPEG (EXIF stripped).
+ * Large phone photos are downscaled during decode to avoid mobile OOM crashes.
  */
 export async function prepareImageForUpload(file: File): Promise<File> {
   if (file.size > MAX_INPUT_BYTES) {
-    throw new Error("Image is too large. Please choose a photo under 50MB.");
+    throw new Error("Image is too large. Please choose a photo under 40MB.");
   }
 
   const type = file.type || guessMimeFromName(file.name);
@@ -17,108 +17,182 @@ export async function prepareImageForUpload(file: File): Promise<File> {
     throw new Error("Please choose an image file.");
   }
 
-  // Keep animated GIF / SVG as-is (canvas would flatten / break them).
-  if (type === "image/gif" || type === "image/svg+xml") {
-    return file;
+  if (/heic|heif/i.test(type) || /\.(heic|heif)$/i.test(file.name)) {
+    // Try decode anyway (some browsers can); otherwise clear error.
+    try {
+      return await compressToJpeg(file);
+    } catch {
+      throw new Error(
+        "This photo format is not supported. Please upload a JPG or PNG."
+      );
+    }
   }
 
-  const decoded = await decodeImage(file, type);
-  if (!decoded) {
-    // Last resort: upload original bytes (better than blocking the member).
-    return file;
+  if (type === "image/svg+xml") {
+    throw new Error("Please upload a JPG or PNG photo.");
   }
 
   try {
-    const { width: srcW, height: srcH, draw } = decoded;
-    const scale = Math.min(1, MAX_EDGE / Math.max(srcW, srcH));
-    const width = Math.max(1, Math.round(srcW * scale));
-    const height = Math.max(1, Math.round(srcH * scale));
+    return await compressToJpeg(file);
+  } catch (error) {
+    // Small already-safe files can upload as-is if compression fails.
+    if (
+      file.size <= MAX_RAW_UPLOAD_BYTES &&
+      (type === "image/jpeg" || type === "image/png" || type === "image/webp")
+    ) {
+      return file;
+    }
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "Could not process this photo. Please try another JPG or PNG.";
+    throw new Error(message);
+  }
+}
+
+async function compressToJpeg(file: File): Promise<File> {
+  const bitmap = await decodeDownscaled(file);
+  try {
+    if (!bitmap.width || !bitmap.height) {
+      throw new Error("Could not read this photo.");
+    }
+
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
 
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) {
+      throw new Error("Could not process this photo on this device.");
+    }
 
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-    draw(ctx, width, height);
+    try {
+      ctx.imageSmoothingQuality = "high";
+    } catch {
+      // Older browsers may not support this property.
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(bitmap, 0, 0, width, height);
 
-    const blob = await canvasToJpegBlob(canvas, JPEG_QUALITY);
-    if (!blob) return file;
+    let quality = 0.88;
+    let blob = await canvasToJpegBlob(canvas, quality);
+    if (!blob) {
+      throw new Error("Could not process this photo on this device.");
+    }
 
-    // If somehow still huge, compress a bit more.
-    const finalBlob =
-      blob.size > 8 * 1024 * 1024
-        ? (await canvasToJpegBlob(canvas, 0.82)) ?? blob
-        : blob;
+    // Step quality down until under the output budget (mobile-friendly upload).
+    while (blob.size > MAX_OUTPUT_BYTES && quality > 0.55) {
+      quality -= 0.08;
+      const next = await canvasToJpegBlob(canvas, quality);
+      if (!next) break;
+      blob = next;
+    }
+
+    // Still huge? shrink dimensions once more.
+    if (blob.size > MAX_OUTPUT_BYTES && Math.max(width, height) > 1280) {
+      const shrink = 1280 / Math.max(width, height);
+      const w2 = Math.max(1, Math.round(width * shrink));
+      const h2 = Math.max(1, Math.round(height * shrink));
+      canvas.width = w2;
+      canvas.height = h2;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w2, h2);
+      ctx.drawImage(bitmap, 0, 0, w2, h2);
+      blob = (await canvasToJpegBlob(canvas, 0.8)) ?? blob;
+    }
 
     const baseName = file.name.replace(/\.[^.]+$/, "") || "photo";
-    return new File([finalBlob], `${baseName}.jpg`, {
+    return new File([blob], `${baseName}.jpg`, {
       type: "image/jpeg",
       lastModified: Date.now(),
     });
   } finally {
-    decoded.close();
+    bitmap.close();
   }
 }
 
-type DecodedImage = {
-  width: number;
-  height: number;
-  draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void;
-  close: () => void;
-};
+/**
+ * Decode and downscale early so multi‑MB phone photos do not OOM on mobile.
+ */
+async function decodeDownscaled(file: File): Promise<ImageBitmap> {
+  const large = file.size > 1_500_000;
 
-async function decodeImage(
-  file: File,
-  type: string
-): Promise<DecodedImage | null> {
-  // Prefer createImageBitmap (fast, honors EXIF orientation on modern browsers).
-  try {
-    const bitmap = await createImageBitmap(file);
-    return {
-      width: bitmap.width,
-      height: bitmap.height,
-      draw: (ctx, w, h) => ctx.drawImage(bitmap, 0, 0, w, h),
-      close: () => bitmap.close(),
-    };
-  } catch {
-    // fall through
-  }
-
-  // Fallback: HTMLImageElement (helps some Android / odd MIME cases).
-  try {
-    const url = URL.createObjectURL(file);
-    try {
-      const img = await loadHtmlImage(url);
-      return {
-        width: img.naturalWidth || img.width,
-        height: img.naturalHeight || img.height,
-        draw: (ctx, w, h) => ctx.drawImage(img, 0, 0, w, h),
-        close: () => undefined,
-      };
-    } finally {
-      URL.revokeObjectURL(url);
+  if (large && typeof createImageBitmap === "function") {
+    // Try constraining width, then height (covers landscape + portrait phones).
+    for (const opts of [
+      { resizeWidth: MAX_EDGE, resizeQuality: "high" as const },
+      { resizeHeight: MAX_EDGE, resizeQuality: "high" as const },
+    ]) {
+      try {
+        let bmp = await createImageBitmap(file, opts);
+        bmp = await ensureMaxEdge(bmp);
+        return bmp;
+      } catch {
+        // try next strategy
+      }
     }
+  }
+
+  // Full decode (OK for smaller files) + scale if needed.
+  try {
+    let bmp = await createImageBitmap(file);
+    bmp = await ensureMaxEdge(bmp);
+    return bmp;
   } catch {
-    // fall through
+    // HTMLImageElement fallback
   }
 
-  if (/heic|heif/i.test(type) || /\.(heic|heif)$/i.test(file.name)) {
-    throw new Error(
-      "This photo format is not supported. Please upload a JPG or PNG."
-    );
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadHtmlImage(url);
+    const width = img.naturalWidth || img.width;
+    const height = img.naturalHeight || img.height;
+    if (!width || !height) {
+      throw new Error("Could not read this photo.");
+    }
+    const scale = Math.min(1, MAX_EDGE / Math.max(width, height));
+    const w = Math.max(1, Math.round(width * scale));
+    const h = Math.max(1, Math.round(height * scale));
+    return await createImageBitmap(img, {
+      resizeWidth: w,
+      resizeHeight: h,
+      resizeQuality: "high",
+    });
+  } finally {
+    URL.revokeObjectURL(url);
   }
+}
 
-  return null;
+async function ensureMaxEdge(bitmap: ImageBitmap): Promise<ImageBitmap> {
+  const longest = Math.max(bitmap.width, bitmap.height);
+  if (longest <= MAX_EDGE) return bitmap;
+
+  const scale = MAX_EDGE / longest;
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  try {
+    const next = await createImageBitmap(bitmap, {
+      resizeWidth: w,
+      resizeHeight: h,
+      resizeQuality: "high",
+    });
+    bitmap.close();
+    return next;
+  } catch {
+    return bitmap;
+  }
 }
 
 function loadHtmlImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Could not read image"));
+    img.onerror = () => reject(new Error("Could not read this photo."));
     img.src = url;
   });
 }
@@ -128,7 +202,11 @@ function canvasToJpegBlob(
   quality: number
 ): Promise<Blob | null> {
   return new Promise((resolve) => {
-    canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+    try {
+      canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+    } catch {
+      resolve(null);
+    }
   });
 }
 
