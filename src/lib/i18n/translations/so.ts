@@ -515,9 +515,9 @@ export const so: Translations = {
     stepPayment: "Lacag bixin",
     confirming: "Lacagta waa la xaqiijinayaa...",
     paymentCanceled: "Lacag bixintii waa la joojiyay. Dhammaystir lacag bixinta si aad u furto isbarbardhigga.",
-    trialEndedTitle: "Toddobaadkaaga bilaashka ah wuu dhammaaday",
+    trialEndedTitle: "Lacag bixin ayaa loo baahan yahay",
     trialEndedDesc:
-      "Tijaabadaada 7 maalmood ahayd waa dhammaatay. Dooro diiwaangelinta caadiga ah (${{basic}}) ama diiwaangelinta taageerada shaqsiga ah (${{premium}}) si aad u sii wadato Hel Calafkaaga.",
+      "Dooro Basic (${{basic}}) ama Premium (${{premium}}) si aad u furto isbarbardhigga iyo sheekaysiga Hel Calafkaaga.",
     profileNotFound: "Profile lama helin.",
     confirmingDesc: "Fadlan sug inta aan lacagtaada Stripe ku xaqiijinayno.",
     success: "Lacag bixintu waa guulaysatay",
@@ -809,12 +809,12 @@ export const so: Translations = {
     completeProfileAction: "Sii wad profile-ka",
     completePaymentTitle: "Fur isbarbardhigyada",
     completePaymentBody:
-      "Toddobaadkaaga bilaashka ah wuu dhammaaday. Dooro qorshe si aad u sii wadato raadinta xubnaha.",
+      "Dooro Basic ama Premium si aad u baadho xubnaha oo aad bilowdo isbarbardhigga.",
     completePaymentAction: "Dooro qorshe",
-    freeTrialTitle: "Ku raaxayso toddobaadkaaga premium ee bilaashka ah",
+    freeTrialTitle: "Dhammaystir lacag bixinta si aad u sii wadato",
     freeTrialBody:
-      "Baadh isbarbardhigyo, arag cidda ku jeclaatay, oo isticmaal dhammaan astaamaha premium. Toddobaadkan lacag looma baahna.",
-    freeTrialAction: "Bilow baadhista",
+      "Isbarbardhiggu wuxuu furmayaa markaad doorato Basic ama Premium. Haweeneydu Basic waa bilaash.",
+    freeTrialAction: "Dooro qorshe",
     pendingApprovalTitle: "Profile-ka waa la eegayaa",
     pendingApprovalBody:
       "Maamuluhu wuxuu eegayaa profile-kaaga. Waxaa laguu ogeysiin doonaa marka la ansixiyo.",

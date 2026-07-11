@@ -7,7 +7,6 @@ import {
   religiousLevelFromPrayer,
 } from "./profileEnrichment";
 import { isStaffRole } from "./roles";
-import { getTrialEndsAt } from "./trial";
 
 type ProfileArgs = {
   name: string;
@@ -126,13 +125,6 @@ export async function ensureUserProfile(
     }
     if (!existing.religiousLevel?.trim() && existing.prayerFrequency?.trim()) {
       backfill.religiousLevel = religiousLevelFromPrayer(existing.prayerFrequency);
-    }
-    if (
-      existing.questionnaireComplete &&
-      !existing.hasPaid &&
-      existing.trialEndsAt === undefined
-    ) {
-      backfill.trialEndsAt = getTrialEndsAt();
     }
 
     // Never auto-clear questionnaireComplete / approved here — that marked

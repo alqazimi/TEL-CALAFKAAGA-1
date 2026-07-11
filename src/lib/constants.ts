@@ -16,6 +16,7 @@ export const SUPPORT_EMAIL = "hello@helcalafkaaga.com";
 export const REGISTRATION_PRICE = 5;
 /** New-user Premium signup (WhatsApp + match search help). */
 export const PERSONAL_SUPPORT_PRICE = 20;
+/** @deprecated Free trial removed — men must pay before access. Kept for legacy UI/admin labels. */
 export const TRIAL_DAYS = 7;
 /** Upgrade to Premium from Basic (existing members or new Basic payers). */
 export const PREMIUM_UPGRADE_PRICE = 15;

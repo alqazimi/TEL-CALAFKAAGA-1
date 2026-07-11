@@ -1,5 +1,3 @@
-import { isInTrialPeriod } from "./trial";
-
 export type UserRole = "user" | "admin" | "owner";
 
 export function isStaffRole(role?: string): role is "admin" | "owner" {
@@ -24,8 +22,9 @@ export function hasPaidAccess(
 ): boolean {
   if (!profile) return false;
   // Women: Basic is free (full app access). Premium remains optional.
+  // Men: must pay — no free trial.
   if (profile.gender === "female") return true;
-  return !!profile.hasPaid || isStaffRole(profile.role) || isInTrialPeriod(profile);
+  return !!profile.hasPaid || isStaffRole(profile.role);
 }
 
 /** Premium = WhatsApp personal support + staff search help (not extra app locks). */

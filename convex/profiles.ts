@@ -26,7 +26,7 @@ import {
   MAX_ADDITIONAL_PHOTOS,
   MAX_PROFILE_PHOTOS,
 } from "./lib/premium";
-import { getTrialEndsAt, isInTrialPeriod } from "./lib/trial";
+import { isInTrialPeriod } from "./lib/trial";
 import { hasActiveMatch } from "./lib/matchPresentation";
 import { sendNotification } from "./lib/sendNotification";
 import type { MutationCtx } from "./_generated/server";
@@ -339,12 +339,9 @@ export const completeQuestionnaire = mutation({
               approved: true,
             }
           : {
-              // Men: not admin-approved. Stay unapproved until Stripe payment.
+              // Men: locked until Stripe payment (no free trial).
               reviewStatus: "incomplete" as const,
               approved: false,
-              ...(profile.trialEndsAt === undefined
-                ? { trialEndsAt: getTrialEndsAt() }
-                : {}),
             }),
     });
 

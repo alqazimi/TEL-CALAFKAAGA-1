@@ -17,7 +17,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { hasPaidAccess } from "@/lib/access";
-import { isInTrialPeriod } from "@/lib/trial";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { reminderCopy } from "@/lib/reminder-copy";
@@ -52,7 +51,6 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
   const profile = user.profile;
   const isComplete = profile?.questionnaireComplete ?? false;
   const hasPaid = hasPaidAccess(profile);
-  const inTrial = isInTrialPeriod(profile);
   const discoverCount = matches?.length ?? 0;
   const profileProgress = profile
     ? calculateProfileProgress(profile, preferences ?? undefined)
@@ -125,7 +123,7 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
                   </p>
                 </div>
               )}
-              {!hasPaid && !inTrial && isComplete && (
+              {!hasPaid && isComplete && (
                 <p className="text-xs text-muted-foreground mt-2">
                   {t("dashboard.payToContinue", {
                     basic: REGISTRATION_PRICE,

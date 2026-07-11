@@ -859,8 +859,8 @@ const UI_TEXT = {
     so: "Su'aalaha waa dhammeeyeen. Admin ayaa dhawaan dib u eegi doona profile-kaaga — waa lagu ogeysiin doonaa markaad eegi karto isbarbardhigga.",
   },
   profileReadyPaySub: {
-    en: "Your questionnaire is complete. Enjoy your free trial while we review your profile — you will be notified when matches unlock.",
-    so: "Su'aalaha waa dhammeeyeen. Ku raaxayso tijaabada bilaashka ah inta aan dib u eegno profile-kaaga — waa lagu ogeysiin doonaa marka isbarbardhiggu furmo.",
+    en: "Your questionnaire is complete. Choose Basic or Premium to unlock matches.",
+    so: "Su'aalaha waa dhammeeyeen. Dooro Basic ama Premium si aad u furto isbarbardhigga.",
   },
   welcomeQuestionnaireTitle: {
     en: "Welcome! Let's build your marriage profile",

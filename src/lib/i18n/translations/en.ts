@@ -509,9 +509,9 @@ export const en = {
     stepPayment: "Payment",
     confirming: "Confirming payment...",
     paymentCanceled: "Payment canceled. Complete payment to unlock matches.",
-    trialEndedTitle: "Your free week has ended",
+    trialEndedTitle: "Payment required",
     trialEndedDesc:
-      "Your 7-day free trial is over. Choose Basic (${{basic}}) or Premium (${{premium}}) to keep using Hel Calafkaaga.",
+      "Choose Basic (${{basic}}) or Premium (${{premium}}) to unlock matches and messaging on Hel Calafkaaga.",
     profileNotFound: "Profile not found.",
     confirmingDesc: "Please wait while we verify your payment with Stripe.",
     success: "Payment successful",
@@ -801,12 +801,12 @@ export const en = {
     completeProfileAction: "Continue profile",
     completePaymentTitle: "Unlock matches",
     completePaymentBody:
-      "Your free week has ended. Choose a plan to keep browsing members.",
+      "Choose Basic or Premium to browse members and start matching.",
     completePaymentAction: "Choose plan",
-    freeTrialTitle: "Enjoy your free premium week",
+    freeTrialTitle: "Complete payment to continue",
     freeTrialBody:
-      "Browse matches, see who liked you, and use all premium features. No payment needed this week.",
-    freeTrialAction: "Start browsing",
+      "Matches unlock after you choose Basic or Premium. Women get Basic free.",
+    freeTrialAction: "Choose plan",
     pendingApprovalTitle: "Profile under review",
     pendingApprovalBody:
       "An admin is reviewing your profile. You will be notified when approved.",
