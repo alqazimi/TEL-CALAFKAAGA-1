@@ -711,31 +711,51 @@ const UI_TEXT = {
   selectPlaceholder: { en: "Select", so: "Dooro" },
   selectCity: { en: "Select city", so: "Dooro magaalada" },
   enterCity: { en: "Enter your city", so: "Geli magaaladaada" },
-  useMyLocation: { en: "Use my location", so: "Isticmaal goobtayda" },
+  useMyLocation: { en: "Share my location", so: "La wadaag goobtayda" },
+  allowLocationRequired: {
+    en: "Allow location to continue",
+    so: "U oggolow goobta si aad u sii wadato",
+  },
   detectingLocation: { en: "Detecting location…", so: "Goobta waa la raadinayaa…" },
   locationDetected: {
-    en: "Location found — you can edit it if needed",
-    so: "Goobta waa la helay — waad wax ka beddeli kartaa haddii loo baahdo",
+    en: "Location verified from your device",
+    so: "Goobta waa la xaqiijiyay aaladdaada",
   },
   locationFailed: {
-    en: "Could not detect your location. Please choose manually.",
-    so: "Goobtaada lama ogaan karin. Fadlan gacanta ku dooro.",
+    en: "Could not detect your location. Please allow location and try again.",
+    so: "Goobtaada lama ogaan karin. Fadlan u oggolow goobta oo isku day mar kale.",
   },
   locationPermissionDenied: {
-    en: "Location permission denied. Allow location in your browser, or choose manually.",
-    so: "Ogolaanshaha goobta waa la diiday. U oggolow browser-kaaga, ama gacanta ku dooro.",
+    en: "Location permission is required. Allow location in your browser settings, then try again.",
+    so: "Ogolaanshaha goobta waa lagama maarmaan. U oggolow browser-kaaga, ka dibna isku day.",
   },
   locationUnsupported: {
-    en: "Your browser does not support location. Please choose manually.",
-    so: "Browser-kaagu ma taageero goobta. Fadlan gacanta ku dooro.",
+    en: "Your browser does not support location. Please use a different device or browser.",
+    so: "Browser-kaagu ma taageero goobta. Fadlan isticmaal qalab ama browser kale.",
   },
   locationCountryUnsupported: {
-    en: "We could not match your country. Please select it manually.",
-    so: "Dalkaaga lama jaan qaadin karin. Fadlan gacanta ku dooro.",
+    en: "We could not match your country from GPS. Move outdoors or try again.",
+    so: "Dalkaaga lagama jaan qaadin GPS. U bax bannaanka ama isku day mar kale.",
   },
   locationDetectedHint: {
-    en: "Detected: {{city}}, {{country}}",
-    so: "La ogaaday: {{city}}, {{country}}",
+    en: "Verified: {{city}}, {{country}}",
+    so: "La xaqiijiyay: {{city}}, {{country}}",
+  },
+  locationRequiredHint: {
+    en: "We use your device location so everyone lives where they say. Manual country/city picks are not allowed.",
+    so: "Waxaan isticmaalnaa goobta aaladdaada si qof walba u noolaado meesha uu sheego. Doorashada gacanta ee dalka/magaalada lama oggola.",
+  },
+  locationRequiredError: {
+    en: "Allow location access to set where you live",
+    so: "U oggolow goobta si aad u dejiso meesha aad ku nooshahay",
+  },
+  locationVerifiedBadge: {
+    en: "GPS verified",
+    so: "GPS la xaqiijiyay",
+  },
+  updateLocation: {
+    en: "Update with current location",
+    so: "Cusbooneysii goobta hadda",
   },
   // Questionnaire page header / flow
   profileQuestionnaire: { en: "Profile Questionnaire", so: "Su'aalaha Profile-ka" },

@@ -10,7 +10,6 @@ import {
   getBrowserPosition,
   isGeolocationPermissionDenied,
 } from "@/lib/geolocation";
-import { matchCity, matchCountry } from "@/lib/location-match";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import { cn } from "@/lib/utils";
 
@@ -18,14 +17,17 @@ interface UseMyLocationButtonProps {
   onDetected: (country: string, city: string) => void;
   disabled?: boolean;
   className?: string;
+  /** Primary CTA label when location is required (default: useMyLocation). */
+  required?: boolean;
 }
 
 export function UseMyLocationButton({
   onDetected,
   disabled,
   className,
+  required,
 }: UseMyLocationButtonProps) {
-  const reverseGeocode = useAction(api.geolocation.reverseGeocode);
+  const verifyAndSaveLocation = useAction(api.geolocation.verifyAndSaveLocation);
   const { ui } = useQuestionnaireI18n();
   const [loading, setLoading] = useState(false);
 
@@ -33,24 +35,13 @@ export function UseMyLocationButton({
     setLoading(true);
     try {
       const position = await getBrowserPosition();
-      const result = await reverseGeocode({
+      const result = await verifyAndSaveLocation({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
       });
 
-      const country = matchCountry(result.country);
-      if (!country) {
-        toast.error(ui("locationCountryUnsupported"));
-        return;
-      }
-
-      const city = matchCity(country, result.city);
-      if (!city) {
-        toast.error(ui("locationFailed"));
-        return;
-      }
-
-      onDetected(country, city);
+      onDetected(result.country, result.city);
       toast.success(ui("locationDetected"));
     } catch (error) {
       if (error instanceof GeolocationUnsupportedError) {
@@ -61,18 +52,32 @@ export function UseMyLocationButton({
         toast.error(ui("locationPermissionDenied"));
         return;
       }
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("COUNTRY_UNSUPPORTED")) {
+        toast.error(ui("locationCountryUnsupported"));
+        return;
+      }
       toast.error(ui("locationFailed"));
     } finally {
       setLoading(false);
     }
   };
 
+  const label = loading
+    ? ui("detectingLocation")
+    : required
+      ? ui("allowLocationRequired")
+      : ui("useMyLocation");
+
   return (
     <button
       type="button"
       className={cn(
-        "flex w-full items-center justify-center gap-2.5 rounded-full bg-primary/10 px-5 py-3.5 text-base font-semibold text-primary transition-colors",
-        "hover:bg-primary/15 active:bg-primary/20 disabled:pointer-events-none disabled:opacity-50",
+        "flex w-full items-center justify-center gap-2.5 rounded-full px-5 py-3.5 text-base font-semibold transition-colors",
+        required
+          ? "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/85"
+          : "bg-primary/10 text-primary hover:bg-primary/15 active:bg-primary/20",
+        "disabled:pointer-events-none disabled:opacity-50",
         className
       )}
       onClick={() => void handleClick()}
@@ -83,7 +88,7 @@ export function UseMyLocationButton({
       ) : (
         <MapPin className="h-5 w-5 shrink-0" />
       )}
-      <span>{loading ? ui("detectingLocation") : ui("useMyLocation")}</span>
+      <span>{label}</span>
     </button>
   );
 }

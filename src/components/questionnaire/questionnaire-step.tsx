@@ -29,7 +29,6 @@ import type { QuestionnaireUiKey } from "@/lib/i18n/questionnaire-i18n";
 import type { FieldConfig, StepConfig } from "./steps";
 import { GenderSelectCards } from "./gender-select-cards";
 import { UseMyLocationButton } from "./use-my-location-button";
-import { cityOptionsWithDetected } from "@/lib/location-match";
 
 const AUTO_ADVANCE_MS = 380;
 const AUTO_SAVE_MS = 2000;
@@ -49,6 +48,7 @@ const ERROR_KEY_MAP: Record<string, QuestionnaireUiKey> = {
   "This field is required": "requiredField",
   "Please select at least one option": "selectAtLeastOne",
   "Please enter a valid phone number": "phoneInvalid",
+  "Allow location access to set where you live": "locationRequiredError",
 };
 
 function translateError(
@@ -73,6 +73,7 @@ function fieldNeedsManualAdvance(
   selects: Record<string, string>,
   profileCountry?: string
 ): boolean {
+  if (field.name === "country" || field.name === "city") return true;
   if (!AUTO_ADVANCE_TYPES.has(field.type)) return true;
   if (field.type === "select" && field.name === "city") {
     const country = resolveCountryForCities(selectedCountry, selects, profileCountry);
@@ -144,6 +145,11 @@ export function QuestionnaireStep({
   const [textFields, setTextFields] = useState(initial.textFields);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [locationVerifiedLocal, setLocationVerifiedLocal] = useState(
+    () => typeof profile?.locationVerifiedAt === "number" && profile.locationVerifiedAt > 0
+  );
+  const locationVerifiedLocalRef = useRef(locationVerifiedLocal);
+  locationVerifiedLocalRef.current = locationVerifiedLocal;
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const autoAdvanceRef = useRef<NodeJS.Timeout | null>(null);
   const skipAutoSaveRef = useRef(true);
@@ -265,7 +271,16 @@ export function QuestionnaireStep({
     if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
     const state = formStateRef.current;
     const visible = getVisibleFields(step, profile, state.radios, state.selects);
-    const errors = validateStepFields(step, profile, state);
+    const profileForValidation =
+      locationVerifiedLocalRef.current && profile
+        ? {
+            ...profile,
+            locationVerifiedAt: profile.locationVerifiedAt ?? Date.now(),
+          }
+        : locationVerifiedLocalRef.current
+          ? { locationVerifiedAt: Date.now() }
+          : profile;
+    const errors = validateStepFields(step, profileForValidation, state);
     if (Object.keys(errors).length > 0) {
       const firstErrorField = visible.find((f) => errors[f.name]);
       if (firstErrorField) {
@@ -286,7 +301,7 @@ export function QuestionnaireStep({
     } finally {
       setIsAdvancing(false);
     }
-  }, [step, profile, onSubmit, flushAutoSave, ui]);
+  }, [step, profile, onSubmit, flushAutoSave, ui, onFieldIndexChange]);
 
   const completeStepRef = useRef(completeCurrentStep);
   completeStepRef.current = completeCurrentStep;
@@ -322,8 +337,13 @@ export function QuestionnaireStep({
     [step, profile, onFieldIndexChange]
   );
 
+  const locationVerified =
+    locationVerifiedLocal ||
+    (typeof profile?.locationVerifiedAt === "number" && profile.locationVerifiedAt > 0);
+
   const applyDetectedLocation = useCallback(
     (country: string, city: string) => {
+      setLocationVerifiedLocal(true);
       setSelects((prev) => ({ ...prev, country, city }));
       setSelectedCountry(country);
       setFieldErrors((prev) => {
@@ -368,6 +388,15 @@ export function QuestionnaireStep({
 
   const goToNextField = () => {
     if (!currentField) return;
+    if (
+      (currentField.name === "country" || currentField.name === "city") &&
+      !locationVerified
+    ) {
+      setFieldErrors({
+        [currentField.name]: "Allow location access to set where you live",
+      });
+      return;
+    }
     const error = validateField(currentField, profile, formState);
     if (error) {
       setFieldErrors({ [currentField.name]: error });
@@ -505,6 +534,29 @@ export function QuestionnaireStep({
     }
 
     if (field.type === "country-search") {
+      if (field.name === "country") {
+        return (
+          <div className="space-y-4">
+            <p className="text-base text-muted-foreground">{ui("locationRequiredHint")}</p>
+            {locationVerified && selects.country ? (
+              <div className="rounded-2xl border-2 border-primary/25 bg-primary/[0.06] px-5 py-4 space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                  {ui("locationVerifiedBadge")}
+                </p>
+                <p className="text-xl font-semibold">{selects.country}</p>
+                {selects.city ? (
+                  <p className="text-base text-muted-foreground">{selects.city}</p>
+                ) : null}
+              </div>
+            ) : null}
+            <UseMyLocationButton
+              onDetected={applyDetectedLocation}
+              disabled={isAdvancing}
+              required={!locationVerified}
+            />
+          </div>
+        );
+      }
       return (
         <CountryCombobox
           value={selects[field.name] ?? ""}
@@ -535,36 +587,26 @@ export function QuestionnaireStep({
     }
 
     if (field.type === "select" && field.name === "city") {
-      const countryForCities = resolveCountryForCities(
-        selectedCountry,
-        selects,
-        profile?.country
-      );
-      const cityOptions = cityOptionsWithDetected(
-        countryForCities,
-        selects[field.name] ?? ""
-      );
-      if (cityOptions.length) {
-        return renderSelectOptions(
-          { ...field, options: cityOptions },
-          selects[field.name] ?? "",
-          (v) => {
-            setSelects((prev) => ({ ...prev, [field.name]: v }));
-            clearFieldError(field.name);
-            scheduleAutoAdvance(field);
-          }
-        );
-      }
       return (
-        <Input
-          value={selects[field.name] ?? ""}
-          onChange={(e) => {
-            setSelects((prev) => ({ ...prev, [field.name]: e.target.value }));
-            clearFieldError(field.name);
-          }}
-          placeholder={ui("enterCity")}
-          className="h-14 rounded-2xl text-lg px-5"
-        />
+        <div className="space-y-4">
+          <p className="text-base text-muted-foreground">{ui("locationRequiredHint")}</p>
+          {locationVerified && selects.city ? (
+            <div className="rounded-2xl border-2 border-primary/25 bg-primary/[0.06] px-5 py-4 space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                {ui("locationVerifiedBadge")}
+              </p>
+              <p className="text-xl font-semibold">{selects.city}</p>
+              {selects.country ? (
+                <p className="text-base text-muted-foreground">{selects.country}</p>
+              ) : null}
+            </div>
+          ) : null}
+          <UseMyLocationButton
+            onDetected={applyDetectedLocation}
+            disabled={isAdvancing}
+            required={!locationVerified}
+          />
+        </div>
       );
     }
 
@@ -733,22 +775,6 @@ export function QuestionnaireStep({
           )}
 
           {renderFieldInput(currentField)}
-
-          {(currentField.name === "country" || currentField.name === "city") && (
-            <div className="space-y-3 pt-1">
-              <UseMyLocationButton
-                onDetected={applyDetectedLocation}
-                disabled={isAdvancing}
-              />
-              {selects.country && selects.city && (
-                <p className="text-sm text-muted-foreground text-center">
-                  {ui("locationDetectedHint")
-                    .replace("{city}", selects.city)
-                    .replace("{country}", selects.country)}
-                </p>
-              )}
-            </div>
-          )}
         </motion.div>
       </AnimatePresence>
 

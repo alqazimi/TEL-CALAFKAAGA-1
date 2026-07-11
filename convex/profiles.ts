@@ -10,6 +10,7 @@ import {
   pruneIncompleteAutosaveWrites,
   sanitizeContactProfileUpdates,
   splitQuestionnaireData,
+  stripClientLocationWrites,
 } from "./lib/questionnaire";
 import { isDiscoverable } from "./lib/reviewStatus";
 import { isValidContactPhone } from "./lib/phone";
@@ -506,6 +507,7 @@ export const saveProfileEdits = mutation({
     );
 
     sanitizeContactProfileUpdates(profileUpdates);
+    stripClientLocationWrites(profileUpdates);
 
     if (Object.keys(profileUpdates).length > 0) {
       await ctx.db.patch(profile._id, {

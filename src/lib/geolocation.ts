@@ -13,9 +13,9 @@ export function getBrowserPosition(): Promise<GeolocationPosition> {
     }
 
     navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: false,
-      timeout: 20_000,
-      maximumAge: 5 * 60 * 1000,
+      enableHighAccuracy: true,
+      timeout: 25_000,
+      maximumAge: 0,
     });
   });
 }

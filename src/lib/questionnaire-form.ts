@@ -46,8 +46,10 @@ export function initFormState(
   const textFields: Record<string, string> = {};
 
   if (profile.age > 0) selects.age = String(profile.age);
-  if (profile.country) selects.country = profile.country;
-  if (profile.city) selects.city = profile.city;
+  const locationVerified =
+    typeof profile.locationVerifiedAt === "number" && profile.locationVerifiedAt > 0;
+  if (locationVerified && profile.country) selects.country = profile.country;
+  if (locationVerified && profile.city) selects.city = profile.city;
   if (profile.height > 0) selects.height = formatHeightWeight(profile.height, "200+");
   if (profile.weight > 0) selects.weight = formatHeightWeight(profile.weight, "100+");
 
@@ -125,7 +127,7 @@ export function initFormState(
     multiSelects,
     textFields,
     bio: profile.bio ?? "",
-    selectedCountry: profile.country ?? "",
+    selectedCountry: locationVerified ? (profile.country ?? "") : "",
   };
 }
 
@@ -303,7 +305,13 @@ export function buildStepData(
 
 export function validateField(
   field: FieldConfig,
-  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  profile: {
+    gender?: string;
+    maritalStatus?: string;
+    children?: number;
+    country?: string;
+    locationVerifiedAt?: number;
+  } | null | undefined,
   state: {
     radios: Record<string, string>;
     selects: Record<string, string>;
@@ -314,6 +322,14 @@ export function validateField(
 ): string | null {
   if (!isFieldVisible(field, profile, state.radios, state.selects)) return null;
   if (!field.required) return null;
+
+  if (field.name === "country" || field.name === "city") {
+    const verified =
+      typeof profile?.locationVerifiedAt === "number" && profile.locationVerifiedAt > 0;
+    if (!verified) {
+      return "Allow location access to set where you live";
+    }
+  }
 
   if (field.type === "textarea") {
     const value = field.name === "bio" ? state.bio : state.textFields[field.name] ?? "";
@@ -438,7 +454,13 @@ export function getResumeFieldIndex(
 
 export function validateStepFields(
   step: StepConfig,
-  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  profile: {
+    gender?: string;
+    maritalStatus?: string;
+    children?: number;
+    country?: string;
+    locationVerifiedAt?: number;
+  } | null | undefined,
   state: {
     radios: Record<string, string>;
     selects: Record<string, string>;
@@ -450,44 +472,8 @@ export function validateStepFields(
   const errors: Record<string, string> = {};
 
   for (const field of step.fields) {
-    if (!isFieldVisible(field, profile, state.radios, state.selects)) continue;
-    if (!field.required) continue;
-
-    if (field.type === "textarea") {
-      const value = field.name === "bio" ? state.bio : state.textFields[field.name] ?? "";
-      if (!value.trim()) {
-        errors[field.name] = "This field is required";
-      }
-      continue;
-    }
-
-    if (field.type === "multi-select" || field.type === "country-multi") {
-      const values = state.multiSelects[field.name] ?? [];
-      if (values.length === 0) {
-        errors[field.name] = "Please select at least one option";
-      }
-      continue;
-    }
-
-    if (field.type === "radio" || field.type === "gender-select") {
-      const radioKey = field.name === "substanceUse" ? "substanceUse" : field.name;
-      if (!state.radios[radioKey]) {
-        errors[field.name] = "Please select an option";
-      }
-      continue;
-    }
-
-    if (field.type === "country-search" || field.type === "select") {
-      if (!state.selects[field.name]?.trim()) {
-        errors[field.name] = "This field is required";
-      }
-      continue;
-    }
-
-    if (field.type === "text") {
-      const error = validateField(field, profile, state);
-      if (error) errors[field.name] = error;
-    }
+    const error = validateField(field, profile, state);
+    if (error) errors[field.name] = error;
   }
 
   return errors;

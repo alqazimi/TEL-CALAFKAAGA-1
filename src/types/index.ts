@@ -70,6 +70,10 @@ export interface Profile {
     | "suspended";
   photoVisibility?: "everyone" | "matches" | "private";
   privateImageIds?: Id<"_storage">[];
+  locationLat?: number;
+  locationLng?: number;
+  locationAccuracyM?: number;
+  locationVerifiedAt?: number;
   imageUrl?: string | null;
   paidCents?: number;
   email?: string | null;

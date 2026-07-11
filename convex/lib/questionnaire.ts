@@ -66,10 +66,26 @@ export function splitQuestionnaireData(data: Record<string, unknown>) {
  * Autosave sends the whole current step, including unanswered fields as "" / [] / 0.
  * Applying those would wipe earlier answers when a stale save lands after a fuller one.
  */
+/**
+ * Country/city must come from GPS verifyAndSaveLocation — never from client forms.
+ */
+export function stripClientLocationWrites(
+  profileUpdates: Record<string, unknown>
+): void {
+  delete profileUpdates.country;
+  delete profileUpdates.city;
+  delete profileUpdates.locationLat;
+  delete profileUpdates.locationLng;
+  delete profileUpdates.locationAccuracyM;
+  delete profileUpdates.locationVerifiedAt;
+}
+
 export function pruneIncompleteAutosaveWrites(
   profileUpdates: Record<string, unknown>,
   preferences?: Record<string, unknown>
 ): void {
+  stripClientLocationWrites(profileUpdates);
+
   for (const key of Object.keys(profileUpdates)) {
     const value = profileUpdates[key];
     if (value === undefined || value === null) {

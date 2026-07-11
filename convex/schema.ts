@@ -27,6 +27,11 @@ export default defineSchema({
     weight: v.number(),
     country: v.string(),
     city: v.string(),
+    /** Device GPS used to set country/city (anti-fake location). */
+    locationLat: v.optional(v.number()),
+    locationLng: v.optional(v.number()),
+    locationAccuracyM: v.optional(v.number()),
+    locationVerifiedAt: v.optional(v.number()),
     education: v.string(),
     occupation: v.string(),
     religiousLevel: v.string(),
