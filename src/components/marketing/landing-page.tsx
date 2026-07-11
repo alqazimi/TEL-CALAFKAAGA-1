@@ -67,18 +67,20 @@ export function LandingPage() {
   return (
     <div className="overflow-hidden">
       {/* Hero — brand, one headline, one sentence, CTAs, full-bleed image */}
-      <section className="relative min-h-[100svh] flex items-end sm:items-center overflow-hidden bg-brand-dark">
+      <section className="relative min-h-[100svh] flex items-end sm:items-center overflow-hidden bg-[#120d0e]">
         <Image
           src="/images/hero-couple.webp"
           alt=""
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[72%_center] sm:object-center"
+          className="object-cover object-[68%_center] sm:object-[center_30%] dark:brightness-[0.72] dark:contrast-[1.08] dark:saturate-[0.95]"
           aria-hidden
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/95 via-brand-dark/78 to-brand-dark/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-brand-dark/50" />
+        {/* Readable overlays — work in light and night mode while keeping the photo visible */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#120d0e]/92 via-[#120d0e]/62 to-[#120d0e]/15 sm:via-[#120d0e]/55 sm:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#120d0e] via-[#120d0e]/25 to-[#120d0e]/45 dark:from-[#120d0e] dark:via-[#120d0e]/40 dark:to-[#120d0e]/55" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/35 via-transparent to-gold/10 opacity-90 dark:from-primary/25 dark:opacity-70" />
 
         <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32 lg:px-8 w-full">
           <motion.div
@@ -87,30 +89,30 @@ export function LandingPage() {
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="max-w-xl"
           >
-            <p className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.05]">
+            <p className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.05] drop-shadow-sm">
               {SITE_BRAND_NAME}
             </p>
 
-            <h1 className="mt-5 font-display text-2xl font-medium tracking-tight text-white/95 sm:text-3xl lg:text-[2.15rem] leading-snug">
+            <h1 className="mt-5 font-display text-2xl font-medium tracking-tight text-white sm:text-3xl lg:text-[2.15rem] leading-snug drop-shadow-sm">
               {t("landing.heroTitle")}
               <span className="text-gold"> {t("landing.heroHighlight")}</span>
             </h1>
 
-            <p className="mt-5 text-base sm:text-lg text-white/80 max-w-md leading-relaxed">
+            <p className="mt-5 text-base sm:text-lg text-white/85 max-w-md leading-relaxed">
               {t("landing.heroDesc")}
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <AuthRegisterCta
                 registerLabel={t("common.joinNow")}
-                className="text-base px-8 shadow-lg shadow-primary/25"
+                className="text-base px-8 shadow-lg shadow-black/30"
                 size="lg"
               />
               <Button
                 asChild
                 size="lg"
                 variant="outline"
-                className="border-white/25 bg-white/5 text-white hover:bg-white/15 hover:text-white backdrop-blur-sm"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
               >
                 <Link href="/how-it-works">{t("landing.seeHowItWorks")}</Link>
               </Button>
