@@ -1,6 +1,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internalQuery, query } from "./_generated/server";
+import { isEmailTaken, normalizeAuthEmail } from "./lib/authEmail";
 
 export const currentUser = query({
   args: {},
@@ -15,6 +16,14 @@ export const currentUser = query({
       .unique();
 
     return { userId, email: user?.email ?? null, profile };
+  },
+});
+
+/** Public check used by register UI and UniquePassword sign-up guard. */
+export const isEmailRegistered = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    return await isEmailTaken(ctx, normalizeAuthEmail(args.email));
   },
 });
 

@@ -1,8 +1,9 @@
 import { convexAuth } from "@convex-dev/auth/server";
-import { Password } from "@convex-dev/auth/providers/Password";
 import { createUserProfile } from "./lib/createProfile";
 import { MutationCtx } from "./_generated/server";
 import { ResendOTPPasswordReset } from "./ResendOTPPasswordReset";
+import { UniquePassword } from "./lib/uniquePassword";
+import { normalizeAuthEmail } from "./lib/authEmail";
 
 /** Log out after 3 hours without activity (refresh token / session idle). */
 const SESSION_INACTIVE_MS = 3 * 60 * 60 * 1000;
@@ -11,12 +12,12 @@ const SESSION_TOTAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
-    Password({
+    UniquePassword({
       reset: ResendOTPPasswordReset,
       profile(params) {
         const rawEmail = params.email;
         const email =
-          typeof rawEmail === "string" ? rawEmail.trim().toLowerCase() : "";
+          typeof rawEmail === "string" ? normalizeAuthEmail(rawEmail) : "";
         return {
           email,
           ...(params.name ? { name: params.name as string } : {}),

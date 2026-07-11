@@ -10,6 +10,7 @@ import {
   isProfileFullyComplete,
 } from "./lib/profileCompleteness";
 import { isStaffRole } from "./lib/roles";
+import { normalizeAuthEmail } from "./lib/authEmail";
 
 /** One-time backfill for profiles created before new fields were added. */
 export const backfillProfileFields = internalMutation({
@@ -367,5 +368,57 @@ export const syncPaidMenApproval = internalMutation({
     }
 
     return { approved, revoked, skipped, total: profiles.length };
+  },
+});
+
+/** Lowercase legacy emails so one address cannot map to two accounts. */
+export const normalizeAuthEmails = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    let usersUpdated = 0;
+    let accountsUpdated = 0;
+    let skippedConflicts = 0;
+
+    const users = await ctx.db.query("users").collect();
+    for (const user of users) {
+      if (!user.email) continue;
+      const normalized = normalizeAuthEmail(user.email);
+      if (normalized === user.email) continue;
+
+      const conflict = await ctx.db
+        .query("users")
+        .withIndex("email", (q) => q.eq("email", normalized))
+        .first();
+      if (conflict && conflict._id !== user._id) {
+        skippedConflicts++;
+        continue;
+      }
+
+      await ctx.db.patch(user._id, { email: normalized });
+      usersUpdated++;
+    }
+
+    const accounts = await ctx.db.query("authAccounts").collect();
+    for (const account of accounts) {
+      if (account.provider !== "password") continue;
+      const normalized = normalizeAuthEmail(account.providerAccountId);
+      if (normalized === account.providerAccountId) continue;
+
+      const conflict = await ctx.db
+        .query("authAccounts")
+        .withIndex("providerAndAccountId", (q) =>
+          q.eq("provider", "password").eq("providerAccountId", normalized)
+        )
+        .unique();
+      if (conflict && conflict._id !== account._id) {
+        skippedConflicts++;
+        continue;
+      }
+
+      await ctx.db.patch(account._id, { providerAccountId: normalized });
+      accountsUpdated++;
+    }
+
+    return { usersUpdated, accountsUpdated, skippedConflicts };
   },
 });
