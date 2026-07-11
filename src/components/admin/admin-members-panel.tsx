@@ -34,9 +34,15 @@ import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
 import { resolveReviewStatus } from "@/lib/review-status";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog, type ConfirmDialogTone } from "@/components/ui/confirm-dialog";
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
 type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
+
+type PendingConfirm = {
+  type: "reject" | "delete" | "ban" | "unban";
+  user: AdminUser;
+};
 
 function isPremiumUser(user: AdminUser) {
   return user.hasPersonalSupport === true || (user.paidCents ?? 0) >= 2000;
@@ -127,6 +133,7 @@ export function AdminMembersPanel({
   const deleteUser = useMutation(api.admin.deleteUser);
   const setUserRole = useMutation(api.admin.setUserRole);
   const [busyId, setBusyId] = useState<Id<"profiles"> | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
   const canApproveMember = (user: AdminUser) =>
     !!user.questionnaireComplete &&
@@ -152,11 +159,72 @@ export function AdminMembersPanel({
     try {
       await action();
       toast.success(successMessage);
+      setPendingConfirm(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("adminPage.actionFailed"));
     } finally {
       setBusyId(null);
     }
+  };
+
+  const confirmCopy = (pending: PendingConfirm) => {
+    const { type, user } = pending;
+    if (type === "reject") {
+      return {
+        title: t("adminPage.rejectConfirmTitle"),
+        description: t("adminPage.rejectConfirm", { name: user.name }),
+        confirmLabel: t("adminPage.rejectShort"),
+        tone: "warning" as ConfirmDialogTone,
+      };
+    }
+    if (type === "delete") {
+      return {
+        title: t("adminPage.deleteConfirmTitle"),
+        description: t("adminPage.deleteConfirm", { name: user.name }),
+        confirmLabel: t("adminPage.deleteShort"),
+        tone: "danger" as ConfirmDialogTone,
+      };
+    }
+    if (type === "unban") {
+      return {
+        title: t("adminPage.unbanConfirmTitle"),
+        description: t("adminPage.unbanConfirm", { name: user.name }),
+        confirmLabel: t("adminPage.unbanShort"),
+        tone: "warning" as ConfirmDialogTone,
+      };
+    }
+    return {
+      title: t("adminPage.banConfirmTitle"),
+      description: t("adminPage.banConfirm", { name: user.name }),
+      confirmLabel: t("adminPage.banShort"),
+      tone: "danger" as ConfirmDialogTone,
+    };
+  };
+
+  const handleConfirmAction = () => {
+    if (!pendingConfirm) return;
+    const { type, user } = pendingConfirm;
+    if (type === "reject") {
+      void runAction(
+        user._id,
+        () => rejectUser({ profileId: user._id }),
+        t("adminPage.rejectSuccess")
+      );
+      return;
+    }
+    if (type === "delete") {
+      void runAction(
+        user._id,
+        () => deleteUser({ profileId: user._id }),
+        t("adminPage.deleteSuccess")
+      );
+      return;
+    }
+    void runAction(
+      user._id,
+      () => banUser({ profileId: user._id, banned: type === "ban" }),
+      type === "ban" ? t("adminPage.banSuccess") : t("adminPage.unbanSuccess")
+    );
   };
 
   return (
@@ -363,20 +431,7 @@ export function AdminMembersPanel({
                         className="h-9 rounded-lg"
                         disabled={busy}
                         title={t("adminPage.rejectUser")}
-                        onClick={() => {
-                          if (
-                            !window.confirm(
-                              t("adminPage.rejectConfirm", { name: user.name })
-                            )
-                          ) {
-                            return;
-                          }
-                          void runAction(
-                            user._id,
-                            () => rejectUser({ profileId: user._id }),
-                            t("adminPage.rejectSuccess")
-                          );
-                        }}
+                        onClick={() => setPendingConfirm({ type: "reject", user })}
                       >
                         {t("adminPage.rejectShort")}
                       </Button>
@@ -406,11 +461,10 @@ export function AdminMembersPanel({
                       className="h-9 rounded-lg"
                       disabled={busy || isOwnerRole(user.role)}
                       onClick={() =>
-                        void runAction(
-                          user._id,
-                          () => banUser({ profileId: user._id, banned: !user.banned }),
-                          user.banned ? t("adminPage.unbanSuccess") : t("adminPage.banSuccess")
-                        )
+                        setPendingConfirm({
+                          type: user.banned ? "unban" : "ban",
+                          user,
+                        })
                       }
                     >
                       <Ban className="mr-1.5 h-3.5 w-3.5" />
@@ -423,16 +477,7 @@ export function AdminMembersPanel({
                         variant="ghost"
                         className="h-9 rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive"
                         disabled={busy}
-                        onClick={() => {
-                          if (!window.confirm(t("adminPage.deleteConfirm", { name: user.name }))) {
-                            return;
-                          }
-                          void runAction(
-                            user._id,
-                            () => deleteUser({ profileId: user._id }),
-                            t("adminPage.deleteSuccess")
-                          );
-                        }}
+                        onClick={() => setPendingConfirm({ type: "delete", user })}
                       >
                         <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                         {t("adminPage.deleteShort")}
@@ -445,6 +490,20 @@ export function AdminMembersPanel({
           </ul>
         )}
       </div>
+
+      {pendingConfirm && (
+        <ConfirmDialog
+          open
+          {...confirmCopy(pendingConfirm)}
+          cancelLabel={t("common.cancel")}
+          busy={busyId === pendingConfirm.user._id}
+          onCancel={() => {
+            if (busyId === pendingConfirm.user._id) return;
+            setPendingConfirm(null);
+          }}
+          onConfirm={handleConfirmAction}
+        />
+      )}
     </div>
   );
 }
