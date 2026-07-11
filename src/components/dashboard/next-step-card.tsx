@@ -17,7 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { hasPaidAccess } from "@/lib/access";
-import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
+import { formatMoney, planPricesForGender } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { reminderCopy } from "@/lib/reminder-copy";
 import {
@@ -126,8 +126,8 @@ export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardPro
               {!hasPaid && isComplete && (
                 <p className="text-xs text-muted-foreground mt-2">
                   {t("dashboard.payToContinue", {
-                    basic: REGISTRATION_PRICE,
-                    premium: PERSONAL_SUPPORT_PRICE,
+                    basic: formatMoney(planPricesForGender(user.profile?.gender).basic),
+                    premium: formatMoney(planPricesForGender(user.profile?.gender).premium),
                   })}
                 </p>
               )}

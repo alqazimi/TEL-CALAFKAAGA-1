@@ -21,10 +21,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FAQAccordion } from "@/components/marketing/faq-accordion";
 import {
+  formatMoney,
   MIN_COMPATIBILITY_SCORE,
   PERSONAL_SUPPORT_PRICE,
+  PREMIUM_UPGRADE_PRICE,
   REGISTRATION_PRICE,
   SITE_BRAND_NAME,
+  WOMEN_BASIC_PRICE,
   WHATSAPP_URL,
 } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
@@ -224,6 +227,8 @@ export function LandingPage() {
               {t("landing.pricingSubtitle", {
                 premium: PERSONAL_SUPPORT_PRICE,
                 basic: REGISTRATION_PRICE,
+                womenBasic: formatMoney(WOMEN_BASIC_PRICE),
+                womenPremium: PREMIUM_UPGRADE_PRICE,
               })}
             </p>
           </Reveal>
@@ -238,7 +243,10 @@ export function LandingPage() {
                 <span className="text-sm text-muted-foreground">{t("common.oneTime")}</span>
               </div>
               <p className="mt-2 text-xs font-medium text-primary">
-                {t("landing.womenFreeNote")}
+                {t("landing.womenFreeNote", {
+                  price: formatMoney(WOMEN_BASIC_PRICE),
+                  premium: PREMIUM_UPGRADE_PRICE,
+                })}
               </p>
               <ul className="mt-6 space-y-3">
                 {basicFeatures.map((feature) => (

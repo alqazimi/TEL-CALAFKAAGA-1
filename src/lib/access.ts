@@ -21,9 +21,8 @@ export function hasPaidAccess(
     | undefined
 ): boolean {
   if (!profile) return false;
-  // Women: Basic is free (full app access). Premium remains optional.
-  // Men: must pay — no free trial.
-  if (profile.gender === "female") return true;
+  // Men and women must pay for Basic (women $2.50, men $5). Staff always have access.
+  // Grandfathered free-Basic women already have hasPaid: true.
   return !!profile.hasPaid || isStaffRole(profile.role);
 }
 

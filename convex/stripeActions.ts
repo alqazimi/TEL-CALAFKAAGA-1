@@ -9,6 +9,7 @@ import {
   PERSONAL_SUPPORT_AMOUNT_CENTS,
   PREMIUM_UPGRADE_AMOUNT_CENTS,
   REGISTRATION_AMOUNT_CENTS,
+  WOMEN_BASIC_AMOUNT_CENTS,
 } from "./payments";
 import { hasPaidAccess } from "./lib/roles";
 import { isPremiumMember } from "./lib/premium";
@@ -35,17 +36,20 @@ function getRegistrationCheckoutDetails(
       registrationTier: "premium" as const,
       productName: "Hel Calafkaaga Premium",
       productDescription: womenPremium
-        ? "WhatsApp personal support and help finding your match — upgrade from free Basic"
+        ? "WhatsApp personal support and help finding your match"
         : "Full app access plus WhatsApp personal support and help finding your match",
       metadataType: womenPremium ? ("premium_upgrade" as const) : ("registration" as const),
     };
   }
 
+  const womenBasic = gender === "female";
   return {
-    amount: REGISTRATION_AMOUNT_CENTS,
+    amount: womenBasic ? WOMEN_BASIC_AMOUNT_CENTS : REGISTRATION_AMOUNT_CENTS,
     paymentType: "registration" as const,
     registrationTier: "basic" as const,
-    productName: "Hel Calafkaaga Basic Registration",
+    productName: womenBasic
+      ? "Hel Calafkaaga Basic Registration (Women)"
+      : "Hel Calafkaaga Basic Registration",
     productDescription: "One-time registration — full access to matches and messaging",
     metadataType: "registration" as const,
   };
@@ -66,20 +70,15 @@ export const createRegistrationCheckout = action({
     if (!profile) throw new Error("Profile not found");
     if (profile.banned) throw new Error("Account suspended");
 
-    if (profile.gender === "female") {
+    if (isPremiumMember(profile)) {
+      throw new Error("Already on the premium plan");
+    }
+    if (profile.hasPaid) {
       if (args.tier === "basic") {
-        throw new Error("Basic is free for women. Choose Premium for WhatsApp support.");
-      }
-      if (isPremiumMember(profile)) {
-        throw new Error("Already on the premium plan");
-      }
-    } else {
-      if (profile.hasPaid) {
         throw new Error("Already paid");
       }
-      if (hasPaidAccess(profile)) {
-        throw new Error("You still have free access. Payment opens after your trial week.");
-      }
+      // Paid Basic → Premium must use upgrade checkout ($15).
+      throw new Error("Use the Premium upgrade button");
     }
 
     const checkout = getRegistrationCheckoutDetails(args.tier, profile.gender);

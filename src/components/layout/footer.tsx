@@ -6,9 +6,11 @@ import { useConvexAuth } from "convex/react";
 import { Phone, Mail, MapPin } from "lucide-react";
 import {
   APP_NAME,
+  formatMoney,
   PERSONAL_SUPPORT_PRICE,
   REGISTRATION_PRICE,
   SUPPORT_EMAIL,
+  WOMEN_BASIC_PRICE,
   WHATSAPP_DISPLAY,
   WHATSAPP_URL,
 } from "@/lib/constants";
@@ -126,6 +128,7 @@ export function Footer() {
               {t("common.joinPlans", {
                 basic: REGISTRATION_PRICE,
                 premium: PERSONAL_SUPPORT_PRICE,
+                womenBasic: formatMoney(WOMEN_BASIC_PRICE),
               })}
             </p>
             {!isLoading && isAuthenticated ? (

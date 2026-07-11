@@ -14,12 +14,28 @@ export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 export const SUPPORT_EMAIL = "hello@helcalafkaaga.com";
 /** Men basic registration (one-time) for NEW users. Existing members keep free Basic. */
 export const REGISTRATION_PRICE = 5;
+/** Women basic registration (one-time) for NEW users. */
+export const WOMEN_BASIC_PRICE = 2.5;
 /** New-user Premium signup (WhatsApp + match search help). */
 export const PERSONAL_SUPPORT_PRICE = 20;
 /** @deprecated Free trial removed — men must pay before access. Kept for legacy UI/admin labels. */
 export const TRIAL_DAYS = 7;
 /** Upgrade to Premium from Basic (existing members or new Basic payers). */
 export const PREMIUM_UPGRADE_PRICE = 15;
+
+/** Display helper — $2.50 stays "2.50", $5 stays "5". */
+export function formatMoney(price: number): string {
+  return Number.isInteger(price) ? String(price) : price.toFixed(2);
+}
+
+/** Plan display prices for checkout copy (women Premium is always $15). */
+export function planPricesForGender(gender?: string | null) {
+  const isWoman = gender === "female";
+  return {
+    basic: isWoman ? WOMEN_BASIC_PRICE : REGISTRATION_PRICE,
+    premium: isWoman ? PREMIUM_UPGRADE_PRICE : PERSONAL_SUPPORT_PRICE,
+  };
+}
 export const MAX_PROFILE_PHOTOS = 5;
 /** @deprecated Use PERSONAL_SUPPORT_PRICE */
 export const WHATSAPP_CALL_PRICE = PERSONAL_SUPPORT_PRICE;
@@ -372,7 +388,7 @@ export const FAQ_ITEMS = [
   {
     question: "How much does Hel Calafkaaga cost?",
     answer:
-      "Men (new signups): Basic $5 or Premium $20. Existing members keep free Basic and can upgrade to Premium for $15. Women: Basic free; Premium always $15.",
+      "Men (new signups): Basic $5 or Premium $20. Existing members keep free Basic and can upgrade to Premium for $15. Women (new): Basic $2.50; Premium $15.",
   },
   {
     question: "How is my data protected?",

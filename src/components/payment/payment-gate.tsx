@@ -16,13 +16,17 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PERSONAL_SUPPORT_PRICE, PREMIUM_UPGRADE_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
+import { PERSONAL_SUPPORT_PRICE, PREMIUM_UPGRADE_PRICE, REGISTRATION_PRICE, WOMEN_BASIC_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { getPlanPreference, type PlanPreference } from "@/lib/plan-preference";
 import { cn } from "@/lib/utils";
 import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 
 type RegistrationTier = "basic" | "premium";
+
+function formatPrice(price: number): string {
+  return Number.isInteger(price) ? String(price) : price.toFixed(2);
+}
 
 export function PaymentCheckoutButton({
   tier,
@@ -72,7 +76,7 @@ export function PaymentCheckoutButton({
       <CreditCard className="h-4 w-4 mr-2" />
       {loading
         ? t("payment.redirecting")
-        : t("payment.pay", { price })}
+        : t("payment.pay", { price: formatPrice(price) })}
     </Button>
   );
 }
@@ -81,8 +85,9 @@ interface PaymentGateProps {
   title?: string;
   description?: string;
   showProgress?: boolean;
-  /** When true, Basic is free — only show Premium upsell. */
+  /** @deprecated Women Basic is paid ($2.50). Kept for older call sites. */
   freeBasic?: boolean;
+  gender?: "male" | "female";
 }
 
 function PaymentProgress() {
@@ -145,10 +150,13 @@ export function PaymentGate({
   description,
   showProgress = true,
   freeBasic = false,
+  gender,
 }: PaymentGateProps) {
   const { t } = useTranslation();
   const [preferredPlan, setPreferredPlan] = useState<PlanPreference | null>(null);
-  const premiumDisplayPrice = freeBasic ? PREMIUM_UPGRADE_PRICE : PERSONAL_SUPPORT_PRICE;
+  const isWoman = gender === "female";
+  const basicPrice = isWoman ? WOMEN_BASIC_PRICE : REGISTRATION_PRICE;
+  const premiumDisplayPrice = isWoman || freeBasic ? PREMIUM_UPGRADE_PRICE : PERSONAL_SUPPORT_PRICE;
 
   useEffect(() => {
     setPreferredPlan(getPlanPreference());
@@ -175,8 +183,8 @@ export function PaymentGate({
             (freeBasic
               ? t("payment.womenPremiumDesc", { premium: PREMIUM_UPGRADE_PRICE })
               : t("payment.choosePlan", {
-                  premium: PERSONAL_SUPPORT_PRICE,
-                  basic: REGISTRATION_PRICE,
+                  premium: formatPrice(premiumDisplayPrice),
+                  basic: formatPrice(basicPrice),
                 }))}
         </p>
       </div>
@@ -206,7 +214,7 @@ export function PaymentGate({
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-bold text-primary">
-                    ${REGISTRATION_PRICE}
+                    ${formatPrice(basicPrice)}
                   </span>
                   <span className="text-sm text-muted-foreground font-medium">
                     {t("common.oneTime")}
@@ -216,7 +224,9 @@ export function PaymentGate({
                   {t("payment.basicPlanDesc")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {t("payment.menPriceNote", { price: REGISTRATION_PRICE })}
+                  {isWoman
+                    ? t("payment.womenBasicPriceNote", { price: formatPrice(basicPrice) })
+                    : t("payment.menPriceNote", { price: formatPrice(basicPrice) })}
                 </p>
               </div>
 
@@ -229,7 +239,12 @@ export function PaymentGate({
                 ))}
               </ul>
 
-              <PaymentCheckoutButton tier="basic" className="w-full" variant="outline" />
+              <PaymentCheckoutButton
+                tier="basic"
+                className="w-full"
+                variant="outline"
+                labelPrice={basicPrice}
+              />
             </CardContent>
           </Card>
         )}
@@ -254,7 +269,7 @@ export function PaymentGate({
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold text-primary">
-                  ${premiumDisplayPrice}
+                  ${formatPrice(premiumDisplayPrice)}
                 </span>
                 <span className="text-sm text-muted-foreground font-medium">
                   {t("common.oneTime")}
@@ -290,7 +305,7 @@ export function PaymentGate({
               <PaymentCheckoutButton
                 tier="premium"
                 className="w-full"
-                labelPrice={PERSONAL_SUPPORT_PRICE}
+                labelPrice={premiumDisplayPrice}
               />
             )}
           </CardContent>

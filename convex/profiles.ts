@@ -317,7 +317,8 @@ export const completeQuestionnaire = mutation({
 
     assertProfileFullyComplete(profile, preferences);
 
-    // Women Basic → admin review. Men → approved only after they pay (not by admin).
+    // Women Basic → unpaid until Stripe, then admin review.
+    // Men → unpaid until Stripe (approved on payment).
     const womenBasicNeedsReview = profile.gender === "female";
 
     await ctx.db.patch(profile._id, {
@@ -327,32 +328,43 @@ export const completeQuestionnaire = mutation({
       verified: false,
       ...(womenBasicNeedsReview
         ? {
-            reviewStatus: "pending_review" as const,
+            reviewStatus: "incomplete" as const,
             approved: false,
-            // Women: Basic is free — no trial, grant access immediately.
-            ...(!profile.hasPaid ? { hasPaid: true } : {}),
           }
         : profile.hasPaid
           ? {
-              // Already paid (rare) — approve without admin.
               reviewStatus: "approved" as const,
               approved: true,
             }
           : {
-              // Men: locked until Stripe payment (no free trial).
               reviewStatus: "incomplete" as const,
               approved: false,
             }),
     });
 
     if (womenBasicNeedsReview) {
-      await sendNotification(ctx, {
-        userId,
-        type: "approval",
-        title: "Profile submitted for review",
-        body: "Your questionnaire is complete. An admin will review your profile shortly. You will be notified when you can browse matches.",
-        sendEmail: true,
-      });
+      if (profile.hasPaid) {
+        // Grandfathered / already paid woman finishing questionnaire.
+        await ctx.db.patch(profile._id, {
+          reviewStatus: "pending_review",
+          approved: false,
+        });
+        await sendNotification(ctx, {
+          userId,
+          type: "approval",
+          title: "Profile submitted for review",
+          body: "Your questionnaire is complete. An admin will review your profile shortly. You will be notified when you can browse matches.",
+          sendEmail: true,
+        });
+      } else {
+        await sendNotification(ctx, {
+          userId,
+          type: "approval",
+          title: "Profile complete",
+          body: "Your profile is ready. Choose Basic ($2.50) or Premium ($15) to continue. After Basic payment, an admin will review your profile.",
+          sendEmail: true,
+        });
+      }
     } else if (profile.hasPaid) {
       await sendNotification(ctx, {
         userId,

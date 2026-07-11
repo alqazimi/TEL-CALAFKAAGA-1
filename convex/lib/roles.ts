@@ -28,7 +28,7 @@ export function hasPaidAccess(profile: {
   trialEndsAt?: number;
   gender?: string;
 }): boolean {
-  // Women: Basic is free. Men must pay before access (no free trial).
-  if (profile.gender === "female") return true;
+  // New members (men and women) must pay. Staff always have access.
+  // Existing free Basic women already have hasPaid: true from the old free plan.
   return profile.hasPaid || isStaffRole(profile.role);
 }

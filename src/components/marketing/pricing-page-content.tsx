@@ -7,7 +7,7 @@ import { AuthRegisterCta } from "@/components/auth/auth-register-cta";
 import { PlanChoiceNote } from "@/components/marketing/plan-choice-note";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
+import { PERSONAL_SUPPORT_PRICE, PREMIUM_UPGRADE_PRICE, REGISTRATION_PRICE, formatMoney, WOMEN_BASIC_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +47,10 @@ export function PricingPageContent() {
               {t("pricing.basicDesc")}
             </p>
             <p className="text-center text-xs font-medium text-primary mt-2">
-              {t("landing.womenFreeNote")}
+              {t("landing.womenFreeNote", {
+                price: formatMoney(WOMEN_BASIC_PRICE),
+                premium: PREMIUM_UPGRADE_PRICE,
+              })}
             </p>
             <ul className="mt-8 space-y-3">
               {basicFeatures.map((feature) => (

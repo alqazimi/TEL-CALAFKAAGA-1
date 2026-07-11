@@ -30,7 +30,7 @@ import { needsApprovalGate } from "@/lib/review-status";
 import { useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isMemberProfileReady, isProfileQueriesLoading } from "@/lib/profile-progress";
 import { isTrialExpired } from "@/lib/trial";
-import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
+import { formatMoney, planPricesForGender } from "@/lib/constants";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
@@ -200,7 +200,7 @@ export default function ChatPage() {
       setShowEmoji(false);
     } catch (error) {
       if (error instanceof Error && error.message.includes("payment")) {
-        toast.error(t("chatPage.paymentRequired", { price: REGISTRATION_PRICE }));
+        toast.error(t("chatPage.paymentRequired", { price: formatMoney(planPricesForGender(profile?.gender).basic) }));
       } else {
         toast.error(t("chatPage.sendFailed"));
       }
@@ -275,6 +275,7 @@ export default function ChatPage() {
     return (
       <DashboardLayout>
         <PaymentGate
+          gender={profile.gender === "female" || profile.gender === "male" ? profile.gender : undefined}
           title={
             isTrialExpired(profile)
               ? t("payment.trialEndedTitle")
@@ -283,12 +284,12 @@ export default function ChatPage() {
           description={
             isTrialExpired(profile)
               ? t("payment.trialEndedDesc", {
-                  basic: REGISTRATION_PRICE,
-                  premium: PERSONAL_SUPPORT_PRICE,
+                  basic: formatMoney(planPricesForGender(profile.gender).basic),
+                  premium: formatMoney(planPricesForGender(profile.gender).premium),
                 })
               : t("payment.profileReadyDesc", {
-                  basic: REGISTRATION_PRICE,
-                  premium: PERSONAL_SUPPORT_PRICE,
+                  basic: formatMoney(planPricesForGender(profile.gender).basic),
+                  premium: formatMoney(planPricesForGender(profile.gender).premium),
                 })
           }
         />
@@ -517,13 +518,13 @@ export default function ChatPage() {
                       <h3 className="text-lg font-bold mb-2">{t("chatPage.unlockChat")}</h3>
                       <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
                         {t("chatPage.unlockChatDesc", {
-                          price: REGISTRATION_PRICE,
+                          price: formatMoney(planPricesForGender(profile?.gender).basic),
                           name: activeConv.profile?.name?.split(" ")[0] ?? t("chatPage.match"),
                         })}
                       </p>
                       <Button asChild>
                         <Link href="/payment">
-                          {t("chatPage.pay", { price: REGISTRATION_PRICE })}
+                          {t("chatPage.pay", { price: formatMoney(planPricesForGender(profile?.gender).basic) })}
                         </Link>
                       </Button>
                     </div>

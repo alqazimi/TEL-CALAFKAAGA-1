@@ -60,11 +60,13 @@ import {
   type AdminNavTab,
 } from "@/lib/admin-nav";
 import {
+  formatMoney,
   PERSONAL_SUPPORT_PRICE,
   PREMIUM_UPGRADE_PRICE,
   REGISTRATION_PRICE,
   SUPPORT_EMAIL,
   TRIAL_DAYS,
+  WOMEN_BASIC_PRICE,
   WHATSAPP_DISPLAY,
   WHATSAPP_URL,
 } from "@/lib/constants";
@@ -1159,12 +1161,14 @@ export default function AdminPage() {
                 <p>
                   <span className="text-muted-foreground">{t("adminPage.basicPlan")}: </span>
                   <span className="font-semibold">
-                    ${REGISTRATION_PRICE} ({t("landing.womenFreeNote")})
+                    Men ${REGISTRATION_PRICE} · Women ${formatMoney(WOMEN_BASIC_PRICE)}
                   </span>
                 </p>
                 <p>
                   <span className="text-muted-foreground">{t("adminPage.premiumPlan")}: </span>
-                  <span className="font-semibold">${PERSONAL_SUPPORT_PRICE}</span>
+                  <span className="font-semibold">
+                    Men ${PERSONAL_SUPPORT_PRICE} · Women ${PREMIUM_UPGRADE_PRICE}
+                  </span>
                 </p>
                 <p>
                   <span className="text-muted-foreground">{t("adminPage.trialLength")}: </span>

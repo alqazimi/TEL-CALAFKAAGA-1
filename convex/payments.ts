@@ -12,6 +12,8 @@ import { internal } from "./_generated/api";
 import { sendNotification } from "./lib/sendNotification";
 
 export const REGISTRATION_AMOUNT_CENTS = 500;
+/** Women Basic registration — $2.50. */
+export const WOMEN_BASIC_AMOUNT_CENTS = 250;
 /** New-user Premium registration — $20. */
 export const PERSONAL_SUPPORT_AMOUNT_CENTS = 2000;
 /** Upgrade from Basic to Premium — $15. */
@@ -72,9 +74,17 @@ async function applyPaymentCompletion(
     await ctx.db.patch(profile._id, {
       hasPaid: true,
       ...(isPremium ? { hasPersonalSupport: true } : {}),
-      // Paid members (men Basic/Premium, women Premium) skip admin approval.
-      approved: true,
-      reviewStatus: "approved",
+      // Men + women Premium: live after payment.
+      // Women Basic: paid but still needs admin profile approval.
+      ...(isPremium || profile.gender === "male"
+        ? {
+            approved: true,
+            reviewStatus: "approved" as const,
+          }
+        : {
+            approved: false,
+            reviewStatus: "pending_review" as const,
+          }),
     });
 
     if (profile.questionnaireComplete) {
@@ -97,7 +107,9 @@ async function applyPaymentCompletion(
           ? payment.paymentType === "premium_upgrade"
             ? "Your premium plan is active. WhatsApp support and match-search help are ready."
             : "Your registration and personal support plan are active. Browse matches from your dashboard."
-          : "Your registration is complete. Browse matches from your dashboard.",
+          : profile.gender === "female"
+            ? "Payment received. An admin will review your profile shortly — you will be notified when matches unlock."
+            : "Your registration is complete. Browse matches from your dashboard.",
         sendEmail: true,
       });
     }

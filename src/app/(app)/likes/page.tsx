@@ -26,7 +26,7 @@ import { needsApprovalGate } from "@/lib/review-status";
 import { useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isMemberProfileReady, isProfileQueriesLoading } from "@/lib/profile-progress";
 import { isTrialExpired } from "@/lib/trial";
-import { PERSONAL_SUPPORT_PRICE, REGISTRATION_PRICE } from "@/lib/constants";
+import { formatMoney, planPricesForGender } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 
@@ -143,6 +143,7 @@ export default function LikesPage() {
     return (
       <DashboardLayout>
         <PaymentGate
+          gender={profile.gender === "female" || profile.gender === "male" ? profile.gender : undefined}
           title={
             isTrialExpired(profile)
               ? t("payment.trialEndedTitle")
@@ -151,12 +152,12 @@ export default function LikesPage() {
           description={
             isTrialExpired(profile)
               ? t("payment.trialEndedDesc", {
-                  basic: REGISTRATION_PRICE,
-                  premium: PERSONAL_SUPPORT_PRICE,
+                  basic: formatMoney(planPricesForGender(profile.gender).basic),
+                  premium: formatMoney(planPricesForGender(profile.gender).premium),
                 })
               : t("payment.profileReadyDesc", {
-                  basic: REGISTRATION_PRICE,
-                  premium: PERSONAL_SUPPORT_PRICE,
+                  basic: formatMoney(planPricesForGender(profile.gender).basic),
+                  premium: formatMoney(planPricesForGender(profile.gender).premium),
                 })
           }
         />

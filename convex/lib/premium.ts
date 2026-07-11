@@ -32,5 +32,5 @@ export function isBasicPaidMember(
 ): boolean {
   if (!profile) return false;
   if (isPremiumMember(profile, paidCents)) return false;
-  return profile.hasPaid || profile.gender === "female";
+  return profile.hasPaid === true;
 }

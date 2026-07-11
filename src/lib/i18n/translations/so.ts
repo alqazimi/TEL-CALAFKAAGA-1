@@ -58,7 +58,7 @@ export const so: Translations = {
     contactUs: "Nala Soo Xiriir",
     readyToMatch: "Diyaar ma u tahay inaad hesho lammaanahaaga?",
     joinThousands: "Ku soo biir kumanaan qof oo dhab u ah {{name}}.",
-    joinPlans: "Ragga laga bilaabo ${{basic}} · Premium ${{premium}} · Haween Basic bilaash",
+    joinPlans: "Ragga laga bilaabo ${{basic}} · Premium ${{premium}} · Haween Basic ${{womenBasic}}",
     toggleTheme: "Beddel mowjadda",
     toggleLanguage: "Beddel luqadda",
     languageSomali: "Soomaali",
@@ -147,7 +147,7 @@ export const so: Translations = {
     quoteAuthor: "Xubin HEL CALAFKAAGA",
     pricingTitle: "Dooro Qorshahaaga",
     pricingSubtitle:
-      "Ragga: Basic ${{basic}} ama Premium ${{premium}}. Haweenka: Basic bilaash — Premium ikhtiyaari. Isla app-ka; Premium waxay ku daraa WhatsApp iyo raadinta lammaane.",
+      "Ragga: Basic ${{basic}} ama Premium ${{premium}}. Haweenka: Basic ${{womenBasic}} — Premium ${{womenPremium}}. Isla app-ka; Premium waxay ku daraa WhatsApp iyo raadinta lammaane.",
     basicPlan: "Basic",
     basicPlanDesc: "Profile, isbarbardhig, jeclaan, iyo chat — helitaan buuxa.",
     premiumPlan: "Premium",
@@ -161,7 +161,7 @@ export const so: Translations = {
     premiumFeature1: "Wax kasta oo Basic ah",
     premiumFeature2: "Taageero WhatsApp shakhsi ah",
     premiumFeature3: "Waxaan kuu raadinnaa qofka kuu habboon",
-    womenFreeNote: "Haweenka Basic waa bilaash. Premium u cusbooneysii markaad rabto.",
+    womenFreeNote: "Haweenka: Basic ${{price}} · Premium ${{premium}}.",
     menPriceNote: "Ragga waxay bixiyaan ${{price}} hal mar Basic.",
     recommended: "Lagula talin",
     startJourney: "Bilow Safarkaaga Maanta",
@@ -192,7 +192,7 @@ export const so: Translations = {
     step1Desc: "Abuur akoonkaaga oo dhammaystir profile-kaaga guurka oo leh sawir iyo doorbidyo.",
     step2Title: "Dooro Qorshahaaga",
     step2Desc:
-      "Ragga cusub: Basic $5 ama Premium $20. Xubnaha jira Basic bilaash — kor u qaadis Premium $15. Haweenka: Basic bilaash.",
+      "Ragga cusub: Basic $5 ama Premium $20. Xubnaha jira Basic bilaash — kor u qaadis Premium $15. Haweenka cusub: Basic $2.50 ama Premium $15.",
     step3Title: "Baadh Isbarbardhigyo",
     step3Desc: "Eeg profile-yada iswaafajinta leh oo jeclow kuwa xiisaha leh.",
     step4Title: "Isku Xir & Dhis",
@@ -503,9 +503,10 @@ export const so: Translations = {
     featureWhatsApp: "Taageero WhatsApp shakhsi ah",
     featureSearchHelp: "Waxaan kuu raadinnaa qofka kuu habboon",
     menPriceNote: "Ragga — ${{price}} hal mar",
+    womenBasicPriceNote: "Haweenka — ${{price}} hal mar",
     womenPremiumTitle: "U cusbooneysii Premium (ikhtiyaari)",
     womenPremiumDesc:
-      "Basic waa bilaash. Premium (${{premium}}) waxay ku daraa WhatsApp iyo caawinta raadinta lammaane.",
+      "Premium (${{premium}}) waxay ku daraa WhatsApp iyo caawinta raadinta lammaane.",
     pay: "Bixi ${{price}}",
     redirecting: "Waa lagu wareejinayaa Stripe...",
     stripeNote: "Lacag bixin ammaan ah Stripe. Hal lacag, helitaan weligeed ah.",
@@ -543,7 +544,7 @@ export const so: Translations = {
     q2: "Isbarbardhiggu sidee u shaqeeyaa?",
     a2: "Algorithm-kayagu wuxuu falanqeeyaa diinta, da'da, goobta, waxbarashada, qaab nololeedka, iyo astaamaha shakhsiyadda si uu kuu helo isbarbardhigyada ugu fiican ee ka sarreeya 70%.",
     q3: "Hel Calafkaaga intee bay ku kacaysaa?",
-    a3: "Xubnaha jira: Basic bilaash, kor u qaadis Premium $15. Ragga cusub: Basic $5 ama Premium $20. Haweenka: Basic bilaash; Premium had iyo jeer $15. Premium waxay ku daraa taageero WhatsApp iyo raadinta lammaane.",
+    a3: "Xubnaha jira: Basic bilaash, kor u qaadis Premium $15. Ragga cusub: Basic $5 ama Premium $20. Haweenka cusub: Basic $2.50 ama Premium $15. Premium waxay ku daraa taageero WhatsApp iyo raadinta lammaane.",
     q4: "Xogtayda sidee loo ilaaliyaa?",
     a4: "Waxaan isticmaalnaa sir-qarin heer caalami ah oo aanan waligaa la wadaagin xogtaada shakhsi ahaaneed dhinacyada saddexaad. Qarsoodigaaga waa mudnaantayada.",
     q5: "Ma tirtiri karaa akoonkayga?",
@@ -558,14 +559,14 @@ export const so: Translations = {
     title: "Qiimo Fudud oo Cad",
     subtitle: "Dooro diiwaangelinta caadiga ah ama ku dar taageero shakhsi ah oo ka timid khabiiro xirfad leh.",
     membership: "Diiwaangelinta Caadiga ah",
-    basicDesc: "Ragga cusub $5 · Xubnaha jira bilaash · Haweenka bilaash — helitaan buuxa.",
+    basicDesc: "Ragga cusub $5 · Haweenka cusub $2.50 · Xubnaha jira badanaa Basic bilaash — helitaan buuxa.",
     premiumMembership: "Premium",
     premiumDesc:
-      "Taageero WhatsApp + raadinta lammaane — $20 diiwaangelin cusub, ama $15 kor u qaadis Basic.",
+      "Taageero WhatsApp + raadinta lammaane — $20 ragga cusub, ama $15 haweenka / kor u qaadis.",
     payOnce:
-      "Xubnaha jira: Basic bilaash, Premium kor u qaadis $15. Ragga cusub: Basic $5 ama Premium $20. Haweenka: Basic bilaash, Premium had iyo jeer $15.",
+      "Xubnaha jira: Basic bilaash, Premium kor u qaadis $15. Ragga cusub: Basic $5 ama Premium $20. Haweenka cusub: Basic $2.50 ama Premium $15.",
     planChoiceLater:
-      "Ragga cusub waxay dooranayaan Basic ($5) ama Premium ($20). Xubnaha jira Basic bilaash — kor u qaadis Premium $15.",
+      "Ragga cusub: Basic ($5) ama Premium ($20). Haweenka cusub: Basic ($2.50) ama Premium ($15). Xubnaha jira Basic bilaash — kor u qaadis Premium $15.",
     feature1: "Abuur akoonkaaga & dhammaystir profile-kaaga",
     feature2: "Helitaanka isbarbardhig ku salaysan iswaafajin",
     feature3: "Fariimo aan xadidnayn lammaanayaashaada",
@@ -590,7 +591,7 @@ export const so: Translations = {
       "Abuur akoonkaaga, buuxi faahfaahintaada, oo dhammaystir su'aalaha guurka oo leh sawir iyo doorbidyo.",
     step2: "Dooro Qorshahaaga",
     step2Desc:
-      "Ragga cusub: Basic ($5) ama Premium ($20). Xubnaha jira Basic bilaash — kor u qaadis Premium ($15). Haweenka: Basic bilaash.",
+      "Ragga cusub: Basic ($5) ama Premium ($20). Haweenka cusub: Basic ($2.50) ama Premium ($15). Xubnaha jira Basic bilaash — kor u qaadis Premium ($15).",
     step3: "Hel Isbarbardhigyo",
     step3Desc: "Algorithm-kayagu wuxuu helaa isbarbardhigyada ugu fiican ee ka sarreeya 70%. Eeg dhibcaha oo jecel profile-yada xiisaha leh.",
     step4: "Isku Xir & Sheekayso",
@@ -616,7 +617,7 @@ export const so: Translations = {
     choosePlan: "Dooro qorshe",
     pendingApproval: "Profile-ka waa la eegayaa",
     pendingApprovalDesc:
-      "Haweenka Basic: profile-kaaga waa la eegayaa. Marka la ansixiyo waad bilaabi kartaa. Xubnaha lacag bixiyay ma sugaan ansixin.",
+      "Haweenka Basic: profile-kaaga waa la eegayaa ka dib lacag bixinta. Marka la ansixiyo waad bilaabi kartaa. Premium ma sugto.",
     pendingApprovalPremiumDesc:
       "Profile-kaaga Basic waa safka dib u eegista. U kac Premium si aad u booddo sugitaanka, ama nala soo xiriir WhatsApp.",
     matches: "Isbarbardhigyo",
@@ -813,7 +814,7 @@ export const so: Translations = {
     completePaymentAction: "Dooro qorshe",
     freeTrialTitle: "Dhammaystir lacag bixinta si aad u sii wadato",
     freeTrialBody:
-      "Isbarbardhiggu wuxuu furmayaa markaad doorato Basic ama Premium. Haweeneydu Basic waa bilaash.",
+      "Isbarbardhiggu wuxuu furmayaa markaad doorato Basic ama Premium.",
     freeTrialAction: "Dooro qorshe",
     pendingApprovalTitle: "Profile-ka waa la eegayaa",
     pendingApprovalBody:

@@ -56,7 +56,7 @@ export const en = {
     contactUs: "Contact Us",
     readyToMatch: "Ready to find your perfect match?",
     joinThousands: "Join thousands of serious people on {{name}}.",
-    joinPlans: "Men from ${{basic}} · Premium ${{premium}} · Women Basic free",
+    joinPlans: "Men from ${{basic}} · Premium ${{premium}} · Women Basic ${{womenBasic}}",
     toggleTheme: "Toggle theme",
     toggleLanguage: "Switch language",
     languageSomali: "Somali",
@@ -145,7 +145,7 @@ export const en = {
     quoteAuthor: "HEL CALAFKAAGA Member",
     pricingTitle: "Choose Your Plan",
     pricingSubtitle:
-      "Men: Basic ${{basic}} or Premium ${{premium}}. Women: Basic free — Premium optional. Same app features; Premium adds WhatsApp help and match search.",
+      "Men: Basic ${{basic}} or Premium ${{premium}}. Women: Basic ${{womenBasic}} — Premium ${{womenPremium}}. Same app features; Premium adds WhatsApp help and match search.",
     basicPlan: "Basic",
     basicPlanDesc: "Profile, matches, likes, and chat — full app access.",
     premiumPlan: "Premium",
@@ -159,7 +159,7 @@ export const en = {
     premiumFeature1: "Everything in Basic",
     premiumFeature2: "Personal WhatsApp support",
     premiumFeature3: "We search for the right person for you",
-    womenFreeNote: "Women get Basic free. Upgrade to Premium anytime.",
+    womenFreeNote: "Women: Basic ${{price}} · Premium ${{premium}}.",
     menPriceNote: "Men pay ${{price}} once for Basic.",
     recommended: "Recommended",
     startJourney: "Start Your Journey Today",
@@ -190,7 +190,7 @@ export const en = {
     step1Desc: "Create your account and complete your marriage profile with photo and preferences.",
     step2Title: "Choose Your Plan",
     step2Desc:
-      "New men: Basic $5 or Premium $20. Existing members keep free Basic and can upgrade to Premium for $15. Women: Basic free.",
+      "New men: Basic $5 or Premium $20. Existing members keep free Basic and can upgrade to Premium for $15. New women: Basic $2.50 or Premium $15.",
     step3Title: "Discover Matches",
     step3Desc: "Browse compatible profiles and like the ones that interest you.",
     step4Title: "Connect & Build",
@@ -466,12 +466,12 @@ export const en = {
     welcomeDesc:
       "Your account is created. Complete your profile questionnaire first, then choose a plan to start matching.",
     choosePlan:
-      "Men: choose Basic (${{basic}}) or Premium (${{premium}}). Women: Basic is free — Premium is optional. Same app features; Premium adds WhatsApp support and match search help.",
+      "Choose Basic (${{basic}}) or Premium (${{premium}}). Same app features; Premium adds WhatsApp support and match search help.",
     defaultDesc:
       "Choose your plan to unlock matches. Your profile questionnaire is already complete.",
     profileReadyTitle: "Your profile is ready",
     profileReadyDesc:
-      "Men pay ${{basic}} for Basic or ${{premium}} for Premium. Women get Basic free.",
+      "Choose Basic (${{basic}}) or Premium (${{premium}}) to unlock matches.",
     basicPlan: "Basic",
     basicPlanDesc: "Full app access — profile, matches, likes, and chat.",
     premiumPlan: "Premium",
@@ -497,9 +497,10 @@ export const en = {
     featureWhatsApp: "Personal WhatsApp support",
     featureSearchHelp: "We search for the right person for you",
     menPriceNote: "For men — one-time ${{price}}",
+    womenBasicPriceNote: "For women — one-time ${{price}}",
     womenPremiumTitle: "Upgrade to Premium (optional)",
     womenPremiumDesc:
-      "Your Basic access is free. Premium (${{premium}}) adds WhatsApp support and help finding your match.",
+      "Premium (${{premium}}) adds WhatsApp support and help finding your match.",
     pay: "Pay ${{price}}",
     redirecting: "Redirecting to Stripe...",
     stripeNote: "Secure checkout powered by Stripe. One payment, lifetime access.",
@@ -537,7 +538,7 @@ export const en = {
     q2: "How does matching work?",
     a2: "Our compatibility algorithm analyzes religion, age, location, education, lifestyle, and personality traits to find your best matches above 70% compatibility.",
     q3: "How much does Hel Calafkaaga cost?",
-    a3: "Existing members keep free Basic and can upgrade to Premium for $15. New men: Basic $5 or Premium $20. Women: Basic free; Premium always $15. Premium adds WhatsApp support and help finding your match.",
+    a3: "Existing members keep free Basic and can upgrade to Premium for $15. New men: Basic $5 or Premium $20. New women: Basic $2.50 or Premium $15. Premium adds WhatsApp support and help finding your match.",
     q4: "How is my data protected?",
     a4: "We use industry-standard encryption and never share your personal data with third parties. Your privacy is our priority.",
     q5: "Can I delete my account?",
@@ -552,14 +553,14 @@ export const en = {
     title: "Simple, Transparent Pricing",
     subtitle: "Clear Basic vs Premium — same app, optional human help.",
     membership: "Basic",
-    basicDesc: "New men $5 · Existing members free · Women free — full app access.",
+    basicDesc: "New men $5 · New women $2.50 · Existing members often free Basic — full app access.",
     premiumMembership: "Premium",
     premiumDesc:
-      "WhatsApp support + we search for your match — $20 new signup, or $15 upgrade from Basic.",
+      "WhatsApp support + we search for your match — $20 new men signup, or $15 for women / upgrades.",
     payOnce:
-      "Existing members: Basic free, Premium upgrade $15. New men: Basic $5 or Premium $20. Women: Basic free, Premium always $15.",
+      "Existing members: Basic free, Premium upgrade $15. New men: Basic $5 or Premium $20. New women: Basic $2.50 or Premium $15.",
     planChoiceLater:
-      "New men choose Basic ($5) or Premium ($20) after their profile. Existing members keep Basic free and can upgrade to Premium for $15.",
+      "New men choose Basic ($5) or Premium ($20) after their profile. New women: Basic ($2.50) or Premium ($15). Existing members keep Basic free and can upgrade to Premium for $15.",
     feature1: "Create profile & upload photo",
     feature2: "Browse compatible matches",
     feature3: "Like and match",
@@ -584,7 +585,7 @@ export const en = {
       "Create your account, add your details, and complete the marriage questionnaire with photo and preferences.",
     step2: "Choose Your Plan",
     step2Desc:
-      "New men: Basic ($5) or Premium ($20). Existing members keep free Basic — upgrade to Premium for $15. Women: Basic free.",
+      "New men: Basic ($5) or Premium ($20). New women: Basic ($2.50) or Premium ($15). Existing members keep free Basic — upgrade to Premium for $15.",
     step3: "Discover Matches",
     step3Desc: "Our compatibility algorithm finds your best matches above 70%. View scores and like profiles that interest you.",
     step4: "Connect & Chat",
@@ -598,18 +599,18 @@ export const en = {
     profileProgressHint: "Your profile is {{percent}}% complete — {{remaining}}% left to unlock matches",
     guestName: "friend",
     payToContinue:
-      "Your profile is ready. Men: Basic (${{basic}}) or Premium (${{premium}}). Women: Basic is free.",
+      "Your profile is ready. Choose Basic (${{basic}}) or Premium (${{premium}}) to unlock matches.",
     overview: "Here is a quick overview of your account.",
     finishQuestionnaire: "Complete your profile questionnaire to continue.",
     step1Profile: "Step 1: Complete your profile",
     step1ProfileDesc: "Answer the questionnaire and upload your photo.",
     step2Payment: "Step 2: Unlock matches",
     step2PaymentDesc:
-      "Men choose Basic (${{basic}}) or Premium (${{premium}}). Women get Basic free.",
+      "Choose Basic (${{basic}}) or Premium (${{premium}}) to unlock matches.",
     choosePlan: "Choose plan",
     pendingApproval: "Profile pending approval",
     pendingApprovalDesc:
-      "Women on Basic: your profile is being checked. Once verified, you can browse matches. Paid members do not wait for approval.",
+      "Women on Basic: your profile is being checked after payment. Once verified, you can browse matches. Premium unlocks without waiting.",
     pendingApprovalPremiumDesc:
       "Your Basic profile is in the review queue. Upgrade to Premium to skip the wait, or contact us on WhatsApp if you need help.",
     matches: "Matches",
@@ -805,7 +806,7 @@ export const en = {
     completePaymentAction: "Choose plan",
     freeTrialTitle: "Complete payment to continue",
     freeTrialBody:
-      "Matches unlock after you choose Basic or Premium. Women get Basic free.",
+      "Matches unlock after you choose Basic or Premium.",
     freeTrialAction: "Choose plan",
     pendingApprovalTitle: "Profile under review",
     pendingApprovalBody:

@@ -18,8 +18,9 @@ type ReviewProfile = {
 };
 
 /**
- * Only women on free Basic need admin profile approval.
+ * Women on Basic (paid $2.50 or grandfathered) need admin profile approval.
  * Men are never admin-approved — they become approved only after payment.
+ * Premium women skip the review queue.
  */
 export function requiresAdminProfileApproval(
   profile: Pick<ReviewProfile, "role" | "gender" | "hasPersonalSupport"> | null | undefined
