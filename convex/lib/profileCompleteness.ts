@@ -134,8 +134,8 @@ function isPreferencesComplete(profile: ProfileLike, prefs: PrefsLike): boolean 
     prefs.minHeight !== undefined &&
     prefs.maxHeight !== undefined &&
     !!prefs.educationLevel &&
-    childrenOk &&
-    (prefs.preferredCountries?.length ?? 0) > 0
+    childrenOk
+    // Empty preferredCountries means "any" (matches matching engine + review UI).
   );
 }
 

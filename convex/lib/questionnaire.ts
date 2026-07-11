@@ -62,6 +62,64 @@ export function splitQuestionnaireData(data: Record<string, unknown>) {
   };
 }
 
+/**
+ * Autosave sends the whole current step, including unanswered fields as "" / [] / 0.
+ * Applying those would wipe earlier answers when a stale save lands after a fuller one.
+ */
+export function pruneIncompleteAutosaveWrites(
+  profileUpdates: Record<string, unknown>,
+  preferences?: Record<string, unknown>
+): void {
+  for (const key of Object.keys(profileUpdates)) {
+    const value = profileUpdates[key];
+    if (value === undefined || value === null) {
+      delete profileUpdates[key];
+      continue;
+    }
+    if (typeof value === "string" && value.trim() === "") {
+      delete profileUpdates[key];
+      continue;
+    }
+    if (Array.isArray(value) && value.length === 0) {
+      delete profileUpdates[key];
+      continue;
+    }
+    if (
+      (key === "age" || key === "height" || key === "weight" || key === "children") &&
+      value === 0
+    ) {
+      delete profileUpdates[key];
+    }
+  }
+
+  if (!preferences) return;
+
+  for (const key of Object.keys(preferences)) {
+    const value = preferences[key];
+    if (value === undefined || value === null) {
+      delete preferences[key];
+      continue;
+    }
+    if (typeof value === "string" && value.trim() === "") {
+      delete preferences[key];
+      continue;
+    }
+    if (Array.isArray(value) && value.length === 0) {
+      delete preferences[key];
+      continue;
+    }
+    if (
+      (key === "minAge" ||
+        key === "maxAge" ||
+        key === "minHeight" ||
+        key === "maxHeight") &&
+      value === 0
+    ) {
+      delete preferences[key];
+    }
+  }
+}
+
 export const PROFILE_DEFAULTS = {
   spousePrayerImportance: "",
   questionnaireStep: 1,

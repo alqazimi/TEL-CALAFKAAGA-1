@@ -7,9 +7,11 @@ import {
   CONTACT_COMPLETE_STEP,
   CONTACT_IN_PROGRESS_STEP,
   hasValidContact,
+  pruneIncompleteAutosaveWrites,
   sanitizeContactProfileUpdates,
   splitQuestionnaireData,
 } from "./lib/questionnaire";
+import { isDiscoverable } from "./lib/reviewStatus";
 import { isValidContactPhone } from "./lib/phone";
 import { QUESTIONNAIRE_COMPLETE_STEP } from "./lib/profileEnrichment";
 import { assertProfileFullyComplete } from "./lib/profileCompleteness";
@@ -206,7 +208,9 @@ export const updateQuestionnaire = mutation({
       }
     }
 
-    if (args.step >= 2) {
+    // Only score discoverable members — mid-questionnaire recalc caused heavy OCC with autosave.
+    const updated = await ctx.db.get(profile._id);
+    if (updated && isDiscoverable(updated)) {
       await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
         userId,
       });
@@ -233,8 +237,9 @@ export const autoSaveProfile = mutation({
     );
 
     sanitizeContactProfileUpdates(profileUpdates);
+    pruneIncompleteAutosaveWrites(profileUpdates, preferences);
 
-    if (Object.keys(profileUpdates).length === 0 && !preferences) {
+    if (Object.keys(profileUpdates).length === 0 && (!preferences || Object.keys(preferences).length === 0)) {
       return profile._id;
     }
 
@@ -295,6 +300,10 @@ export const completeQuestionnaire = mutation({
     await requireActiveProfile(ctx, userId);
 
     const profile = await ensureUserProfile(ctx, userId);
+    if (profile.questionnaireComplete) {
+      return profile._id;
+    }
+
     const preferences = await ctx.db
       .query("preferences")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -323,10 +332,7 @@ export const completeQuestionnaire = mutation({
       sendEmail: true,
     });
 
-    await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
-      userId,
-    });
-
+    // Scores wait until admin approval makes the profile discoverable.
     return profile._id;
   },
 });
@@ -421,9 +427,12 @@ export const updateProfile = mutation({
 
     await ctx.db.patch(profile._id, updates);
 
-    await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
-      userId,
-    });
+    const updated = await ctx.db.get(profile._id);
+    if (updated && isDiscoverable(updated)) {
+      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
+        userId,
+      });
+    }
 
     return profile._id;
   },
@@ -464,9 +473,12 @@ export const saveProfileEdits = mutation({
       }
     }
 
-    await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
-      userId,
-    });
+    const updated = await ctx.db.get(profile._id);
+    if (updated && isDiscoverable(updated)) {
+      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
+        userId,
+      });
+    }
 
     return profile._id;
   },

@@ -281,7 +281,7 @@ const PARTNER_PREFERENCES_STEPS: StepConfig[] = [
       { name: "pref_maxAge", label: "Preferred Max Age", type: "select", options: AGE_OPTIONS, preferences: true, required: true },
       { name: "pref_minHeight", label: "Preferred Min Height", type: "select", options: HEIGHT_OPTIONS, preferences: true, required: true },
       { name: "pref_maxHeight", label: "Preferred Max Height", type: "select", options: HEIGHT_OPTIONS, preferences: true, required: true },
-      { name: "pref_preferredCountries", label: "Preferred Countries", type: "country-multi", preferences: true, required: true },
+      { name: "pref_preferredCountries", label: "Preferred Countries", type: "country-multi", preferences: true, required: false },
       { name: "pref_educationLevel", label: "Preferred Education", type: "radio", options: EDUCATION_LEVELS, preferences: true, required: true },
       {
         name: "pref_acceptChildren",

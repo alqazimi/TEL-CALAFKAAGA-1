@@ -126,7 +126,7 @@ export function isPreferencesComplete(
     prefs.maxHeight !== undefined &&
     !!prefs.educationLevel &&
     childrenOk &&
-    (prefs.preferredCountries?.length ?? 0) > 0 &&
+    // Empty preferredCountries = "any" (same as matching + review).
     divorceeOk &&
     widowOk
   );

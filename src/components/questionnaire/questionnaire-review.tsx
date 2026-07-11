@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
+import {
+  getSectionStatus,
+  PROFILE_SECTIONS,
+} from "@/lib/profile-progress";
 import { PHOTO_STEP_INDEX, STEPS } from "@/components/questionnaire/steps";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 
@@ -26,6 +30,18 @@ interface QuestionnaireReviewProps {
 function stepIndexById(stepId: number): number {
   const index = STEPS.findIndex((step) => step.id === stepId);
   return index >= 0 ? index : 0;
+}
+
+function firstIncompleteStep(
+  profile: Profile,
+  preferences: Preferences | null | undefined
+): number | null {
+  for (const section of PROFILE_SECTIONS) {
+    if (getSectionStatus(section.id, profile, preferences) !== "complete") {
+      return section.stepIndex;
+    }
+  }
+  return null;
 }
 
 function ReviewSection({
@@ -89,6 +105,13 @@ export function QuestionnaireReview({
       return;
     }
 
+    const incompleteStep = firstIncompleteStep(profile, preferences);
+    if (incompleteStep !== null) {
+      toast.error(ui("answerAllRequired"));
+      onEditStep(incompleteStep);
+      return;
+    }
+
     setSubmitting(true);
     try {
       await completeQuestionnaire({});
@@ -100,6 +123,8 @@ export function QuestionnaireReview({
           ? error.message.replace(/^\[CONVEX[^\]]*\]\s*/i, "").replace(/^Uncaught Error:\s*/i, "").split("\n")[0]?.trim()
           : "";
       toast.error(message || ui("submitFailed"));
+      const step = firstIncompleteStep(profile, preferences);
+      if (step !== null) onEditStep(step);
     } finally {
       setSubmitting(false);
     }
