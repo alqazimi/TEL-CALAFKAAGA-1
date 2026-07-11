@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Camera, Loader2, User } from "lucide-react";
@@ -8,7 +8,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Profile } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ProfilePhotoPreview } from "@/components/profile/profile-photo-preview";
-import { prepareImageForUpload } from "@/lib/strip-image-exif";
+import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 
 interface QuestionnairePhotoStepProps {
@@ -23,43 +23,33 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
   const updateProfile = useMutation(api.profiles.updateProfile);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(profile.imageUrl ?? null);
-  const hasPhoto = !!profile.profileImageId || !!previewUrl;
-  const displayUrl = previewUrl ?? profile.imageUrl ?? null;
-
-  useEffect(() => {
-    if (profile.imageUrl) {
-      setPreviewUrl(profile.imageUrl);
-    }
-  }, [profile.imageUrl, profile.profileImageId]);
+  /** Local blob preview until Convex returns the stored image URL. */
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const displayUrl = localPreview ?? profile.imageUrl ?? null;
+  const hasPhoto = !!profile.profileImageId || !!displayUrl;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error(ui("chooseImageError"));
-      return;
-    }
 
     setUploading(true);
     try {
-      const prepared = await prepareImageForUpload(file);
-      const uploadUrl = await generateUploadUrl();
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": prepared.type },
-        body: prepared,
-      });
-      const { storageId } = await result.json();
+      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
       await registerUpload({ storageId });
       await updateProfile({ profileImageId: storageId });
-      setPreviewUrl(URL.createObjectURL(prepared));
+      setLocalPreview(URL.createObjectURL(file));
       toast.success(ui("photoUploaded"));
-    } catch {
-      toast.error(ui("uploadFailed"));
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : ui("uploadFailed");
+      toast.error(message);
     } finally {
       setUploading(false);
+      // Allow selecting the same photo again (otherwise onChange never fires).
+      resetFileInput(input);
     }
   };
 

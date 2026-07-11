@@ -28,8 +28,7 @@ import { hasPaidAccess, isPremiumMember } from "@/lib/access";
 import { needsApprovalGate } from "@/lib/review-status";
 import { useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isMemberProfileReady, isProfileQueriesLoading } from "@/lib/profile-progress";
-import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
-import { TrialBanner } from "@/components/payment/trial-banner";
+import { isTrialExpired } from "@/lib/trial";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -44,7 +43,7 @@ import { formatTime } from "@/lib/utils";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
-import { prepareImageForUpload } from "@/lib/strip-image-exif";
+import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
@@ -199,17 +198,11 @@ export default function ChatPage() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file || !activeConversation) return;
     try {
-      const prepared = await prepareImageForUpload(file);
-      const uploadUrl = await generateUploadUrl();
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": prepared.type },
-        body: prepared,
-      });
-      const { storageId } = await result.json();
+      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
       await registerUpload({ storageId });
       await sendMessage({
         conversationId: activeConversation,
@@ -218,6 +211,8 @@ export default function ChatPage() {
       });
     } catch {
       toast.error(t("chatPage.uploadFailed"));
+    } finally {
+      resetFileInput(input);
     }
   };
 

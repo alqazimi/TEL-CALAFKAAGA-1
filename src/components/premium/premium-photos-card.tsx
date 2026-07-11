@@ -8,12 +8,11 @@ import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import type { Profile } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 import { isPremiumMember } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
-import { prepareImageForUpload } from "@/lib/strip-image-exif";
+import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
 import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 
 interface PremiumPhotosCardProps {
@@ -39,21 +38,15 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
   const canAddMore = totalPhotos < MAX_PROFILE_PHOTOS;
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
 
     setUploading(true);
     try {
-      const prepared = await prepareImageForUpload(file);
-      const uploadUrl = await generateUploadUrl();
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": prepared.type },
-        body: prepared,
-      });
-      const { storageId } = await result.json();
+      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
       await registerUpload({ storageId });
-      await addAdditionalPhoto({ storageId: storageId as Id<"_storage"> });
+      await addAdditionalPhoto({ storageId });
       toast.success(t("premium.photoAdded"));
     } catch (error) {
       toast.error(
@@ -61,7 +54,7 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
       );
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      resetFileInput(input);
     }
   };
 

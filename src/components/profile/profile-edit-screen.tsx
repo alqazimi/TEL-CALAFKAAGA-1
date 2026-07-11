@@ -20,7 +20,6 @@ import {
   Users,
 } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
 import type { CurrentUser, Profile } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,7 @@ import { isOwnerRole, isPremiumMember } from "@/lib/access";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 import { isValidContactPhone } from "@/lib/phone";
 import { useTranslation } from "@/lib/i18n/context";
-import { prepareImageForUpload } from "@/lib/strip-image-exif";
+import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
 import { cn } from "@/lib/utils";
 
 const profileSchema = z.object({
@@ -112,49 +111,42 @@ export function ProfileEditScreen({
   };
 
   const handlePrimaryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
-      const prepared = await prepareImageForUpload(file);
-      const uploadUrl = await generateUploadUrl();
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": prepared.type },
-        body: prepared,
-      });
-      const { storageId } = await result.json();
+      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
       await registerUpload({ storageId });
       await updateProfile({ profileImageId: storageId });
       toast.success(t("profilePage.photoUpdated"));
-    } catch {
-      toast.error(t("profilePage.photoFailed"));
+    } catch (error) {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : t("profilePage.photoFailed")
+      );
     } finally {
       setUploading(false);
+      resetFileInput(input);
     }
   };
 
   const handleExtraUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
-      const prepared = await prepareImageForUpload(file);
-      const uploadUrl = await generateUploadUrl();
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": prepared.type },
-        body: prepared,
-      });
-      const { storageId } = await result.json();
+      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
       await registerUpload({ storageId });
-      await addAdditionalPhoto({ storageId: storageId as Id<"_storage"> });
+      await addAdditionalPhoto({ storageId });
       toast.success(t("premium.photoAdded"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("profilePage.photoFailed"));
     } finally {
       setUploading(false);
-      if (extraInputRef.current) extraInputRef.current.value = "";
+      resetFileInput(input);
     }
   };
 
