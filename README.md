@@ -50,7 +50,7 @@ Required variables:
 - `STRIPE_SECRET_KEY` — from Stripe dashboard
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — from Stripe dashboard
 - `NEXT_PUBLIC_APP_URL` — your app URL (http://localhost:3001 for dev)
-
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` — optional Google Analytics 4 ID (`G-...`) for all-site traffic
 ### 5. Run the development server
 
 ```bash
@@ -121,7 +121,7 @@ Copy the **production** URL (e.g. `https://your-project.convex.cloud`).
 | `NEXT_PUBLIC_CONVEX_URL` | Production Convex URL from step 1 |
 | `NEXT_PUBLIC_APP_URL` | `https://helcalafkaaga.com` |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_live_...` |
-
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics 4 ID (`G-...`) — all visitor traffic |
 ### 3. Convex production secrets
 
 ```bash

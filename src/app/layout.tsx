@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { ClearStaleServiceWorkers } from "@/components/clear-stale-service-workers";
 import { SiteShell } from "@/components/layout/site-shell";
+import { SiteAnalytics } from "@/components/analytics/site-analytics";
 import { rootMetadata } from "@/lib/seo/metadata";
 import "./globals.css";
 
@@ -41,6 +42,7 @@ export default function RootLayout({
         <Providers>
           <SiteShell>{children}</SiteShell>
         </Providers>
+        <SiteAnalytics />
       </body>
     </html>
   );
