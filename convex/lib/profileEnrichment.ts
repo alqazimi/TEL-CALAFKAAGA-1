@@ -1,5 +1,5 @@
 /** Total questionnaire form steps (matches STEPS.length in the frontend). */
-export const QUESTIONNAIRE_COMPLETE_STEP = 9;
+export const QUESTIONNAIRE_COMPLETE_STEP = 11;
 
 /** Map prayer frequency answers to religious level for matching & filters. */
 export function religiousLevelFromPrayer(prayerFrequency: string): string {

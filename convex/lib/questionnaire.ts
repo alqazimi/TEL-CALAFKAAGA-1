@@ -137,12 +137,14 @@ export function pruneIncompleteAutosaveWrites(
 
 export const PROFILE_DEFAULTS = {
   spousePrayerImportance: "",
-  questionnaireStep: 1,
+  questionnaireStep: 0,
 } as const;
 
 /** 1-based step numbers (match frontend `currentStep + 1`). */
-export const CONTACT_IN_PROGRESS_STEP = 8;
-export const CONTACT_COMPLETE_STEP = 9;
+/** Partner preferences step — contact not required yet. */
+export const CONTACT_IN_PROGRESS_STEP = 9;
+/** Contact details step (index 9 → step 10). */
+export const CONTACT_COMPLETE_STEP = 10;
 
 export function hasValidContact(
   profile: { name?: string; phone?: string },

@@ -118,7 +118,11 @@ export async function ensureUserProfile(
     if (existing.registrationComplete === undefined) {
       backfill.registrationComplete = true;
     }
-    if (existing.questionnaireStep === undefined || existing.questionnaireStep === 10) {
+    if (
+      existing.questionnaireStep === undefined ||
+      existing.questionnaireStep === 10 ||
+      (existing.questionnaireComplete && existing.questionnaireStep < QUESTIONNAIRE_COMPLETE_STEP)
+    ) {
       backfill.questionnaireStep = existing.questionnaireComplete
         ? QUESTIONNAIRE_COMPLETE_STEP
         : PROFILE_DEFAULTS.questionnaireStep;
