@@ -30,15 +30,13 @@ function getRegistrationCheckoutDetails(
       amount: womenPremium
         ? PREMIUM_UPGRADE_AMOUNT_CENTS
         : PERSONAL_SUPPORT_AMOUNT_CENTS,
-      paymentType: womenPremium
-        ? ("premium_upgrade" as const)
-        : ("registration_premium" as const),
+      paymentType: "registration_premium" as const,
       registrationTier: "premium" as const,
       productName: "Hel Calafkaaga Premium",
       productDescription: womenPremium
         ? "WhatsApp personal support and help finding your match"
         : "Full app access plus WhatsApp personal support and help finding your match",
-      metadataType: womenPremium ? ("premium_upgrade" as const) : ("registration" as const),
+      metadataType: "registration" as const,
     };
   }
 

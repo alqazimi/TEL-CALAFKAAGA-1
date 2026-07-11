@@ -384,7 +384,7 @@ export function ProfileEditScreen({
                     isPremium={isPremium}
                     hasPaid={!!profile.hasPaid}
                     advisorReviewed={profile.advisorReviewed}
-                    canUpgrade
+                    canUpgrade={!!profile.hasPaid && !isPremium}
                     upgradePrice={PREMIUM_UPGRADE_PRICE}
                   />
                   <PremiumWaliCard profile={profile} />

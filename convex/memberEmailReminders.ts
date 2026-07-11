@@ -137,7 +137,7 @@ export const run = internalMutation({
           profile.userId,
           "reminder_payment",
           "Unlock matches on Hel Calafkaaga",
-          "Your free week has ended. Choose the $5 Basic or $20 Premium plan to keep browsing serious members and connecting with compatible matches.",
+          "Choose Basic or Premium to unlock matches and connect with compatible members on Hel Calafkaaga.",
           "Choose plan",
           "/payment"
         );

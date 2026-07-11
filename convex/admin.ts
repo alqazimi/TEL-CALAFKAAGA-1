@@ -905,11 +905,14 @@ export const approveUser = mutation({
     if (!profile) throw new Error("Profile not found");
 
     // Men are approved only when they pay — admin cannot approve men.
+    // Women must pay Basic before they enter the admin review queue.
     if (!requiresAdminProfileApproval(profile)) {
       throw new Error(
         profile.gender === "male"
           ? "Men are approved automatically when they pay. Admin approval is only for women on Basic."
-          : "This member does not need admin approval."
+          : profile.hasPaid !== true
+            ? "This member must pay Basic before you can approve their profile."
+            : "This member does not need admin approval."
       );
     }
 

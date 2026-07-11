@@ -15,17 +15,22 @@ type ReviewProfile = {
   role?: string;
   gender?: string;
   hasPersonalSupport?: boolean;
+  hasPaid?: boolean;
 };
 
 /**
- * Women on Basic (paid $2.50 or grandfathered) need admin profile approval.
+ * Paid women on Basic need admin profile approval.
  * Men are never admin-approved — they become approved only after payment.
  * Premium women skip the review queue.
  */
 export function requiresAdminProfileApproval(
-  profile: Pick<ReviewProfile, "role" | "gender" | "hasPersonalSupport"> | null | undefined
+  profile:
+    | Pick<ReviewProfile, "role" | "gender" | "hasPersonalSupport" | "hasPaid">
+    | null
+    | undefined
 ): boolean {
   if (!profile || isStaffRole(profile.role)) return false;
+  if (profile.hasPaid !== true) return false;
   return profile.gender === "female" && profile.hasPersonalSupport !== true;
 }
 
@@ -33,6 +38,11 @@ export function resolveReviewStatus(profile: ReviewProfile | null | undefined): 
   if (!profile) return "incomplete";
   if (profile.banned) return "suspended";
   if (isStaffRole(profile.role)) return "approved";
+
+  // Unpaid members stay incomplete until Stripe payment (no free trial).
+  if (profile.questionnaireComplete && profile.hasPaid !== true) {
+    return "incomplete";
+  }
 
   // Men are not in the admin review queue — approved only after Stripe payment.
   if (
@@ -43,7 +53,7 @@ export function resolveReviewStatus(profile: ReviewProfile | null | undefined): 
     return "incomplete";
   }
 
-  // Stale create-time "incomplete" after the member finished the form.
+  // Stale create-time "incomplete" after the member finished the form (and paid).
   if (profile.reviewStatus === "incomplete" && profile.questionnaireComplete) {
     return profile.approved ? "approved" : "pending_review";
   }
@@ -66,6 +76,7 @@ export function isProfileDiscoverable(profile: ReviewProfile | null | undefined)
   if (!profile) return false;
   if (profile.banned) return false;
   if (!profile.questionnaireComplete && !isStaffRole(profile.role)) return false;
+  if (profile.hasPaid !== true && !isStaffRole(profile.role)) return false;
   return resolveReviewStatus(profile) === "approved";
 }
 

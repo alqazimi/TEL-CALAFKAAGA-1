@@ -32,9 +32,14 @@ export function PremiumUpgradeButton({
       const { url } = await createUpgrade({});
       window.location.href = url;
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("premium.upgradeFailed")
-      );
+      const raw =
+        error instanceof Error ? error.message : t("premium.upgradeFailed");
+      if (/complete basic registration/i.test(raw)) {
+        toast.error(t("premium.upgradeFailed"));
+        window.location.href = "/payment";
+        return;
+      }
+      toast.error(raw);
     } finally {
       setLoading(false);
     }

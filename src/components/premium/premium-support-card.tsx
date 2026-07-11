@@ -65,7 +65,31 @@ export function PremiumSupportCard({
     );
   }
 
-  if (!hasPaid && !canUpgrade) return null;
+  // Unpaid members must use registration checkout on /payment — not the upgrade action.
+  if (!hasPaid) {
+    return (
+      <Card className="border-primary/20">
+        <CardContent className="p-5 sm:p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Headphones className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-semibold">{t("premium.upgradeTitle")}</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                {t("premium.upgradeDesc")}
+              </p>
+            </div>
+          </div>
+          <Button asChild className="w-full rounded-xl">
+            <Link href="/payment">{t("dashboard.choosePlan")}</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!canUpgrade) return null;
 
   return (
     <Card className="border-primary/20">

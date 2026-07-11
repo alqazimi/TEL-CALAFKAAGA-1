@@ -118,14 +118,17 @@ export async function ensureUserProfile(
     if (existing.registrationComplete === undefined) {
       backfill.registrationComplete = true;
     }
-    if (
-      existing.questionnaireStep === undefined ||
-      existing.questionnaireStep === 10 ||
-      (existing.questionnaireComplete && existing.questionnaireStep < QUESTIONNAIRE_COMPLETE_STEP)
-    ) {
+    // Never treat CONTACT_COMPLETE_STEP (10) as "legacy complete" — that is the
+    // live contact-step marker and resets users mid-questionnaire.
+    if (existing.questionnaireStep === undefined) {
       backfill.questionnaireStep = existing.questionnaireComplete
         ? QUESTIONNAIRE_COMPLETE_STEP
         : PROFILE_DEFAULTS.questionnaireStep;
+    } else if (
+      existing.questionnaireComplete &&
+      existing.questionnaireStep < QUESTIONNAIRE_COMPLETE_STEP
+    ) {
+      backfill.questionnaireStep = QUESTIONNAIRE_COMPLETE_STEP;
     }
     if (!existing.religiousLevel?.trim() && existing.prayerFrequency?.trim()) {
       backfill.religiousLevel = religiousLevelFromPrayer(existing.prayerFrequency);

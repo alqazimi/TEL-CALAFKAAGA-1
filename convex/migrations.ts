@@ -27,10 +27,15 @@ export const backfillProfileFields = internalMutation({
       if (profile.spousePrayerImportance === undefined) {
         patch.spousePrayerImportance = PROFILE_DEFAULTS.spousePrayerImportance;
       }
-      if (profile.questionnaireStep === undefined || profile.questionnaireStep === 10) {
+      if (profile.questionnaireStep === undefined) {
         patch.questionnaireStep = profile.questionnaireComplete
           ? QUESTIONNAIRE_COMPLETE_STEP
           : PROFILE_DEFAULTS.questionnaireStep;
+      } else if (
+        profile.questionnaireComplete &&
+        profile.questionnaireStep < QUESTIONNAIRE_COMPLETE_STEP
+      ) {
+        patch.questionnaireStep = QUESTIONNAIRE_COMPLETE_STEP;
       }
       if (!profile.religiousLevel?.trim() && profile.prayerFrequency?.trim()) {
         patch.religiousLevel = religiousLevelFromPrayer(profile.prayerFrequency);
