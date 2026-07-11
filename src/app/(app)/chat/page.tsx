@@ -82,7 +82,14 @@ function MessagesEmptyState() {
 
 function ChatShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="-mx-4 -mt-6 sm:mx-0 sm:mt-0 flex flex-col h-[calc(100dvh-var(--app-header)-var(--app-tabbar)-2.5rem)] lg:h-[min(calc(100dvh-10rem),42rem)]">
+    <div
+      className={cn(
+        "-mx-4 -mt-6 sm:mx-0 sm:mt-0 flex min-h-0 flex-col overflow-hidden",
+        // Mobile: fill space between sticky header and fixed tab bar so the thread can scroll inside.
+        "h-[calc(100dvh-var(--app-header)-var(--app-tabbar)-env(safe-area-inset-bottom,0px)-0.75rem)]",
+        "lg:h-[min(calc(100dvh-10rem),42rem)]"
+      )}
+    >
       {children}
     </div>
   );
@@ -326,11 +333,11 @@ export default function ChatPage() {
           {/* Conversation list */}
           <div
             className={cn(
-              "w-full sm:w-80 lg:w-96 border-r border-border flex flex-col bg-card",
+              "w-full sm:w-80 lg:w-96 border-r border-border flex flex-col min-h-0 bg-card",
               showMobileChat ? "hidden sm:flex" : "flex"
             )}
           >
-            <div className="px-4 py-3.5 border-b border-border space-y-3">
+            <div className="px-4 py-3.5 border-b border-border space-y-3 shrink-0">
               <div>
                 <h2 className="text-sm font-bold">{t("chatPage.messages")}</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -358,7 +365,7 @@ export default function ChatPage() {
                 ))}
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-2 space-y-1">
               {conversations.length === 0 ? (
                 <div className="px-3 py-10 text-center">
                   {emptyMessage ? (
@@ -422,13 +429,13 @@ export default function ChatPage() {
           {/* Chat panel */}
           <div
             className={cn(
-              "flex-1 flex flex-col min-w-0 bg-background",
+              "flex-1 flex flex-col min-h-0 min-w-0 bg-background",
               showMobileChat ? "flex" : "hidden sm:flex"
             )}
           >
             {activeConversation && activeConv ? (
               <>
-                <div className="px-4 py-3 border-b border-border flex items-center gap-3 bg-card/95 backdrop-blur-sm">
+                <div className="px-4 py-3 border-b border-border flex items-center gap-3 bg-card/95 backdrop-blur-sm shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -521,9 +528,11 @@ export default function ChatPage() {
                     </div>
                   </div>
                 ) : (
-                  <>
-                    <ChatSafetyBanner />
-                    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                  <div className="flex min-h-0 flex-1 flex-col">
+                    <div className="shrink-0">
+                      <ChatSafetyBanner />
+                    </div>
+                    <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-4 py-4 space-y-3">
                       {messages?.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-full py-12 text-center">
                           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted mb-3">
@@ -562,7 +571,9 @@ export default function ChatPage() {
                                   className="rounded-xl max-w-full mb-1.5"
                                 />
                               )}
-                              <p className="text-sm leading-relaxed">{msg.message}</p>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                                {msg.message}
+                              </p>
                               <div className="flex items-center justify-end gap-1 mt-1">
                                 <p
                                   className={cn(
@@ -589,7 +600,7 @@ export default function ChatPage() {
                       <div ref={messagesEndRef} />
                     </div>
 
-                    <div className="p-3 sm:p-4 border-t border-border bg-card">
+                    <div className="shrink-0 p-3 sm:p-4 border-t border-border bg-card pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:pb-4">
                       {showEmoji && (
                         <div className="mb-3 overflow-hidden rounded-xl border border-border">
                           <LazyEmojiPicker
@@ -647,7 +658,7 @@ export default function ChatPage() {
                         </Button>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
               </>
             ) : activeConversation ? (

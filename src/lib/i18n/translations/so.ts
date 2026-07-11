@@ -611,9 +611,9 @@ export const so: Translations = {
     choosePlan: "Dooro qorshe",
     pendingApproval: "Profile-ka waa la eegayaa",
     pendingApprovalDesc:
-      "Profile-kaaga waa la hubinayaa. Marka la xaqiijiyo, waad bilaabi kartaa raadinta isbarbardhigga.",
+      "Haweenka Basic: profile-kaaga waa la eegayaa. Marka la ansixiyo waad bilaabi kartaa. Xubnaha lacag bixiyay ma sugaan ansixin.",
     pendingApprovalPremiumDesc:
-      "Profile-kaaga wuxuu ku jiraa safka dib u eegista. Nala soo xiriir WhatsApp haddii aad u baahan tahay caawin.",
+      "Profile-kaaga Basic waa safka dib u eegista. U kac Premium si aad u booddo sugitaanka, ama nala soo xiriir WhatsApp.",
     matches: "Isbarbardhigyo",
     mutual: "Isdhaaf",
     suggestedShort: "La soo jeediyay",
@@ -1035,7 +1035,7 @@ export const so: Translations = {
     statRevenueHint: "Dhammaan lacag bixinta",
     statPaidHint: "Xubnaha lacag bixiyay (basic + premium)",
     statTrialHint: "Tijaabo bilaash ah, weli lama bixin",
-    statPendingHint: "Su'aalaha dhammaystiray, sugaya oggolaansho",
+    statPendingHint: "Haweenka Basic ee sugaya oggolaanshaha profile-ka",
     statMatchesHint: "Ka yimid muunad isbarbardhig ah",
     statMessagesHint: "Ka yimid muunad fariimo ah",
     statReportsHint: "Kiisaska furan",

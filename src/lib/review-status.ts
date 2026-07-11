@@ -13,7 +13,20 @@ type ReviewProfile = {
   approved?: boolean;
   banned?: boolean;
   role?: string;
+  gender?: string;
+  hasPersonalSupport?: boolean;
 };
+
+/**
+ * Only women on free Basic need admin profile approval.
+ * Men (any plan) and Premium women skip the approval gate.
+ */
+export function requiresAdminProfileApproval(
+  profile: Pick<ReviewProfile, "role" | "gender" | "hasPersonalSupport"> | null | undefined
+): boolean {
+  if (!profile || isStaffRole(profile.role)) return false;
+  return profile.gender === "female" && profile.hasPersonalSupport !== true;
+}
 
 export function resolveReviewStatus(profile: ReviewProfile | null | undefined): ReviewStatus {
   if (!profile) return "incomplete";
@@ -47,7 +60,7 @@ export function isProfileDiscoverable(profile: ReviewProfile | null | undefined)
 }
 
 export function needsApprovalGate(profile: ReviewProfile | null | undefined): boolean {
-  if (!profile || isStaffRole(profile.role)) return false;
+  if (!profile || !requiresAdminProfileApproval(profile)) return false;
   const status = resolveReviewStatus(profile);
   return status === "pending_review" || status === "rejected";
 }

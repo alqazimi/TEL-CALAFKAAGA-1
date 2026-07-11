@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export function ChatSafetyBanner() {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const tips = [
     t("safety.chatTip1"),

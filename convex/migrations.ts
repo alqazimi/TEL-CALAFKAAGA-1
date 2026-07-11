@@ -261,3 +261,43 @@ export const grandfatherExistingMembersBasicAccess = internalMutation({
     };
   },
 });
+
+/**
+ * Auto-approve everyone who no longer needs review:
+ * men (any plan) and Premium women. Leave Basic women pending.
+ */
+export const autoApproveMembersExemptFromReview = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let updated = 0;
+    let skipped = 0;
+
+    for (const profile of profiles) {
+      if (isStaffRole(profile.role)) {
+        skipped++;
+        continue;
+      }
+      if (!profile.questionnaireComplete) {
+        skipped++;
+        continue;
+      }
+      // Women Basic still need admin approval.
+      if (profile.gender === "female" && !profile.hasPersonalSupport) {
+        skipped++;
+        continue;
+      }
+      if (profile.approved && profile.reviewStatus === "approved") {
+        skipped++;
+        continue;
+      }
+      await ctx.db.patch(profile._id, {
+        approved: true,
+        reviewStatus: "approved",
+      });
+      updated++;
+    }
+
+    return { updated, skipped, total: profiles.length };
+  },
+});

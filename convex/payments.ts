@@ -8,6 +8,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { sendNotification } from "./lib/sendNotification";
 
 export const REGISTRATION_AMOUNT_CENTS = 500;
@@ -71,7 +72,16 @@ async function applyPaymentCompletion(
     await ctx.db.patch(profile._id, {
       hasPaid: true,
       ...(isPremium ? { hasPersonalSupport: true } : {}),
+      // Paid members (men Basic/Premium, women Premium) skip admin approval.
+      approved: true,
+      reviewStatus: "approved",
     });
+
+    if (profile.questionnaireComplete) {
+      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
+        userId: payment.userId,
+      });
+    }
 
     if (
       payment.paymentType === "registration" ||

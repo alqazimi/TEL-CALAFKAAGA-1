@@ -316,31 +316,52 @@ export const completeQuestionnaire = mutation({
 
     assertProfileFullyComplete(profile, preferences);
 
+    // Only women on free Basic wait for admin approval.
+    // Men are auto-approved; Premium women are approved when they pay.
+    const womenBasicNeedsReview = profile.gender === "female";
+
     await ctx.db.patch(profile._id, {
       questionnaireComplete: true,
       questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
       lastSavedAt: Date.now(),
-      // Independent states — completing the form does NOT mean verified/approved.
-      reviewStatus: "pending_review",
-      approved: false,
       verified: false,
-      // Women: Basic is free — no trial, grant access immediately.
-      ...(profile.gender === "female" && !profile.hasPaid
-        ? { hasPaid: true }
-        : !profile.hasPaid && profile.trialEndsAt === undefined
-          ? { trialEndsAt: getTrialEndsAt() }
-          : {}),
+      ...(womenBasicNeedsReview
+        ? {
+            reviewStatus: "pending_review" as const,
+            approved: false,
+            // Women: Basic is free — no trial, grant access immediately.
+            ...(!profile.hasPaid ? { hasPaid: true } : {}),
+          }
+        : {
+            reviewStatus: "approved" as const,
+            approved: true,
+            ...(!profile.hasPaid && profile.trialEndsAt === undefined
+              ? { trialEndsAt: getTrialEndsAt() }
+              : {}),
+          }),
     });
 
-    await sendNotification(ctx, {
-      userId,
-      type: "approval",
-      title: "Profile submitted for review",
-      body: "Your questionnaire is complete. An admin will review your profile shortly. You will be notified when you can browse matches.",
-      sendEmail: true,
-    });
+    if (womenBasicNeedsReview) {
+      await sendNotification(ctx, {
+        userId,
+        type: "approval",
+        title: "Profile submitted for review",
+        body: "Your questionnaire is complete. An admin will review your profile shortly. You will be notified when you can browse matches.",
+        sendEmail: true,
+      });
+    } else {
+      await sendNotification(ctx, {
+        userId,
+        type: "approval",
+        title: "Profile complete",
+        body: "Your profile is ready. Browse matches from your dashboard — payment unlocks full access after your free trial if needed.",
+        sendEmail: true,
+      });
+      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
+        userId,
+      });
+    }
 
-    // Scores wait until admin approval makes the profile discoverable.
     return profile._id;
   },
 });

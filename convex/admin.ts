@@ -20,7 +20,7 @@ import { isPremiumMember } from "./lib/premium";
 import { deleteMemberAccount } from "./lib/deleteUser";
 import { writeAuditLog } from "./lib/auditLog";
 import { isInTrialPeriod } from "./lib/trial";
-import { resolveReviewStatus } from "./lib/reviewStatus";
+import { resolveReviewStatus, requiresAdminProfileApproval } from "./lib/reviewStatus";
 
 function pendingApprovalPriority(
   profile: {
@@ -196,6 +196,7 @@ export const getStats = query({
       unpaidCount,
       trialCount,
       pendingApproval: members.filter((p) => {
+        if (!requiresAdminProfileApproval(p)) return false;
         const review = resolveReviewStatus(p);
         return review === "pending_review" || review === "rejected";
       }).length,
@@ -300,7 +301,10 @@ export const getAllUsers = query({
       profiles = profiles.filter((p) => {
         const status = resolveReviewStatus(p);
         if (reviewFilter === "needs_action") {
-          return status === "pending_review" || status === "rejected";
+          return (
+            requiresAdminProfileApproval(p) &&
+            (status === "pending_review" || status === "rejected")
+          );
         }
         return status === reviewFilter;
       });

@@ -604,9 +604,9 @@ export const en = {
     choosePlan: "Choose plan",
     pendingApproval: "Profile pending approval",
     pendingApprovalDesc:
-      "Your profile is being checked. Once verified, you can browse matches.",
+      "Women on Basic: your profile is being checked. Once verified, you can browse matches. Paid members do not wait for approval.",
     pendingApprovalPremiumDesc:
-      "Your profile is in the review queue. Contact us on WhatsApp if you need help.",
+      "Your Basic profile is in the review queue. Upgrade to Premium to skip the wait, or contact us on WhatsApp if you need help.",
     matches: "Matches",
     mutual: "Mutual",
     suggestedShort: "Suggested",
@@ -1042,7 +1042,7 @@ export const en = {
     statRevenueHint: "All completed payments",
     statPaidHint: "Paid members (basic + premium)",
     statTrialHint: "Free trial, not paid yet",
-    statPendingHint: "Completed questionnaire, waiting for approval",
+    statPendingHint: "Women on Basic waiting for profile approval",
     statMatchesHint: "From recent match sample",
     statMessagesHint: "From recent message sample",
     statReportsHint: "Open moderation cases",
