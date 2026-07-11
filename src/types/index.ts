@@ -158,6 +158,23 @@ export interface MemberReminder {
   href: string;
 }
 
+export interface AdminMoneyStats {
+  basicPaidCount: number;
+  basicRevenueCents: number;
+  basicPriceCents: number;
+  premiumSignupCount: number;
+  premiumSignupRevenueCents: number;
+  premiumSignupPriceCents: number;
+  premiumUpgradeCount: number;
+  premiumUpgradeRevenueCents: number;
+  premiumUpgradePriceCents: number;
+  premiumPaidCount: number;
+  premiumRevenueCents: number;
+  otherRevenueCents: number;
+  totalPaidCount: number;
+  totalRevenueCents: number;
+}
+
 export interface AdminStats {
   totalUsers: number;
   maleUsers: number;
@@ -172,9 +189,12 @@ export interface AdminStats {
   paidPremiumCount: number;
   unpaidCount: number;
   trialCount?: number;
+  freeBasicWomen?: number;
+  paidBasicMembers?: number;
   pendingApproval: number;
   bannedUsers: number;
   isOwner: boolean;
+  money?: AdminMoneyStats;
 }
 
 export interface AdminPayment {

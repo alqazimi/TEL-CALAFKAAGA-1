@@ -153,12 +153,15 @@ export const getStats = query({
     const caller = await getProfileForUser(ctx, userId);
     if (!caller || !isStaffRole(caller.role)) return null;
 
-    // Profiles only — avoid scanning payments/messages (was hanging the admin UI).
+    // Profiles only for member counts; payments scan for real money totals.
     const profiles = await ctx.db.query("profiles").collect();
     const members = profiles.filter((p) => !isStaffRole(p.role));
 
-    const paidBasicCount = members.filter(
+    const paidBasicMembers = members.filter(
       (p) => p.hasPaid && !p.hasPersonalSupport && p.gender === "male"
+    ).length;
+    const freeBasicWomen = members.filter(
+      (p) => p.gender === "female" && p.hasPaid && !p.hasPersonalSupport
     ).length;
     const paidPremiumCount = members.filter((p) => !!p.hasPersonalSupport).length;
     const unpaidCount = members.filter(
@@ -167,8 +170,55 @@ export const getStats = query({
     const trialCount = members.filter(
       (p) => p.gender === "male" && !p.hasPaid && isInTrialPeriod(p)
     ).length;
-    // Approximate revenue from known plan prices (cents). Women basic is free.
-    const revenue = paidBasicCount * 500 + paidPremiumCount * 2000;
+
+    // Real Stripe money (cents) — not approximate profile × list price.
+    const allPayments = await ctx.db.query("payments").collect();
+    const completed = allPayments.filter((p) => p.status === "completed");
+
+    let basicPaidCount = 0;
+    let basicRevenueCents = 0;
+    let premiumSignupCount = 0;
+    let premiumSignupRevenueCents = 0;
+    let premiumUpgradeCount = 0;
+    let premiumUpgradeRevenueCents = 0;
+    let otherRevenueCents = 0;
+
+    for (const payment of completed) {
+      const amount = payment.amount ?? 0;
+      const type = payment.paymentType;
+      if (type === "registration" || (type === undefined && payment.registrationTier === "basic")) {
+        basicPaidCount++;
+        basicRevenueCents += amount;
+      } else if (type === "registration_premium") {
+        premiumSignupCount++;
+        premiumSignupRevenueCents += amount;
+      } else if (type === "premium_upgrade") {
+        premiumUpgradeCount++;
+        premiumUpgradeRevenueCents += amount;
+      } else if (type === "chat") {
+        otherRevenueCents += amount;
+      } else if (payment.registrationTier === "premium") {
+        premiumSignupCount++;
+        premiumSignupRevenueCents += amount;
+      } else {
+        // Legacy completed rows without clear type — bucket by amount.
+        if (amount >= 1500) {
+          premiumSignupCount++;
+          premiumSignupRevenueCents += amount;
+        } else if (amount >= 400) {
+          basicPaidCount++;
+          basicRevenueCents += amount;
+        } else {
+          otherRevenueCents += amount;
+        }
+      }
+    }
+
+    const premiumPaidCount = premiumSignupCount + premiumUpgradeCount;
+    const premiumRevenueCents =
+      premiumSignupRevenueCents + premiumUpgradeRevenueCents;
+    const revenue =
+      basicRevenueCents + premiumRevenueCents + otherRevenueCents;
 
     const approvedMembers = members.filter(
       (p) => resolveReviewStatus(p) === "approved"
@@ -191,10 +241,13 @@ export const getStats = query({
       totalMatches: activeMatches,
       totalMessages: messageSample.length,
       revenue,
-      paidBasicCount,
+      /** @deprecated use money.basicPaidCount — kept for older UI */
+      paidBasicCount: basicPaidCount,
       paidPremiumCount,
       unpaidCount,
       trialCount,
+      freeBasicWomen,
+      paidBasicMembers,
       pendingApproval: members.filter((p) => {
         if (!requiresAdminProfileApproval(p)) return false;
         const review = resolveReviewStatus(p);
@@ -202,6 +255,22 @@ export const getStats = query({
       }).length,
       bannedUsers: profiles.filter((p) => p.banned).length,
       isOwner: isOwnerRole(caller.role),
+      money: {
+        basicPaidCount,
+        basicRevenueCents,
+        basicPriceCents: 500,
+        premiumSignupCount,
+        premiumSignupRevenueCents,
+        premiumSignupPriceCents: 2000,
+        premiumUpgradeCount,
+        premiumUpgradeRevenueCents,
+        premiumUpgradePriceCents: 1500,
+        premiumPaidCount,
+        premiumRevenueCents,
+        otherRevenueCents,
+        totalPaidCount: basicPaidCount + premiumPaidCount,
+        totalRevenueCents: revenue,
+      },
     };
   },
 });

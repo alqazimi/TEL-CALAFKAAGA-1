@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Camera, X } from "lucide-react";
@@ -9,6 +9,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import type { Profile } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
@@ -26,7 +27,6 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
   const registerUpload = useMutation(api.profiles.registerUpload);
   const addAdditionalPhoto = useMutation(api.profiles.addAdditionalPhoto);
   const removeAdditionalPhoto = useMutation(api.profiles.removeAdditionalPhoto);
-  const fileInputId = useId();
   const [uploading, setUploading] = useState(false);
 
   const extraUrls = profile.additionalImageUrls ?? [];
@@ -89,25 +89,21 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
             </div>
           ))}
           {canAddMore && (
-            <label
-              htmlFor={fileInputId}
-              className={`aspect-square cursor-pointer rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors ${
-                uploading ? "pointer-events-none opacity-60" : ""
+            <ImageFileHitArea
+              disabled={uploading}
+              aria-label={t("premium.addPhoto")}
+              onChange={(e) => void handleUpload(e)}
+              className={`aspect-square rounded-xl border-2 border-dashed border-border ${
+                uploading ? "opacity-60" : ""
               }`}
             >
-              <Camera className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{t("premium.addPhoto")}</span>
-            </label>
+              <span className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
+                <Camera className="h-5 w-5" />
+                <span className="text-[10px] font-medium">{t("premium.addPhoto")}</span>
+              </span>
+            </ImageFileHitArea>
           )}
         </div>
-        <input
-          id={fileInputId}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          disabled={uploading}
-          onChange={(e) => void handleUpload(e)}
-        />
         <p className="text-xs text-muted-foreground">
           {t("premium.photosCount", { count: totalPhotos, max: MAX_PROFILE_PHOTOS })}
         </p>

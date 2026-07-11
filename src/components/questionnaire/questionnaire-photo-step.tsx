@@ -1,12 +1,13 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Camera, Loader2, User } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import type { Profile } from "@/types";
 import { Button } from "@/components/ui/button";
+import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
 import { ProfilePhotoPreview } from "@/components/profile/profile-photo-preview";
 import { ContactAdminCard } from "@/components/support/contact-admin-card";
 import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
@@ -22,7 +23,6 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
   const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
   const registerUpload = useMutation(api.profiles.registerUpload);
   const updateProfile = useMutation(api.profiles.updateProfile);
-  const fileInputId = useId();
   const [uploading, setUploading] = useState(false);
   /** Local blob preview until Convex returns the stored image URL. */
   const [localPreview, setLocalPreview] = useState<string | null>(null);
@@ -74,10 +74,12 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
       </p>
 
       <div className="relative mb-8">
-        <label
-          htmlFor={fileInputId}
-          className={`relative block h-40 w-40 sm:h-48 sm:w-48 rounded-full overflow-hidden border-4 border-background shadow-xl ring-2 ring-border cursor-pointer ${
-            uploading ? "pointer-events-none opacity-70" : ""
+        <ImageFileHitArea
+          disabled={uploading}
+          aria-label={ui("uploadPhotoAria")}
+          onChange={(e) => void handleImageUpload(e)}
+          className={`h-40 w-40 sm:h-48 sm:w-48 rounded-full overflow-hidden border-4 border-background shadow-xl ring-2 ring-border ${
+            uploading ? "opacity-70" : ""
           }`}
         >
           {displayUrl || profile.profileImageId ? (
@@ -86,7 +88,7 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
               hasStoredPhoto={!!profile.profileImageId}
               alt={profile.name}
               fallbackInitial={profile.name}
-              className="h-full w-full rounded-full pointer-events-none"
+              className="h-full w-full rounded-full"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-muted">
@@ -94,32 +96,25 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
             </div>
           )}
           {uploading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
               <Loader2 className="h-8 w-8 animate-spin text-white" />
             </div>
           )}
-        </label>
-        <label
-          htmlFor={fileInputId}
-          className={`absolute -bottom-1 -right-1 z-10 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors ${
-            uploading ? "pointer-events-none opacity-60" : ""
-          }`}
-          aria-label={ui("uploadPhotoAria")}
-        >
-          {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Camera className="h-5 w-5" />
-          )}
-        </label>
-        <input
-          id={fileInputId}
-          type="file"
-          accept="image/*"
-          className="sr-only"
+        </ImageFileHitArea>
+        <ImageFileHitArea
           disabled={uploading}
+          aria-label={ui("uploadPhotoAria")}
           onChange={(e) => void handleImageUpload(e)}
-        />
+          className="absolute -bottom-1 -right-1 z-40 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg"
+        >
+          <span className="flex h-full w-full items-center justify-center">
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Camera className="h-5 w-5" />
+            )}
+          </span>
+        </ImageFileHitArea>
       </div>
 
       <p className="text-lg font-medium text-foreground mb-2">{ui("uploadYourPhoto")}</p>
@@ -127,15 +122,20 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
         {ui("photoHelp")}
       </p>
 
-      <label htmlFor={fileInputId}>
+      <ImageFileHitArea
+        disabled={uploading}
+        aria-label={ui("uploadPhotoAria")}
+        onChange={(e) => void handleImageUpload(e)}
+        className="inline-flex"
+      >
         <span
-          className={`inline-flex h-11 cursor-pointer items-center justify-center rounded-2xl border border-input bg-background px-6 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
-            uploading ? "pointer-events-none opacity-60" : ""
+          className={`inline-flex h-12 min-w-[12rem] items-center justify-center rounded-2xl border border-input bg-background px-6 text-sm font-medium shadow-sm ${
+            uploading ? "opacity-60" : ""
           }`}
         >
           {uploading ? ui("uploading") : hasPhoto ? ui("changePhoto") : ui("choosePhoto")}
         </span>
-      </label>
+      </ImageFileHitArea>
 
       <div className="mt-8 w-full max-w-md">
         <ContactAdminCard source="questionnaire" defaultTopic="photo_upload" compact />

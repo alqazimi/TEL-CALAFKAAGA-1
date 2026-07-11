@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "convex/react";
 import { useForm } from "react-hook-form";
@@ -38,6 +38,7 @@ import { PremiumSupportCard } from "@/components/premium/premium-support-card";
 import { PremiumWaliCard } from "@/components/premium/premium-wali-card";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { ContactAdminCard } from "@/components/support/contact-admin-card";
+import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
 import { isOwnerRole, isPremiumMember } from "@/lib/access";
 import { MAX_PROFILE_PHOTOS, PREMIUM_UPGRADE_PRICE } from "@/lib/constants";
 import { isValidContactPhone } from "@/lib/phone";
@@ -74,8 +75,6 @@ export function ProfileEditScreen({
   const registerUpload = useMutation(api.profiles.registerUpload);
   const addAdditionalPhoto = useMutation(api.profiles.addAdditionalPhoto);
   const removeAdditionalPhoto = useMutation(api.profiles.removeAdditionalPhoto);
-  const primaryInputId = useId();
-  const extraInputId = useId();
   const [uploading, setUploading] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -215,10 +214,12 @@ export function ProfileEditScreen({
                   />
                 </button>
               ) : !isStaff ? (
-                <label
-                  htmlFor={primaryInputId}
-                  className={`block h-28 w-28 cursor-pointer rounded-2xl overflow-hidden ring-4 ring-card shadow-lg ${
-                    uploading ? "pointer-events-none opacity-70" : ""
+                <ImageFileHitArea
+                  disabled={uploading}
+                  aria-label={t("profilePage.uploadPhoto")}
+                  onChange={(e) => void handlePrimaryUpload(e)}
+                  className={`block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg ${
+                    uploading ? "opacity-70" : ""
                   }`}
                 >
                   <ProfilePhotoPreview
@@ -226,9 +227,9 @@ export function ProfileEditScreen({
                     hasStoredPhoto={!!profile.profileImageId}
                     alt={profile.name}
                     fallbackInitial={profile.name}
-                    className="h-full w-full pointer-events-none"
+                    className="h-full w-full"
                   />
-                </label>
+                </ImageFileHitArea>
               ) : (
                 <div className="block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg">
                   <ProfilePhotoPreview
@@ -241,25 +242,16 @@ export function ProfileEditScreen({
                 </div>
               )}
               {!isStaff && (
-                <>
-                  <label
-                    htmlFor={primaryInputId}
-                    className={`absolute -bottom-1 -right-1 z-10 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ${
-                      uploading ? "pointer-events-none opacity-60" : ""
-                    }`}
-                    aria-label={t("profilePage.changePhoto")}
-                  >
-                    <Camera className="h-4 w-4" />
-                  </label>
-                  <input
-                    id={primaryInputId}
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    disabled={uploading}
-                    onChange={(e) => void handlePrimaryUpload(e)}
-                  />
-                </>
+                <ImageFileHitArea
+                  disabled={uploading}
+                  aria-label={t("profilePage.changePhoto")}
+                  onChange={(e) => void handlePrimaryUpload(e)}
+                  className={`absolute -bottom-1 -right-1 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ${
+                    uploading ? "opacity-60" : ""
+                  }`}
+                >
+                  <Camera className="h-5 w-5" />
+                </ImageFileHitArea>
               )}
             </div>
             <div className="text-center sm:text-left flex-1 min-w-0">
@@ -406,10 +398,15 @@ export function ProfileEditScreen({
                         {t("profilePage.primaryPhotoDesc")}
                       </p>
                     </div>
-                    <label htmlFor={primaryInputId}>
+                    <ImageFileHitArea
+                      disabled={uploading}
+                      aria-label={t("profilePage.changePhoto")}
+                      onChange={(e) => void handlePrimaryUpload(e)}
+                      className="inline-flex"
+                    >
                       <span
-                        className={`inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-xl border border-input bg-background px-3 text-sm font-medium ${
-                          uploading ? "pointer-events-none opacity-60" : ""
+                        className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-input bg-background px-4 text-sm font-medium ${
+                          uploading ? "opacity-60" : ""
                         }`}
                       >
                         <Camera className="h-4 w-4" />
@@ -419,7 +416,7 @@ export function ProfileEditScreen({
                             ? t("profilePage.changePhoto")
                             : t("profilePage.uploadPhoto")}
                       </span>
-                    </label>
+                    </ImageFileHitArea>
                   </div>
                 </div>
               )}
@@ -449,25 +446,21 @@ export function ProfileEditScreen({
                       </div>
                     ))}
                     {canAddMore && (
-                      <label
-                        htmlFor={extraInputId}
-                        className={`aspect-square cursor-pointer rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary text-[10px] gap-1 ${
-                          uploading ? "pointer-events-none opacity-60" : ""
+                      <ImageFileHitArea
+                        disabled={uploading}
+                        aria-label={t("premium.addPhoto")}
+                        onChange={(e) => void handleExtraUpload(e)}
+                        className={`aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary text-[10px] gap-1 ${
+                          uploading ? "opacity-60" : ""
                         }`}
                       >
-                        <Camera className="h-4 w-4" />
-                        {t("premium.addPhoto")}
-                      </label>
+                        <span className="flex flex-col items-center gap-1">
+                          <Camera className="h-4 w-4" />
+                          {t("premium.addPhoto")}
+                        </span>
+                      </ImageFileHitArea>
                     )}
                   </div>
-                  <input
-                    id={extraInputId}
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    disabled={uploading}
-                    onChange={(e) => void handleExtraUpload(e)}
-                  />
                   <p className="text-xs text-muted-foreground">
                     {t("premium.photosCount", { count: totalPhotos, max: MAX_PROFILE_PHOTOS })}
                   </p>

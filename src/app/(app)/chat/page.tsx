@@ -42,6 +42,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTime } from "@/lib/utils";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
 import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
@@ -622,24 +623,15 @@ export default function ChatPage() {
                         >
                           <Smile className="h-5 w-5" />
                         </Button>
-                        <label className="cursor-pointer shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            asChild
-                            className="rounded-xl h-9 w-9 text-muted-foreground"
-                          >
-                            <span>
-                              <ImageIcon className="h-5 w-5" />
-                            </span>
-                          </Button>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleImageUpload}
-                          />
-                        </label>
+                        <ImageFileHitArea
+                          aria-label={t("chatPage.sharedImage")}
+                          onChange={(e) => void handleImageUpload(e)}
+                          className="shrink-0 h-9 w-9 rounded-xl"
+                        >
+                          <span className="flex h-full w-full items-center justify-center text-muted-foreground">
+                            <ImageIcon className="h-5 w-5" />
+                          </span>
+                        </ImageFileHitArea>
                         <Input
                           value={message}
                           onChange={(e) => handleTyping(e.target.value)}

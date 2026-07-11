@@ -61,6 +61,7 @@ import {
 } from "@/lib/admin-nav";
 import {
   PERSONAL_SUPPORT_PRICE,
+  PREMIUM_UPGRADE_PRICE,
   REGISTRATION_PRICE,
   SUPPORT_EMAIL,
   TRIAL_DAYS,
@@ -302,12 +303,15 @@ export default function AdminPage() {
       icon: CheckCircle2,
     },
     {
-      label: t("adminPage.paidPremium"),
-      value:
-        stats != null
-          ? (stats.paidBasicCount ?? 0) + (stats.paidPremiumCount ?? 0)
-          : "—",
-      hint: t("adminPage.statPaidHint"),
+      label: t("adminPage.paidBasic"),
+      value: stats?.money?.basicPaidCount ?? stats?.paidBasicCount ?? "—",
+      hint: t("adminPage.statBasicPaidHint"),
+      icon: CreditCard,
+    },
+    {
+      label: t("adminPage.paidPremiumMembers"),
+      value: stats?.paidPremiumCount ?? "—",
+      hint: t("adminPage.statPremiumMembersHint"),
       icon: CreditCard,
     },
     {
@@ -318,7 +322,11 @@ export default function AdminPage() {
     },
     {
       label: t("adminPage.revenue"),
-      value: stats ? `$${(stats.revenue / 100).toFixed(0)}` : "—",
+      value: stats?.money
+        ? `$${(stats.money.totalRevenueCents / 100).toFixed(0)}`
+        : stats
+          ? `$${(stats.revenue / 100).toFixed(0)}`
+          : "—",
       hint: t("adminPage.statRevenueHint"),
       icon: Wallet,
     },
@@ -395,6 +403,92 @@ export default function AdminPage() {
                 <p className="mt-1 hidden text-xs text-muted-foreground sm:block">{stat.hint}</p>
               </div>
             ))}
+          </section>
+        )}
+
+        {activeTab === "dashboard" && stats?.money && (
+          <section className="rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-[var(--shadow-sm)] space-y-4">
+            <div>
+              <h2 className="text-base font-semibold tracking-tight">
+                {t("adminPage.moneyTitle")}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {t("adminPage.moneyDesc")}
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="pb-2 pr-3 font-medium">{t("adminPage.moneyPlan")}</th>
+                    <th className="pb-2 pr-3 font-medium text-right">{t("adminPage.moneyUsers")}</th>
+                    <th className="pb-2 pr-3 font-medium text-right">{t("adminPage.moneyPrice")}</th>
+                    <th className="pb-2 font-medium text-right">{t("adminPage.moneySubtotal")}</th>
+                  </tr>
+                </thead>
+                <tbody className="tabular-nums">
+                  <tr className="border-b border-border/70">
+                    <td className="py-2.5 pr-3 font-medium">
+                      {t("adminPage.moneyBasicPaid")}
+                    </td>
+                    <td className="py-2.5 pr-3 text-right">{stats.money.basicPaidCount}</td>
+                    <td className="py-2.5 pr-3 text-right">${REGISTRATION_PRICE}</td>
+                    <td className="py-2.5 text-right font-semibold">
+                      ${(stats.money.basicRevenueCents / 100).toFixed(2)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border/70">
+                    <td className="py-2.5 pr-3 font-medium">
+                      {t("adminPage.moneyPremiumSignup")}
+                    </td>
+                    <td className="py-2.5 pr-3 text-right">{stats.money.premiumSignupCount}</td>
+                    <td className="py-2.5 pr-3 text-right">${PERSONAL_SUPPORT_PRICE}</td>
+                    <td className="py-2.5 text-right font-semibold">
+                      ${(stats.money.premiumSignupRevenueCents / 100).toFixed(2)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-border/70">
+                    <td className="py-2.5 pr-3 font-medium">
+                      {t("adminPage.moneyPremiumUpgrade")}
+                    </td>
+                    <td className="py-2.5 pr-3 text-right">{stats.money.premiumUpgradeCount}</td>
+                    <td className="py-2.5 pr-3 text-right">${PREMIUM_UPGRADE_PRICE}</td>
+                    <td className="py-2.5 text-right font-semibold">
+                      ${(stats.money.premiumUpgradeRevenueCents / 100).toFixed(2)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="pt-3 pr-3 font-semibold">
+                      {t("adminPage.moneyTotal")}
+                    </td>
+                    <td className="pt-3 pr-3 text-right font-semibold">
+                      {stats.money.totalPaidCount}
+                    </td>
+                    <td className="pt-3 pr-3 text-right text-muted-foreground">—</td>
+                    <td className="pt-3 text-right text-base font-bold text-primary">
+                      ${(stats.money.totalRevenueCents / 100).toFixed(2)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3 text-xs text-muted-foreground">
+              <p>
+                {t("adminPage.moneyFreeBasicWomen", {
+                  count: stats.freeBasicWomen ?? 0,
+                })}
+              </p>
+              <p>
+                {t("adminPage.moneyUnpaidMen", {
+                  count: stats.unpaidCount ?? 0,
+                })}
+              </p>
+              <p>
+                {t("adminPage.moneyPremiumMembers", {
+                  count: stats.paidPremiumCount ?? 0,
+                })}
+              </p>
+            </div>
           </section>
         )}
 
