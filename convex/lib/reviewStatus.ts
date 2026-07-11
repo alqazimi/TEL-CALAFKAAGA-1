@@ -22,7 +22,8 @@ type ReviewProfile = {
 
 /**
  * Only women on free Basic need admin profile approval.
- * Men (any plan) and Premium women skip the approval gate.
+ * Men are never admin-approved — they become approved only after payment.
+ * Premium women are approved when they pay.
  */
 export function requiresAdminProfileApproval(
   profile: Pick<ReviewProfile, "role" | "gender" | "hasPersonalSupport"> | null | undefined
@@ -39,6 +40,15 @@ export function requiresAdminProfileApproval(
 export function resolveReviewStatus(profile: ReviewProfile): ReviewStatus {
   if (profile.banned) return "suspended";
   if (isStaffRole(profile.role)) return "approved";
+
+  // Men are not in the admin review queue — approved only after Stripe payment.
+  if (
+    profile.gender === "male" &&
+    profile.questionnaireComplete &&
+    !profile.approved
+  ) {
+    return "incomplete";
+  }
 
   // Stale create-time "incomplete" after the member finished the form.
   if (profile.reviewStatus === "incomplete" && profile.questionnaireComplete) {

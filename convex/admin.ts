@@ -903,6 +903,16 @@ export const approveUser = mutation({
 
     const profile = await ctx.db.get(args.profileId);
     if (!profile) throw new Error("Profile not found");
+
+    // Men are approved only when they pay — admin cannot approve men.
+    if (!requiresAdminProfileApproval(profile)) {
+      throw new Error(
+        profile.gender === "male"
+          ? "Men are approved automatically when they pay. Admin approval is only for women on Basic."
+          : "This member does not need admin approval."
+      );
+    }
+
     if (profile.reviewStatus === "approved" || (profile.approved && !profile.reviewStatus)) {
       // Already approved (including legacy docs without reviewStatus)
       if (profile.reviewStatus !== "approved") {

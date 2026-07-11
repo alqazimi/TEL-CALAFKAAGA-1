@@ -97,7 +97,7 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
                 uploading ? "opacity-60" : ""
               }`}
             >
-              <span className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted-foreground">
+              <span className="flex h-full min-h-[5.5rem] w-full flex-col items-center justify-center gap-1 text-muted-foreground">
                 <Camera className="h-5 w-5" />
                 <span className="text-[10px] font-medium">{t("premium.addPhoto")}</span>
               </span>

@@ -200,35 +200,51 @@ export function ProfileEditScreen({
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5">
             <div className="relative shrink-0">
               {profile.imageUrl || profile.profileImageId ? (
-                <button
-                  type="button"
-                  onClick={() => openGallery(0)}
-                  className="block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg"
-                >
-                  <ProfilePhotoPreview
-                    imageUrl={profile.imageUrl}
-                    hasStoredPhoto={!!profile.profileImageId}
-                    alt={profile.name}
-                    fallbackInitial={profile.name}
-                    className="h-full w-full"
-                  />
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => openGallery(0)}
+                    className="block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg"
+                  >
+                    <ProfilePhotoPreview
+                      imageUrl={profile.imageUrl}
+                      hasStoredPhoto={!!profile.profileImageId}
+                      alt={profile.name}
+                      fallbackInitial={profile.name}
+                      className="h-full w-full"
+                    />
+                  </button>
+                  {!isStaff && (
+                    <ImageFileHitArea
+                      disabled={uploading}
+                      aria-label={t("profilePage.changePhoto")}
+                      onChange={(e) => void handlePrimaryUpload(e)}
+                      className="absolute -bottom-1 -right-1 z-40 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg"
+                    >
+                      <span className="flex h-full w-full items-center justify-center">
+                        <Camera className="h-5 w-5" />
+                      </span>
+                    </ImageFileHitArea>
+                  )}
+                </div>
               ) : !isStaff ? (
                 <ImageFileHitArea
                   disabled={uploading}
                   aria-label={t("profilePage.uploadPhoto")}
                   onChange={(e) => void handlePrimaryUpload(e)}
-                  className={`block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg ${
+                  className={`block h-28 w-28 rounded-2xl ring-4 ring-card shadow-lg ${
                     uploading ? "opacity-70" : ""
                   }`}
                 >
-                  <ProfilePhotoPreview
-                    imageUrl={profile.imageUrl}
-                    hasStoredPhoto={!!profile.profileImageId}
-                    alt={profile.name}
-                    fallbackInitial={profile.name}
-                    className="h-full w-full"
-                  />
+                  <span className="block h-full w-full overflow-hidden rounded-2xl">
+                    <ProfilePhotoPreview
+                      imageUrl={profile.imageUrl}
+                      hasStoredPhoto={!!profile.profileImageId}
+                      alt={profile.name}
+                      fallbackInitial={profile.name}
+                      className="h-full w-full"
+                    />
+                  </span>
                 </ImageFileHitArea>
               ) : (
                 <div className="block h-28 w-28 rounded-2xl overflow-hidden ring-4 ring-card shadow-lg">
@@ -240,18 +256,6 @@ export function ProfileEditScreen({
                     className="h-full w-full"
                   />
                 </div>
-              )}
-              {!isStaff && (
-                <ImageFileHitArea
-                  disabled={uploading}
-                  aria-label={t("profilePage.changePhoto")}
-                  onChange={(e) => void handlePrimaryUpload(e)}
-                  className={`absolute -bottom-1 -right-1 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ${
-                    uploading ? "opacity-60" : ""
-                  }`}
-                >
-                  <Camera className="h-5 w-5" />
-                </ImageFileHitArea>
               )}
             </div>
             <div className="text-center sm:text-left flex-1 min-w-0">
@@ -391,33 +395,27 @@ export function ProfileEditScreen({
             <TabsContent value="photos" className="mt-5 space-y-4">
               {!isStaff && (
                 <div className="rounded-2xl border border-border p-4 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h3 className="font-semibold">{t("profilePage.primaryPhoto")}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {t("profilePage.primaryPhotoDesc")}
-                      </p>
-                    </div>
-                    <ImageFileHitArea
-                      disabled={uploading}
-                      aria-label={t("profilePage.changePhoto")}
-                      onChange={(e) => void handlePrimaryUpload(e)}
-                      className="inline-flex"
-                    >
-                      <span
-                        className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-input bg-background px-4 text-sm font-medium ${
-                          uploading ? "opacity-60" : ""
-                        }`}
-                      >
-                        <Camera className="h-4 w-4" />
-                        {uploading
-                          ? t("profilePage.uploading")
-                          : profile.profileImageId
-                            ? t("profilePage.changePhoto")
-                            : t("profilePage.uploadPhoto")}
-                      </span>
-                    </ImageFileHitArea>
+                  <div>
+                    <h3 className="font-semibold">{t("profilePage.primaryPhoto")}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {t("profilePage.primaryPhotoDesc")}
+                    </p>
                   </div>
+                  <ImageFileHitArea
+                    disabled={uploading}
+                    aria-label={t("profilePage.changePhoto")}
+                    onChange={(e) => void handlePrimaryUpload(e)}
+                    className="block w-full rounded-2xl bg-primary text-primary-foreground"
+                  >
+                    <span className="flex h-12 w-full items-center justify-center gap-2 px-4 text-sm font-semibold">
+                      <Camera className="h-4 w-4" />
+                      {uploading
+                        ? t("profilePage.uploading")
+                        : profile.profileImageId
+                          ? t("profilePage.changePhoto")
+                          : t("profilePage.uploadPhoto")}
+                    </span>
+                  </ImageFileHitArea>
                 </div>
               )}
               {!isStaff && profile.questionnaireComplete ? (

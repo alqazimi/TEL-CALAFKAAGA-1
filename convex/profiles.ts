@@ -316,8 +316,7 @@ export const completeQuestionnaire = mutation({
 
     assertProfileFullyComplete(profile, preferences);
 
-    // Only women on free Basic wait for admin approval.
-    // Men are auto-approved; Premium women are approved when they pay.
+    // Women Basic → admin review. Men → approved only after they pay (not by admin).
     const womenBasicNeedsReview = profile.gender === "female";
 
     await ctx.db.patch(profile._id, {
@@ -332,13 +331,20 @@ export const completeQuestionnaire = mutation({
             // Women: Basic is free — no trial, grant access immediately.
             ...(!profile.hasPaid ? { hasPaid: true } : {}),
           }
-        : {
-            reviewStatus: "approved" as const,
-            approved: true,
-            ...(!profile.hasPaid && profile.trialEndsAt === undefined
-              ? { trialEndsAt: getTrialEndsAt() }
-              : {}),
-          }),
+        : profile.hasPaid
+          ? {
+              // Already paid (rare) — approve without admin.
+              reviewStatus: "approved" as const,
+              approved: true,
+            }
+          : {
+              // Men: not admin-approved. Stay unapproved until Stripe payment.
+              reviewStatus: "incomplete" as const,
+              approved: false,
+              ...(profile.trialEndsAt === undefined
+                ? { trialEndsAt: getTrialEndsAt() }
+                : {}),
+            }),
     });
 
     if (womenBasicNeedsReview) {
@@ -349,16 +355,24 @@ export const completeQuestionnaire = mutation({
         body: "Your questionnaire is complete. An admin will review your profile shortly. You will be notified when you can browse matches.",
         sendEmail: true,
       });
+    } else if (profile.hasPaid) {
+      await sendNotification(ctx, {
+        userId,
+        type: "approval",
+        title: "Profile complete",
+        body: "Your profile is ready. Browse matches from your dashboard.",
+        sendEmail: true,
+      });
+      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
+        userId,
+      });
     } else {
       await sendNotification(ctx, {
         userId,
         type: "approval",
         title: "Profile complete",
-        body: "Your profile is ready. Browse matches from your dashboard — payment unlocks full access after your free trial if needed.",
+        body: "Your profile is ready. Choose Basic or Premium to unlock matches and appear in Discover.",
         sendEmail: true,
-      });
-      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
-        userId,
       });
     }
 

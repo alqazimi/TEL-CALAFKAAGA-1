@@ -265,6 +265,7 @@ export const grandfatherExistingMembersBasicAccess = internalMutation({
 /**
  * Auto-approve everyone who no longer needs review:
  * men (any plan) and Premium women. Leave Basic women pending.
+ * @deprecated Prefer syncPaidMenApproval — men should only be approved after payment.
  */
 export const autoApproveMembersExemptFromReview = internalMutation({
   args: {},
@@ -287,6 +288,11 @@ export const autoApproveMembersExemptFromReview = internalMutation({
         skipped++;
         continue;
       }
+      // Men: only approve if they have paid.
+      if (profile.gender === "male" && !profile.hasPaid) {
+        skipped++;
+        continue;
+      }
       if (profile.approved && profile.reviewStatus === "approved") {
         skipped++;
         continue;
@@ -299,5 +305,62 @@ export const autoApproveMembersExemptFromReview = internalMutation({
     }
 
     return { updated, skipped, total: profiles.length };
+  },
+});
+
+/**
+ * Men: approved only after payment (not by admin).
+ * - Paid men → approve
+ * - Unpaid men → clear mistaken admin/auto approval
+ * Women Basic left for admin; Premium women already handled on pay.
+ */
+export const syncPaidMenApproval = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let approved = 0;
+    let revoked = 0;
+    let skipped = 0;
+
+    for (const profile of profiles) {
+      if (isStaffRole(profile.role)) {
+        skipped++;
+        continue;
+      }
+      if (profile.gender !== "male") {
+        skipped++;
+        continue;
+      }
+      if (!profile.questionnaireComplete) {
+        skipped++;
+        continue;
+      }
+
+      if (profile.hasPaid) {
+        if (profile.approved && profile.reviewStatus === "approved") {
+          skipped++;
+          continue;
+        }
+        await ctx.db.patch(profile._id, {
+          approved: true,
+          reviewStatus: "approved",
+        });
+        approved++;
+        continue;
+      }
+
+      // Unpaid men must not stay approved / in admin pending.
+      if (profile.approved || profile.reviewStatus === "pending_review" || profile.reviewStatus === "approved") {
+        await ctx.db.patch(profile._id, {
+          approved: false,
+          reviewStatus: "incomplete",
+        });
+        revoked++;
+        continue;
+      }
+      skipped++;
+    }
+
+    return { approved, revoked, skipped, total: profiles.length };
   },
 });

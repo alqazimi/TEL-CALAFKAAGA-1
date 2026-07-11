@@ -33,7 +33,7 @@ import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { WHATSAPP_URL } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
-import { resolveReviewStatus } from "@/lib/review-status";
+import { resolveReviewStatus, requiresAdminProfileApproval } from "@/lib/review-status";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog, type ConfirmDialogTone } from "@/components/ui/confirm-dialog";
 
@@ -179,6 +179,7 @@ export function AdminMembersPanel({
 
   const canApproveMember = (user: AdminUser) =>
     !isStaffRole(user.role) &&
+    requiresAdminProfileApproval(user) &&
     resolveReviewStatus(user) !== "approved" &&
     !!user.profileImageId &&
     !!user.phone?.trim();
@@ -187,6 +188,7 @@ export function AdminMembersPanel({
     const review = resolveReviewStatus(user);
     return (
       !isStaffRole(user.role) &&
+      requiresAdminProfileApproval(user) &&
       (review === "pending_review" || review === "approved")
     );
   };
