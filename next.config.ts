@@ -26,16 +26,11 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    // Do not set Cache-Control on /_next/static — Next/Vercel already mark
+    // hashed assets immutable. Applying it ourselves also stamps missing-asset
+    // 404 responses (not-found.txt) as immutable for a year, which Cloudflare
+    // then caches and leaves the site unstyled until purge.
     return [
-      {
-        source: "/_next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
       {
         source: "/apple-icon",
         headers: [
