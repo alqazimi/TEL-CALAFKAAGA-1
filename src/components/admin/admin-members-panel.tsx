@@ -177,19 +177,21 @@ export function AdminMembersPanel({
   const [busyId, setBusyId] = useState<Id<"profiles"> | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
-  const canApproveMember = (user: AdminUser) =>
-    !isStaffRole(user.role) &&
-    requiresAdminProfileApproval(user) &&
-    resolveReviewStatus(user) !== "approved" &&
-    !!user.profileImageId &&
-    !!user.phone?.trim();
+  const canApproveMember = (user: AdminUser) => {
+    if (isStaffRole(user.role) || !requiresAdminProfileApproval(user)) return false;
+    const review = resolveReviewStatus(user);
+    if (review === "approved" || review === "suspended") return false;
+    // Rejected members can always be re-approved after they fix their photo.
+    if (review === "rejected") return true;
+    return !!user.profileImageId && !!user.phone?.trim();
+  };
 
   const canRejectMember = (user: AdminUser) => {
     const review = resolveReviewStatus(user);
     return (
       !isStaffRole(user.role) &&
       requiresAdminProfileApproval(user) &&
-      (review === "pending_review" || review === "approved")
+      (review === "pending_review" || review === "approved" || review === "rejected")
     );
   };
 

@@ -929,7 +929,18 @@ export const approveUser = mutation({
       .withIndex("by_userId", (q) => q.eq("userId", profile.userId))
       .unique();
 
-    assertProfileFullyComplete(profile, preferences);
+    // Re-approving a rejected member: require a photo, but do not block on
+    // minor questionnaire drift — admin already reviewed them once.
+    if (profile.reviewStatus === "rejected") {
+      if (!profile.profileImageId) {
+        throw new Error("Member must upload a profile photo before you can approve.");
+      }
+      if (!profile.questionnaireComplete) {
+        throw new Error("Member must finish the questionnaire before you can approve.");
+      }
+    } else {
+      assertProfileFullyComplete(profile, preferences);
+    }
 
     await ctx.db.patch(args.profileId, {
       approved: true,

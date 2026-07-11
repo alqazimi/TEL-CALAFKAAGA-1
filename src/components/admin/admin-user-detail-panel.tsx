@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
-import { resolveReviewStatus } from "@/lib/review-status";
+import { resolveReviewStatus, requiresAdminProfileApproval } from "@/lib/review-status";
 import { toast } from "sonner";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -93,6 +93,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
   const requestProfilePhoto = useMutation(api.admin.requestProfilePhoto);
   const banUser = useMutation(api.admin.banUser);
   const rejectUser = useMutation(api.admin.rejectUser);
+  const approveUser = useMutation(api.admin.approveUser);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [confirm, setConfirm] = useState<"ban" | "unban" | "reject" | null>(null);
@@ -107,6 +108,35 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
     detail?.profile &&
     !isStaffRole(detail.profile.role) &&
     !isOwnerRole(detail.profile.role);
+  const canApproveDetail =
+    !!detail?.profile &&
+    canModerate &&
+    requiresAdminProfileApproval(detail.profile) &&
+    review !== "approved" &&
+    review !== "suspended";
+
+  const runApprove = async () => {
+    setActionBusy(true);
+    try {
+      await approveUser({ profileId });
+      toast.success(t("adminPage.approveSuccess"));
+    } catch (error) {
+      const raw =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+            ? error
+            : "";
+      const message = raw
+        .replace(/^\[CONVEX[^\]]*\]\s*/i, "")
+        .replace(/^Uncaught Error:\s*/i, "")
+        .split("\n")[0]
+        ?.trim();
+      toast.error(message || t("adminPage.actionFailed"));
+    } finally {
+      setActionBusy(false);
+    }
+  };
 
   const runModeration = async (type: "ban" | "unban" | "reject") => {
     if (!detail?.profile) return;
@@ -282,7 +312,21 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
               {canModerate && (
                 <DetailSection title={t("adminDetail.moderationTitle")}>
                   <div className="flex flex-wrap gap-2">
-                    {(review === "pending_review" || review === "approved") && (
+                    {canApproveDetail && (
+                      <Button
+                        size="sm"
+                        className="rounded-lg"
+                        disabled={actionBusy}
+                        onClick={() => void runApprove()}
+                      >
+                        <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                        {t("adminPage.approveShort")}
+                      </Button>
+                    )}
+                    {(review === "pending_review" ||
+                      review === "approved" ||
+                      review === "rejected") &&
+                      requiresAdminProfileApproval(detail.profile) && (
                       <Button
                         size="sm"
                         variant="outline"
