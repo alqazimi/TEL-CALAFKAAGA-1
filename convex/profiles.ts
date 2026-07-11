@@ -263,15 +263,20 @@ export const autoSaveProfile = mutation({
       );
     }
 
-    const updates: Record<string, unknown> = {
-      ...profileUpdates,
-      questionnaireStep: stepToSave,
-      lastSavedAt: Date.now(),
-    };
+    const prevStep = profile.questionnaireStep ?? 0;
+    const hasProfileFieldUpdates = Object.keys(profileUpdates).length > 0;
+    const stepChanged = stepToSave !== prevStep;
 
-    if (Object.keys(profileUpdates).length > 0) {
-      await ctx.db.patch(profile._id, updates);
-    } else {
+    // Skip hot lastSavedAt patches when nothing meaningful changed (OCC with score jobs).
+    if (!hasProfileFieldUpdates && !stepChanged) {
+      // preferences-only path below still runs
+    } else if (hasProfileFieldUpdates) {
+      await ctx.db.patch(profile._id, {
+        ...profileUpdates,
+        questionnaireStep: stepToSave,
+        lastSavedAt: Date.now(),
+      });
+    } else if (stepChanged) {
       await ctx.db.patch(profile._id, {
         questionnaireStep: stepToSave,
         lastSavedAt: Date.now(),
@@ -428,13 +433,22 @@ export const updateProfile = mutation({
       updates.profileImageId = args.profileImageId;
     }
 
+    if (Object.keys(updates).length === 0) {
+      return profile._id;
+    }
+
     await ctx.db.patch(profile._id, updates);
 
-    const updated = await ctx.db.get(profile._id);
-    if (updated && isDiscoverable(updated)) {
-      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
-        userId,
-      });
+    // Photo / visibility do not change compatibility — skip score fan-out (OCC source).
+    const matchingFieldsChanged =
+      args.name !== undefined || args.bio !== undefined || args.phone !== undefined;
+    if (matchingFieldsChanged) {
+      const updated = await ctx.db.get(profile._id);
+      if (updated && isDiscoverable(updated)) {
+        await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
+          userId,
+        });
+      }
     }
 
     return profile._id;

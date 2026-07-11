@@ -4,8 +4,14 @@ import { v } from "convex/values";
 import { calculateCompatibility } from "./matching";
 import { isDiscoverable } from "./lib/reviewStatus";
 
+/** Keep each OCC transaction small — wide profile scans caused massive retries. */
+const SCORE_PAGE_SIZE = 20;
+
 export const recalculateScores = internalMutation({
-  args: { userId: v.id("users") },
+  args: {
+    userId: v.id("users"),
+    cursor: v.optional(v.union(v.string(), v.null())),
+  },
   handler: async (ctx, args) => {
     const userProfile = await ctx.db
       .query("profiles")
@@ -21,19 +27,21 @@ export const recalculateScores = internalMutation({
 
     if (!userPrefs) return;
 
-    const allProfiles = await ctx.db.query("profiles").collect();
-
     const oppositeGender =
       userProfile.gender === "male" ? "female" : "male";
 
-    const candidates = allProfiles.filter(
-      (p) =>
-        p.userId !== args.userId &&
-        p.gender === oppositeGender &&
-        isDiscoverable(p)
-    );
+    const page = await ctx.db
+      .query("profiles")
+      .withIndex("by_gender", (q) => q.eq("gender", oppositeGender))
+      .paginate({
+        numItems: SCORE_PAGE_SIZE,
+        cursor: args.cursor ?? null,
+      });
 
-    for (const candidate of candidates) {
+    for (const candidate of page.page) {
+      if (candidate.userId === args.userId) continue;
+      if (!isDiscoverable(candidate)) continue;
+
       const candidatePrefs = await ctx.db
         .query("preferences")
         .withIndex("by_userId", (q) => q.eq("userId", candidate.userId))
@@ -91,6 +99,13 @@ export const recalculateScores = internalMutation({
         });
       }
     }
+
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
+        userId: args.userId,
+        cursor: page.continueCursor,
+      });
+    }
   },
 });
 
@@ -98,7 +113,10 @@ export const recalculateScores = internalMutation({
 export const recalculateAllScores = internalMutation({
   args: {},
   handler: async (ctx) => {
-    const profiles = await ctx.db.query("profiles").collect();
+    const profiles = await ctx.db
+      .query("profiles")
+      .withIndex("by_reviewStatus", (q) => q.eq("reviewStatus", "approved"))
+      .collect();
     let scheduled = 0;
     for (const profile of profiles) {
       if (!isDiscoverable(profile)) continue;

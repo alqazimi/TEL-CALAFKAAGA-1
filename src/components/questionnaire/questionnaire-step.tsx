@@ -32,7 +32,7 @@ import { UseMyLocationButton } from "./use-my-location-button";
 import { cityOptionsWithDetected } from "@/lib/location-match";
 
 const AUTO_ADVANCE_MS = 380;
-const AUTO_SAVE_MS = 1000;
+const AUTO_SAVE_MS = 2000;
 const AUTO_ADVANCE_TYPES = new Set(["radio", "select", "country-search", "gender-select"]);
 const SCROLLABLE_SELECT_MIN = 8;
 
