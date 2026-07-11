@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import {
   getProfileForUser,
@@ -430,10 +430,13 @@ export const getUserActivity = query({
     if (!profile) return null;
 
     const targetUserId = profile.userId;
-    const messageLimit = Math.min(Math.max(args.messageLimit ?? 40, 1), 80);
+    const messageLimit = Math.min(Math.max(args.messageLimit ?? 50, 1), 100);
     const likeLimit = Math.min(Math.max(args.likeLimit ?? 40, 1), 80);
 
-    const nameByUserId = new Map<string, { name: string; profileId: typeof profile._id | null }>();
+    const nameByUserId = new Map<
+      string,
+      { name: string; profileId: typeof profile._id | null }
+    >();
     async function resolvePeer(peerUserId: typeof targetUserId) {
       const cached = nameByUserId.get(peerUserId);
       if (cached) return cached;
@@ -449,12 +452,14 @@ export const getUserActivity = query({
       return info;
     }
 
+    // Sent messages (direct index).
     const sentRaw = await ctx.db
       .query("messages")
       .withIndex("by_sender", (q) => q.eq("senderId", targetUserId))
       .order("desc")
       .take(messageLimit);
 
+    // Conversations this member is in (via matches).
     const matchesA = await ctx.db
       .query("matches")
       .withIndex("by_userA", (q) => q.eq("userA", targetUserId))
@@ -465,70 +470,67 @@ export const getUserActivity = query({
       .collect();
     const matches = [...matchesA, ...matchesB];
 
-    const receivedRaw: {
-      _id: (typeof sentRaw)[number]["_id"];
-      conversationId: (typeof sentRaw)[number]["conversationId"];
-      senderId: typeof targetUserId;
-      message: string;
-      imageId?: (typeof sentRaw)[number]["imageId"];
-      createdAt: number;
-    }[] = [];
-
-    for (const match of matches.slice(0, 40)) {
+    const conversationIds = new Set(sentRaw.map((m) => m.conversationId));
+    for (const match of matches.slice(0, 60)) {
       const conversation = await ctx.db
         .query("conversations")
         .withIndex("by_match", (q) => q.eq("matchId", match._id))
         .unique();
-      if (!conversation) continue;
-      const msgs = await ctx.db
+      if (conversation) conversationIds.add(conversation._id);
+    }
+
+    // Pull recent messages from each conversation so received texts are included.
+    const byId = new Map<string, (typeof sentRaw)[number]>();
+    for (const msg of sentRaw) {
+      byId.set(msg._id, msg);
+    }
+    for (const conversationId of conversationIds) {
+      const thread = await ctx.db
         .query("messages")
-        .withIndex("by_conversation", (q) => q.eq("conversationId", conversation._id))
+        .withIndex("by_conversation", (q) => q.eq("conversationId", conversationId))
         .order("desc")
-        .take(15);
-      for (const msg of msgs) {
-        if (msg.senderId === targetUserId) continue;
-        receivedRaw.push(msg);
+        .take(25);
+      for (const msg of thread) {
+        byId.set(msg._id, msg);
       }
     }
-    receivedRaw.sort((a, b) => b.createdAt - a.createdAt);
 
-    async function enrichMessage(
-      msg: {
-        _id: (typeof sentRaw)[number]["_id"];
-        conversationId: (typeof sentRaw)[number]["conversationId"];
-        senderId: typeof targetUserId;
-        message: string;
-        imageId?: (typeof sentRaw)[number]["imageId"];
-        createdAt: number;
-      },
-      direction: "sent" | "received"
-    ) {
-      const conversation = await ctx.db.get(msg.conversationId);
+    const conversationCache = new Map<
+      string,
+      { participants: typeof targetUserId[] } | null
+    >();
+    async function getConversation(conversationId: (typeof sentRaw)[number]["conversationId"]) {
+      const key = conversationId as string;
+      if (conversationCache.has(key)) return conversationCache.get(key)!;
+      const conversation = await ctx.db.get(conversationId);
+      const value = conversation
+        ? { participants: conversation.participants }
+        : null;
+      conversationCache.set(key, value);
+      return value;
+    }
+
+    const enriched = [];
+    for (const msg of [...byId.values()].sort((a, b) => b.createdAt - a.createdAt)) {
+      if (enriched.length >= messageLimit) break;
+      const direction = msg.senderId === targetUserId ? "sent" : "received";
+      const conversation = await getConversation(msg.conversationId);
       const peerUserId =
         conversation?.participants.find((id) => id !== targetUserId) ??
-        (direction === "sent" ? undefined : msg.senderId);
-      const peer = peerUserId ? await resolvePeer(peerUserId) : { name: "Unknown", profileId: null };
-      return {
+        (direction === "received" ? msg.senderId : undefined);
+      const peer = peerUserId
+        ? await resolvePeer(peerUserId)
+        : { name: "Unknown", profileId: null };
+      enriched.push({
         id: msg._id,
-        direction,
+        direction: direction as "sent" | "received",
         body: msg.message?.trim() || (msg.imageId ? "[Image]" : ""),
         hasImage: Boolean(msg.imageId),
         createdAt: msg.createdAt,
         peerName: peer.name,
         peerProfileId: peer.profileId,
-      };
+      });
     }
-
-    const sent = await Promise.all(
-      sentRaw.slice(0, messageLimit).map((m) => enrichMessage(m, "sent"))
-    );
-    const received = await Promise.all(
-      receivedRaw.slice(0, messageLimit).map((m) => enrichMessage(m, "received"))
-    );
-
-    const messages = [...sent, ...received]
-      .sort((a, b) => b.createdAt - a.createdAt)
-      .slice(0, messageLimit);
 
     const likesGivenRaw = await ctx.db
       .query("likes")
@@ -564,14 +566,70 @@ export const getUserActivity = query({
     const activeMatches = matches.filter((m) => m.status === "active").length;
 
     return {
-      messages,
+      messages: enriched,
       likesGiven,
       likesReceived,
       activeMatches,
-      messageCount: messages.length,
+      messageCount: enriched.length,
       likesGivenCount: likesGivenRaw.filter((l) => l.action === "like").length,
       likesReceivedCount: likesReceivedRaw.filter((l) => l.action === "like").length,
     };
+  },
+});
+
+/** Platform-wide recent chat messages for admin moderation. */
+export const getRecentMessages = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    await requireAdmin(ctx, userId);
+
+    const limit = Math.min(Math.max(args.limit ?? 60, 1), 120);
+    const recent = await ctx.db.query("messages").order("desc").take(limit);
+
+    const profileCache = new Map<
+      string,
+      { name: string; profileId: Id<"profiles"> | null }
+    >();
+    async function resolveUser(uid: Id<"users">) {
+      const cached = profileCache.get(uid);
+      if (cached) return cached;
+      const peerProfile = await ctx.db
+        .query("profiles")
+        .withIndex("by_userId", (q) => q.eq("userId", uid))
+        .unique();
+      const info = {
+        name: peerProfile?.name ?? "Unknown",
+        profileId: peerProfile?._id ?? null,
+      };
+      profileCache.set(uid, info);
+      return info;
+    }
+
+    const rows = [];
+    for (const msg of recent) {
+      const conversation = await ctx.db.get(msg.conversationId);
+      const sender = await resolveUser(msg.senderId);
+      const peerUserId = conversation?.participants.find((id) => id !== msg.senderId);
+      const peer = peerUserId
+        ? await resolveUser(peerUserId)
+        : { name: "Unknown", profileId: null };
+      rows.push({
+        id: msg._id,
+        body: msg.message?.trim() || (msg.imageId ? "[Image]" : ""),
+        hasImage: Boolean(msg.imageId),
+        createdAt: msg.createdAt,
+        senderName: sender.name,
+        senderProfileId: sender.profileId,
+        peerName: peer.name,
+        peerProfileId: peer.profileId,
+      });
+    }
+
+    return rows;
   },
 });
 

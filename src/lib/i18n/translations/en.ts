@@ -865,6 +865,11 @@ export const en = {
     settings: "Settings",
     settingsDesc: "Pricing, trial length, and support contacts.",
     usersDesc: "Search members, check status, and take action with clear buttons.",
+    messagesTab: "Messages",
+    messagesTabDesc: "Read recent chat messages between members.",
+    messagesTabHint:
+      "Latest chats across the platform. Tap a name to open that member and ban or reject if needed.",
+    noPlatformMessages: "No chat messages yet.",
     paymentsDesc: "See who paid and how much. Abandoned checkouts are cleaned up automatically.",
     analyticsDesc: "Match rate, conversion, and where members are from.",
     announcementsDesc: "Send one message to every member.",

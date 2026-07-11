@@ -279,6 +279,161 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
                 </div>
               </div>
 
+              {canModerate && (
+                <DetailSection title={t("adminDetail.moderationTitle")}>
+                  <div className="flex flex-wrap gap-2">
+                    {(review === "pending_review" || review === "approved") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-lg"
+                        disabled={actionBusy}
+                        onClick={() => setConfirm("reject")}
+                      >
+                        {t("adminPage.rejectShort")}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-lg"
+                      disabled={actionBusy}
+                      onClick={() => setConfirm(detail.profile.banned ? "unban" : "ban")}
+                    >
+                      <Ban className="mr-1.5 h-3.5 w-3.5" />
+                      {detail.profile.banned ? t("adminPage.unbanShort") : t("adminPage.banShort")}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("adminDetail.moderationHint")}</p>
+                </DetailSection>
+              )}
+
+              <DetailSection title={t("adminDetail.activityTitle")}>
+                {!activity ? (
+                  <div className="flex justify-center py-6">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-lg border border-border bg-background p-2 text-center">
+                      <p className="text-lg font-semibold tabular-nums">{activity.messageCount}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("adminDetail.messagesLabel")}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-background p-2 text-center">
+                      <p className="text-lg font-semibold tabular-nums">{activity.likesGivenCount}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("adminDetail.likesGivenLabel")}</p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-background p-2 text-center">
+                      <p className="text-lg font-semibold tabular-nums">{activity.likesReceivedCount}</p>
+                      <p className="text-[11px] text-muted-foreground">{t("adminDetail.likesReceivedLabel")}</p>
+                    </div>
+                  </div>
+                )}
+              </DetailSection>
+
+              <DetailSection title={t("adminDetail.recentMessages")}>
+                {!activity ? (
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                ) : activity.messages.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("adminDetail.noMessages")}</p>
+                ) : (
+                  <ul className="max-h-64 space-y-2 overflow-y-auto">
+                    {activity.messages.map((msg) => (
+                      <li
+                        key={msg.id}
+                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                      >
+                        <div className="mb-1 flex flex-wrap items-center gap-2">
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px]",
+                              msg.direction === "sent"
+                                ? "border-sky-300 text-sky-700"
+                                : "border-violet-300 text-violet-700"
+                            )}
+                          >
+                            {msg.direction === "sent"
+                              ? t("adminDetail.messageSent")
+                              : t("adminDetail.messageReceived")}
+                          </Badge>
+                          <button
+                            type="button"
+                            className="font-medium text-foreground hover:underline"
+                            disabled={!msg.peerProfileId || !onOpenUser}
+                            onClick={() => {
+                              if (msg.peerProfileId && onOpenUser) onOpenUser(msg.peerProfileId);
+                            }}
+                          >
+                            {msg.peerName}
+                          </button>
+                          <span className="text-[11px] text-muted-foreground">
+                            {new Date(msg.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="break-words text-foreground/90">
+                          {msg.hasImage && !msg.body ? t("adminDetail.imageMessage") : msg.body}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </DetailSection>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailSection title={t("adminDetail.likesGiven")}>
+                  {!activity ? (
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                  ) : activity.likesGiven.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("adminDetail.noLikes")}</p>
+                  ) : (
+                    <ul className="max-h-48 space-y-1.5 overflow-y-auto">
+                      {activity.likesGiven.map((like) => (
+                        <li key={like.id}>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted"
+                            disabled={!like.peerProfileId || !onOpenUser}
+                            onClick={() => {
+                              if (like.peerProfileId && onOpenUser) onOpenUser(like.peerProfileId);
+                            }}
+                          >
+                            <Heart className="h-3.5 w-3.5 text-primary" />
+                            <span className="font-medium">{like.peerName}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </DetailSection>
+
+                <DetailSection title={t("adminDetail.likesReceived")}>
+                  {!activity ? (
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+                  ) : activity.likesReceived.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("adminDetail.noLikes")}</p>
+                  ) : (
+                    <ul className="max-h-48 space-y-1.5 overflow-y-auto">
+                      {activity.likesReceived.map((like) => (
+                        <li key={like.id}>
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted"
+                            disabled={!like.peerProfileId || !onOpenUser}
+                            onClick={() => {
+                              if (like.peerProfileId && onOpenUser) onOpenUser(like.peerProfileId);
+                            }}
+                          >
+                            <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+                            <span className="font-medium">{like.peerName}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </DetailSection>
+              </div>
+
               <DetailSection title={t("adminDetail.basicInfo")}>
                 <DetailGrid
                   emptyLabel={t("adminDetail.notProvided")}
@@ -501,160 +656,6 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
                 </DetailSection>
               )}
 
-              {canModerate && (
-                <DetailSection title={t("adminDetail.moderationTitle")}>
-                  <div className="flex flex-wrap gap-2">
-                    {(review === "pending_review" || review === "approved") && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="rounded-lg"
-                        disabled={actionBusy}
-                        onClick={() => setConfirm("reject")}
-                      >
-                        {t("adminPage.rejectShort")}
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-lg"
-                      disabled={actionBusy}
-                      onClick={() => setConfirm(detail.profile.banned ? "unban" : "ban")}
-                    >
-                      <Ban className="mr-1.5 h-3.5 w-3.5" />
-                      {detail.profile.banned ? t("adminPage.unbanShort") : t("adminPage.banShort")}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{t("adminDetail.moderationHint")}</p>
-                </DetailSection>
-              )}
-
-              <DetailSection title={t("adminDetail.activityTitle")}>
-                {!activity ? (
-                  <div className="flex justify-center py-6">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-lg border border-border bg-background p-2 text-center">
-                      <p className="text-lg font-semibold tabular-nums">{activity.messageCount}</p>
-                      <p className="text-[11px] text-muted-foreground">{t("adminDetail.messagesLabel")}</p>
-                    </div>
-                    <div className="rounded-lg border border-border bg-background p-2 text-center">
-                      <p className="text-lg font-semibold tabular-nums">{activity.likesGivenCount}</p>
-                      <p className="text-[11px] text-muted-foreground">{t("adminDetail.likesGivenLabel")}</p>
-                    </div>
-                    <div className="rounded-lg border border-border bg-background p-2 text-center">
-                      <p className="text-lg font-semibold tabular-nums">{activity.likesReceivedCount}</p>
-                      <p className="text-[11px] text-muted-foreground">{t("adminDetail.likesReceivedLabel")}</p>
-                    </div>
-                  </div>
-                )}
-              </DetailSection>
-
-              <DetailSection title={t("adminDetail.recentMessages")}>
-                {!activity ? (
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-                ) : activity.messages.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t("adminDetail.noMessages")}</p>
-                ) : (
-                  <ul className="max-h-64 space-y-2 overflow-y-auto">
-                    {activity.messages.map((msg) => (
-                      <li
-                        key={msg.id}
-                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                      >
-                        <div className="mb-1 flex flex-wrap items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-[10px]",
-                              msg.direction === "sent"
-                                ? "border-sky-300 text-sky-700"
-                                : "border-violet-300 text-violet-700"
-                            )}
-                          >
-                            {msg.direction === "sent"
-                              ? t("adminDetail.messageSent")
-                              : t("adminDetail.messageReceived")}
-                          </Badge>
-                          <button
-                            type="button"
-                            className="font-medium text-foreground hover:underline"
-                            disabled={!msg.peerProfileId || !onOpenUser}
-                            onClick={() => {
-                              if (msg.peerProfileId && onOpenUser) onOpenUser(msg.peerProfileId);
-                            }}
-                          >
-                            {msg.peerName}
-                          </button>
-                          <span className="text-[11px] text-muted-foreground">
-                            {new Date(msg.createdAt).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="break-words text-foreground/90">
-                          {msg.hasImage && !msg.body ? t("adminDetail.imageMessage") : msg.body}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </DetailSection>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <DetailSection title={t("adminDetail.likesGiven")}>
-                  {!activity ? (
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-                  ) : activity.likesGiven.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t("adminDetail.noLikes")}</p>
-                  ) : (
-                    <ul className="max-h-48 space-y-1.5 overflow-y-auto">
-                      {activity.likesGiven.map((like) => (
-                        <li key={like.id}>
-                          <button
-                            type="button"
-                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted"
-                            disabled={!like.peerProfileId || !onOpenUser}
-                            onClick={() => {
-                              if (like.peerProfileId && onOpenUser) onOpenUser(like.peerProfileId);
-                            }}
-                          >
-                            <Heart className="h-3.5 w-3.5 text-primary" />
-                            <span className="font-medium">{like.peerName}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </DetailSection>
-
-                <DetailSection title={t("adminDetail.likesReceived")}>
-                  {!activity ? (
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
-                  ) : activity.likesReceived.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">{t("adminDetail.noLikes")}</p>
-                  ) : (
-                    <ul className="max-h-48 space-y-1.5 overflow-y-auto">
-                      {activity.likesReceived.map((like) => (
-                        <li key={like.id}>
-                          <button
-                            type="button"
-                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted"
-                            disabled={!like.peerProfileId || !onOpenUser}
-                            onClick={() => {
-                              if (like.peerProfileId && onOpenUser) onOpenUser(like.peerProfileId);
-                            }}
-                          >
-                            <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-                            <span className="font-medium">{like.peerName}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </DetailSection>
-              </div>
             </>
           )}
         </div>

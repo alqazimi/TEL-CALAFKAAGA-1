@@ -73,6 +73,7 @@ type ReviewFilter =
 const ADMIN_TABS = [
   "dashboard",
   "users",
+  "messages",
   "reports",
   "payments",
   "announcements",
@@ -156,6 +157,10 @@ export default function AdminPage() {
   const reports = useSafeQuery(
     api.moderation.listReports,
     isStaff && (activeTab === "reports" || activeTab === "dashboard") ? {} : "skip"
+  );
+  const recentMessages = useSafeQuery(
+    api.admin.getRecentMessages,
+    isStaff && activeTab === "messages" ? { limit: 80 } : "skip"
   );
   const auditLogs = useSafeQuery(
     api.admin.getAuditLogs,
@@ -252,6 +257,11 @@ export default function AdminPage() {
       icon: LayoutDashboard,
     },
     users: { title: "adminPage.users", desc: "adminPage.usersDesc", icon: Users },
+    messages: {
+      title: "adminPage.messagesTab",
+      desc: "adminPage.messagesTabDesc",
+      icon: MessageCircle,
+    },
     payments: { title: "adminPage.payments", desc: "adminPage.paymentsDesc", icon: CreditCard },
     analytics: { title: "adminPage.analytics", desc: "adminPage.analyticsDesc", icon: TrendingUp },
     reports: { title: "adminPage.reports", desc: "adminPage.reportsDesc", icon: Flag },
@@ -835,6 +845,58 @@ export default function AdminPage() {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {activeTab === "messages" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">{t("adminPage.messagesTabHint")}</p>
+            {recentMessages === undefined ? (
+              <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+            ) : recentMessages === null || recentMessages.length === 0 ? (
+              <p className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
+                {t("adminPage.noPlatformMessages")}
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {recentMessages.map((msg) => (
+                  <li
+                    key={msg.id}
+                    className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]"
+                  >
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+                      <button
+                        type="button"
+                        className="font-semibold hover:underline"
+                        disabled={!msg.senderProfileId}
+                        onClick={() => {
+                          if (msg.senderProfileId) setSelectedProfileId(msg.senderProfileId);
+                        }}
+                      >
+                        {msg.senderName}
+                      </button>
+                      <span className="text-muted-foreground">→</span>
+                      <button
+                        type="button"
+                        className="font-medium hover:underline"
+                        disabled={!msg.peerProfileId}
+                        onClick={() => {
+                          if (msg.peerProfileId) setSelectedProfileId(msg.peerProfileId);
+                        }}
+                      >
+                        {msg.peerName}
+                      </button>
+                      <span className="text-[11px] text-muted-foreground">
+                        {new Date(msg.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="break-words text-sm text-foreground/90">
+                      {msg.hasImage && !msg.body ? t("adminDetail.imageMessage") : msg.body}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
 
         {activeTab === "reports" && (

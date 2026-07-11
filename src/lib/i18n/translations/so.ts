@@ -873,6 +873,11 @@ export const so: Translations = {
     settings: "Dejinta",
     settingsDesc: "Qiimaha, muddada tijaabada, iyo xiriirka taageerada.",
     usersDesc: "Maamul xubnaha iyo shaqaalaha — ansixi, jooji, ama ka saar akoonnada.",
+    messagesTab: "Fariimaha",
+    messagesTabDesc: "Akhri fariimaha chat-ka ee xubnaha dhexdooda.",
+    messagesTabHint:
+      "Sheekaysiyada ugu dambeeyay ee platform-ka. Magac taabo si aad u furto xubnaha oo aad u diiddo ama u mamnuucdo haddii loo baahdo.",
+    noPlatformMessages: "Weli fariimo chat ah ma jiraan.",
     paymentsDesc: "Lacag bixinta dhammaystiran iyo dakhliga. Checkout-yada la iska dayay si toos ah ayaa loo nadiifiyaa.",
     analyticsDesc: "Arag dhaqdhaqaaqa platform-ka iyo aragtida beddelka.",
     announcementsDesc: "U dir ogeysiis dhammaan xubnaha.",
