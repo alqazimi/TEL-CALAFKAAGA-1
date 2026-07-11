@@ -5,10 +5,13 @@ import {
   mutation,
   query,
   type MutationCtx,
+  type QueryCtx,
 } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 import { assertStorageOwnership, requireAuthUserId } from "./lib/access";
 import { requireAdmin } from "./lib/adminAuth";
 import { writeAuditLog } from "./lib/auditLog";
+import { sendNotification } from "./lib/sendNotification";
 
 const sourceValidator = v.union(
   v.literal("profile"),
@@ -72,6 +75,38 @@ async function checkRateLimit(
   return { allowed: true as const };
 }
 
+async function loadThread(ctx: QueryCtx | MutationCtx, contact: Doc<"supportContacts">) {
+  const rows = await ctx.db
+    .query("supportMessages")
+    .withIndex("by_contact", (q) => q.eq("contactId", contact._id))
+    .collect();
+
+  rows.sort((a, b) => a.createdAt - b.createdAt);
+
+  if (rows.length > 0) {
+    return rows.map((row) => ({
+      id: row._id as string,
+      authorRole: row.authorRole,
+      authorUserId: row.authorUserId ?? null,
+      body: row.body,
+      createdAt: row.createdAt,
+    }));
+  }
+
+  return [
+    {
+      id: `legacy:${contact._id}`,
+      authorRole:
+        contact.source === "contact_page"
+          ? ("visitor" as const)
+          : ("member" as const),
+      authorUserId: contact.userId ?? null,
+      body: contact.message,
+      createdAt: contact.createdAt,
+    },
+  ];
+}
+
 /** Logged-in members: report photo upload / account issues to admin. */
 export const sendSupportMessage = mutation({
   args: {
@@ -117,8 +152,9 @@ export const sendSupportMessage = mutation({
 
     const user = await ctx.db.get(userId);
     const subject = TOPIC_SUBJECTS[args.topic];
+    const createdAt = Date.now();
 
-    return await ctx.db.insert("supportContacts", {
+    const contactId = await ctx.db.insert("supportContacts", {
       userId,
       name: profile.name,
       email: user?.email,
@@ -129,8 +165,123 @@ export const sendSupportMessage = mutation({
       imageId: args.imageId,
       source: args.source,
       status: "open",
-      createdAt: Date.now(),
+      createdAt,
     });
+
+    await ctx.db.insert("supportMessages", {
+      contactId,
+      authorUserId: userId,
+      authorRole: "member",
+      body: message,
+      createdAt,
+    });
+
+    return contactId;
+  },
+});
+
+/** Member reply on an existing support thread. */
+export const replyAsMember = mutation({
+  args: {
+    contactId: v.id("supportContacts"),
+    message: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const userId = await requireAuthUserId(ctx);
+    const contact = await ctx.db.get(args.contactId);
+    if (!contact || contact.userId !== userId) {
+      throw new Error("Contact not found");
+    }
+    if (contact.status === "closed") {
+      throw new Error("This conversation is closed. Start a new message.");
+    }
+
+    const message = args.message.trim();
+    if (message.length < 2) throw new Error("Please write a message.");
+    if (message.length > MAX_MESSAGE) throw new Error("Message is too long.");
+
+    const rate = await checkRateLimit(
+      ctx,
+      `support:${userId}`,
+      MEMBER_LIMIT,
+      MEMBER_WINDOW_MS
+    );
+    if (!rate.allowed) {
+      throw new Error("Too many messages. Please try again later or use WhatsApp.");
+    }
+
+    const createdAt = Date.now();
+    await ctx.db.insert("supportMessages", {
+      contactId: args.contactId,
+      authorUserId: userId,
+      authorRole: "member",
+      body: message,
+      createdAt,
+    });
+
+    await ctx.db.patch(args.contactId, {
+      status: "open",
+      message,
+    });
+
+    return { ok: true as const };
+  },
+});
+
+/** Admin reply — member sees it on their support card + gets a notification. */
+export const replyAsAdmin = mutation({
+  args: {
+    contactId: v.id("supportContacts"),
+    message: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const adminId = await requireAuthUserId(ctx);
+    await requireAdmin(ctx, adminId);
+
+    const contact = await ctx.db.get(args.contactId);
+    if (!contact) throw new Error("Contact not found");
+    if (!contact.userId) {
+      throw new Error("This contact has no member account — reply by email instead.");
+    }
+
+    const message = args.message.trim();
+    if (message.length < 2) throw new Error("Please write a reply.");
+    if (message.length > MAX_MESSAGE) throw new Error("Message is too long.");
+
+    const createdAt = Date.now();
+    await ctx.db.insert("supportMessages", {
+      contactId: args.contactId,
+      authorUserId: adminId,
+      authorRole: "admin",
+      body: message,
+      createdAt,
+    });
+
+    await ctx.db.patch(args.contactId, {
+      status: contact.status === "closed" ? "reviewed" : contact.status,
+      adminNotes: message,
+      reviewedAt: createdAt,
+      reviewedBy: adminId,
+    });
+
+    await sendNotification(ctx, {
+      userId: contact.userId,
+      type: "announcement",
+      title: "Admin replied to your message",
+      body: message.length > 120 ? `${message.slice(0, 120)}…` : message,
+      relatedUserId: adminId,
+      sendEmail: true,
+      emailCta: { label: "View reply", path: "/profile" },
+    });
+
+    await writeAuditLog(ctx, {
+      actorUserId: adminId,
+      action: "support_contact_reply",
+      targetUserId: contact.userId,
+      metadata: { contactId: args.contactId },
+    });
+
+    return { ok: true as const };
   },
 });
 
@@ -147,8 +298,9 @@ export const insertPublicContact = internalMutation({
     const email = args.email.trim().toLowerCase().slice(0, 254);
     const subject = args.subject.trim().slice(0, MAX_SUBJECT);
     const message = args.message.trim().slice(0, MAX_MESSAGE);
+    const createdAt = Date.now();
 
-    return await ctx.db.insert("supportContacts", {
+    const contactId = await ctx.db.insert("supportContacts", {
       name,
       email,
       topic: "contact_form",
@@ -156,8 +308,17 @@ export const insertPublicContact = internalMutation({
       message,
       source: "contact_page",
       status: "open",
-      createdAt: Date.now(),
+      createdAt,
     });
+
+    await ctx.db.insert("supportMessages", {
+      contactId,
+      authorRole: "visitor",
+      body: message,
+      createdAt,
+    });
+
+    return contactId;
   },
 });
 
@@ -173,15 +334,24 @@ export const listMySupportMessages = query({
       .order("desc")
       .take(10);
 
-    return rows.map((row) => ({
-      _id: row._id,
-      topic: row.topic,
-      subject: row.subject,
-      message: row.message,
-      status: row.status,
-      createdAt: row.createdAt,
-      source: row.source,
-    }));
+    return await Promise.all(
+      rows.map(async (row) => {
+        const thread = await loadThread(ctx, row);
+        const lastAdmin = [...thread].reverse().find((m) => m.authorRole === "admin");
+        return {
+          _id: row._id,
+          topic: row.topic,
+          subject: row.subject,
+          message: row.message,
+          status: row.status,
+          createdAt: row.createdAt,
+          source: row.source,
+          thread,
+          adminReply: lastAdmin?.body ?? null,
+          adminRepliedAt: lastAdmin?.createdAt ?? null,
+        };
+      })
+    );
   },
 });
 
@@ -217,6 +387,8 @@ export const listSupportContacts = query({
         const imageUrl = row.imageId
           ? await ctx.storage.getUrl(row.imageId)
           : null;
+        const thread = await loadThread(ctx, row);
+        const lastAdmin = [...thread].reverse().find((m) => m.authorRole === "admin");
 
         return {
           _id: row._id,
@@ -232,8 +404,11 @@ export const listSupportContacts = query({
           source: row.source,
           status: row.status,
           adminNotes: row.adminNotes ?? "",
+          adminReply: lastAdmin?.body ?? null,
           createdAt: row.createdAt,
           reviewedAt: row.reviewedAt ?? null,
+          thread,
+          canReply: !!row.userId,
         };
       })
     );

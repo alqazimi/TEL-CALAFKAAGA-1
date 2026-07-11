@@ -6,6 +6,7 @@ import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Headphones, Send } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -32,11 +33,14 @@ export function ContactAdminCard({
 }: ContactAdminCardProps) {
   const { t } = useTranslation();
   const sendSupport = useMutation(api.supportContacts.sendSupportMessage);
+  const replyAsMember = useMutation(api.supportContacts.replyAsMember);
   const myMessages = useSafeQuery(api.supportContacts.listMySupportMessages, {});
   const [topic, setTopic] = useState<Topic>(defaultTopic);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [open, setOpen] = useState(!compact);
+  const [followUps, setFollowUps] = useState<Record<string, string>>({});
+  const [replyingId, setReplyingId] = useState<string | null>(null);
 
   const topics: { value: Topic; label: string }[] = [
     { value: "photo_upload", label: t("support.topicPhoto") },
@@ -65,6 +69,26 @@ export function ContactAdminCard({
       );
     } finally {
       setSending(false);
+    }
+  };
+
+  const onFollowUp = async (contactId: Id<"supportContacts">) => {
+    const body = (followUps[contactId] ?? "").trim();
+    if (body.length < 2) {
+      toast.error(t("support.replyTooShort"));
+      return;
+    }
+    setReplyingId(contactId);
+    try {
+      await replyAsMember({ contactId, message: body });
+      toast.success(t("support.replySent"));
+      setFollowUps((prev) => ({ ...prev, [contactId]: "" }));
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t("support.replyFailed")
+      );
+    } finally {
+      setReplyingId(null);
     }
   };
 
@@ -153,28 +177,80 @@ export function ContactAdminCard({
       )}
 
       {myMessages && myMessages.length > 0 && (
-        <div className="mt-4 space-y-2 border-t border-border/70 pt-3">
+        <div className="mt-4 space-y-3 border-t border-border/70 pt-3">
           <p className="text-xs font-medium text-muted-foreground">
             {t("support.recent")}
           </p>
-          {myMessages.slice(0, 3).map((row) => (
+          {myMessages.slice(0, 5).map((row) => (
             <div
               key={row._id}
-              className="flex items-start justify-between gap-2 rounded-xl bg-background/80 px-3 py-2"
+              className="space-y-2 rounded-xl bg-background/80 px-3 py-2"
             >
-              <div className="min-w-0">
+              <div className="flex items-start justify-between gap-2">
                 <p className="truncate text-xs font-medium">{row.subject}</p>
-                <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
-                  {row.message}
-                </p>
+                <Badge
+                  variant={row.status === "open" ? "default" : "outline"}
+                  className="shrink-0"
+                >
+                  {row.status === "open"
+                    ? t("support.statusOpen")
+                    : row.status === "reviewed"
+                      ? t("support.statusReviewed")
+                      : t("support.statusClosed")}
+                </Badge>
               </div>
-              <Badge variant={row.status === "open" ? "default" : "outline"} className="shrink-0">
-                {row.status === "open"
-                  ? t("support.statusOpen")
-                  : row.status === "reviewed"
-                    ? t("support.statusReviewed")
-                    : t("support.statusClosed")}
-              </Badge>
+
+              <div className="space-y-1.5">
+                {row.thread.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={cn(
+                      "rounded-lg px-2.5 py-1.5 text-[11px] leading-relaxed",
+                      msg.authorRole === "admin"
+                        ? "bg-primary/10"
+                        : "bg-muted/60"
+                    )}
+                  >
+                    <span className="font-semibold">
+                      {msg.authorRole === "admin"
+                        ? t("support.fromAdmin")
+                        : t("support.fromYou")}
+                      :{" "}
+                    </span>
+                    {msg.body}
+                  </div>
+                ))}
+              </div>
+
+              {row.status !== "closed" && (
+                <div className="space-y-2 pt-1">
+                  <Textarea
+                    rows={2}
+                    className="rounded-xl text-xs"
+                    placeholder={t("support.replyPlaceholder")}
+                    value={followUps[row._id] ?? ""}
+                    onChange={(e) =>
+                      setFollowUps((prev) => ({
+                        ...prev,
+                        [row._id]: e.target.value,
+                      }))
+                    }
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl h-8 text-xs"
+                    disabled={replyingId === row._id}
+                    onClick={() => void onFollowUp(row._id)}
+                  >
+                    <Send className="mr-1.5 h-3 w-3" />
+                    {replyingId === row._id
+                      ? t("support.sending")
+                      : t("support.reply")}
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>

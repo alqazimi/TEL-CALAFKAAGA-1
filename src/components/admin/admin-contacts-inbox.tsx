@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useMutation } from "convex/react";
 import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
-import { Headphones, Mail, Phone } from "lucide-react";
+import { Headphones, Mail, Phone, Send } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -25,10 +25,13 @@ export function AdminContactsInbox({ onOpenUser }: AdminContactsInboxProps) {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<StatusFilter>("open");
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [replies, setReplies] = useState<Record<string, string>>({});
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const contacts = useSafeQuery(api.supportContacts.listSupportContacts, {
     status: filter === "all" ? undefined : filter,
   });
   const updateStatus = useMutation(api.supportContacts.updateSupportContactStatus);
+  const replyAsAdmin = useMutation(api.supportContacts.replyAsAdmin);
 
   const filters: { value: StatusFilter; label: string }[] = [
     { value: "open", label: t("adminPage.contactsFilterOpen") },
@@ -59,6 +62,26 @@ export function AdminContactsInbox({ onOpenUser }: AdminContactsInboxProps) {
       }) as Record<string, string>,
     [t]
   );
+
+  const sendReply = async (contactId: Id<"supportContacts">) => {
+    const body = (replies[contactId] ?? "").trim();
+    if (body.length < 2) {
+      toast.error(t("adminPage.contactReplyTooShort"));
+      return;
+    }
+    setSendingId(contactId);
+    try {
+      await replyAsAdmin({ contactId, message: body });
+      toast.success(t("adminPage.contactReplySent"));
+      setReplies((prev) => ({ ...prev, [contactId]: "" }));
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t("adminPage.contactReplyFailed")
+      );
+    } finally {
+      setSendingId(null);
+    }
+  };
 
   if (contacts === undefined) {
     return <Skeleton className="h-48 w-full rounded-2xl" />;
@@ -129,9 +152,32 @@ export function AdminContactsInbox({ onOpenUser }: AdminContactsInboxProps) {
               <p className="mt-0.5 text-sm font-medium text-foreground/90">
                 {contact.subject}
               </p>
-              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                {contact.message}
-              </p>
+            </div>
+
+            <div className="space-y-2 rounded-xl bg-muted/40 p-3">
+              {contact.thread.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "rounded-xl px-3 py-2 text-sm",
+                    msg.authorRole === "admin"
+                      ? "ml-4 bg-primary/10 text-foreground"
+                      : "mr-4 bg-background border border-border"
+                  )}
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                    {msg.authorRole === "admin"
+                      ? t("adminPage.contactRoleAdmin")
+                      : msg.authorRole === "visitor"
+                        ? t("adminPage.contactRoleVisitor")
+                        : t("adminPage.contactRoleMember")}
+                  </p>
+                  <p className="whitespace-pre-wrap leading-relaxed">{msg.body}</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    {new Date(msg.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              ))}
             </div>
 
             {contact.imageUrl && (
@@ -166,18 +212,50 @@ export function AdminContactsInbox({ onOpenUser }: AdminContactsInboxProps) {
               <span>{new Date(contact.createdAt).toLocaleString()}</span>
             </div>
 
-            {contact.status === "open" && (
-              <div className="space-y-3">
+            {contact.canReply && contact.status !== "closed" && (
+              <div className="space-y-2">
                 <Textarea
                   className="rounded-xl text-sm"
-                  rows={2}
-                  placeholder={t("adminPage.adminNotesPh")}
-                  value={notes[contact._id] ?? ""}
+                  rows={3}
+                  placeholder={t("adminPage.contactReplyPh")}
+                  value={replies[contact._id] ?? ""}
                   onChange={(e) =>
-                    setNotes((prev) => ({ ...prev, [contact._id]: e.target.value }))
+                    setReplies((prev) => ({ ...prev, [contact._id]: e.target.value }))
                   }
                 />
-                <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  className="rounded-lg"
+                  disabled={sendingId === contact._id}
+                  onClick={() => void sendReply(contact._id)}
+                >
+                  <Send className="h-3.5 w-3.5 mr-1.5" />
+                  {sendingId === contact._id
+                    ? t("adminPage.contactReplySending")
+                    : t("adminPage.contactReplySend")}
+                </Button>
+              </div>
+            )}
+
+            {!contact.canReply && (
+              <p className="text-xs text-muted-foreground">{t("adminPage.contactReplyEmailOnly")}</p>
+            )}
+
+            <div className="flex flex-wrap gap-2 border-t border-border/70 pt-3">
+              <Textarea
+                className="rounded-xl text-sm"
+                rows={2}
+                placeholder={t("adminPage.adminNotesPh")}
+                value={notes[contact._id] ?? ""}
+                onChange={(e) =>
+                  setNotes((prev) => ({
+                    ...prev,
+                    [contact._id]: e.target.value,
+                  }))
+                }
+              />
+              {contact.status === "open" && (
+                <>
                   <Button
                     size="sm"
                     variant="outline"
@@ -206,9 +284,25 @@ export function AdminContactsInbox({ onOpenUser }: AdminContactsInboxProps) {
                   >
                     {t("adminPage.contactsMarkClosed")}
                   </Button>
-                </div>
-              </div>
-            )}
+                </>
+              )}
+              {contact.status !== "open" && contact.status !== "closed" && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-lg"
+                  onClick={() =>
+                    void updateStatus({
+                      contactId: contact._id,
+                      status: "closed",
+                      adminNotes: notes[contact._id],
+                    }).then(() => toast.success(t("adminPage.contactUpdated")))
+                  }
+                >
+                  {t("adminPage.contactsMarkClosed")}
+                </Button>
+              )}
+            </div>
           </div>
         ))
       )}

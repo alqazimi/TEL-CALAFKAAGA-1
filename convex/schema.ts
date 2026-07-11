@@ -356,6 +356,19 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_createdAt", ["createdAt"]),
 
+  /** Thread replies on a support contact (member ↔ admin). */
+  supportMessages: defineTable({
+    contactId: v.id("supportContacts"),
+    authorUserId: v.optional(v.id("users")),
+    authorRole: v.union(
+      v.literal("member"),
+      v.literal("admin"),
+      v.literal("visitor")
+    ),
+    body: v.string(),
+    createdAt: v.number(),
+  }).index("by_contact", ["contactId"]),
+
   memberEmailLog: defineTable({
     userId: v.id("users"),
     kind: v.union(
