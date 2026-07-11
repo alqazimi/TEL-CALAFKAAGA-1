@@ -530,6 +530,10 @@ export const likeUser = mutation({
             matchId: existingMatch._id,
             participants: [existingMatch.userA, existingMatch.userB],
             lastMessageAt: Date.now(),
+            unreadByUser: {
+              [existingMatch.userA]: 0,
+              [existingMatch.userB]: 0,
+            },
           });
           conversation = await ctx.db.get(convId);
         }
@@ -572,6 +576,10 @@ export const likeUser = mutation({
         matchId,
         participants: [userId, args.toUserId],
         lastMessageAt: Date.now(),
+        unreadByUser: {
+          [userId]: 0,
+          [args.toUserId]: 0,
+        },
       });
 
       const otherProfile = await ctx.db

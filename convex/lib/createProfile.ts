@@ -7,6 +7,7 @@ import {
   religiousLevelFromPrayer,
 } from "./profileEnrichment";
 import { isStaffRole } from "./roles";
+import { scheduleSiteMetricsRebuild } from "../siteMetrics";
 
 type ProfileArgs = {
   name: string;
@@ -90,6 +91,8 @@ export async function createUserProfile(
     partnerBeard: "",
     partnerHijabLevel: "",
   });
+
+  await scheduleSiteMetricsRebuild(ctx);
 
   // If they never finish the questionnaire, nudge by email after 30 minutes.
   await ctx.scheduler.runAfter(

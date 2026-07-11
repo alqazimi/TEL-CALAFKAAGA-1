@@ -25,4 +25,11 @@ crons.interval(
   {}
 );
 
+crons.interval(
+  "rebuild site metrics",
+  { minutes: 30 },
+  internal.siteMetrics.rebuildCron,
+  {}
+);
+
 export default crons;

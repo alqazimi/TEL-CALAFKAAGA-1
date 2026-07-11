@@ -51,6 +51,7 @@ export interface Profile {
   lastSavedAt?: number;
   registrationComplete?: boolean;
   hasPaid: boolean;
+  genderLocked?: boolean;
   trialEndsAt?: number;
   isInTrial?: boolean;
   hasPersonalSupport?: boolean;

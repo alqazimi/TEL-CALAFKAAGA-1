@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { FAQAccordion } from "@/components/marketing/faq-accordion";
 import {
   formatMoney,
+  HOW_TO_USE_YOUTUBE_ID,
   MIN_COMPATIBILITY_SCORE,
   PERSONAL_SUPPORT_PRICE,
   PREMIUM_UPGRADE_PRICE,
@@ -84,8 +85,11 @@ export function LandingPage() {
 
   return (
     <div className="overflow-hidden">
-      {/* Hero — full-bleed atmosphere; brand first; one CTA group */}
-      <section className="relative flex min-h-[100svh] items-end overflow-hidden bg-[#120d0e] sm:items-center">
+      {/* Hero — brand + how-to video so visitors see how to use the site */}
+      <section
+        id="how-to-use"
+        className="relative overflow-hidden bg-[#120d0e] scroll-mt-20"
+      >
         <div className="absolute inset-0 motion-safe:animate-hero-zoom">
           <Image
             src="/images/hero-couple.webp"
@@ -97,53 +101,74 @@ export function LandingPage() {
             aria-hidden
           />
         </div>
-        {/* Readable text plane — soft, not flat black */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/10 sm:via-black/40 sm:to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/35 sm:via-black/50 sm:to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/35" />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--background)] to-transparent opacity-90" />
 
-        <div className="relative mx-auto w-full max-w-7xl px-5 pb-20 pt-28 sm:px-6 sm:pb-28 sm:pt-32 lg:px-8">
-          <div className="max-w-xl">
-            <p className="motion-safe:animate-hero-rise font-display text-[2.75rem] font-semibold leading-[1.02] tracking-tight text-white sm:text-5xl lg:text-6xl">
-              {SITE_BRAND_NAME}
-            </p>
-            <div
-              className="motion-safe:animate-hero-rise mt-4 h-px w-16 bg-gold/80"
-              style={{ animationDelay: "90ms" }}
-              aria-hidden
-            />
-
-            <h1
-              className="motion-safe:animate-hero-rise mt-6 max-w-lg font-display text-[1.65rem] font-medium leading-snug tracking-tight text-white/95 sm:text-3xl lg:text-[2.1rem]"
-              style={{ animationDelay: "140ms" }}
-            >
-              {t("landing.heroTitle")}{" "}
-              <span className="text-white/80">{t("landing.heroHighlight")}</span>
-            </h1>
-
-            <p
-              className="motion-safe:animate-hero-rise mt-5 max-w-md text-base leading-relaxed text-white/80 sm:text-lg"
-              style={{ animationDelay: "220ms" }}
-            >
-              {t("landing.heroDesc")}
-            </p>
-
-            <div
-              className="motion-safe:animate-hero-rise mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
-              style={{ animationDelay: "300ms" }}
-            >
-              <AuthRegisterCta
-                registerLabel={t("common.joinNow")}
-                className="h-12 rounded-2xl px-8 text-base shadow-lg shadow-black/25"
-                size="lg"
+        <div className="relative mx-auto w-full max-w-7xl px-5 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32 lg:px-8">
+          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-12">
+            <div className="max-w-xl">
+              <p className="motion-safe:animate-hero-rise font-display text-[2.75rem] font-semibold leading-[1.02] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                {SITE_BRAND_NAME}
+              </p>
+              <div
+                className="motion-safe:animate-hero-rise mt-4 h-px w-16 bg-gold/80"
+                style={{ animationDelay: "90ms" }}
+                aria-hidden
               />
-              <Link
-                href="/how-it-works"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-2 text-sm font-semibold text-white/90 transition-colors hover:text-white sm:px-4"
+
+              <h1
+                className="motion-safe:animate-hero-rise mt-6 max-w-lg font-display text-[1.65rem] font-medium leading-snug tracking-tight text-white/95 sm:text-3xl lg:text-[2.1rem]"
+                style={{ animationDelay: "140ms" }}
               >
-                {t("landing.seeHowItWorks")}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+                {t("landing.heroTitle")}{" "}
+                <span className="text-white/80">{t("landing.heroHighlight")}</span>
+              </h1>
+
+              <p
+                className="motion-safe:animate-hero-rise mt-5 max-w-md text-base leading-relaxed text-white/80 sm:text-lg"
+                style={{ animationDelay: "220ms" }}
+              >
+                {t("landing.heroDesc")}
+              </p>
+
+              <div
+                className="motion-safe:animate-hero-rise mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
+                style={{ animationDelay: "300ms" }}
+              >
+                <AuthRegisterCta
+                  registerLabel={t("common.joinNow")}
+                  className="h-12 rounded-2xl px-8 text-base shadow-lg shadow-black/25"
+                  size="lg"
+                />
+                <Link
+                  href="/how-it-works"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-2 text-sm font-semibold text-white/90 transition-colors hover:text-white sm:px-4"
+                >
+                  {t("landing.seeHowItWorks")}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+
+            <div
+              className="motion-safe:animate-hero-rise w-full"
+              style={{ animationDelay: "360ms" }}
+            >
+              <p className="mb-3 text-sm font-medium text-white/80 sm:text-base">
+                {t("landing.videoTitle")}
+              </p>
+              <div className="relative aspect-video w-full overflow-hidden rounded-[1.25rem] bg-black/80 ring-1 ring-white/15 shadow-2xl shadow-black/40">
+                <iframe
+                  src={`https://www.youtube.com/embed/${HOW_TO_USE_YOUTUBE_ID}?rel=0`}
+                  title={t("landing.videoIframeTitle")}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  className="absolute inset-0 h-full w-full border-0"
+                />
+              </div>
+              <p className="mt-3 text-sm text-white/65">{t("landing.videoDesc")}</p>
             </div>
           </div>
         </div>

@@ -89,14 +89,7 @@ export const getConversations = query({
             : null;
 
           const unreadCount = conversation
-            ? (
-                await ctx.db
-                  .query("messages")
-                  .withIndex("by_conversation", (q) =>
-                    q.eq("conversationId", conversation._id)
-                  )
-                  .collect()
-              ).filter((msg) => !msg.read && msg.senderId !== userId).length
+            ? (conversation.unreadByUser?.[userId] ?? 0)
             : 0;
 
           const isNew =
@@ -213,8 +206,14 @@ export const sendMessage = mutation({
       createdAt: Date.now(),
     });
 
+    const unreadByUser = { ...(conversation.unreadByUser ?? {}) };
+    if (otherId) {
+      unreadByUser[otherId] = (unreadByUser[otherId] ?? 0) + 1;
+    }
+
     await ctx.db.patch(conversation._id, {
       lastMessageAt: Date.now(),
+      unreadByUser,
     });
 
     if (otherId) {
@@ -241,8 +240,23 @@ export const markAsRead = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
     const userId = await requireAuthUserId(ctx);
-    await requireConversationParticipant(ctx, args.conversationId, userId);
+    const conversation = await requireConversationParticipant(
+      ctx,
+      args.conversationId,
+      userId
+    );
 
+    const currentUnread = conversation.unreadByUser?.[userId] ?? 0;
+    if (currentUnread > 0 || conversation.unreadByUser === undefined) {
+      await ctx.db.patch(conversation._id, {
+        unreadByUser: {
+          ...(conversation.unreadByUser ?? {}),
+          [userId]: 0,
+        },
+      });
+    }
+
+    // Mark unread messages as read for in-thread receipts (one conversation only).
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>

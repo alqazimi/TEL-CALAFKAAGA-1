@@ -251,6 +251,12 @@ export default function QuestionnairePage() {
     (fieldIndex > 0 || currentStep > 0);
 
   const handleEditGender = () => {
+    if (profile?.hasPaid || profile?.genderLocked) {
+      toast.error(
+        "Gender cannot be changed after payment. Contact support if this was a mistake."
+      );
+      return;
+    }
     router.push("/register/details?editGender=1");
   };
 

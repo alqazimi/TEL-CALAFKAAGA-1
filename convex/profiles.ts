@@ -29,6 +29,8 @@ import {
 import { isInTrialPeriod } from "./lib/trial";
 import { hasActiveMatch } from "./lib/matchPresentation";
 import { sendNotification } from "./lib/sendNotification";
+import { assertGenderMutable } from "./lib/genderLock";
+import { assertValidImageUpload } from "./lib/uploadValidation";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
@@ -178,6 +180,7 @@ export const updateQuestionnaire = mutation({
 
     const genderUpdate = profileUpdates.gender;
     if (genderUpdate === "male" || genderUpdate === "female") {
+      assertGenderMutable(profile, genderUpdate);
       await syncGenderSideEffects(ctx, userId, genderUpdate);
     }
 
@@ -249,6 +252,7 @@ export const autoSaveProfile = mutation({
 
     const genderUpdate = profileUpdates.gender;
     if (genderUpdate === "male" || genderUpdate === "female") {
+      assertGenderMutable(profile, genderUpdate);
       await syncGenderSideEffects(ctx, userId, genderUpdate);
     }
 
@@ -404,6 +408,7 @@ export const completeRegistrationGender = mutation({
     await requireActiveProfile(ctx, userId);
 
     const profile = await ensureUserProfile(ctx, userId);
+    assertGenderMutable(profile, args.gender);
     await syncGenderSideEffects(ctx, userId, args.gender);
 
     await ctx.db.patch(profile._id, {
@@ -523,6 +528,12 @@ export const saveProfileEdits = mutation({
     sanitizeContactProfileUpdates(profileUpdates);
     stripClientLocationWrites(profileUpdates);
 
+    const genderUpdate = profileUpdates.gender;
+    if (genderUpdate === "male" || genderUpdate === "female") {
+      assertGenderMutable(profile, genderUpdate);
+      await syncGenderSideEffects(ctx, userId, genderUpdate);
+    }
+
     if (Object.keys(profileUpdates).length > 0) {
       await ctx.db.patch(profile._id, {
         ...profileUpdates,
@@ -578,6 +589,8 @@ export const registerUpload = mutation({
       }
       return existing._id;
     }
+
+    await assertValidImageUpload(ctx, args.storageId);
 
     return await ctx.db.insert("userUploads", {
       userId,

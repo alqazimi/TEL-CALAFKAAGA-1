@@ -12,6 +12,10 @@ export const WHATSAPP_NUMBER = "254793692710";
 export const WHATSAPP_DISPLAY = "+254 793 692710";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 export const SUPPORT_EMAIL = "hello@helcalafkaaga.com";
+/** Homepage demo — how to create an account and use the site. */
+export const HOW_TO_USE_YOUTUBE_ID = "ID4GXE8UFBo";
+export const HOW_TO_USE_YOUTUBE_EMBED_URL = `https://www.youtube-nocookie.com/embed/${HOW_TO_USE_YOUTUBE_ID}`;
+export const HOW_TO_USE_YOUTUBE_WATCH_URL = `https://www.youtube.com/watch?v=${HOW_TO_USE_YOUTUBE_ID}`;
 /** Men basic registration (one-time) for NEW users. Existing members keep free Basic. */
 export const REGISTRATION_PRICE = 5;
 /** Women basic registration (one-time) for NEW users. */

@@ -21,6 +21,7 @@ import { deleteMemberAccount } from "./lib/deleteUser";
 import { writeAuditLog } from "./lib/auditLog";
 import { isInTrialPeriod } from "./lib/trial";
 import { resolveReviewStatus, requiresAdminProfileApproval } from "./lib/reviewStatus";
+import { getSiteMetrics, scheduleSiteMetricsRebuild } from "./siteMetrics";
 
 function pendingApprovalPriority(
   profile: {
@@ -153,23 +154,13 @@ export const getStats = query({
     const caller = await getProfileForUser(ctx, userId);
     if (!caller || !isStaffRole(caller.role)) return null;
 
-    // Profiles only for member counts; payments scan for real money totals.
-    const profiles = await ctx.db.query("profiles").collect();
-    const members = profiles.filter((p) => !isStaffRole(p.role));
-
-    const paidBasicMembers = members.filter(
-      (p) => p.hasPaid && !p.hasPersonalSupport && p.gender === "male"
-    ).length;
-    const freeBasicWomen = members.filter(
-      (p) => p.gender === "female" && p.hasPaid && !p.hasPersonalSupport
-    ).length;
-    const paidPremiumCount = members.filter((p) => !!p.hasPersonalSupport).length;
-    const unpaidCount = members.filter(
-      (p) => p.gender === "male" && !p.hasPaid && !isInTrialPeriod(p)
-    ).length;
-    const trialCount = members.filter(
-      (p) => p.gender === "male" && !p.hasPaid && isInTrialPeriod(p)
-    ).length;
+    const metrics = await getSiteMetrics(ctx);
+    // Kick a rebuild if missing or older than 30 minutes (queries can't schedule —
+    // cron + payment/approve hooks keep this fresh).
+    const stale =
+      !metrics ||
+      !metrics.updatedAt ||
+      Date.now() - metrics.updatedAt > 30 * 60 * 1000;
 
     // Real Stripe money (cents) — not approximate profile × list price.
     const allPayments = await ctx.db.query("payments").collect();
@@ -220,40 +211,32 @@ export const getStats = query({
     const revenue =
       basicRevenueCents + premiumRevenueCents + otherRevenueCents;
 
-    const approvedMembers = members.filter(
-      (p) => resolveReviewStatus(p) === "approved"
-    );
-    const approvedMale = approvedMembers.filter((p) => p.gender === "male").length;
-    const approvedFemale = approvedMembers.filter((p) => p.gender === "female").length;
-
-    // Lightweight counts — capped scans to avoid hanging the admin UI.
+    // Lightweight activity samples — capped scans to avoid hanging the admin UI.
     const matchSample = await ctx.db.query("matches").take(500);
     const messageSample = await ctx.db.query("messages").take(500);
     const activeMatches = matchSample.filter((m) => m.status === "active").length;
 
     return {
-      totalUsers: profiles.length,
-      maleUsers: profiles.filter((p) => p.gender === "male").length,
-      femaleUsers: profiles.filter((p) => p.gender === "female").length,
-      approvedMale,
-      approvedFemale,
-      approvedTotal: approvedMembers.length,
+      totalUsers: metrics?.totalUsers ?? 0,
+      maleUsers: metrics?.maleUsers ?? 0,
+      femaleUsers: metrics?.femaleUsers ?? 0,
+      approvedMale: metrics?.approvedMale ?? 0,
+      approvedFemale: metrics?.approvedFemale ?? 0,
+      approvedTotal: metrics?.approvedTotal ?? 0,
       totalMatches: activeMatches,
       totalMessages: messageSample.length,
       revenue,
       /** @deprecated use money.basicPaidCount — kept for older UI */
       paidBasicCount: basicPaidCount,
-      paidPremiumCount,
-      unpaidCount,
-      trialCount,
-      freeBasicWomen,
-      paidBasicMembers,
-      pendingApproval: members.filter((p) => {
-        if (!requiresAdminProfileApproval(p)) return false;
-        const review = resolveReviewStatus(p);
-        return review === "pending_review" || review === "rejected";
-      }).length,
-      bannedUsers: profiles.filter((p) => p.banned).length,
+      paidPremiumCount: metrics?.paidPremiumCount ?? 0,
+      unpaidCount: metrics?.unpaidCount ?? 0,
+      trialCount: metrics?.trialCount ?? 0,
+      freeBasicWomen: metrics?.freeBasicWomen ?? 0,
+      paidBasicMembers: metrics?.paidBasicMembers ?? 0,
+      pendingApproval: metrics?.pendingApproval ?? 0,
+      bannedUsers: metrics?.bannedUsers ?? 0,
+      metricsStale: stale,
+      metricsUpdatedAt: metrics?.updatedAt ?? null,
       isOwner: isOwnerRole(caller.role),
       money: {
         basicPaidCount,
@@ -317,13 +300,39 @@ export const getAllUsers = query({
     const limit = Math.min(Math.max(args.limit ?? 80, 1), 150);
     const search = args.search?.trim().toLowerCase();
     const reviewFilter = args.review ?? "all";
-    const needsFullScan = Boolean(search) || reviewFilter !== "all";
 
-    // Full scan when searching or filtering by review so approved members are not hidden
-    // behind the recent-only window.
-    let profiles = needsFullScan
-      ? await ctx.db.query("profiles").collect()
-      : await ctx.db.query("profiles").order("desc").take(Math.max(limit * 3, 120));
+    let profiles: Doc<"profiles">[] = [];
+
+    if (reviewFilter === "pending_review" || reviewFilter === "approved" || reviewFilter === "incomplete" || reviewFilter === "rejected" || reviewFilter === "suspended") {
+      profiles = await ctx.db
+        .query("profiles")
+        .withIndex("by_reviewStatus", (q) => q.eq("reviewStatus", reviewFilter))
+        .order("desc")
+        .take(Math.max(limit * 3, 120));
+    } else if (reviewFilter === "needs_action") {
+      const pending = await ctx.db
+        .query("profiles")
+        .withIndex("by_reviewStatus", (q) => q.eq("reviewStatus", "pending_review"))
+        .order("desc")
+        .take(limit * 2);
+      const rejected = await ctx.db
+        .query("profiles")
+        .withIndex("by_reviewStatus", (q) => q.eq("reviewStatus", "rejected"))
+        .order("desc")
+        .take(limit);
+      profiles = [...pending, ...rejected];
+    } else if (search) {
+      // Bounded scan — avoid loading every profile for search.
+      profiles = await ctx.db
+        .query("profiles")
+        .order("desc")
+        .take(400);
+    } else {
+      profiles = await ctx.db
+        .query("profiles")
+        .order("desc")
+        .take(Math.max(limit * 3, 120));
+    }
 
     if (search) {
       const matched: typeof profiles = [];
@@ -953,6 +962,8 @@ export const approveUser = mutation({
       questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
     });
 
+    await scheduleSiteMetricsRebuild(ctx);
+
     await sendNotification(ctx, {
       userId: profile.userId,
       type: "approval",
@@ -995,6 +1006,8 @@ export const rejectUser = mutation({
       verified: false,
       reviewStatus: "rejected",
     });
+
+    await scheduleSiteMetricsRebuild(ctx);
 
     await sendNotification(ctx, {
       userId: profile.userId,
@@ -1081,6 +1094,8 @@ export const banUser = mutation({
         : profileRestoredReviewStatus(target)),
     });
 
+    await scheduleSiteMetricsRebuild(ctx);
+
     if (target) {
       await writeAuditLog(ctx, {
         actorUserId: userId,
@@ -1127,6 +1142,7 @@ export const deleteUser = mutation({
     });
 
     const result = await deleteMemberAccount(ctx, args.profileId);
+    await scheduleSiteMetricsRebuild(ctx);
     return { success: true, deleted: result.deleted };
   },
 });
@@ -1273,63 +1289,56 @@ export const getAnalytics = query({
 
     await requireAdmin(ctx, userId);
 
-    const profiles = await ctx.db.query("profiles").collect();
-    const members = profiles.filter((p) => !isStaffRole(p.role));
-
-    const countryBreakdown: Record<string, number> = {};
-    const monthlySignups: Record<string, number> = {};
-    const genderBreakdown: Record<string, number> = {
-      male: 0,
-      female: 0,
-      unknown: 0,
-    };
-    const reviewBreakdown: Record<string, number> = {
-      incomplete: 0,
-      pending_review: 0,
-      approved: 0,
-      rejected: 0,
-      suspended: 0,
-    };
-
-    for (const p of members) {
-      const country = p.country?.trim() || "Unknown";
-      countryBreakdown[country] = (countryBreakdown[country] ?? 0) + 1;
-
-      const month = new Date(p._creationTime).toISOString().slice(0, 7);
-      monthlySignups[month] = (monthlySignups[month] ?? 0) + 1;
-
-      if (p.gender === "male" || p.gender === "female") {
-        genderBreakdown[p.gender] += 1;
-      } else {
-        genderBreakdown.unknown += 1;
-      }
-
-      const review = resolveReviewStatus(p);
-      reviewBreakdown[review] = (reviewBreakdown[review] ?? 0) + 1;
-    }
-
-    const paidMembers = members.filter((p) => p.hasPaid).length;
-    const memberCount = members.length;
-    const completeMembers = members.filter((p) => p.questionnaireComplete).length;
-    const trialMembers = members.filter(
-      (p) => !p.hasPaid && isInTrialPeriod(p)
-    ).length;
+    const metrics = await getSiteMetrics(ctx);
+    const memberCount = metrics?.memberCount ?? 0;
+    const paidMembers = metrics?.paidMembers ?? 0;
+    const completeMembers = metrics?.completeMembers ?? 0;
 
     return {
-      countryBreakdown,
-      monthlySignups,
-      genderBreakdown,
-      reviewBreakdown,
-      trialMembers,
+      countryBreakdown: metrics?.countryBreakdown ?? {},
+      monthlySignups: metrics?.monthlySignups ?? {},
+      genderBreakdown: metrics?.genderBreakdown ?? {
+        male: 0,
+        female: 0,
+        unknown: 0,
+      },
+      reviewBreakdown: metrics?.reviewBreakdown ?? {
+        incomplete: 0,
+        pending_review: 0,
+        approved: 0,
+        rejected: 0,
+        suspended: 0,
+      },
+      trialMembers: metrics?.trialMembers ?? 0,
       paidMembers,
       memberCount,
       matchRate:
         memberCount > 0 ? Math.round((completeMembers / memberCount) * 100) : 0,
       conversionRate:
         memberCount > 0 ? Math.round((paidMembers / memberCount) * 100) : 0,
+      metricsUpdatedAt: metrics?.updatedAt ?? null,
     };
   },
 });
+
+/** Owner-only: lock paid genders, backfill chat unread, rebuild admin metrics. */
+export const runP0Backfills = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    await requireOwner(ctx, userId);
+
+    await ctx.scheduler.runAfter(0, internal.migrations.backfillGenderLocked, {});
+    await ctx.scheduler.runAfter(0, internal.migrations.backfillConversationUnread, {
+      cursor: null,
+    });
+    await scheduleSiteMetricsRebuild(ctx);
+
+    return { scheduled: true };
+  },
+});
+
 
 /** Owner-only: backfill profile defaults and remove deprecated legacy fields. */
 export const runProfileBackfill = mutation({

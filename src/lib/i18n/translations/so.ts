@@ -132,6 +132,11 @@ export const so: Translations = {
     heroFeature4: "Qiyamka Islaamka",
     heroCta: "Is Diiwaangeli Hadda — laga bilaabo ${{price}}",
     seeHowItWorks: "Eeg sida uu u shaqeeyo",
+    watchHowToUse: "Daawo sida loo isticmaalo",
+    videoTitle: "Eeg sida xubnuhu u isticmaalaan Hel Calafkaaga",
+    videoDesc:
+      "Daawo tillin gaaban: samee akoon, dhammaystir profile-kaaga, ka dib bilow raadinta isbarbardhigyada.",
+    videoIframeTitle: "Sida loo isticmaalo Hel Calafkaaga",
     findMatchTitle: "Hel Lammaanahaaga",
     findMatchIam: "Waxaan ahay",
     findMatchLookingFor: "Waxaan raadinayaa",

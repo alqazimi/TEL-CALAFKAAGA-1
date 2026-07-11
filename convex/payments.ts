@@ -10,6 +10,7 @@ import {
 } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { sendNotification } from "./lib/sendNotification";
+import { scheduleSiteMetricsRebuild } from "./siteMetrics";
 
 export const REGISTRATION_AMOUNT_CENTS = 500;
 /** Women Basic registration — $2.50. */
@@ -73,6 +74,7 @@ async function applyPaymentCompletion(
 
     await ctx.db.patch(profile._id, {
       hasPaid: true,
+      genderLocked: true,
       ...(isPremium ? { hasPersonalSupport: true } : {}),
       // Men + women Premium: live after payment.
       // Women Basic: paid but still needs admin profile approval.
@@ -86,6 +88,8 @@ async function applyPaymentCompletion(
             reviewStatus: "pending_review" as const,
           }),
     });
+
+    await scheduleSiteMetricsRebuild(ctx);
 
     if (profile.questionnaireComplete) {
       await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {

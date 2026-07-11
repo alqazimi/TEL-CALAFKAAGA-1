@@ -130,6 +130,11 @@ export const en = {
     heroFeature4: "Islamic Values",
     heroCta: "Register Now — from ${{price}}",
     seeHowItWorks: "See how it works",
+    watchHowToUse: "Watch how to use",
+    videoTitle: "See how members use Hel Calafkaaga",
+    videoDesc:
+      "Watch a short walkthrough: create your account, complete your profile, and start finding matches.",
+    videoIframeTitle: "How to use Hel Calafkaaga",
     findMatchTitle: "Find Your Match",
     findMatchIam: "I am a",
     findMatchLookingFor: "Looking for",

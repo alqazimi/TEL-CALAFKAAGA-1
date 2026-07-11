@@ -1,4 +1,6 @@
+import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { PROFILE_DEFAULTS } from "./lib/questionnaire";
 import {
   QUESTIONNAIRE_COMPLETE_STEP,
@@ -420,5 +422,72 @@ export const normalizeAuthEmails = internalMutation({
     }
 
     return { usersUpdated, accountsUpdated, skippedConflicts };
+  },
+});
+
+/** Lock gender on already-paid members (pricing abuse fix). */
+export const backfillGenderLocked = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const profiles = await ctx.db.query("profiles").collect();
+    let updated = 0;
+    for (const profile of profiles) {
+      if (profile.hasPaid && profile.genderLocked !== true) {
+        await ctx.db.patch(profile._id, { genderLocked: true });
+        updated++;
+      }
+    }
+    return { updated, total: profiles.length };
+  },
+});
+
+/** Denormalize conversation unread counts (chat list performance). */
+export const backfillConversationUnread = internalMutation({
+  args: {
+    cursor: v.union(v.string(), v.null()),
+    updated: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const page = await ctx.db.query("conversations").paginate({
+      numItems: 40,
+      cursor: args.cursor,
+    });
+
+    let updated = args.updated ?? 0;
+
+    for (const conversation of page.page) {
+      const messages = await ctx.db
+        .query("messages")
+        .withIndex("by_conversation", (q) =>
+          q.eq("conversationId", conversation._id)
+        )
+        .collect();
+
+      const unreadByUser: Record<string, number> = {};
+      for (const participant of conversation.participants) {
+        unreadByUser[participant] = 0;
+      }
+      for (const msg of messages) {
+        if (msg.read) continue;
+        for (const participant of conversation.participants) {
+          if (participant !== msg.senderId) {
+            unreadByUser[participant] = (unreadByUser[participant] ?? 0) + 1;
+          }
+        }
+      }
+
+      await ctx.db.patch(conversation._id, { unreadByUser });
+      updated++;
+    }
+
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(0, internal.migrations.backfillConversationUnread, {
+        cursor: page.continueCursor,
+        updated,
+      });
+      return { continued: true, updated };
+    }
+
+    return { continued: false, updated };
   },
 });

@@ -42,6 +42,16 @@ export default function RegisterDetailsPage() {
 
     if (!isEditGender && user?.profile?.registrationComplete === true) {
       router.replace(getAuthenticatedHomeRoute(user.profile));
+      return;
+    }
+    if (
+      isEditGender &&
+      (user?.profile?.hasPaid === true || user?.profile?.genderLocked === true)
+    ) {
+      toast.error(
+        "Gender cannot be changed after payment. Contact support if this was a mistake."
+      );
+      router.replace("/profile");
     }
   }, [authLoading, isAuthenticated, isEditGender, user, router]);
 

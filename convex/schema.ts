@@ -76,6 +76,11 @@ export default defineSchema({
     lastSavedAt: v.optional(v.number()),
     registrationComplete: v.optional(v.boolean()),
     hasPaid: v.boolean(),
+    /**
+     * Set on first successful payment. Blocks gender changes that would
+     * bypass women vs men pricing / approval rules.
+     */
+    genderLocked: v.optional(v.boolean()),
     trialEndsAt: v.optional(v.number()),
     hasPersonalSupport: v.optional(v.boolean()),
     advisorReviewed: v.optional(v.boolean()),
@@ -183,6 +188,8 @@ export default defineSchema({
     matchId: v.id("matches"),
     participants: v.array(v.id("users")),
     lastMessageAt: v.number(),
+    /** Per-participant unread counts (userId → count). Avoids scanning all messages. */
+    unreadByUser: v.optional(v.record(v.string(), v.number())),
   }).index("by_match", ["matchId"]),
 
   messages: defineTable({
@@ -391,6 +398,47 @@ export default defineSchema({
     key: v.string(),
     windowStart: v.number(),
     count: v.number(),
+  }).index("by_key", ["key"]),
+
+  /**
+   * Singleton admin dashboard counters (key = "global").
+   * Rebuilt in the background so getStats/getAnalytics never full-scan profiles.
+   */
+  siteMetrics: defineTable({
+    key: v.literal("global"),
+    totalUsers: v.number(),
+    maleUsers: v.number(),
+    femaleUsers: v.number(),
+    approvedMale: v.number(),
+    approvedFemale: v.number(),
+    approvedTotal: v.number(),
+    paidBasicMembers: v.number(),
+    freeBasicWomen: v.number(),
+    paidPremiumCount: v.number(),
+    unpaidCount: v.number(),
+    trialCount: v.number(),
+    pendingApproval: v.number(),
+    bannedUsers: v.number(),
+    paidMembers: v.number(),
+    memberCount: v.number(),
+    completeMembers: v.number(),
+    trialMembers: v.number(),
+    genderBreakdown: v.object({
+      male: v.number(),
+      female: v.number(),
+      unknown: v.number(),
+    }),
+    reviewBreakdown: v.object({
+      incomplete: v.number(),
+      pending_review: v.number(),
+      approved: v.number(),
+      rejected: v.number(),
+      suspended: v.number(),
+    }),
+    countryBreakdown: v.record(v.string(), v.number()),
+    monthlySignups: v.record(v.string(), v.number()),
+    updatedAt: v.number(),
+    rebuildScheduledAt: v.optional(v.number()),
   }).index("by_key", ["key"]),
 
   /** Immutable staff action history for admin accountability. */
