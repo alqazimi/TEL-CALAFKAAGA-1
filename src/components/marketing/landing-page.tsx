@@ -79,51 +79,68 @@ export function LandingPage() {
 
   return (
     <div className="overflow-hidden">
-      {/* Hero — always visible (no JS-opacity:0) so phones never show a blank screen */}
-      <section className="relative min-h-[100svh] flex items-end sm:items-center overflow-hidden bg-[#120d0e]">
-        <Image
-          src="/images/hero-couple.webp"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-[68%_center] sm:object-[center_30%]"
-          aria-hidden
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
+      {/* Hero — full-bleed atmosphere; brand first; one CTA group */}
+      <section className="relative flex min-h-[100svh] items-end overflow-hidden bg-[#120d0e] sm:items-center">
+        <div className="absolute inset-0 motion-safe:animate-hero-zoom">
+          <Image
+            src="/images/hero-couple.webp"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-[72%_center] sm:object-[center_28%]"
+            aria-hidden
+          />
+        </div>
+        {/* Readable text plane — soft, not flat black */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/10 sm:via-black/40 sm:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--background)] to-transparent opacity-90" />
 
-        <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32 lg:px-8 w-full">
-          <Reveal className="max-w-xl">
-            <p className="font-display text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl leading-[1.05] drop-shadow-sm">
+        <div className="relative mx-auto w-full max-w-7xl px-5 pb-20 pt-28 sm:px-6 sm:pb-28 sm:pt-32 lg:px-8">
+          <div className="max-w-xl">
+            <p className="motion-safe:animate-hero-rise font-display text-[2.75rem] font-semibold leading-[1.02] tracking-tight text-white sm:text-5xl lg:text-6xl">
               {SITE_BRAND_NAME}
             </p>
+            <div
+              className="motion-safe:animate-hero-rise mt-4 h-px w-16 bg-gold/80"
+              style={{ animationDelay: "90ms" }}
+              aria-hidden
+            />
 
-            <h1 className="mt-5 font-display text-2xl font-medium tracking-tight text-white sm:text-3xl lg:text-[2.15rem] leading-snug drop-shadow-sm">
-              {t("landing.heroTitle")}
-              <span className="text-gold"> {t("landing.heroHighlight")}</span>
+            <h1
+              className="motion-safe:animate-hero-rise mt-6 max-w-lg font-display text-[1.65rem] font-medium leading-snug tracking-tight text-white/95 sm:text-3xl lg:text-[2.1rem]"
+              style={{ animationDelay: "140ms" }}
+            >
+              {t("landing.heroTitle")}{" "}
+              <span className="text-white/80">{t("landing.heroHighlight")}</span>
             </h1>
 
-            <p className="mt-5 text-base sm:text-lg text-white/90 max-w-md leading-relaxed drop-shadow-sm">
+            <p
+              className="motion-safe:animate-hero-rise mt-5 max-w-md text-base leading-relaxed text-white/80 sm:text-lg"
+              style={{ animationDelay: "220ms" }}
+            >
               {t("landing.heroDesc")}
             </p>
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+            <div
+              className="motion-safe:animate-hero-rise mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
+              style={{ animationDelay: "300ms" }}
+            >
               <AuthRegisterCta
                 registerLabel={t("common.joinNow")}
-                className="text-base px-8 shadow-lg shadow-black/30"
+                className="h-12 rounded-2xl px-8 text-base shadow-lg shadow-black/25"
                 size="lg"
               />
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-white/35 bg-black/25 text-white hover:bg-black/40 hover:text-white backdrop-blur-sm"
+              <Link
+                href="/how-it-works"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-2 text-sm font-semibold text-white/90 transition-colors hover:text-white sm:px-4"
               >
-                <Link href="/how-it-works">{t("landing.seeHowItWorks")}</Link>
-              </Button>
+                {t("landing.seeHowItWorks")}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
