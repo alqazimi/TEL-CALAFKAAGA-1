@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useConvexAuth } from "convex/react";
-import { useMutation, useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
+import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { ChevronLeft } from "lucide-react";
 import { api } from "../../../../../convex/_generated/api";
@@ -25,7 +26,7 @@ export default function RegisterDetailsPage() {
   const isEditGender = searchParams.get("editGender") === "1";
   const { t } = useTranslation();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const user = useQuery(api.users.currentUser);
+  const user = useSafeQuery(api.users.currentUser);
   const completeGender = useMutation(api.profiles.completeRegistrationGender);
   const [gender, setGender] = useState<GenderValue | "">("");
   const [loading, setLoading] = useState(false);

@@ -2,7 +2,8 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
@@ -37,11 +38,11 @@ export default function LikesPage() {
   const tabParam = searchParams.get("tab");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
 
-  const profile = useQuery(
+  const profile = useSafeQuery(
     api.profiles.getProfile,
     !staffLoading && !isStaff ? {} : "skip"
   ) as Profile | null | undefined;
-  const preferences = useQuery(
+  const preferences = useSafeQuery(
     api.profiles.getPreferences,
     !staffLoading && !isStaff ? {} : "skip"
   ) as Preferences | null | undefined;
@@ -56,7 +57,7 @@ export default function LikesPage() {
     profileReady && hasPaidAccess(profile) && !needsApprovalGate(profile);
   const isPremium = isPremiumMember(profile);
 
-  const matchLists = useQuery(
+  const matchLists = useSafeQuery(
     api.matches.getMatchLists,
     canQuery ? {} : "skip"
   );

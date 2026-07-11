@@ -2,14 +2,14 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../convex/_generated/api";
 import { isStaffRole } from "@/lib/access";
 
 /** Redirect admins/owners to the admin console; avoid member onboarding flashes. */
 export function useStaffRedirect(adminPath = "/admin") {
   const router = useRouter();
-  const user = useQuery(api.users.currentUser);
+  const user = useSafeQuery(api.users.currentUser);
   const isStaff = isStaffRole(user?.profile?.role);
 
   useEffect(() => {

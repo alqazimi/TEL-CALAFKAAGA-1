@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Mail, RefreshCw, UserPlus, XCircle } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
@@ -38,7 +39,7 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 
 export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
-  const invites = useQuery(api.staffInvites.list);
+  const invites = useSafeQuery(api.staffInvites.list);
   const createInvite = useMutation(api.staffInvites.create);
   const revokeInvite = useMutation(api.staffInvites.revoke);
   const resendInvite = useMutation(api.staffInvites.resend);

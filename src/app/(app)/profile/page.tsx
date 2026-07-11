@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../../convex/_generated/api";
 import type { CurrentUser, Profile } from "@/types";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -14,12 +14,12 @@ import { useTranslation } from "@/lib/i18n/context";
 
 export default function ProfilePage() {
   const { t } = useTranslation();
-  const currentUser = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
-  const profile = useQuery(api.profiles.getProfile, {}) as
+  const currentUser = useSafeQuery(api.users.currentUser) as CurrentUser | null | undefined;
+  const profile = useSafeQuery(api.profiles.getProfile, {}) as
     | (Profile & { imageUrl?: string | null; additionalImageUrls?: string[] })
     | null
     | undefined;
-  const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
+  const preferences = useSafeQuery(api.profiles.getPreferences) as Preferences | null | undefined;
 
   if (profile === undefined || currentUser === undefined) {
     return (

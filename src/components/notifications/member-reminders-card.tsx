@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import {
   ArrowRight,
   ClipboardList,
@@ -35,7 +35,7 @@ const reminderColors: Record<MemberReminderId, string> = {
 
 export function MemberRemindersCard() {
   const { t } = useTranslation();
-  const reminders = useQuery(api.notifications.getMemberReminders) as
+  const reminders = useSafeQuery(api.notifications.getMemberReminders) as
     | MemberReminder[]
     | undefined;
 

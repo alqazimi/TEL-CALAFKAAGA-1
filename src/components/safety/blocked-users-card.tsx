@@ -1,6 +1,7 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Ban, ShieldOff } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
@@ -12,7 +13,7 @@ import { useTranslation } from "@/lib/i18n/context";
 
 export function BlockedUsersCard({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
-  const blockedUsers = useQuery(api.moderation.listMyBlocks);
+  const blockedUsers = useSafeQuery(api.moderation.listMyBlocks);
   const unblockUser = useMutation(api.moderation.unblockUser);
 
   const handleUnblock = async (blockedUserId: Id<"users">, name: string) => {

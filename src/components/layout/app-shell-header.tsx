@@ -13,7 +13,7 @@ import {
   X,
   Home,
 } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../convex/_generated/api";
 import type { CurrentUser } from "@/types";
 import { useNavLinks } from "@/lib/i18n/hooks";
@@ -33,9 +33,9 @@ export function AppShellHeader() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [siteMenuOpen, setSiteMenuOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
-  const unreadCount = useQuery(api.notifications.getUnreadCount);
-  const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
-  const profile = useQuery(
+  const unreadCount = useSafeQuery(api.notifications.getUnreadCount);
+  const user = useSafeQuery(api.users.currentUser) as CurrentUser | null | undefined;
+  const profile = useSafeQuery(
     api.profiles.getProfile,
     user ? {} : "skip"
   ) as { name?: string; imageUrl?: string | null } | null | undefined;

@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import {
   Send,
@@ -100,12 +101,12 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const currentUser = useQuery(api.users.currentUser);
-  const profile = useQuery(
+  const currentUser = useSafeQuery(api.users.currentUser);
+  const profile = useSafeQuery(
     api.profiles.getProfile,
     !staffLoading && !isStaff ? {} : "skip"
   ) as Profile | null | undefined;
-  const preferences = useQuery(
+  const preferences = useSafeQuery(
     api.profiles.getPreferences,
     !staffLoading && !isStaff ? {} : "skip"
   ) as Preferences | null | undefined;
@@ -116,17 +117,17 @@ export default function ChatPage() {
     !queriesLoading &&
     (profile.questionnaireComplete || isMemberProfileReady(profile, preferences));
 
-  const conversations = useQuery(
+  const conversations = useSafeQuery(
     api.messages.getConversations,
     profileReady ? { list: matchList } : "skip"
   ) as Conversation[] | undefined;
 
-  const messages = useQuery(
+  const messages = useSafeQuery(
     api.messages.getMessages,
     activeConversation ? { conversationId: activeConversation } : "skip"
   ) as ChatMessage[] | undefined;
 
-  const isTyping = useQuery(
+  const isTyping = useSafeQuery(
     api.messages.getTypingStatus,
     activeConversation ? { conversationId: activeConversation } : "skip"
   );

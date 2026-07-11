@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import {
   X,
   Mail,
@@ -77,7 +78,7 @@ function DetailGrid({
 
 export function AdminUserDetailPanel({ profileId, onClose }: AdminUserDetailPanelProps) {
   const { t } = useTranslation();
-  const detail = useQuery(api.admin.getUserDetail, { profileId });
+  const detail = useSafeQuery(api.admin.getUserDetail, { profileId });
   const setAdvisorReviewed = useMutation(api.admin.setAdvisorReviewed);
 
   const yesNo = (value: boolean | undefined) => {

@@ -2,7 +2,8 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../convex/_generated/api";
 import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +18,7 @@ import { getAuthenticatedHomeRoute } from "@/lib/routes";
 export function GuestGate({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
-  const user = useQuery(api.users.currentUser, isAuthenticated ? {} : "skip");
+  const user = useSafeQuery(api.users.currentUser, isAuthenticated ? {} : "skip");
   const waitingOnUser = isAuthenticated && user === undefined;
   const stuck = useLoadingTimeout(waitingOnUser, 8_000);
 

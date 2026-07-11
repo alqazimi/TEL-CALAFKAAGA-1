@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -39,9 +40,9 @@ export default function QuestionnairePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get("edit") === "1";
-  const profile = useQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
+  const profile = useSafeQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
   const isStaff = isStaffRole(profile?.role);
-  const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
+  const preferences = useSafeQuery(api.profiles.getPreferences) as Preferences | null | undefined;
   const updateQuestionnaire = useMutation(api.profiles.updateQuestionnaire);
   const autoSaveProfile = useMutation(api.profiles.autoSaveProfile);
   const saveProfileEdits = useMutation(api.profiles.saveProfileEdits);

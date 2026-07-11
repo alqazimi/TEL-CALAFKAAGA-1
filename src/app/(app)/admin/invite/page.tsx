@@ -4,7 +4,8 @@ import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,8 +37,8 @@ function AdminInviteContent() {
   const { signOut } = useSignOut();
   const acceptInvite = useMutation(api.staffInvites.accept);
 
-  const invite = useQuery(api.staffInvites.getByToken, token ? { token } : "skip");
-  const currentUser = useQuery(
+  const invite = useSafeQuery(api.staffInvites.getByToken, token ? { token } : "skip");
+  const currentUser = useSafeQuery(
     api.users.currentUser,
     isAuthenticated ? {} : "skip"
   );

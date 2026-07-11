@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../../convex/_generated/api";
 import type { MatchResult, MutualMatch } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const { user, isStaff, isLoading } = useStaffRedirect();
-  const preferences = useQuery(
+  const preferences = useSafeQuery(
     api.profiles.getPreferences,
     user !== undefined && !isStaff ? {} : "skip"
   ) as Preferences | null | undefined;
@@ -37,11 +37,11 @@ export default function DashboardPage() {
 
   const profileReady = !!profile?.questionnaireComplete;
   const canViewMatches = profileReady && !isStaff && hasPaidAccess(profile);
-  const matches = useQuery(
+  const matches = useSafeQuery(
     api.matches.getMatches,
     canViewMatches ? {} : "skip"
   ) as MatchResult[] | undefined;
-  const myMatches = useQuery(
+  const myMatches = useSafeQuery(
     api.matches.getMyMatches,
     canViewMatches ? {} : "skip"
   ) as MutualMatch[] | undefined;

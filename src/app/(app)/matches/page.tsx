@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Filter, LayoutGrid, Layers } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
@@ -63,11 +64,11 @@ export default function MatchesPage() {
   const [viewMode, setViewMode] = useState<"swipe" | "browse">("swipe");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
 
-  const profile = useQuery(
+  const profile = useSafeQuery(
     api.profiles.getProfile,
     !staffLoading && !isStaff ? {} : "skip"
   ) as Profile | null | undefined;
-  const preferences = useQuery(
+  const preferences = useSafeQuery(
     api.profiles.getPreferences,
     !staffLoading && !isStaff ? {} : "skip"
   ) as Preferences | null | undefined;
@@ -86,7 +87,7 @@ export default function MatchesPage() {
 
   const filterArgs = useMemo(() => buildFilterArgs(filters), [filters]);
 
-  const discoverMatches = useQuery(
+  const discoverMatches = useSafeQuery(
     api.matches.getMatches,
     canQuery ? filterArgs : "skip"
   ) as MatchResult[] | undefined;

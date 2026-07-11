@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import {
   CreditCard,
@@ -111,18 +112,18 @@ export default function AdminPage() {
   const [selectedProfileId, setSelectedProfileId] = useState<Id<"profiles"> | null>(null);
   const [reportNotes, setReportNotes] = useState<Record<string, string>>({});
 
-  const currentUser = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
+  const currentUser = useSafeQuery(api.users.currentUser) as CurrentUser | null | undefined;
   const userTimedOut = useLoadingTimeout(currentUser === undefined, 8_000);
   const isStaff = isStaffRole(currentUser?.profile?.role);
-  const bootstrapStatus = useQuery(
+  const bootstrapStatus = useSafeQuery(
     api.admin.getBootstrapStatus,
     currentUser !== undefined && !isStaff ? {} : "skip"
   );
-  const stats = useQuery(
+  const stats = useSafeQuery(
     api.admin.getStats,
     currentUser !== undefined && isStaff ? {} : "skip"
   ) as AdminStats | null | undefined;
-  const users = useQuery(
+  const users = useSafeQuery(
     api.admin.getAllUsers,
     isStaff && activeTab === "users"
       ? {
@@ -133,19 +134,19 @@ export default function AdminPage() {
         }
       : "skip"
   ) as AdminUser[] | undefined;
-  const analytics = useQuery(
+  const analytics = useSafeQuery(
     api.admin.getAnalytics,
     isStaff && activeTab === "analytics" ? {} : "skip"
   ) as AdminAnalytics | undefined;
-  const payments = useQuery(
+  const payments = useSafeQuery(
     api.admin.getAllPayments,
     isStaff && activeTab === "payments" ? {} : "skip"
   ) as AdminPayment[] | undefined;
-  const reports = useQuery(
+  const reports = useSafeQuery(
     api.moderation.listReports,
     isStaff && (activeTab === "reports" || activeTab === "dashboard") ? {} : "skip"
   );
-  const auditLogs = useQuery(
+  const auditLogs = useSafeQuery(
     api.admin.getAuditLogs,
     isStaff && activeTab === "audit" ? { limit: 80 } : "skip"
   );

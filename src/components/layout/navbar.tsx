@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X, LayoutDashboard, User, Home } from "lucide-react";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { isAppShellRoute, getAuthenticatedHomeRoute } from "@/lib/routes";
@@ -20,7 +21,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { isAuthenticated, isLoading } = useConvexAuth();
-  const user = useQuery(
+  const user = useSafeQuery(
     api.users.currentUser,
     isAuthenticated && !isLoading ? {} : "skip"
   );

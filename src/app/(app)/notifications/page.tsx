@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -103,10 +104,10 @@ function groupNotifications(notifications: Notification[]) {
 export default function NotificationsPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const notifications = useQuery(api.notifications.getNotifications) as
+  const notifications = useSafeQuery(api.notifications.getNotifications) as
     | Notification[]
     | undefined;
-  const reminders = useQuery(api.notifications.getMemberReminders) as
+  const reminders = useSafeQuery(api.notifications.getMemberReminders) as
     | MemberReminder[]
     | undefined;
   const markAsRead = useMutation(api.notifications.markAsRead);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import {
   ArrowRight,
   ClipboardList,
@@ -44,8 +44,8 @@ interface NextStepCardProps {
 
 export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardProps) {
   const { t } = useTranslation();
-  const preferences = useQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-  const reminders = useQuery(api.notifications.getMemberReminders) as
+  const preferences = useSafeQuery(api.profiles.getPreferences) as Preferences | null | undefined;
+  const reminders = useSafeQuery(api.notifications.getMemberReminders) as
     | MemberReminder[]
     | undefined;
 

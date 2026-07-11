@@ -20,7 +20,7 @@ import {
   Home,
 } from "lucide-react";
 import type { TranslationPath } from "@/lib/i18n/translations";
-import { useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../convex/_generated/api";
 import type { CurrentUser } from "@/types";
 import type { AppNavIcon } from "@/lib/constants";
@@ -64,13 +64,13 @@ export function DashboardSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { signOut } = useSignOut();
-  const user = useQuery(api.users.currentUser) as CurrentUser | null | undefined;
+  const user = useSafeQuery(api.users.currentUser) as CurrentUser | null | undefined;
   const isStaff = isStaffRole(user?.profile?.role);
-  const preferences = useQuery(
+  const preferences = useSafeQuery(
     api.profiles.getPreferences,
     user !== undefined && !isStaff ? {} : "skip"
   );
-  const unreadCount = useQuery(
+  const unreadCount = useSafeQuery(
     api.notifications.getUnreadCount,
     user !== undefined && !isStaff ? {} : "skip"
   );

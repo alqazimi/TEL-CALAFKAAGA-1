@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "@/lib/i18n/context";
@@ -39,7 +39,7 @@ export function CompatibilityBreakdown({
   overallScore,
 }: CompatibilityBreakdownProps) {
   const { t } = useTranslation();
-  const breakdown = useQuery(
+  const breakdown = useSafeQuery(
     api.matches.getCompatibilityBreakdown,
     isPremium ? { targetUserId } : "skip"
   );

@@ -15,7 +15,7 @@ import {
   Flag,
   User,
 } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../convex/_generated/api";
 import { useAppNavLinks } from "@/lib/i18n/hooks";
 import { useTranslation } from "@/lib/i18n/context";
@@ -47,10 +47,10 @@ export function AppMobileNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { t } = useTranslation();
-  const user = useQuery(api.users.currentUser);
+  const user = useSafeQuery(api.users.currentUser);
   const isLoading = user === undefined;
   const isStaff = isStaffRole(user?.profile?.role);
-  const preferences = useQuery(
+  const preferences = useSafeQuery(
     api.profiles.getPreferences,
     user !== undefined && !isStaff ? {} : "skip"
   );

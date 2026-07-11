@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
+import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Shield, KeyRound, Crown } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
@@ -23,7 +24,7 @@ export function AdminBootstrapPanel() {
   const { t } = useTranslation();
   const [secret, setSecret] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const bootstrapStatus = useQuery(api.admin.getBootstrapStatus);
+  const bootstrapStatus = useSafeQuery(api.admin.getBootstrapStatus);
   const claimFirstAdmin = useMutation(api.admin.claimFirstAdmin);
 
   if (bootstrapStatus === undefined) {
