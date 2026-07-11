@@ -94,8 +94,8 @@ export default function ChatPage() {
   const searchParams = useSearchParams();
   const listParam = searchParams.get("list");
   const matchList: MatchList = isMatchList(listParam) ? listParam : "active";
+  const conversationParam = searchParams.get("c");
   const { isStaff, isLoading: staffLoading } = useStaffRedirect();
-  const [activeConversation, setActiveConversation] = useState<Id<"conversations"> | null>(null);
   const [message, setMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -122,6 +122,11 @@ export default function ChatPage() {
     profileReady ? { list: matchList } : "skip"
   ) as Conversation[] | undefined;
 
+  // Drive the open thread from the URL so phone/browser Back closes chat first.
+  const activeConversation = conversationParam
+    ? (conversationParam as Id<"conversations">)
+    : null;
+
   const messages = useSafeQuery(
     api.messages.getMessages,
     activeConversation ? { conversationId: activeConversation } : "skip"
@@ -142,19 +147,25 @@ export default function ChatPage() {
 
   const activeConv = conversations?.find((c) => c.conversationId === activeConversation);
   const myUserId = currentUser?.userId;
-  const showMobileChat = activeConversation && activeConv;
+  const showMobileChat = Boolean(activeConversation);
+
+  const chatListHref = `/chat?list=${matchList}`;
 
   const setMatchList = (list: MatchList) => {
-    setActiveConversation(null);
     router.replace(`/chat?list=${list}`, { scroll: false });
   };
 
   const openConversation = (conv: Conversation) => {
     if (!conv.conversationId) return;
-    setActiveConversation(conv.conversationId);
+    // push so phone/browser Back returns to the conversation list (not home).
+    router.push(`/chat?list=${matchList}&c=${conv.conversationId}`, { scroll: false });
     if (conv.isNew) {
       void markMatchSeen({ matchId: conv.matchId });
     }
+  };
+
+  const closeConversation = () => {
+    router.push(chatListHref, { scroll: false });
   };
 
   useMarkNotificationsRead(
@@ -422,7 +433,7 @@ export default function ChatPage() {
                     variant="ghost"
                     size="icon"
                     className="sm:hidden shrink-0 rounded-xl h-9 w-9"
-                    onClick={() => setActiveConversation(null)}
+                    onClick={closeConversation}
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
@@ -463,7 +474,7 @@ export default function ChatPage() {
                               matchId: activeConv.matchId,
                               archived: matchList !== "archived",
                             });
-                            setActiveConversation(null);
+                            closeConversation();
                             toast.success(
                               matchList === "archived"
                                 ? t("chatPage.unarchive")
@@ -483,7 +494,7 @@ export default function ChatPage() {
                         reportContext={t("safety.reportFromChat", {
                           name: activeConv.profile.name,
                         })}
-                        onDone={() => setActiveConversation(null)}
+                        onDone={closeConversation}
                       />
                     </div>
                   )}
@@ -639,6 +650,24 @@ export default function ChatPage() {
                   </>
                 )}
               </>
+            ) : activeConversation ? (
+              <div className="flex flex-1 flex-col">
+                <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="sm:hidden shrink-0 rounded-xl h-9 w-9"
+                    onClick={closeConversation}
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                  <div className="h-10 w-10 animate-pulse rounded-full bg-muted" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+                </div>
+                <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
+                  {t("common.loading")}
+                </div>
+              </div>
             ) : (
               <div className="flex-1 flex items-center justify-center p-8">
                 <div className="text-center max-w-xs">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, MessageCircle, Search, UserRound } from "lucide-react";
 import { useSafeQuery } from "@/lib/use-safe-query";
 import { api } from "../../../convex/_generated/api";
@@ -40,9 +41,12 @@ function formatBubbleTime(ts: number) {
 
 export function AdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const conversations = useSafeQuery(api.admin.getAdminConversations, { limit: 50 });
-  const [activeId, setActiveId] = useState<Id<"conversations"> | null>(null);
   const [search, setSearch] = useState("");
+  const chatParam = searchParams.get("chat");
+  const activeId = (chatParam || null) as Id<"conversations"> | null;
   const threadEndRef = useRef<HTMLDivElement>(null);
 
   const thread = useSafeQuery(
@@ -68,10 +72,26 @@ export function AdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
     conversations?.find((c) => c.conversationId === activeId) ?? null;
   const showThread = Boolean(activeId);
 
+  const openConversation = (conversationId: Id<"conversations">) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "messages");
+    params.set("chat", conversationId);
+    params.delete("profile");
+    // push so phone/browser Back returns to the inbox list (not home).
+    router.push(`/admin?${params.toString()}`, { scroll: false });
+  };
+
+  const closeConversation = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "messages");
+    params.delete("chat");
+    params.delete("profile");
+    router.push(`/admin?${params.toString()}`, { scroll: false });
+  };
+
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-sm)]">
       <div className="flex h-[min(72vh,720px)] min-h-[420px] flex-col sm:flex-row">
-        {/* Conversation list */}
         <div
           className={cn(
             "flex w-full flex-col border-border sm:w-[340px] sm:border-r lg:w-[380px]",
@@ -122,7 +142,7 @@ export function AdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
                     <li key={conv.conversationId}>
                       <button
                         type="button"
-                        onClick={() => setActiveId(conv.conversationId)}
+                        onClick={() => openConversation(conv.conversationId)}
                         className={cn(
                           "flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors",
                           active ? "bg-accent text-accent-foreground" : "hover:bg-muted"
@@ -172,7 +192,6 @@ export function AdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
           </div>
         </div>
 
-        {/* Thread panel */}
         <div
           className={cn(
             "flex min-w-0 flex-1 flex-col bg-background",
@@ -197,7 +216,7 @@ export function AdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9 shrink-0 rounded-xl sm:hidden"
-                  onClick={() => setActiveId(null)}
+                  onClick={closeConversation}
                   aria-label={t("common.back")}
                 >
                   <ArrowLeft className="h-5 w-5" />

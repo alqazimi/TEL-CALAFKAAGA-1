@@ -110,6 +110,11 @@ export default function AdminPage() {
   const activeTab: AdminTab = ADMIN_TABS.includes(tabParam as AdminTab)
     ? (tabParam as AdminTab)
     : "dashboard";
+  const profileParam = searchParams.get("profile");
+  const selectedProfileId =
+    profileParam && profileParam.length > 0
+      ? (profileParam as Id<"profiles">)
+      : null;
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
@@ -121,7 +126,6 @@ export default function AdminPage() {
     audience: "all" as "all" | "paid" | "trial" | "unpaid",
     scheduledForLocal: "",
   });
-  const [selectedProfileId, setSelectedProfileId] = useState<Id<"profiles"> | null>(null);
   const [reportNotes, setReportNotes] = useState<Record<string, string>>({});
 
   const currentUser = useSafeQuery(api.users.currentUser) as CurrentUser | null | undefined;
@@ -178,6 +182,20 @@ export default function AdminPage() {
 
   const setTab = (tab: AdminTab) => {
     router.replace(`/admin?tab=${tab}`, { scroll: false });
+  };
+
+  const openUserProfile = (profileId: Id<"profiles">) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (!params.get("tab")) params.set("tab", activeTab);
+    params.set("profile", profileId);
+    router.push(`/admin?${params.toString()}`, { scroll: false });
+  };
+
+  const closeUserProfile = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("profile");
+    const qs = params.toString();
+    router.push(qs ? `/admin?${qs}` : "/admin", { scroll: false });
   };
 
   const handleAnnouncement = async () => {
@@ -522,7 +540,7 @@ export default function AdminPage() {
               approvedTotal={stats?.approvedTotal}
               currentProfileId={currentUser?.profile?._id}
               canManageRoles={canManageRoles}
-              onOpenUser={setSelectedProfileId}
+              onOpenUser={openUserProfile}
             />
           </div>
         )}
@@ -845,7 +863,7 @@ export default function AdminPage() {
         )}
 
         {activeTab === "messages" && (
-          <AdminMessagesInbox onOpenUser={setSelectedProfileId} />
+          <AdminMessagesInbox onOpenUser={openUserProfile} />
         )}
 
         {activeTab === "reports" && (
@@ -881,7 +899,7 @@ export default function AdminPage() {
                         className="font-semibold underline-offset-2 hover:underline"
                         onClick={() => {
                           if (report.reportedProfileId) {
-                            setSelectedProfileId(report.reportedProfileId);
+                            openUserProfile(report.reportedProfileId);
                           }
                         }}
                       >
@@ -1066,8 +1084,8 @@ export default function AdminPage() {
         {selectedProfileId && (
           <AdminUserDetailPanel
             profileId={selectedProfileId}
-            onClose={() => setSelectedProfileId(null)}
-            onOpenUser={setSelectedProfileId}
+            onClose={closeUserProfile}
+            onOpenUser={openUserProfile}
           />
         )}
       </div>
