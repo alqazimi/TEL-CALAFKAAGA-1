@@ -30,12 +30,17 @@ export function BrandLogo({
   const isLight = variant === "light";
 
   return (
-    <Link href={href} className={cn("inline-flex items-center gap-2.5 group", className)}>
+    <Link
+      href={href}
+      aria-label={SITE_BRAND_NAME}
+      className={cn("inline-flex items-center gap-2.5 group", className)}
+    >
       <div
         className={cn(
           "flex shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md transition-transform group-hover:scale-105",
           iconSize
         )}
+        aria-hidden
       >
         <Heart className={heartSize} fill="currentColor" />
       </div>

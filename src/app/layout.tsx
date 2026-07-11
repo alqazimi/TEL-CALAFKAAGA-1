@@ -4,7 +4,6 @@ import { Providers } from "@/components/providers";
 import { ClearStaleServiceWorkers } from "@/components/clear-stale-service-workers";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { SiteJsonLd } from "@/components/seo/site-json-ld";
 import { rootMetadata } from "@/lib/seo/metadata";
 import "./globals.css";
 
@@ -33,7 +32,6 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col antialiased font-sans">
         {/* One-time cleanup for browsers that still have the old PWA worker */}
         <ClearStaleServiceWorkers />
-        <SiteJsonLd />
         <Providers>
           <Navbar />
           <main className="flex-1">{children}</main>

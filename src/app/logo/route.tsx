@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { SITE_BRAND_NAME } from "@/lib/constants";
 
 /** Square brand logo for Google Organization schema (min ~112×112). */
 export const runtime = "edge";
@@ -13,18 +14,41 @@ export async function GET() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #2a0512 0%, #4a0d1f 45%, #E91E63 100%)",
+          background: "linear-gradient(135deg, #064e3b 0%, #047857 55%, #059669 100%)",
         }}
       >
         <div
           style={{
-            width: 220,
-            height: 220,
-            background: "#ffffff",
-            borderRadius: "50% 50% 50% 0",
-            transform: "rotate(-45deg)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#ffffff",
+            fontFamily: "Georgia, 'Times New Roman', serif",
           }}
-        />
+        >
+          <div
+            style={{
+              fontSize: 72,
+              fontWeight: 700,
+              letterSpacing: -1,
+              lineHeight: 1,
+            }}
+          >
+            HC
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              fontSize: 22,
+              fontWeight: 600,
+              letterSpacing: 0.5,
+              opacity: 0.95,
+            }}
+          >
+            {SITE_BRAND_NAME}
+          </div>
+        </div>
       </div>
     ),
     {

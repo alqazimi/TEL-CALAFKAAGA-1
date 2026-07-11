@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
-import { APP_NAME, PRODUCTION_SITE_URL, SITE_BRAND_NAME } from "@/lib/constants";
+import { PRODUCTION_SITE_URL, SITE_BRAND_NAME } from "@/lib/constants";
+
+/** Homepage title shown in Google / browser tabs. */
+export const HOME_SEO_TITLE = "Hel Calafkaaga | Hel Lammaanaha Noloshaada";
+
+/** Full meta description (search snippets). */
+export const HOME_SEO_DESCRIPTION =
+  "Hel lammaanaha noloshaada adigoo ku salaynaya diinta, iswaafajinta, iyo ixtiraamka. Isdiiwaangeli maanta, qiimuhuna wuxuu ka bilaabmaa $10.";
+
+/** Shorter social / OG description (no pricing line). */
+export const HOME_OG_DESCRIPTION =
+  "Hel lammaanaha noloshaada adigoo ku salaynaya diinta, iswaafajinta, iyo ixtiraamka.";
 
 /** Primary SEO copy — Somali first (default site language). */
 export const SEO_SO = {
-  siteTitle: APP_NAME,
-  siteDescription:
-    "Waxaan isku xirnaa rag iyo dumar dhab u ah guurka iyadoo lagu saleynayo qiyamka Islaamka, kalsoonida, iyo ixtiraam. Diiwaangeli, dhammaystir profile-kaaga, oo hel lammaane xalaal ah.",
+  siteTitle: HOME_SEO_TITLE,
+  siteDescription: HOME_SEO_DESCRIPTION,
   keywords: [
     "guur",
     "guurka",
@@ -14,15 +24,16 @@ export const SEO_SO = {
     "muslim",
     "islaam",
     "hel calafkaaga",
+    "Hel Calafkaaga",
     "lammaane",
     "lamaanahaaga",
     "soomaali",
   ],
   pages: {
     home: {
-      title: `${APP_NAME}`,
-      description:
-        "Hel lammaanaha noloshaada iyadoo lagu saleynayo diinta, iswaafajinta, iyo ixtiraamka. Diiwaangeli laga bilaabo $10.",
+      title: HOME_SEO_TITLE,
+      description: HOME_SEO_DESCRIPTION,
+      ogDescription: HOME_OG_DESCRIPTION,
     },
     about: {
       title: "Naga Saabsan",
@@ -99,8 +110,8 @@ export function rootMetadata(): Metadata {
       alternateLocale: ["en_US"],
       url: `${base}/`,
       siteName: SITE_BRAND_NAME,
-      title: SITE_BRAND_NAME,
-      description: siteDescription,
+      title: HOME_SEO_TITLE,
+      description: HOME_OG_DESCRIPTION,
       images: [
         {
           url: "/opengraph-image",
@@ -112,15 +123,15 @@ export function rootMetadata(): Metadata {
     },
     twitter: {
       card: "summary_large_image",
-      title: SITE_BRAND_NAME,
-      description: siteDescription,
+      title: HOME_SEO_TITLE,
+      description: HOME_OG_DESCRIPTION,
       images: ["/opengraph-image"],
+    },
+    appleWebApp: {
+      title: SITE_BRAND_NAME,
     },
     robots: { index: true, follow: true },
     formatDetection: { telephone: false },
-    other: {
-      "og:site_name": SITE_BRAND_NAME,
-    },
   };
 }
 
@@ -128,12 +139,16 @@ export function pageMetadata(
   page: keyof typeof SEO_SO.pages,
   path: string
 ): Metadata {
-  const { title, description } = SEO_SO.pages[page];
-  const canonical = `${siteUrl()}${path}`;
+  const pageSeo = SEO_SO.pages[page];
+  const { title, description } = pageSeo;
+  const ogDescription =
+    "ogDescription" in pageSeo ? pageSeo.ogDescription : description;
+  const canonical = path === "/" ? `${siteUrl()}/` : `${siteUrl()}${path}`;
   const isHome = path === "/";
+  const socialTitle = isHome ? HOME_SEO_TITLE : title;
 
   return {
-    title: isHome ? { absolute: SITE_BRAND_NAME } : title,
+    title: isHome ? { absolute: HOME_SEO_TITLE } : title,
     description,
     applicationName: SITE_BRAND_NAME,
     alternates: {
@@ -141,8 +156,8 @@ export function pageMetadata(
       languages: { so: canonical, en: canonical },
     },
     openGraph: {
-      title: isHome ? SITE_BRAND_NAME : title,
-      description,
+      title: socialTitle,
+      description: ogDescription,
       url: canonical,
       locale: "so_SO",
       alternateLocale: ["en_US"],
@@ -151,8 +166,8 @@ export function pageMetadata(
     },
     twitter: {
       card: "summary_large_image",
-      title: isHome ? SITE_BRAND_NAME : title,
-      description,
+      title: socialTitle,
+      description: ogDescription,
     },
   };
 }

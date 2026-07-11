@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
-import { APP_DESCRIPTION, SITE_BRAND_NAME } from "@/lib/constants";
+import { SITE_BRAND_NAME } from "@/lib/constants";
+import { HOME_OG_DESCRIPTION } from "@/lib/seo/metadata";
 
 export const alt = SITE_BRAND_NAME;
 export const size = { width: 1200, height: 630 };
@@ -17,7 +18,7 @@ export default function OpenGraphImage() {
           justifyContent: "center",
           padding: "72px 80px",
           background:
-            "linear-gradient(135deg, #2a0512 0%, #4a0d1f 35%, #8a1230 70%, #E91E63 100%)",
+            "linear-gradient(135deg, #064e3b 0%, #047857 40%, #059669 75%, #b45309 100%)",
           color: "#ffffff",
           fontFamily: "system-ui, sans-serif",
         }}
@@ -35,48 +36,34 @@ export default function OpenGraphImage() {
               width: 72,
               height: 72,
               borderRadius: 18,
-              background: "#E91E63",
+              background: "#ffffff",
+              color: "#047857",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              fontSize: 28,
+              fontWeight: 700,
             }}
           >
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                background: "#ffffff",
-                borderRadius: "50% 50% 50% 0",
-                transform: "rotate(-45deg)",
-              }}
-            />
+            HC
           </div>
-          <div style={{ fontSize: 64, fontWeight: 700, letterSpacing: -2 }}>
+          <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: -2 }}>
             {SITE_BRAND_NAME}
           </div>
         </div>
-        <div style={{ fontSize: 40, fontWeight: 600, opacity: 0.95 }}>
-          Islamic Matchmaking Service
+        <div style={{ fontSize: 36, fontWeight: 600, opacity: 0.95 }}>
+          Hel Lammaanaha Noloshaada
         </div>
         <div
           style={{
-            marginTop: 32,
-            fontSize: 28,
+            marginTop: 28,
+            fontSize: 26,
             lineHeight: 1.45,
-            opacity: 0.85,
-            maxWidth: 900,
+            opacity: 0.9,
+            maxWidth: 920,
           }}
         >
-          {APP_DESCRIPTION}
-        </div>
-        <div
-          style={{
-            marginTop: "auto",
-            fontSize: 22,
-            opacity: 0.7,
-          }}
-        >
-          {SITE_BRAND_NAME}
+          {HOME_OG_DESCRIPTION}
         </div>
       </div>
     ),

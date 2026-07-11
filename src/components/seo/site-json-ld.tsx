@@ -4,7 +4,7 @@ import {
   SUPPORT_EMAIL,
   WHATSAPP_DISPLAY,
 } from "@/lib/constants";
-import { SEO_SO } from "@/lib/seo/metadata";
+import { HOME_OG_DESCRIPTION } from "@/lib/seo/metadata";
 
 function getCanonicalSiteUrl() {
   const base = (
@@ -14,8 +14,9 @@ function getCanonicalSiteUrl() {
 }
 
 /**
- * Google site name preference — WebSite.name on the home page.
+ * Google site name + Organization — render once on the homepage.
  * @see https://developers.google.com/search/docs/appearance/site-names
+ * Logo: dynamically generated at /logo (512×512).
  */
 export function SiteJsonLd() {
   const siteUrl = getCanonicalSiteUrl();
@@ -29,9 +30,9 @@ export function SiteJsonLd() {
         "@type": "WebSite",
         "@id": `${siteOrigin}/#website`,
         name: SITE_BRAND_NAME,
-        alternateName: ["HelCalafkaaga", "Hel Calaf"],
+        alternateName: "HelCalafkaaga",
         url: siteUrl,
-        description: SEO_SO.siteDescription,
+        description: HOME_OG_DESCRIPTION,
         inLanguage: ["so", "en"],
         publisher: { "@id": `${siteOrigin}/#organization` },
       },
@@ -39,17 +40,11 @@ export function SiteJsonLd() {
         "@type": "Organization",
         "@id": `${siteOrigin}/#organization`,
         name: SITE_BRAND_NAME,
-        alternateName: ["HelCalafkaaga", "Hel Calaf"],
-        url: siteOrigin,
-        logo: {
-          "@type": "ImageObject",
-          url: logoUrl,
-          width: 512,
-          height: 512,
-        },
+        url: siteUrl,
+        logo: logoUrl,
         image: logoUrl,
         email: SUPPORT_EMAIL,
-        description: SEO_SO.siteDescription,
+        description: HOME_OG_DESCRIPTION,
         contactPoint: {
           "@type": "ContactPoint",
           contactType: "customer support",

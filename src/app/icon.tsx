@@ -14,19 +14,15 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #4a0d1f, #E91E63)",
+          background: "linear-gradient(135deg, #064e3b, #047857)",
           borderRadius: 10,
+          color: "#ffffff",
+          fontSize: 18,
+          fontWeight: 700,
+          fontFamily: "system-ui, sans-serif",
         }}
       >
-        <div
-          style={{
-            width: 20,
-            height: 20,
-            background: "#ffffff",
-            borderRadius: "50% 50% 50% 0",
-            transform: "rotate(-45deg)",
-          }}
-        />
+        HC
       </div>
     ),
     { ...size }

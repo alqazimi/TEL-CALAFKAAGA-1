@@ -13,19 +13,15 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #2a0512, #4a0d1f 40%, #E91E63 100%)",
+          background: "linear-gradient(135deg, #064e3b, #047857)",
           borderRadius: 36,
+          color: "#ffffff",
+          fontSize: 64,
+          fontWeight: 700,
+          fontFamily: "system-ui, sans-serif",
         }}
       >
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            background: "#ffffff",
-            borderRadius: "50% 50% 50% 0",
-            transform: "rotate(-45deg)",
-          }}
-        />
+        HC
       </div>
     ),
     { ...size }
