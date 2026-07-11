@@ -74,13 +74,12 @@ export function LandingPage() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[68%_center] sm:object-[center_30%] dark:brightness-[0.72] dark:contrast-[1.08] dark:saturate-[0.95]"
+          className="object-cover object-[68%_center] sm:object-[center_30%]"
           aria-hidden
         />
-        {/* Readable overlays — work in light and night mode while keeping the photo visible */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#120d0e]/92 via-[#120d0e]/62 to-[#120d0e]/15 sm:via-[#120d0e]/55 sm:to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#120d0e] via-[#120d0e]/25 to-[#120d0e]/45 dark:from-[#120d0e] dark:via-[#120d0e]/40 dark:to-[#120d0e]/55" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/35 via-transparent to-gold/10 opacity-90 dark:from-primary/25 dark:opacity-70" />
+        {/* Soft dark scrim only — keep the photo clear (no red tint) */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/25" />
 
         <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32 lg:px-8 w-full">
           <motion.div
@@ -98,7 +97,7 @@ export function LandingPage() {
               <span className="text-gold"> {t("landing.heroHighlight")}</span>
             </h1>
 
-            <p className="mt-5 text-base sm:text-lg text-white/85 max-w-md leading-relaxed">
+            <p className="mt-5 text-base sm:text-lg text-white/90 max-w-md leading-relaxed drop-shadow-sm">
               {t("landing.heroDesc")}
             </p>
 
@@ -112,7 +111,7 @@ export function LandingPage() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
+                className="border-white/35 bg-black/25 text-white hover:bg-black/40 hover:text-white backdrop-blur-sm"
               >
                 <Link href="/how-it-works">{t("landing.seeHowItWorks")}</Link>
               </Button>
