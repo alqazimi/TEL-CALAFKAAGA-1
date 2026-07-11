@@ -302,6 +302,8 @@ export const en = {
     errorTooManyAttempts:
       "Too many failed sign-in attempts. Please wait a few minutes and try again.",
     errorServerNotConfigured: "Server auth is not configured. Contact support.",
+    errorBackendUnavailable:
+      "Login is temporarily unavailable. Your Convex project may be over Free plan limits — open the Convex dashboard, upgrade or free usage, then try again.",
   },
   setup: {
     convexMissingTitle: "Convex is not configured",

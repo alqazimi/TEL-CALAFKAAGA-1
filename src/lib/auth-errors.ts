@@ -40,6 +40,22 @@ export function getAuthErrorMessage(
     if (msg.includes("Missing environment variable")) {
       return t?.("auth.errorServerNotConfigured") ?? fallback;
     }
+    if (
+      msg.includes("Server Error") ||
+      msg.includes("Exceeded") ||
+      msg.includes("Free plan") ||
+      msg.includes("disabled") ||
+      msg.includes("Overloaded") ||
+      msg.includes("503") ||
+      msg.includes("Failed to fetch") ||
+      msg.includes("NetworkError") ||
+      msg.includes("loadingStuck")
+    ) {
+      return (
+        t?.("auth.errorBackendUnavailable") ??
+        "Login is temporarily unavailable. The backend may be over plan limits — check the Convex dashboard, then try again."
+      );
+    }
     if (msg && !msg.includes("[Request ID:")) {
       return msg;
     }

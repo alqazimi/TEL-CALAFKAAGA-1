@@ -305,6 +305,8 @@ export const so: Translations = {
     errorTooManyAttempts:
       "Isku dayo badan oo galitaan ah ayaa fashilantay. Fadlan sug dhowr daqiiqo oo mar kale isku day.",
     errorServerNotConfigured: "Auth-ka server-ka lama dejin. La xiriir taageerada.",
+    errorBackendUnavailable:
+      "Galitaanku hadda ma shaqeynayo. Convex project-kaagu wuxuu dhaafay Free plan limits — fur Convex dashboard, upgrade ama yaree isticmaalka, ka dibna isku day.",
   },
   setup: {
     convexMissingTitle: "Convex lama dejin",
