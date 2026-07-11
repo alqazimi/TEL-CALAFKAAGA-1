@@ -97,7 +97,7 @@ export function CompatibilityBreakdown({
 
       {narrative && narrative.strong.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">
+          <p className="text-xs font-semibold text-primary mb-1.5">
             {t("premium.compatStrong")}
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -107,7 +107,7 @@ export function CompatibilityBreakdown({
               return (
                 <span
                   key={item.key}
-                  className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2.5 py-1 text-[11px] font-medium"
+                  className="rounded-full bg-primary/10 text-primary px-2.5 py-1 text-[11px] font-medium"
                 >
                   {t(labelKey)}
                 </span>
@@ -156,7 +156,7 @@ export function CompatibilityBreakdown({
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    pct >= 75 ? "bg-emerald-500" : pct >= 45 ? "bg-primary" : "bg-amber-500"
+                    pct >= 75 ? "bg-primary" : pct >= 45 ? "bg-primary/60" : "bg-amber-500"
                   )}
                   style={{ width: `${Math.min(100, pct)}%` }}
                 />

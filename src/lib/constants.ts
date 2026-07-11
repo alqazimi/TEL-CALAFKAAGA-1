@@ -5,8 +5,8 @@ export const PRODUCTION_SITE_URL = "https://www.helcalafkaaga.com";
 export const APP_TAGLINE = "Find Your Perfect Match";
 export const APP_DESCRIPTION =
   "We connect serious men and women for marriage based on Islamic values, trust, and respect.";
-export const BRAND_PINK = "#E91E63";
-export const BRAND_NAVY = "#0B132B";
+export const BRAND_PINK = "#A61B2B";
+export const BRAND_NAVY = "#1A1214";
 export const WHATSAPP_GREEN = "#25D366";
 export const WHATSAPP_NUMBER = "254793692710";
 export const WHATSAPP_DISPLAY = "+254 793 692710";

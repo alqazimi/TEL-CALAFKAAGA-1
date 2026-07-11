@@ -92,7 +92,7 @@ function memberStatus(user: AdminUser): {
   if (isPremiumUser(user)) {
     return {
       labelKey: "adminPage.statusPremium",
-      className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
+      className: "bg-primary/10 text-primary",
     };
   }
   return {

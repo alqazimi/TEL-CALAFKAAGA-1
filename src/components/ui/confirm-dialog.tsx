@@ -51,7 +51,7 @@ export function ConfirmDialog({
       <button
         type="button"
         aria-label={cancelLabel}
-        className="absolute inset-0 bg-[#0f1f17]/55 backdrop-blur-sm"
+        className="absolute inset-0 bg-[#1a1214]/55 backdrop-blur-sm"
         disabled={busy}
         onClick={() => {
           if (!busy) onCancel();

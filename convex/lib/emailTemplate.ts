@@ -3,14 +3,14 @@
 export const EMAIL_BRAND = {
   name: "Hel Calafkaaga",
   tagline: "Halal marriage matchmaking with trust and respect.",
-  primary: "#047857",
-  primaryDark: "#064e3b",
+  primary: "#a61b2b",
+  primaryDark: "#6b1220",
   gold: "#b45309",
-  ink: "#0f1f17",
-  muted: "#5b6b63",
-  bg: "#f4f7f5",
+  ink: "#1a1214",
+  muted: "#6b5c5f",
+  bg: "#faf7f7",
   card: "#ffffff",
-  border: "#d8e5de",
+  border: "#e8dcde",
 } as const;
 
 export function getEmailSiteUrl(): string {

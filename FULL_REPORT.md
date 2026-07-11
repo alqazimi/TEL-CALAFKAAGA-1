@@ -14,7 +14,7 @@ Shipped module-by-module while preserving auth, Stripe, Convex data, and product
 |------|--------|
 | Safety (likes, rate limits) | Done |
 | Trust (`reviewStatus`, no auto-approve) | Done — run backfill migration |
-| Brand (emerald/gold, typography) | Done |
+| Brand (crimson/gold, typography) | Done |
 | Landing + questionnaire UX | Done |
 | Member surfaces (discover, matches, chat, profile, notifications) | Done |
 | Admin (dashboard, reports notes, audit log, audience + schedule) | Done |

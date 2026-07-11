@@ -42,8 +42,7 @@ const typeColors = {
   message: "text-sky-700 bg-sky-50 dark:bg-sky-950/30 dark:text-sky-400",
   announcement:
     "text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-300",
-  approval:
-    "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400",
+  approval: "text-primary bg-primary/10",
   payment:
     "text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400",
 };

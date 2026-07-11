@@ -36,7 +36,7 @@ export function TrustBadges({ profile, size = "md", className }: TrustBadgesProp
           label: t("trustBadges.approved"),
           icon: BadgeCheck,
           className:
-            "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/40",
+            "bg-primary/10 text-primary border-primary/20",
         }
       : null,
     reviewStatus === "pending_review"
@@ -72,7 +72,7 @@ export function TrustBadges({ profile, size = "md", className }: TrustBadgesProp
           label: t("trustBadges.paidMember"),
           icon: CreditCard,
           className:
-            "bg-emerald-50 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200 border-emerald-200/60 dark:border-emerald-900/40",
+            "bg-primary/10 text-primary border-primary/20",
         }
       : null,
     profile.questionnaireComplete && reviewStatus !== "approved"

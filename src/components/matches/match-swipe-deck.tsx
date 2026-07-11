@@ -115,7 +115,7 @@ function SwipeCard({
         whileTap={{ cursor: "grabbing" }}
       >
         <motion.div
-          className="pointer-events-none absolute left-6 top-8 z-10 rounded-xl border-2 border-emerald-500 px-4 py-2 text-emerald-600 font-bold tracking-wide rotate-[-12deg]"
+          className="pointer-events-none absolute left-6 top-8 z-10 rounded-xl border-2 border-primary px-4 py-2 text-primary font-bold tracking-wide rotate-[-12deg]"
           style={{ opacity: likeOpacity }}
         >
           {t("matchesPage.swipeLike")}

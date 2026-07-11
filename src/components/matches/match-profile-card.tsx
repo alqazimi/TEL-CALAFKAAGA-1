@@ -33,8 +33,8 @@ interface MatchProfileCardProps {
 }
 
 function scoreTone(score: number) {
-  if (score >= 85) return "bg-emerald-600 text-white";
-  if (score >= 75) return "bg-primary text-primary-foreground";
+  if (score >= 85) return "bg-primary text-primary-foreground";
+  if (score >= 75) return "bg-primary/90 text-primary-foreground";
   return "bg-card text-foreground border border-border";
 }
 
