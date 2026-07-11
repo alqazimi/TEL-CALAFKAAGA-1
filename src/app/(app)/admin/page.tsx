@@ -60,6 +60,14 @@ import {
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
 type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
+type ReviewFilter =
+  | "all"
+  | "needs_action"
+  | "pending_review"
+  | "approved"
+  | "incomplete"
+  | "rejected"
+  | "suspended";
 
 const ADMIN_TABS = [
   "dashboard",
@@ -103,6 +111,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("needs_action");
   const [announcement, setAnnouncement] = useState({
     title: "",
     body: "",
@@ -130,6 +139,7 @@ export default function AdminPage() {
           search: search || undefined,
           role: roleFilter,
           payment: paymentFilter,
+          review: reviewFilter,
           limit: 100,
         }
       : "skip"
@@ -354,6 +364,7 @@ export default function AdminPage() {
                   onClick={() => {
                     setRoleFilter("user");
                     setPaymentFilter("all");
+                    setReviewFilter("needs_action");
                     setTab("users");
                   }}
                 >
@@ -368,6 +379,7 @@ export default function AdminPage() {
                   onClick={() => {
                     setRoleFilter("user");
                     setPaymentFilter("unpaid");
+                    setReviewFilter("all");
                     setTab("users");
                   }}
                 >
@@ -455,6 +467,7 @@ export default function AdminPage() {
                   onClick={() => {
                     setRoleFilter("user");
                     setPaymentFilter("all");
+                    setReviewFilter("pending_review");
                     setTab("users");
                   }}
                 >
@@ -476,6 +489,8 @@ export default function AdminPage() {
               onRoleFilterChange={setRoleFilter}
               paymentFilter={paymentFilter}
               onPaymentFilterChange={setPaymentFilter}
+              reviewFilter={reviewFilter}
+              onReviewFilterChange={setReviewFilter}
               currentProfileId={currentUser?.profile?._id}
               canManageRoles={canManageRoles}
               onOpenUser={setSelectedProfileId}

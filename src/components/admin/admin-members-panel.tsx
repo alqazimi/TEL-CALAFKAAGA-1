@@ -38,6 +38,24 @@ import { ConfirmDialog, type ConfirmDialogTone } from "@/components/ui/confirm-d
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
 type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
+export type ReviewFilter =
+  | "all"
+  | "needs_action"
+  | "pending_review"
+  | "approved"
+  | "incomplete"
+  | "rejected"
+  | "suspended";
+
+const REVIEW_FILTERS: { value: ReviewFilter; labelKey: TranslationPath }[] = [
+  { value: "needs_action", labelKey: "adminPage.filterNeedsAction" },
+  { value: "pending_review", labelKey: "adminPage.filterPendingReview" },
+  { value: "approved", labelKey: "adminPage.filterApproved" },
+  { value: "incomplete", labelKey: "adminPage.filterIncomplete" },
+  { value: "rejected", labelKey: "adminPage.filterRejected" },
+  { value: "suspended", labelKey: "adminPage.filterSuspended" },
+  { value: "all", labelKey: "adminPage.filterAllStatuses" },
+];
 
 type PendingConfirm = {
   type: "reject" | "delete" | "ban" | "unban";
@@ -83,6 +101,18 @@ function memberStatus(user: AdminUser): {
       className: "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
     };
   }
+  if (review === "suspended") {
+    return {
+      labelKey: "adminPage.statusBanned",
+      className: "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300",
+    };
+  }
+  if (review === "approved") {
+    return {
+      labelKey: "adminPage.statusApproved",
+      className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300",
+    };
+  }
   if (!user.hasPaid) {
     return {
       labelKey: "adminPage.statusUnpaid",
@@ -109,6 +139,8 @@ interface AdminMembersPanelProps {
   onRoleFilterChange: (value: RoleFilter) => void;
   paymentFilter: PaymentFilter;
   onPaymentFilterChange: (value: PaymentFilter) => void;
+  reviewFilter: ReviewFilter;
+  onReviewFilterChange: (value: ReviewFilter) => void;
   currentProfileId?: Id<"profiles">;
   canManageRoles: boolean;
   onOpenUser: (profileId: Id<"profiles">) => void;
@@ -122,6 +154,8 @@ export function AdminMembersPanel({
   onRoleFilterChange,
   paymentFilter,
   onPaymentFilterChange,
+  reviewFilter,
+  onReviewFilterChange,
   currentProfileId,
   canManageRoles,
   onOpenUser,
@@ -248,6 +282,32 @@ export function AdminMembersPanel({
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground">
+            {t("adminPage.filterByReview")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {REVIEW_FILTERS.map((item) => {
+              const active = reviewFilter === item.value;
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => onReviewFilterChange(item.value)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                    active
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  {t(item.labelKey)}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">

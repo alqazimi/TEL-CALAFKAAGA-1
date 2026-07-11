@@ -214,6 +214,17 @@ export const getAllUsers = query({
         v.literal("premium")
       )
     ),
+    review: v.optional(
+      v.union(
+        v.literal("all"),
+        v.literal("needs_action"),
+        v.literal("pending_review"),
+        v.literal("approved"),
+        v.literal("incomplete"),
+        v.literal("rejected"),
+        v.literal("suspended")
+      )
+    ),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -224,9 +235,12 @@ export const getAllUsers = query({
 
     const limit = Math.min(Math.max(args.limit ?? 80, 1), 150);
     const search = args.search?.trim().toLowerCase();
+    const reviewFilter = args.review ?? "all";
+    const needsFullScan = Boolean(search) || reviewFilter !== "all";
 
-    // Fast path: recent profiles only (no full-table scan for the default list).
-    let profiles = search
+    // Full scan when searching or filtering by review so approved members are not hidden
+    // behind the recent-only window.
+    let profiles = needsFullScan
       ? await ctx.db.query("profiles").collect()
       : await ctx.db.query("profiles").order("desc").take(Math.max(limit * 3, 120));
 
@@ -268,6 +282,16 @@ export const getAllUsers = query({
           default:
             return true;
         }
+      });
+    }
+
+    if (reviewFilter !== "all") {
+      profiles = profiles.filter((p) => {
+        const status = resolveReviewStatus(p);
+        if (reviewFilter === "needs_action") {
+          return status === "pending_review" || status === "rejected";
+        }
+        return status === reviewFilter;
       });
     }
 
