@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
-import { PHOTO_STEP_INDEX } from "@/components/questionnaire/steps";
+import { PHOTO_STEP_INDEX, STEPS } from "@/components/questionnaire/steps";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 
 interface QuestionnaireReviewProps {
@@ -22,14 +22,18 @@ interface QuestionnaireReviewProps {
   isEditMode?: boolean;
 }
 
+/** Map questionnaire step `id` → 0-based index in `STEPS` (Edit must use index, not id). */
+function stepIndexById(stepId: number): number {
+  const index = STEPS.findIndex((step) => step.id === stepId);
+  return index >= 0 ? index : 0;
+}
+
 function ReviewSection({
   title,
-  stepIndex,
   items,
   onEdit,
 }: {
   title: string;
-  stepIndex: number;
   items: { label: string; value: string }[];
   onEdit: () => void;
 }) {
@@ -106,6 +110,9 @@ export function QuestionnaireReview({
 
   const educationItems = [
     { label: "Education", value: profile.education || "—" },
+  ];
+
+  const employmentItems = [
     { label: "Occupation", value: profile.occupation || "—" },
     ...(profile.gender === "male"
       ? [{ label: "Financial Readiness", value: profile.financialReadiness || "—" }]
@@ -170,7 +177,6 @@ export function QuestionnaireReview({
   ];
 
   const aboutItems = [
-    { label: "Languages", value: translateList(profile.languagesSpoken) },
     { label: "Marriage Timeline", value: profile.marriageTimeline || "—" },
     { label: "Love Language", value: profile.loveLanguage ? optionLabel(profile.loveLanguage) : "—" },
     { label: "Qualities", value: translateList(profile.qualities) },
@@ -202,7 +208,14 @@ export function QuestionnaireReview({
     { label: "City", value: profile.city || "—" },
     { label: "Height", value: profile.height ? `${profile.height} cm` : "—" },
     { label: "Weight", value: profile.weight ? `${profile.weight} kg` : "—" },
+    { label: "Languages", value: translateList(profile.languagesSpoken) },
   ];
+
+  const contactItems = [
+    { label: "Full name", value: profile.name || "—" },
+    { label: "Phone number", value: profile.phone || "—" },
+  ];
+
   return (
     <>
     <Card className="border-border shadow-lg shadow-primary/5 pb-4">
@@ -223,7 +236,6 @@ export function QuestionnaireReview({
       <CardContent className="space-y-4 pb-28">
         <ReviewSection
           title="Gender"
-          stepIndex={-1}
           items={[
             {
               label: "Gender",
@@ -232,16 +244,53 @@ export function QuestionnaireReview({
           ]}
           onEdit={() => (onEditGender ? onEditGender() : onEditStep(0))}
         />
-        <ReviewSection title="Basic Information" stepIndex={1} items={basicItems} onEdit={() => onEditStep(1)} />
-        <ReviewSection title="Your Religious Practice" stepIndex={2} items={religiousItems} onEdit={() => onEditStep(2)} />
-        <ReviewSection title="Education & Work" stepIndex={3} items={educationItems} onEdit={() => onEditStep(3)} />
-        <ReviewSection title="Marriage & Family" stepIndex={5} items={marriageItems} onEdit={() => onEditStep(5)} />
-        <ReviewSection title="Lifestyle" stepIndex={6} items={lifestyleItems} onEdit={() => onEditStep(6)} />
-        <ReviewSection title="About You" stepIndex={7} items={aboutItems} onEdit={() => onEditStep(7)} />
-        <ReviewSection title="Partner Preferences" stepIndex={8} items={prefItems} onEdit={() => onEditStep(8)} />
+        <ReviewSection
+          title="Basic Information"
+          items={basicItems}
+          onEdit={() => onEditStep(stepIndexById(1))}
+        />
+        <ReviewSection
+          title="Your Religious Practice"
+          items={religiousItems}
+          onEdit={() => onEditStep(stepIndexById(2))}
+        />
+        <ReviewSection
+          title="Education"
+          items={educationItems}
+          onEdit={() => onEditStep(stepIndexById(3))}
+        />
+        <ReviewSection
+          title="Employment"
+          items={employmentItems}
+          onEdit={() => onEditStep(stepIndexById(4))}
+        />
+        <ReviewSection
+          title="Marriage & Family"
+          items={marriageItems}
+          onEdit={() => onEditStep(stepIndexById(5))}
+        />
+        <ReviewSection
+          title="Lifestyle"
+          items={lifestyleItems}
+          onEdit={() => onEditStep(stepIndexById(6))}
+        />
+        <ReviewSection
+          title="About You"
+          items={aboutItems}
+          onEdit={() => onEditStep(stepIndexById(7))}
+        />
+        <ReviewSection
+          title="Partner Preferences"
+          items={prefItems}
+          onEdit={() => onEditStep(stepIndexById(8))}
+        />
+        <ReviewSection
+          title="Your contact details"
+          items={contactItems}
+          onEdit={() => onEditStep(stepIndexById(9))}
+        />
         <ReviewSection
           title="Profile Photo"
-          stepIndex={PHOTO_STEP_INDEX}
           items={[
             {
               label: "Photo",
