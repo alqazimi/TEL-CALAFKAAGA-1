@@ -11,20 +11,13 @@ import {
 /**
  * Maintenance / coming-soon gate.
  *
- * - Production (Vercel): ON by default → shows /maintenance.html
- * - Local: OFF by default
- * - Force ON:  MAINTENANCE_MODE=true
- * - Force OFF: MAINTENANCE_MODE=false  (set this on Vercel to restore the site)
+ * OFF by default (full site).
+ * Force ON:  MAINTENANCE_MODE=true (or 1 / on / yes)
+ * Force OFF: MAINTENANCE_MODE=false
  */
 function isMaintenanceOn(): boolean {
   const value = (process.env.MAINTENANCE_MODE ?? "").trim().toLowerCase();
-  if (value === "false" || value === "0" || value === "off" || value === "no") {
-    return false;
-  }
-  if (value === "true" || value === "1" || value === "yes" || value === "on") {
-    return true;
-  }
-  return process.env.VERCEL_ENV === "production";
+  return value === "true" || value === "1" || value === "yes" || value === "on";
 }
 
 export function middleware(request: NextRequest) {
