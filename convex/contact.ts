@@ -27,8 +27,15 @@ export const sendContactMessage = action({
     email: v.string(),
     subject: v.string(),
     message: v.string(),
+    /** Honeypot — must stay empty. Bots that fill it get a fake success. */
+    companyWebsite: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Layer 2: silent bot trap (do not reveal detection)
+    if (args.companyWebsite && args.companyWebsite.trim().length > 0) {
+      return { ok: true as const };
+    }
+
     const name = args.name.trim();
     const email = args.email.trim().toLowerCase();
     const subject = args.subject.trim();

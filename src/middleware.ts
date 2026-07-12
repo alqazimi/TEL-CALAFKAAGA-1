@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  allowEdgeRequest,
+  blockedResponse,
+  clientIp,
+  isHostileUserAgent,
+  isProbePath,
+} from "@/lib/security/edge-shield";
 
 /**
  * Maintenance / coming-soon gate.
@@ -21,11 +28,33 @@ function isMaintenanceOn(): boolean {
 }
 
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // ── Layer 1: Edge Shield (always on) ─────────────────────────────────
+  if (isProbePath(pathname)) {
+    return blockedResponse(403);
+  }
+
+  const ua = request.headers.get("user-agent");
+  const method = request.method.toUpperCase();
+  if (
+    method !== "GET" &&
+    method !== "HEAD" &&
+    method !== "OPTIONS" &&
+    isHostileUserAgent(ua)
+  ) {
+    return blockedResponse(403);
+  }
+
+  const ip = clientIp(request);
+  if (!allowEdgeRequest(ip)) {
+    return blockedResponse(429);
+  }
+
+  // ── Maintenance (optional) ───────────────────────────────────────────
   if (!isMaintenanceOn()) {
     return NextResponse.next();
   }
-
-  const { pathname } = request.nextUrl;
 
   if (
     pathname === "/maintenance.html" ||

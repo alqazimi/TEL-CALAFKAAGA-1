@@ -93,7 +93,26 @@ export default function ContactPage() {
 
         <Card className="rounded-3xl border-border shadow-lg lg:col-span-2">
           <CardContent className="p-6 sm:p-8">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="relative space-y-6"
+              autoComplete="on"
+            >
+              {/* Layer 2 honeypot — hidden from humans, bots often fill it */}
+              <div
+                aria-hidden="true"
+                className="absolute -left-[9999px] h-0 w-0 overflow-hidden opacity-0"
+                tabIndex={-1}
+              >
+                <label htmlFor="companyWebsite">Company website</label>
+                <input
+                  id="companyWebsite"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  {...register("companyWebsite")}
+                />
+              </div>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="font-semibold">

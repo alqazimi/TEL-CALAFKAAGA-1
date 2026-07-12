@@ -93,5 +93,7 @@ export function createContactSchema(t: TranslateFn) {
     email: z.string().email(t("validation.invalidEmail")),
     subject: z.string().min(3, t("validation.contactSubjectRequired")),
     message: z.string().min(10, t("validation.contactMessageMin")),
+    /** Honeypot — must remain empty (Layer 2 app defense). */
+    companyWebsite: z.string().optional(),
   });
 }
