@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Camera, X } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import {
+  useUploadPhoto,
+  useAddAdditionalPhoto,
+  useRemoveAdditionalPhoto,
+} from "@/data/photos/hooks";
 import type { Profile } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
-import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
+import { resetFileInput } from "@/lib/upload-image";
 import { getSafeUserError } from "@/lib/safe-error";
 
 interface PremiumPhotosCardProps {
@@ -24,10 +26,9 @@ interface PremiumPhotosCardProps {
 
 export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
   const { t } = useTranslation();
-  const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
-  const registerUpload = useMutation(api.profiles.registerUpload);
-  const addAdditionalPhoto = useMutation(api.profiles.addAdditionalPhoto);
-  const removeAdditionalPhoto = useMutation(api.profiles.removeAdditionalPhoto);
+  const uploadPhoto = useUploadPhoto();
+  const addAdditionalPhoto = useAddAdditionalPhoto();
+  const removeAdditionalPhoto = useRemoveAdditionalPhoto();
   const [uploading, setUploading] = useState(false);
 
   const extraUrls = profile.additionalImageUrls ?? [];
@@ -42,8 +43,13 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
 
     setUploading(true);
     try {
-      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
-      await registerUpload({ storageId });
+      const uploaded = await uploadPhoto(file, { slot: "additional" });
+      const storageId = String(
+        (uploaded as { storageId?: string; mediaId?: string }).storageId ??
+          (uploaded as { mediaId?: string }).mediaId ??
+          ""
+      );
+      if (!storageId) throw new Error("upload failed");
       await addAdditionalPhoto({ storageId });
       toast.success(t("premium.photoAdded"));
     } catch (error) {
@@ -55,9 +61,9 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
     }
   };
 
-  const handleRemove = async (storageId: Id<"_storage">) => {
+  const handleRemove = async (storageId: string) => {
     try {
-      await removeAdditionalPhoto({ storageId });
+      await removeAdditionalPhoto(storageId);
       toast.success(t("premium.photoRemoved"));
     } catch {
       toast.error(t("premium.photoRemoveFailed"));

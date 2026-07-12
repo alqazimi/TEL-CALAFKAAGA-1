@@ -2,8 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../../../convex/_generated/api";
+import { useProfile } from "@/data/profile/hooks";
 import type { Profile } from "@/types";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
@@ -20,7 +19,8 @@ export default function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled") === "true";
-  const profile = useSafeQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
+  const { profile: profileRaw } = useProfile();
+  const profile = profileRaw as Profile | null | undefined;
   const { t } = useTranslation();
 
   useMarkNotificationsRead(["payment"], profile !== undefined);

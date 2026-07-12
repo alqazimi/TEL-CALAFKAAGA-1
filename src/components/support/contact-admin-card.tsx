@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Headphones, Send } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +12,11 @@ import { WHATSAPP_URL } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { getSafeUserError } from "@/lib/safe-error";
+import {
+  useMySupportMessages,
+  useReplyAsMember,
+  useSendSupportMessage,
+} from "@/data/support/hooks";
 
 type Topic = "photo_upload" | "account" | "payment" | "other";
 type Source = "profile" | "questionnaire" | "other";
@@ -33,9 +35,26 @@ export function ContactAdminCard({
   compact = false,
 }: ContactAdminCardProps) {
   const { t } = useTranslation();
-  const sendSupport = useMutation(api.supportContacts.sendSupportMessage);
-  const replyAsMember = useMutation(api.supportContacts.replyAsMember);
-  const myMessages = useSafeQuery(api.supportContacts.listMySupportMessages, {});
+  const sendSupport = useSendSupportMessage();
+  const replyAsMember = useReplyAsMember();
+  const myMessages = useMySupportMessages() as
+    | Array<{
+        _id: Id<"supportContacts">;
+        topic?: string;
+        subject?: string;
+        message?: string;
+        status?: string;
+        adminReply?: string | null;
+        createdAt?: number;
+        thread?: Array<{
+          id?: string;
+          body?: string;
+          from?: string;
+          authorRole?: string;
+          createdAt?: number;
+        }>;
+      }>
+    | undefined;
   const [topic, setTopic] = useState<Topic>(defaultTopic);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -196,9 +215,9 @@ export function ContactAdminCard({
               </div>
 
               <div className="space-y-1.5">
-                {row.thread.map((msg) => (
+                {(row.thread ?? []).map((msg) => (
                   <div
-                    key={msg.id}
+                    key={msg.id ?? `${msg.createdAt}-${msg.body}`}
                     className={cn(
                       "rounded-lg px-2.5 py-1.5 text-[11px] leading-relaxed",
                       msg.authorRole === "admin"

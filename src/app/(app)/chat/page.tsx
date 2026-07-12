@@ -3,8 +3,18 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
+import { useUnifiedAuth } from "@/data/auth/hooks";
+import { useProfile, usePreferencesQuery } from "@/data/profile/hooks";
+import {
+  useConversations,
+  useMessages,
+  useSendMessage,
+  useMarkAsRead,
+  useSetTyping,
+  useTypingStatus,
+} from "@/data/chat/hooks";
+import { useUploadPhoto } from "@/data/photos/hooks";
+import { useMarkMatchSeen, useArchiveMatch } from "@/data/matching/hooks";
 import { toast } from "sonner";
 import {
   Send,
@@ -19,7 +29,6 @@ import {
   Archive,
 } from "lucide-react";
 import { LazyEmojiPicker, type EmojiClickData } from "@/components/chat/lazy-emoji-picker";
-import { api } from "../../../../convex/_generated/api";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
@@ -45,7 +54,7 @@ import { LazyImage } from "@/components/ui/lazy-image";
 import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
-import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
+import { resetFileInput } from "@/lib/upload-image";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
@@ -109,14 +118,14 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const currentUser = useSafeQuery(api.users.currentUser);
-  const profile = useSafeQuery(
-    api.profiles.getProfile,
-    !staffLoading && !isStaff ? {} : "skip"
+  const { user: currentUser } = useUnifiedAuth();
+  const { profile: profileRaw } = useProfile();
+  const profile = (
+    staffLoading || isStaff ? undefined : profileRaw
   ) as Profile | null | undefined;
-  const preferences = useSafeQuery(
-    api.profiles.getPreferences,
-    !staffLoading && !isStaff ? {} : "skip"
+  const preferencesRaw = usePreferencesQuery();
+  const preferences = (
+    staffLoading || isStaff ? undefined : preferencesRaw
   ) as Preferences | null | undefined;
   const queriesLoading =
     !isStaff && isProfileQueriesLoading(profile, preferences);
@@ -125,36 +134,33 @@ export default function ChatPage() {
     !queriesLoading &&
     (profile.questionnaireComplete || isMemberProfileReady(profile, preferences));
 
-  const conversations = useSafeQuery(
-    api.messages.getConversations,
-    profileReady ? { list: matchList } : "skip"
-  ) as Conversation[] | undefined;
+  const conversations = useConversations({
+    list: matchList,
+    enabled: profileReady,
+  }) as Conversation[] | undefined;
 
   // Drive the open thread from the URL so phone/browser Back closes chat first.
   const activeConversation = conversationParam
     ? (conversationParam as Id<"conversations">)
     : null;
 
-  const messages = useSafeQuery(
-    api.messages.getMessages,
-    activeConversation ? { conversationId: activeConversation } : "skip"
+  const messages = useMessages(
+    activeConversation ?? undefined
   ) as ChatMessage[] | undefined;
 
-  const isTyping = useSafeQuery(
-    api.messages.getTypingStatus,
-    activeConversation ? { conversationId: activeConversation } : "skip"
-  );
+  const isTyping = useTypingStatus(activeConversation ?? undefined);
 
-  const sendMessage = useMutation(api.messages.sendMessage);
-  const markAsRead = useMutation(api.messages.markAsRead);
-  const setTyping = useMutation(api.messages.setTyping);
-  const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
-  const registerUpload = useMutation(api.profiles.registerUpload);
-  const markMatchSeen = useMutation(api.matches.markMatchSeen);
-  const archiveMatch = useMutation(api.matches.archiveMatch);
+  const sendMessage = useSendMessage();
+  const markAsRead = useMarkAsRead();
+  const setTyping = useSetTyping();
+  const uploadPhoto = useUploadPhoto();
+  const markMatchSeen = useMarkMatchSeen();
+  const archiveMatch = useArchiveMatch();
 
   const activeConv = conversations?.find((c) => c.conversationId === activeConversation);
-  const myUserId = currentUser?.userId;
+  const myUserId =
+    (currentUser as { userId?: string; id?: string } | null | undefined)?.userId ??
+    (currentUser as { id?: string } | null | undefined)?.id;
   const showMobileChat = Boolean(activeConversation);
 
   const chatListHref = `/chat?list=${matchList}`;
@@ -222,8 +228,13 @@ export default function ChatPage() {
     const file = input.files?.[0];
     if (!file || !activeConversation) return;
     try {
-      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
-      await registerUpload({ storageId });
+      const uploaded = await uploadPhoto(file);
+      const storageId = String(
+        (uploaded as { storageId?: string; mediaId?: string }).storageId ??
+          (uploaded as { mediaId?: string }).mediaId ??
+          ""
+      );
+      if (!storageId) throw new Error("upload failed");
       await sendMessage({
         conversationId: activeConversation,
         message: t("chatPage.imageMessage"),

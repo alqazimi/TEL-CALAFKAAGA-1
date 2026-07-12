@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAction } from "convex/react";
 import { motion } from "framer-motion";
 import {
   Check,
@@ -12,19 +11,19 @@ import {
   MessageCircle,
   Sparkles,
 } from "lucide-react";
-import { api } from "../../../../../convex/_generated/api";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n/context";
 import { WHATSAPP_URL } from "@/lib/constants";
 import { clearPlanPreference } from "@/lib/plan-preference";
+import { useVerifyCheckoutSession } from "@/data/payments/hooks";
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
-  const verifyCheckout = useAction(api.stripeActions.verifyCheckoutSession);
+  const verifyCheckout = useVerifyCheckoutSession();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [isPremium, setIsPremium] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,9 +40,11 @@ export default function PaymentSuccessPage() {
 
     async function verify() {
       try {
-        const result = await verifyCheckout({ sessionId: sessionId! });
+        const result = (await verifyCheckout({
+          sessionId: sessionId!,
+        })) as { isPremium?: boolean };
         if (!cancelled) {
-          setIsPremium(result.isPremium);
+          setIsPremium(Boolean(result?.isPremium));
           setStatus("success");
           clearPlanPreference();
         }

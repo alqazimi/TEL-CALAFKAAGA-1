@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../../convex/_generated/api";
+import { useCompatibilityBreakdown } from "@/data/matching/hooks";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
@@ -39,10 +38,18 @@ export function CompatibilityBreakdown({
   overallScore,
 }: CompatibilityBreakdownProps) {
   const { t } = useTranslation();
-  const breakdown = useSafeQuery(
-    api.matches.getCompatibilityBreakdown,
-    isPremium ? { targetUserId } : "skip"
-  );
+  const breakdown = useCompatibilityBreakdown(targetUserId, isPremium) as
+    | {
+        categories: Array<{
+          key: string;
+          score: number;
+          maxScore: number;
+          weight?: number;
+          matched?: boolean;
+        }>;
+      }
+    | undefined
+    | null;
 
   const narrative = useMemo(() => {
     if (!breakdown) return null;

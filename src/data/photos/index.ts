@@ -1,0 +1,19 @@
+import { isApiProvider } from "../provider";
+import { apiPhotos } from "./api";
+import { convexPhotos } from "./convex";
+import type { PhotosAdapter } from "./types";
+
+export type { PhotosAdapter } from "./types";
+export { PHOTOS_METHOD_NAMES } from "./types";
+
+export function getPhotosAdapter(): PhotosAdapter {
+  return isApiProvider() ? apiPhotos : convexPhotos;
+}
+
+export const photos = new Proxy({} as PhotosAdapter, {
+  get(_t, prop: string) {
+    const adapter = getPhotosAdapter();
+    const value = adapter[prop as keyof PhotosAdapter];
+    return typeof value === "function" ? value.bind(adapter) : value;
+  },
+});

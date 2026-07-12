@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
@@ -17,6 +18,10 @@ const securityHeaders = [
   },
 ];
 
+const apiMode =
+  (process.env.NEXT_PUBLIC_BACKEND_PROVIDER ?? "convex").toLowerCase() ===
+  "api";
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
@@ -32,11 +37,31 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config, { webpack }) => {
+    if (apiMode) {
+      config.resolve = config.resolve ?? {};
+      config.resolve.alias = {
+        ...(config.resolve.alias ?? {}),
+        "convex/react": path.join(
+          __dirname,
+          "src/data/shims/convex-react-stub.ts"
+        ),
+        "@convex-dev/auth/react": path.join(
+          __dirname,
+          "src/data/shims/convex-auth-stub.ts"
+        ),
+      };
+      config.plugins = config.plugins ?? [];
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /[\\/]convex[\\/]_generated[\\/]api(\.js|\.ts)?$/,
+          path.join(__dirname, "src/data/shims/convex-api-stub.ts")
+        )
+      );
+    }
+    return config;
+  },
   async headers() {
-    // Do not set Cache-Control on /_next/static — Next/Vercel already mark
-    // hashed assets immutable. Applying it ourselves also stamps missing-asset
-    // 404 responses (not-found.txt) as immutable for a year, which Cloudflare
-    // then caches and leaves the site unstyled until purge.
     return [
       {
         source: "/apple-icon",

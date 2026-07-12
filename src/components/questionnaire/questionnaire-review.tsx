@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Check, Pencil, ChevronRight } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { useCompleteQuestionnaire } from "@/data/questionnaire/hooks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -87,7 +86,7 @@ export function QuestionnaireReview({
   onComplete,
   isEditMode = false,
 }: QuestionnaireReviewProps) {
-  const completeQuestionnaire = useMutation(api.profiles.completeQuestionnaire);
+  const completeQuestionnaire = useCompleteQuestionnaire();
   const [submitting, setSubmitting] = useState(false);
   const { optionLabel, ui } = useQuestionnaireI18n();
 

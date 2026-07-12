@@ -2,15 +2,15 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../convex/_generated/api";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 import { isStaffRole } from "@/lib/access";
 
 /** Redirect admins/owners to the admin console; avoid member onboarding flashes. */
 export function useStaffRedirect(adminPath = "/admin") {
   const router = useRouter();
-  const user = useSafeQuery(api.users.currentUser);
-  const isStaff = isStaffRole(user?.profile?.role);
+  const { user } = useUnifiedAuth();
+  const role = (user?.profile as { role?: string } | null | undefined)?.role;
+  const isStaff = isStaffRole(role);
 
   useEffect(() => {
     if (isStaff) {

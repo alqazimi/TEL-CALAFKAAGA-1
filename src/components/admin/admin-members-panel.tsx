@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import {
   Ban,
@@ -15,9 +14,16 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import type { Profile as AdminUser } from "@/types";
+import {
+  useAdminApproveUser,
+  useAdminBanUser,
+  useAdminDeleteUser,
+  useAdminRejectUser,
+  useAdminRequestPhoto,
+  useAdminSetRole,
+} from "@/data/admin/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -169,12 +175,12 @@ export function AdminMembersPanel({
   onOpenUser,
 }: AdminMembersPanelProps) {
   const { t } = useTranslation();
-  const approveUser = useMutation(api.admin.approveUser);
-  const rejectUser = useMutation(api.admin.rejectUser);
-  const requestProfilePhoto = useMutation(api.admin.requestProfilePhoto);
-  const banUser = useMutation(api.admin.banUser);
-  const deleteUser = useMutation(api.admin.deleteUser);
-  const setUserRole = useMutation(api.admin.setUserRole);
+  const approveUser = useAdminApproveUser();
+  const rejectUser = useAdminRejectUser();
+  const requestProfilePhoto = useAdminRequestPhoto();
+  const banUser = useAdminBanUser();
+  const deleteUser = useAdminDeleteUser();
+  const setUserRole = useAdminSetRole();
   const [busyId, setBusyId] = useState<Id<"profiles"> | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
@@ -253,7 +259,7 @@ export function AdminMembersPanel({
     if (type === "reject") {
       void runAction(
         user._id,
-        () => rejectUser({ profileId: user._id }),
+        () => rejectUser(user._id),
         t("adminPage.rejectSuccess")
       );
       return;
@@ -261,14 +267,14 @@ export function AdminMembersPanel({
     if (type === "delete") {
       void runAction(
         user._id,
-        () => deleteUser({ profileId: user._id }),
+        () => deleteUser(user._id),
         t("adminPage.deleteSuccess")
       );
       return;
     }
     void runAction(
       user._id,
-      () => banUser({ profileId: user._id, banned: type === "ban" }),
+      () => banUser(user._id, type === "ban"),
       type === "ban" ? t("adminPage.banSuccess") : t("adminPage.unbanSuccess")
     );
   };
@@ -512,7 +518,7 @@ export function AdminMembersPanel({
                         onClick={() =>
                           void runAction(
                             user._id,
-                            () => approveUser({ profileId: user._id }),
+                            () => approveUser(user._id),
                             t("adminPage.approveSuccess")
                           )
                         }
@@ -545,7 +551,7 @@ export function AdminMembersPanel({
                         onClick={() =>
                           void runAction(
                             user._id,
-                            () => requestProfilePhoto({ profileId: user._id }),
+                            () => requestProfilePhoto(user._id),
                             t("adminPage.requestPhotoSuccess")
                           )
                         }
@@ -564,7 +570,7 @@ export function AdminMembersPanel({
                         onClick={() =>
                           void runAction(
                             user._id,
-                            () => setUserRole({ profileId: user._id, role: "user" }),
+                            () => setUserRole(user._id, "user"),
                             t("adminPage.demoted")
                           )
                         }

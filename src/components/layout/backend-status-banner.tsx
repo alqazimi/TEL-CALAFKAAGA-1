@@ -5,6 +5,7 @@ import {
   isConvexBackendUnavailable,
   subscribeConvexBackendStatus,
 } from "@/lib/use-safe-query";
+import { isApiProvider } from "@/data/provider";
 import { useTranslation } from "@/lib/i18n/context";
 import { WHATSAPP_URL } from "@/lib/constants";
 
@@ -29,6 +30,25 @@ export function BackendStatusBanner() {
   const [down, setDown] = useState(false);
 
   useEffect(() => {
+    if (isApiProvider()) {
+      const base = (process.env.NEXT_PUBLIC_API_URL ?? "")
+        .trim()
+        .replace(/\/$/, "");
+      if (!base) {
+        setDown(true);
+        return;
+      }
+      const controller = new AbortController();
+      void fetch(`${base}/health`, { signal: controller.signal })
+        .then((res) => {
+          if (!res.ok) setDown(true);
+        })
+        .catch(() => {
+          setDown(true);
+        });
+      return () => controller.abort();
+    }
+
     setDown(isConvexBackendUnavailable());
     const unsub = subscribeConvexBackendStatus(() => {
       setDown(isConvexBackendUnavailable());

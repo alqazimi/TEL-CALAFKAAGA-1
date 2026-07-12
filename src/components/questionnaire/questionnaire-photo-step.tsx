@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Camera, Loader2, User } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { useUpdateProfile } from "@/data/profile/hooks";
+import { useUploadPhoto } from "@/data/photos/hooks";
 import type { Profile } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
 import { ProfilePhotoPreview } from "@/components/profile/profile-photo-preview";
 import { ContactAdminCard } from "@/components/support/contact-admin-card";
-import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
+import { resetFileInput } from "@/lib/upload-image";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import { getSafeUserError } from "@/lib/safe-error";
 
@@ -21,9 +21,8 @@ interface QuestionnairePhotoStepProps {
 
 export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhotoStepProps) {
   const { ui } = useQuestionnaireI18n();
-  const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
-  const registerUpload = useMutation(api.profiles.registerUpload);
-  const updateProfile = useMutation(api.profiles.updateProfile);
+  const uploadPhoto = useUploadPhoto();
+  const updateProfile = useUpdateProfile();
   const [uploading, setUploading] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const displayUrl = localPreview ?? profile.imageUrl ?? null;
@@ -36,8 +35,13 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
 
     setUploading(true);
     try {
-      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
-      await registerUpload({ storageId });
+      const uploaded = await uploadPhoto(file, { slot: "main" });
+      const storageId = String(
+        (uploaded as { storageId?: string; mediaId?: string }).storageId ??
+          (uploaded as { mediaId?: string }).mediaId ??
+          ""
+      );
+      if (!storageId) throw new Error("upload failed");
       await updateProfile({ profileImageId: storageId });
       setLocalPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);

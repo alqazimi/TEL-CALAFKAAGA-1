@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
-import { api } from "../../../../convex/_generated/api";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
+import { useProfile, usePreferencesQuery, useEnsureProfile } from "@/data/profile/hooks";
+import {
+  useUpdateQuestionnaire,
+  useAutoSaveQuestionnaire,
+  useSaveProfileEdits,
+} from "@/data/questionnaire/hooks";
 import {
   calculateProfileProgress,
   getResumeStepIndex,
@@ -40,13 +43,13 @@ export default function QuestionnairePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get("edit") === "1";
-  const profile = useSafeQuery(api.profiles.getProfile, {}) as Profile | null | undefined;
+  const { profile } = useProfile() as { profile: Profile | null | undefined };
   const isStaff = isStaffRole(profile?.role);
-  const preferences = useSafeQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-  const updateQuestionnaire = useMutation(api.profiles.updateQuestionnaire);
-  const autoSaveProfile = useMutation(api.profiles.autoSaveProfile);
-  const saveProfileEdits = useMutation(api.profiles.saveProfileEdits);
-  const ensureProfile = useMutation(api.profiles.ensureProfile);
+  const preferences = usePreferencesQuery() as Preferences | null | undefined;
+  const updateQuestionnaire = useUpdateQuestionnaire();
+  const autoSaveProfile = useAutoSaveQuestionnaire();
+  const saveProfileEdits = useSaveProfileEdits();
+  const ensureProfile = useEnsureProfile();
   const { ui } = useQuestionnaireI18n();
   const { t } = useTranslation();
   const welcome = searchParams.get("welcome") === "true";

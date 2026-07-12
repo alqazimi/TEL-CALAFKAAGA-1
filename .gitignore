@@ -33,7 +33,15 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+!.env*.example
 .convex-auth-keys.json
+
+# Phase 1 migration / backend local artifacts
+/migration-reports/
+/apps/api/dist/
+/packages/migration/dist/
+/apps/api/.env
+/infra/.env
 
 # vercel
 .vercel
@@ -41,3 +49,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+backups/
+migration-reports/

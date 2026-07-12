@@ -1,8 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import {
   X,
   Mail,
@@ -17,8 +15,16 @@ import {
   Heart,
   CheckCircle,
 } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+import {
+  useAdminAdvisorReviewed,
+  useAdminApproveUser,
+  useAdminBanUser,
+  useAdminRejectUser,
+  useAdminRequestPhoto,
+  useAdminUserActivity,
+  useAdminUserDetail,
+} from "@/data/admin/hooks";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -88,13 +94,14 @@ function DetailGrid({
 
 export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUserDetailPanelProps) {
   const { t } = useTranslation();
-  const detail = useSafeQuery(api.admin.getUserDetail, { profileId });
-  const activity = useSafeQuery(api.admin.getUserActivity, { profileId });
-  const setAdvisorReviewed = useMutation(api.admin.setAdvisorReviewed);
-  const requestProfilePhoto = useMutation(api.admin.requestProfilePhoto);
-  const banUser = useMutation(api.admin.banUser);
-  const rejectUser = useMutation(api.admin.rejectUser);
-  const approveUser = useMutation(api.admin.approveUser);
+  const detail = useAdminUserDetail(profileId, true) as any;
+  const activityRaw = useAdminUserActivity(profileId, true);
+  const activity = activityRaw as any;
+  const setAdvisorReviewed = useAdminAdvisorReviewed();
+  const requestProfilePhoto = useAdminRequestPhoto();
+  const banUser = useAdminBanUser();
+  const rejectUser = useAdminRejectUser();
+  const approveUser = useAdminApproveUser();
   const [photoBusy, setPhotoBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [confirm, setConfirm] = useState<"ban" | "unban" | "reject" | null>(null);
@@ -119,7 +126,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
   const runApprove = async () => {
     setActionBusy(true);
     try {
-      await approveUser({ profileId });
+      await approveUser(profileId);
       toast.success(t("adminPage.approveSuccess"));
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
@@ -133,10 +140,10 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
     setActionBusy(true);
     try {
       if (type === "reject") {
-        await rejectUser({ profileId });
+        await rejectUser(profileId);
         toast.success(t("adminPage.rejectSuccess"));
       } else {
-        await banUser({ profileId, banned: type === "ban" });
+        await banUser(profileId, type === "ban");
         toast.success(type === "ban" ? t("adminPage.banSuccess") : t("adminPage.unbanSuccess"));
       }
       setConfirm(null);
@@ -259,10 +266,10 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
                         variant={detail.profile.advisorReviewed ? "secondary" : "outline"}
                         className="h-7 text-xs rounded-full"
                         onClick={() =>
-                          void setAdvisorReviewed({
+                          void setAdvisorReviewed(
                             profileId,
-                            advisorReviewed: !detail.profile.advisorReviewed,
-                          })
+                            !detail.profile.advisorReviewed
+                          )
                         }
                       >
                         {detail.profile.advisorReviewed
@@ -279,7 +286,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
                         disabled={photoBusy}
                         onClick={() => {
                           setPhotoBusy(true);
-                          void requestProfilePhoto({ profileId })
+                          void requestProfilePhoto(profileId)
                             .then(() => toast.success(t("adminPage.requestPhotoSuccess")))
                             .catch((error: unknown) => {
                               toast.error(
@@ -372,7 +379,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
                   <p className="text-sm text-muted-foreground">{t("adminDetail.noMessages")}</p>
                 ) : (
                   <ul className="max-h-64 space-y-2 overflow-y-auto">
-                    {activity.messages.map((msg) => (
+                    {activity.messages.map((msg: any) => (
                       <li
                         key={msg.id}
                         className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
@@ -422,7 +429,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
                     <p className="text-sm text-muted-foreground">{t("adminDetail.noLikes")}</p>
                   ) : (
                     <ul className="max-h-48 space-y-1.5 overflow-y-auto">
-                      {activity.likesGiven.map((like) => (
+                      {activity.likesGiven.map((like: any) => (
                         <li key={like.id}>
                           <button
                             type="button"
@@ -448,7 +455,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
                     <p className="text-sm text-muted-foreground">{t("adminDetail.noLikes")}</p>
                   ) : (
                     <ul className="max-h-48 space-y-1.5 overflow-y-auto">
-                      {activity.likesReceived.map((like) => (
+                      {activity.likesReceived.map((like: any) => (
                         <li key={like.id}>
                           <button
                             type="button"

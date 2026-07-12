@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useAction } from "convex/react";
 import { Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "../../../convex/_generated/api";
+import { useVerifyAndSaveLocation } from "@/data/questionnaire/hooks";
 import {
   GeolocationUnsupportedError,
   getBrowserPosition,
@@ -31,7 +30,7 @@ export function UseMyLocationButton({
   required,
   onFailed,
 }: UseMyLocationButtonProps) {
-  const verifyAndSaveLocation = useAction(api.geolocation.verifyAndSaveLocation);
+  const verifyAndSaveLocation = useVerifyAndSaveLocation();
   const { ui } = useQuestionnaireI18n();
   const [loading, setLoading] = useState(false);
 

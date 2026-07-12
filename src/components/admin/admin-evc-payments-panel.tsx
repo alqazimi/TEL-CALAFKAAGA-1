@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Check, Smartphone, X } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { useSafeQuery } from "@/lib/use-safe-query";
+import {
+  useAdminApproveEvc,
+  useAdminEvcPending,
+  useAdminRejectEvc,
+} from "@/data/admin/hooks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,16 +17,16 @@ import { useTranslation } from "@/lib/i18n/context";
 
 export function AdminEvcPaymentsPanel() {
   const { t } = useTranslation();
-  const pending = useSafeQuery(api.evcPayments.listPending, {});
-  const approve = useMutation(api.evcPayments.approveProof);
-  const reject = useMutation(api.evcPayments.rejectProof);
+  const pending = useAdminEvcPending() as any[] | undefined;
+  const approve = useAdminApproveEvc();
+  const reject = useAdminRejectEvc();
   const [busyId, setBusyId] = useState<Id<"evcPaymentProofs"> | null>(null);
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
 
   const onApprove = async (proofId: Id<"evcPaymentProofs">) => {
     setBusyId(proofId);
     try {
-      await approve({ proofId });
+      await approve(proofId);
       toast.success(t("adminPage.evcApproved"));
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
@@ -36,10 +38,10 @@ export function AdminEvcPaymentsPanel() {
   const onReject = async (proofId: Id<"evcPaymentProofs">) => {
     setBusyId(proofId);
     try {
-      await reject({
+      await reject(
         proofId,
-        reason: rejectReason[proofId]?.trim() || undefined,
-      });
+        rejectReason[proofId]?.trim() || undefined
+      );
       toast.success(t("adminPage.evcRejected"));
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));

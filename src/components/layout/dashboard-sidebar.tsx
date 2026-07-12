@@ -14,9 +14,9 @@ import {
   LogOut,
   Home,
 } from "lucide-react";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../../convex/_generated/api";
-import type { CurrentUser } from "@/types";
+import { useUnifiedAuth } from "@/data/auth/hooks";
+import { useUnreadCount } from "@/data/notifications/hooks";
+import { usePreferencesQuery } from "@/data/profile/hooks";
 import type { AppNavIcon } from "@/lib/constants";
 import { useAppNavLinks } from "@/lib/i18n/hooks";
 import { useTranslation } from "@/lib/i18n/context";
@@ -44,24 +44,39 @@ export function DashboardSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { signOut } = useSignOut();
-  const user = useSafeQuery(api.users.currentUser) as CurrentUser | null | undefined;
-  const isStaff = isStaffRole(user?.profile?.role);
-  const preferences = useSafeQuery(
-    api.profiles.getPreferences,
-    user !== undefined && !isStaff ? {} : "skip"
-  );
-  const unreadCount = useSafeQuery(
-    api.notifications.getUnreadCount,
-    user !== undefined && !isStaff ? {} : "skip"
-  );
+  const { user } = useUnifiedAuth();
+  const profile = user?.profile as
+    | {
+        role?: string;
+        questionnaireComplete?: boolean;
+        [key: string]: unknown;
+      }
+    | null
+    | undefined;
+  const isStaff = isStaffRole(profile?.role);
+  const preferences = usePreferencesQuery();
+  const unreadRaw = useUnreadCount();
+  const unreadCount =
+    typeof unreadRaw === "number"
+      ? unreadRaw
+      : typeof unreadRaw === "object" &&
+          unreadRaw !== null &&
+          "count" in unreadRaw
+        ? Number((unreadRaw as { count: unknown }).count)
+        : Number(unreadRaw ?? 0) || 0;
 
-  const profileComplete = user?.profile?.questionnaireComplete ?? false;
-  const progress = user?.profile
-    ? calculateProfileProgress(user.profile, preferences ?? undefined)
+  const profileComplete = profile?.questionnaireComplete ?? false;
+  const progress = profile
+    ? calculateProfileProgress(
+        profile as Parameters<typeof calculateProfileProgress>[0],
+        !isStaff && preferences
+          ? (preferences as Parameters<typeof calculateProfileProgress>[1])
+          : undefined
+      )
     : 0;
   const appNavLinks = useAppNavLinks(profileComplete);
   const { t } = useTranslation();
-  const homeHref = getAuthenticatedHomeRoute(user?.profile);
+  const homeHref = getAuthenticatedHomeRoute(profile);
   const isLoading = user === undefined;
   const currentTab = isAdminNavTab(searchParams.get("tab"))
     ? searchParams.get("tab")!
@@ -72,7 +87,7 @@ export function DashboardSidebar() {
       <div className="flex flex-col flex-1 px-4 py-6 overflow-y-auto">
         <BrandLogo href={isStaff ? "/admin" : homeHref} className="px-2 mb-6" />
 
-        {!isLoading && !isStaff && user?.profile && !profileComplete && (
+        {!isLoading && !isStaff && profile && !profileComplete && (
           <div className="mb-4 space-y-1.5 rounded-xl bg-accent p-3">
             <p className="text-xs font-medium text-accent-foreground">
               {t("profileProgress.sidebarProgress", { percent: progress })}

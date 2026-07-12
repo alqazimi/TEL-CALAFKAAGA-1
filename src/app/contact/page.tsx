@@ -1,14 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { useAction } from "convex/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Mail, MessageCircle, Phone, Send } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { useSendPublicContact } from "@/data/support/hooks";
 import { MarketingPage } from "@/components/marketing/marketing-page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +23,7 @@ type ContactForm = z.infer<ReturnType<typeof createContactSchema>>;
 export default function ContactPage() {
   const { t } = useTranslation();
   const contactSchema = useMemo(() => createContactSchema(t), [t]);
-  const sendContact = useAction(api.contact.sendContactMessage);
+  const sendContact = useSendPublicContact();
   const [submitting, setSubmitting] = useState(false);
   const {
     register,

@@ -13,9 +13,9 @@ import {
   X,
   Home,
 } from "lucide-react";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../../convex/_generated/api";
-import type { CurrentUser } from "@/types";
+import { useUnifiedAuth } from "@/data/auth/hooks";
+import { useUnreadCount } from "@/data/notifications/hooks";
+import { useProfile } from "@/data/profile/hooks";
 import { useNavLinks } from "@/lib/i18n/hooks";
 import { useTranslation } from "@/lib/i18n/context";
 import { isStaffRole } from "@/lib/access";
@@ -33,18 +33,31 @@ export function AppShellHeader() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [siteMenuOpen, setSiteMenuOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
-  const unreadCount = useSafeQuery(api.notifications.getUnreadCount);
-  const user = useSafeQuery(api.users.currentUser) as CurrentUser | null | undefined;
-  const profile = useSafeQuery(
-    api.profiles.getProfile,
-    user ? {} : "skip"
-  ) as { name?: string; imageUrl?: string | null } | null | undefined;
+  const unreadRaw = useUnreadCount();
+  const unreadCount =
+    typeof unreadRaw === "number"
+      ? unreadRaw
+      : typeof unreadRaw === "object" &&
+          unreadRaw !== null &&
+          "count" in unreadRaw
+        ? Number((unreadRaw as { count: unknown }).count)
+        : Number(unreadRaw ?? 0) || 0;
+  const { user } = useUnifiedAuth();
+  const { profile: profileQuery } = useProfile();
+  const profile = (profileQuery ?? null) as
+    | { name?: string; imageUrl?: string | null }
+    | null
+    | undefined;
+  const userProfile = user?.profile as
+    | { role?: string; name?: string; [key: string]: unknown }
+    | null
+    | undefined;
 
-  const profileName = profile?.name ?? user?.profile?.name ?? "";
+  const profileName = profile?.name ?? userProfile?.name ?? "";
   const profileImage = profile?.imageUrl;
   const navLinks = useNavLinks();
   const { t } = useTranslation();
-  const homeHref = getAuthenticatedHomeRoute(user?.profile);
+  const homeHref = getAuthenticatedHomeRoute(userProfile);
 
   const isMarketingActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href;
@@ -92,7 +105,7 @@ export function AppShellHeader() {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <BrandLogo href={isStaffRole(user?.profile?.role) ? "/admin" : homeHref} size="sm" className="min-w-0" />
+            <BrandLogo href={isStaffRole(userProfile?.role) ? "/admin" : homeHref} size="sm" className="min-w-0" />
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
@@ -164,7 +177,7 @@ export function AppShellHeader() {
                     <Home className="h-4 w-4" />
                     {t("nav.home")}
                   </Link>
-                  {isStaffRole(user?.profile?.role) && (
+                  {isStaffRole(userProfile?.role) && (
                     <Link
                       href="/admin"
                       onClick={() => setAccountOpen(false)}

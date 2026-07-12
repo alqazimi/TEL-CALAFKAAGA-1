@@ -2,8 +2,6 @@
 
 import { ReactNode, Suspense, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { AppShellHeader } from "@/components/layout/app-shell-header";
 import { AppMobileNav } from "@/components/layout/app-mobile-nav";
@@ -11,10 +9,9 @@ import { TrialAccessSync } from "@/components/auth/trial-access-sync";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n/context";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../../convex/_generated/api";
 import { isStaffRole } from "@/lib/access";
 import { cn } from "@/lib/utils";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 
 const mobileNavFallback = (
   <div className="lg:hidden fixed bottom-0 left-0 right-0 h-[3.25rem] border-t border-border bg-card" />
@@ -26,15 +23,13 @@ const sidebarFallback = <div className="hidden lg:block lg:w-64 shrink-0" aria-h
 const AUTH_WAIT_MS = 6_000;
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const { signOut } = useAuthActions();
+  const { isAuthenticated, isLoading, user, signOut } = useUnifiedAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useTranslation();
   const [waitedTooLong, setWaitedTooLong] = useState(false);
-  const user = useSafeQuery(api.users.currentUser);
-  const isStaff = isStaffRole(user?.profile?.role);
-  // Admin mobile uses the in-page tab strip only (no bottom bar).
+  const role = (user?.profile as { role?: string } | null | undefined)?.role;
+  const isStaff = isStaffRole(role);
   const adminMobileNoTabBar = isStaff && pathname.startsWith("/admin");
 
   useEffect(() => {

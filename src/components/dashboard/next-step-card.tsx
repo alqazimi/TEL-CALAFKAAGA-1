@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import {
   ArrowRight,
   ClipboardList,
@@ -11,7 +10,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { usePreferencesQuery } from "@/data/profile/hooks";
+import { useMemberReminders } from "@/data/notifications/hooks";
 import type { CurrentUser, MatchResult, MemberReminder, MemberReminderId } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,10 +43,8 @@ interface NextStepCardProps {
 
 export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardProps) {
   const { t } = useTranslation();
-  const preferences = useSafeQuery(api.profiles.getPreferences) as Preferences | null | undefined;
-  const reminders = useSafeQuery(api.notifications.getMemberReminders) as
-    | MemberReminder[]
-    | undefined;
+  const preferences = usePreferencesQuery() as Preferences | null | undefined;
+  const reminders = useMemberReminders() as MemberReminder[] | undefined;
 
   const profile = user.profile;
   const isComplete = profile?.questionnaireComplete ?? false;

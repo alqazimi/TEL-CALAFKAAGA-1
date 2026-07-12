@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useConvexAuth } from "convex/react";
 import { Search } from "lucide-react";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -34,7 +34,7 @@ const LOCATIONS = [
 export function FindYourMatchBar() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated } = useUnifiedAuth();
   const [iam, setIam] = useState("");
   const [lookingFor, setLookingFor] = useState("");
   const [age, setAge] = useState("18 - 45");

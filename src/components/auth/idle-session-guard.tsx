@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
 import { toast } from "sonner";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 
-/** Must match `session.inactiveDurationMs` in `convex/auth.ts`. */
+/** Must match `session.inactiveDurationMs` in `convex/auth.ts` / Nest idle timeout. */
 export const IDLE_LOGOUT_MS = 3 * 60 * 60 * 1000;
 
 const WINDOW_ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
@@ -17,11 +16,9 @@ const WINDOW_ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
 
 /**
  * Signs the user out after 3 hours with no interaction on this device.
- * Server sessions also expire after the same idle window via Convex Auth.
  */
 export function IdleSessionGuard() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const { signOut } = useAuthActions();
+  const { isAuthenticated, isLoading, signOut } = useUnifiedAuth();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const signingOutRef = useRef(false);
 

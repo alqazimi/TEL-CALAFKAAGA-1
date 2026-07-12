@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Shield, KeyRound, Crown } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import {
+  useAdminBootstrapStatus,
+  useClaimFirstAdmin,
+} from "@/data/admin/hooks";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,14 +20,23 @@ const REASON_KEYS = {
   not_configured: "adminPage.bootstrapReasonNotConfigured",
   no_email: "adminPage.bootstrapReasonNoEmail",
   email_mismatch: "adminPage.bootstrapReasonEmailMismatch",
+  api_mode: "adminPage.bootstrapReasonAdminsExist",
 } as const;
+
+type BootstrapStatus = {
+  canClaim: boolean;
+  reason?: string;
+  hasAdmins?: boolean;
+};
 
 export function AdminBootstrapPanel() {
   const { t } = useTranslation();
   const [secret, setSecret] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const bootstrapStatus = useSafeQuery(api.admin.getBootstrapStatus);
-  const claimFirstAdmin = useMutation(api.admin.claimFirstAdmin);
+  const bootstrapStatus = useAdminBootstrapStatus(true) as
+    | BootstrapStatus
+    | undefined;
+  const claimFirstAdmin = useClaimFirstAdmin();
 
   if (bootstrapStatus === undefined) {
     return null;

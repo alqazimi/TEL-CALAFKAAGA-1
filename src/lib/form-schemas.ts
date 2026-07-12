@@ -74,6 +74,19 @@ export function createResetPasswordSchema(t: TranslateFn) {
     });
 }
 
+/** Nest link-token reset: new password only (token from URL). */
+export function createTokenResetPasswordSchema(t: TranslateFn) {
+  return z
+    .object({
+      newPassword: z.string().min(8, t("validation.passwordMin8")),
+      confirmPassword: z.string().min(1, t("validation.confirmPasswordRequired")),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t("validation.passwordsMismatch"),
+      path: ["confirmPassword"],
+    });
+}
+
 export function createChangePasswordSchema(t: TranslateFn) {
   return z
     .object({

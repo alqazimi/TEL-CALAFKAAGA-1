@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 
 /** Sign out and leave the app shell — do not stay on a protected page. */
 export function useSignOut(redirectTo = "/login") {
-  const { signOut } = useAuthActions();
+  const { signOut } = useUnifiedAuth();
   const [pending, setPending] = useState(false);
 
   const handleSignOut = useCallback(async () => {

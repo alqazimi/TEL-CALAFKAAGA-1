@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../../../convex/_generated/api";
-import type { MatchResult, MutualMatch } from "@/types";
+import { usePreferencesQuery } from "@/data/profile/hooks";
+import { useMatches, useMyMatches } from "@/data/matching/hooks";
+import type { MatchResult, MutualMatch, Profile, CurrentUser } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
@@ -26,25 +26,23 @@ export default function DashboardPage() {
   const router = useRouter();
   const { t } = useTranslation();
   const { user, isStaff, isLoading } = useStaffRedirect();
-  const preferences = useSafeQuery(
-    api.profiles.getPreferences,
-    user !== undefined && !isStaff ? {} : "skip"
+  const preferencesRaw = usePreferencesQuery();
+  const preferences = (
+    user !== undefined && !isStaff ? preferencesRaw : undefined
   ) as Preferences | null | undefined;
   // null = loaded with no profile; undefined = still loading user
-  const profile = user === undefined ? undefined : (user?.profile ?? null);
+  const profile = (
+    user === undefined ? undefined : (user?.profile ?? null)
+  ) as Profile | null | undefined;
   const queriesLoading =
     isLoading || (!isStaff && isProfileQueriesLoading(profile, preferences));
 
   const profileReady = !!profile?.questionnaireComplete;
   const canViewMatches = profileReady && !isStaff && hasPaidAccess(profile);
-  const matches = useSafeQuery(
-    api.matches.getMatches,
-    canViewMatches ? {} : "skip"
-  ) as MatchResult[] | undefined;
-  const myMatches = useSafeQuery(
-    api.matches.getMyMatches,
-    canViewMatches ? {} : "skip"
-  ) as MutualMatch[] | undefined;
+  const matches = useMatches(undefined, canViewMatches) as
+    | MatchResult[]
+    | undefined;
+  const myMatches = useMyMatches(canViewMatches) as MutualMatch[] | undefined;
 
   const shouldUseDiscoverHome = profileReady && hasPaidAccess(profile);
 
@@ -104,7 +102,11 @@ export default function DashboardPage() {
         )}
 
         {user && (
-          <NextStepCard user={user} matches={matches} mutualCount={myMatches?.length ?? 0} />
+          <NextStepCard
+            user={user as unknown as CurrentUser}
+            matches={matches}
+            mutualCount={myMatches?.length ?? 0}
+          />
         )}
 
         {profile && !isComplete && (

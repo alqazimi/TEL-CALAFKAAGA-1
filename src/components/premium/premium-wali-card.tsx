@@ -1,12 +1,11 @@
 "use client";
 
-import { useMutation } from "convex/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Users } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { useUpdateWaliContact } from "@/data/profile/hooks";
 import type { Profile } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,7 @@ interface PremiumWaliCardProps {
 
 export function PremiumWaliCard({ profile }: PremiumWaliCardProps) {
   const { t } = useTranslation();
-  const updateWali = useMutation(api.profiles.updateWaliContact);
+  const updateWali = useUpdateWaliContact();
 
   const {
     register,

@@ -1,7 +1,5 @@
 "use client";
 
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../../../convex/_generated/api";
 import type { CurrentUser, Profile } from "@/types";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
@@ -11,15 +9,21 @@ import { ProfileEditScreen } from "@/components/profile/profile-edit-screen";
 import type { Preferences } from "@/lib/profile-progress";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
+import { useUnifiedAuth } from "@/data/auth/hooks";
+import { useProfile, usePreferencesQuery } from "@/data/profile/hooks";
 
 export default function ProfilePage() {
   const { t } = useTranslation();
-  const currentUser = useSafeQuery(api.users.currentUser) as CurrentUser | null | undefined;
-  const profile = useSafeQuery(api.profiles.getProfile, {}) as
-    | (Profile & { imageUrl?: string | null; additionalImageUrls?: string[] })
-    | null
-    | undefined;
-  const preferences = useSafeQuery(api.profiles.getPreferences) as Preferences | null | undefined;
+  const { user: currentUser } = useUnifiedAuth() as {
+    user: CurrentUser | null | undefined;
+  };
+  const { profile } = useProfile() as {
+    profile:
+      | (Profile & { imageUrl?: string | null; additionalImageUrls?: string[] })
+      | null
+      | undefined;
+  };
+  const preferences = usePreferencesQuery() as Preferences | null | undefined;
 
   if (profile === undefined || currentUser === undefined) {
     return (

@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useAction } from "convex/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { useChangePassword } from "@/data/auth/hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,7 @@ type ChangePasswordForm = z.infer<ReturnType<typeof createChangePasswordSchema>>
 export function ChangePasswordCard({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const schema = useMemo(() => createChangePasswordSchema(t), [t]);
-  const changePassword = useAction(api.account.changePassword);
+  const changePassword = useChangePassword();
   const [saving, setSaving] = useState(false);
 
   const {

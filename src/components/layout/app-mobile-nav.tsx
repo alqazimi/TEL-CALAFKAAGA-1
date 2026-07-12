@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Heart,
@@ -11,8 +11,8 @@ import {
   Users,
   User,
 } from "lucide-react";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../../convex/_generated/api";
+import { useUnifiedAuth } from "@/data/auth/hooks";
+import { usePreferencesQuery } from "@/data/profile/hooks";
 import { useAppNavLinks } from "@/lib/i18n/hooks";
 import { useTranslation } from "@/lib/i18n/context";
 import { isStaffRole } from "@/lib/access";
@@ -32,18 +32,27 @@ type TabIcon = keyof typeof iconMap;
 
 export function AppMobileNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { t } = useTranslation();
-  const user = useSafeQuery(api.users.currentUser);
+  const { user } = useUnifiedAuth();
   const isLoading = user === undefined;
-  const isStaff = isStaffRole(user?.profile?.role);
-  const preferences = useSafeQuery(
-    api.profiles.getPreferences,
-    user !== undefined && !isStaff ? {} : "skip"
-  );
-  const profileComplete = user?.profile?.questionnaireComplete ?? false;
-  const profileProgress = user?.profile
-    ? calculateProfileProgress(user.profile, preferences ?? undefined)
+  const profile = user?.profile as
+    | {
+        role?: string;
+        questionnaireComplete?: boolean;
+        [key: string]: unknown;
+      }
+    | null
+    | undefined;
+  const isStaff = isStaffRole(profile?.role);
+  const preferences = usePreferencesQuery();
+  const profileComplete = profile?.questionnaireComplete ?? false;
+  const profileProgress = profile
+    ? calculateProfileProgress(
+        profile as Parameters<typeof calculateProfileProgress>[0],
+        !isStaff && preferences
+          ? (preferences as Parameters<typeof calculateProfileProgress>[1])
+          : undefined
+      )
     : 0;
   const appNavLinks = useAppNavLinks(profileComplete).filter((l) => l.tab);
 

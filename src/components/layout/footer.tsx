@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useConvexAuth } from "convex/react";
 import { Phone, Mail, MapPin } from "lucide-react";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 import {
   APP_NAME,
   formatMoney,
@@ -29,7 +29,7 @@ const SUPPORT_LINKS = [
 
 export function Footer() {
   const pathname = usePathname();
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useUnifiedAuth();
 
   const { t } = useTranslation();
   const navLinks = useNavLinks();

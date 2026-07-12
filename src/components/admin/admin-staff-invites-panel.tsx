@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Mail, RefreshCw, UserPlus, XCircle } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import {
+  useStaffInvitesList,
+  useCreateStaffInvite,
+  useRevokeStaffInvite,
+  useResendStaffInvite,
+} from "@/data/admin/hooks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,16 +40,23 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
   return "outline";
 }
 
+type StaffInvite = {
+  _id: string;
+  email: string;
+  status: string;
+  expiresAt: number;
+};
+
 export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
-  const invites = useSafeQuery(api.staffInvites.list);
-  const createInvite = useMutation(api.staffInvites.create);
-  const revokeInvite = useMutation(api.staffInvites.revoke);
-  const resendInvite = useMutation(api.staffInvites.resend);
+  const invites = useStaffInvitesList(true) as StaffInvite[] | null | undefined;
+  const createInvite = useCreateStaffInvite();
+  const revokeInvite = useRevokeStaffInvite();
+  const resendInvite = useResendStaffInvite();
 
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [busyId, setBusyId] = useState<Id<"staffInvites"> | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   if (invites === undefined) {
     return <Skeleton className="h-40 w-full rounded-2xl" />;
@@ -77,7 +86,7 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
     }
   };
 
-  const handleRevoke = async (inviteId: Id<"staffInvites">) => {
+  const handleRevoke = async (inviteId: string) => {
     setBusyId(inviteId);
     try {
       await revokeInvite({ inviteId });
@@ -90,7 +99,7 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
     }
   };
 
-  const handleResend = async (inviteId: Id<"staffInvites">) => {
+  const handleResend = async (inviteId: string) => {
     setBusyId(inviteId);
     try {
       await resendInvite({ inviteId });

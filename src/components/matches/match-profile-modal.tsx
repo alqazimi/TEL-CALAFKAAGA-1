@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { motion } from "framer-motion";
 import { X, Heart, MapPin, GraduationCap, Briefcase, Bookmark, CalendarHeart, Baby, Phone, Users } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { useWaliForMatch } from "@/data/profile/hooks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -54,7 +53,10 @@ export function MatchProfileModal({
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const location = [match.city, match.country].filter(Boolean).join(", ");
-  const wali = useSafeQuery(api.profiles.getWaliForMatch, { targetUserId: match.userId });
+  const wali = useWaliForMatch(match.userId) as
+    | { name?: string; phone?: string; waliName?: string; waliPhone?: string }
+    | null
+    | undefined;
   const gallery = [match.imageUrl, ...(match.additionalImageUrls ?? [])].filter(
     (url): url is string => !!url
   );

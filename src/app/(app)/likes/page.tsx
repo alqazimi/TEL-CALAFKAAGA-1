@@ -2,10 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
-import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
@@ -29,6 +26,8 @@ import { isTrialExpired } from "@/lib/trial";
 import { formatMoney, planPricesForGender } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
+import { useProfile, usePreferencesQuery } from "@/data/profile/hooks";
+import { useMatchLists, useLikeUser } from "@/data/matching/hooks";
 
 export default function LikesPage() {
   const { t } = useTranslation();
@@ -38,13 +37,13 @@ export default function LikesPage() {
   const tabParam = searchParams.get("tab");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
 
-  const profile = useSafeQuery(
-    api.profiles.getProfile,
-    !staffLoading && !isStaff ? {} : "skip"
+  const { profile: profileRaw } = useProfile();
+  const profile = (
+    staffLoading || isStaff ? undefined : profileRaw
   ) as Profile | null | undefined;
-  const preferences = useSafeQuery(
-    api.profiles.getPreferences,
-    !staffLoading && !isStaff ? {} : "skip"
+  const preferencesRaw = usePreferencesQuery();
+  const preferences = (
+    staffLoading || isStaff ? undefined : preferencesRaw
   ) as Preferences | null | undefined;
   const queriesLoading =
     !isStaff && isProfileQueriesLoading(profile, preferences);
@@ -57,10 +56,15 @@ export default function LikesPage() {
     profileReady && hasPaidAccess(profile) && !needsApprovalGate(profile);
   const isPremium = isPremiumMember(profile);
 
-  const matchLists = useSafeQuery(
-    api.matches.getMatchLists,
-    canQuery ? {} : "skip"
-  );
+  const matchListsRaw = useMatchLists(canQuery ? {} : undefined);
+  const matchLists = (canQuery ? matchListsRaw : undefined) as
+    | {
+        shortlist?: MatchResult[];
+        liked?: MatchResult[];
+        likedYou?: MatchResult[];
+        passed?: MatchResult[];
+      }
+    | undefined;
 
   const shortlistMatches = matchLists?.shortlist;
   const likedMatches = matchLists?.liked;
@@ -82,14 +86,16 @@ export default function LikesPage() {
     [router]
   );
 
-  const likeUser = useMutation(api.matches.likeUser);
+  const likeUser = useLikeUser();
 
   const handleAction = async (
     userId: Id<"users">,
     action: "like" | "pass" | "shortlist"
   ) => {
     try {
-      const result = await likeUser({ toUserId: userId, action });
+      const result = (await likeUser({ toUserId: userId, action })) as {
+        matched?: boolean;
+      };
       if (result.matched) {
         toast.success(t("matchesPage.matchedToast"));
       } else if (action === "like") {

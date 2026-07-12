@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Flag, Ban, X } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useBlockUser, useReportUser } from "@/data/moderation/hooks";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +29,7 @@ const REASONS: { value: string; key: TranslationPath }[] = [
 type Mode = "menu" | "report" | "block";
 
 interface ReportBlockMenuProps {
-  userId: Id<"users">;
+  userId: string;
   userName: string;
   onDone?: () => void;
   compact?: boolean;
@@ -53,8 +51,8 @@ export function ReportBlockMenu({
   const [alsoBlock, setAlsoBlock] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  const reportUser = useMutation(api.moderation.reportUser);
-  const blockUser = useMutation(api.moderation.blockUser);
+  const reportUser = useReportUser();
+  const blockUser = useBlockUser();
 
   const close = () => {
     setOpen(false);

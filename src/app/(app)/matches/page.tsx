@@ -2,11 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Filter, LayoutGrid, Layers } from "lucide-react";
-import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
@@ -31,6 +28,8 @@ import { TrialBanner } from "@/components/payment/trial-banner";
 import { formatMoney, planPricesForGender } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
+import { useProfile, usePreferencesQuery } from "@/data/profile/hooks";
+import { useMatches, useLikeUser } from "@/data/matching/hooks";
 
 function buildFilterArgs(filters: Record<string, string>) {
   return {
@@ -64,13 +63,13 @@ export default function MatchesPage() {
   const [viewMode, setViewMode] = useState<"swipe" | "browse">("swipe");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
 
-  const profile = useSafeQuery(
-    api.profiles.getProfile,
-    !staffLoading && !isStaff ? {} : "skip"
+  const { profile: profileRaw } = useProfile();
+  const profile = (
+    staffLoading || isStaff ? undefined : profileRaw
   ) as Profile | null | undefined;
-  const preferences = useSafeQuery(
-    api.profiles.getPreferences,
-    !staffLoading && !isStaff ? {} : "skip"
+  const preferencesRaw = usePreferencesQuery();
+  const preferences = (
+    staffLoading || isStaff ? undefined : preferencesRaw
   ) as Preferences | null | undefined;
   const queriesLoading =
     !isStaff && isProfileQueriesLoading(profile, preferences);
@@ -87,12 +86,12 @@ export default function MatchesPage() {
 
   const filterArgs = useMemo(() => buildFilterArgs(filters), [filters]);
 
-  const discoverMatches = useSafeQuery(
-    api.matches.getMatches,
-    canQuery ? filterArgs : "skip"
+  const discoverMatchesRaw = useMatches(canQuery ? filterArgs : undefined);
+  const discoverMatches = (
+    canQuery ? discoverMatchesRaw : undefined
   ) as MatchResult[] | undefined;
 
-  const likeUser = useMutation(api.matches.likeUser);
+  const likeUser = useLikeUser();
 
   // Open the profile the user tapped on the dashboard (?user=).
   useEffect(() => {
@@ -110,7 +109,9 @@ export default function MatchesPage() {
     action: "like" | "pass" | "shortlist"
   ) => {
     try {
-      const result = await likeUser({ toUserId: userId, action });
+      const result = (await likeUser({ toUserId: userId, action })) as {
+        matched?: boolean;
+      };
       if (result.matched) {
         toast.success(t("matchesPage.matchedToast"));
       } else if (action === "like") {

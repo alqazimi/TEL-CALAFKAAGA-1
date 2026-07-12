@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useConvexAuth } from "convex/react";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 import { ChevronLeft } from "lucide-react";
 import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { LanguageToggle } from "@/components/layout/language-toggle";
@@ -35,7 +35,7 @@ export function QuestionnaireShell({
   onBack,
   className,
 }: QuestionnaireShellProps) {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useUnifiedAuth();
   const router = useRouter();
   const { t } = useTranslation();
   const stuck = useLoadingTimeout(isLoading, 8_000);

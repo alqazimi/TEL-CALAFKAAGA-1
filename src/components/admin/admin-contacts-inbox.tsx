@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Headphones, Mail, Phone, Send } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { useAdminSupportContacts } from "@/data/admin/hooks";
+import {
+  useAdminReplySupport,
+  useAdminUpdateSupportStatus,
+} from "@/data/support/hooks";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,17 +24,38 @@ interface AdminContactsInboxProps {
   onOpenUser?: (profileId: Id<"profiles">) => void;
 }
 
+type SupportContact = {
+  _id: string;
+  status: string;
+  topic: string;
+  source: string;
+  profileId?: Id<"profiles"> | null;
+  name: string;
+  subject: string;
+  thread: Array<{
+    id: string;
+    authorRole: string;
+    body: string;
+    createdAt: number;
+  }>;
+  imageUrl?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  createdAt: number;
+  canReply?: boolean;
+};
+
 export function AdminContactsInbox({ onOpenUser }: AdminContactsInboxProps) {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<StatusFilter>("open");
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [replies, setReplies] = useState<Record<string, string>>({});
   const [sendingId, setSendingId] = useState<string | null>(null);
-  const contacts = useSafeQuery(api.supportContacts.listSupportContacts, {
+  const contacts = useAdminSupportContacts(true, {
     status: filter === "all" ? undefined : filter,
-  });
-  const updateStatus = useMutation(api.supportContacts.updateSupportContactStatus);
-  const replyAsAdmin = useMutation(api.supportContacts.replyAsAdmin);
+  }) as SupportContact[] | undefined;
+  const updateStatus = useAdminUpdateSupportStatus();
+  const replyAsAdmin = useAdminReplySupport();
 
   const filters: { value: StatusFilter; label: string }[] = [
     { value: "open", label: t("adminPage.contactsFilterOpen") },
@@ -64,7 +87,7 @@ export function AdminContactsInbox({ onOpenUser }: AdminContactsInboxProps) {
     [t]
   );
 
-  const sendReply = async (contactId: Id<"supportContacts">) => {
+  const sendReply = async (contactId: string) => {
     const body = (replies[contactId] ?? "").trim();
     if (body.length < 2) {
       toast.error(t("adminPage.contactReplyTooShort"));

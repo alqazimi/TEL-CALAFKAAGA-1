@@ -2,23 +2,19 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { useConvexAuth } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { api } from "../../../convex/_generated/api";
 import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadingTimeout } from "@/hooks/use-loading-timeout";
 import { getAuthenticatedHomeRoute } from "@/lib/routes";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 
 /**
  * Redirects signed-in users away from login/register.
- * Never hide the form behind auth loading — Chrome guests must see login immediately
- * (same class of bug as homepage "Fadlan sug...").
+ * Never hide the form behind auth loading — Chrome guests must see login immediately.
  */
 export function GuestGate({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isAuthenticated, isLoading, user } = useUnifiedAuth();
   const router = useRouter();
-  const user = useSafeQuery(api.users.currentUser, isAuthenticated ? {} : "skip");
   const waitingOnUser = isAuthenticated && user === undefined;
   const stuck = useLoadingTimeout(waitingOnUser, 8_000);
 
@@ -26,14 +22,18 @@ export function GuestGate({ children }: { children: ReactNode }) {
     if (isLoading || !isAuthenticated) return;
     if (user === undefined) return;
 
-    if (user?.profile?.registrationComplete === false) {
+    const profile = (user?.profile ?? undefined) as
+      | { registrationComplete?: boolean }
+      | undefined
+      | null;
+
+    if (profile?.registrationComplete === false) {
       router.replace("/register/details");
       return;
     }
-    router.replace(getAuthenticatedHomeRoute(user?.profile ?? undefined));
+    router.replace(getAuthenticatedHomeRoute(profile ?? undefined));
   }, [isAuthenticated, isLoading, router, user]);
 
-  // Confirmed signed-in: wait for profile then redirect (or recovery if stuck).
   if (isAuthenticated && !isLoading) {
     if (waitingOnUser && stuck) {
       return (
@@ -50,6 +50,5 @@ export function GuestGate({ children }: { children: ReactNode }) {
     );
   }
 
-  // Guest or auth still resolving — always show login/register.
   return <>{children}</>;
 }

@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -16,7 +14,6 @@ import {
   CreditCard,
   Bell,
 } from "lucide-react";
-import { api } from "../../../../convex/_generated/api";
 import type { MemberReminder, Notification } from "@/types";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +24,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate } from "@/lib/utils";
 import { reminderCopy } from "@/lib/reminder-copy";
 import { useTranslation } from "@/lib/i18n/context";
+import {
+  useNotificationsList,
+  useMemberReminders,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+} from "@/data/notifications/hooks";
 
 const typeIcons = {
   like: Heart,
@@ -104,14 +107,10 @@ function groupNotifications(notifications: Notification[]) {
 export default function NotificationsPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const notifications = useSafeQuery(api.notifications.getNotifications) as
-    | Notification[]
-    | undefined;
-  const reminders = useSafeQuery(api.notifications.getMemberReminders) as
-    | MemberReminder[]
-    | undefined;
-  const markAsRead = useMutation(api.notifications.markAsRead);
-  const markAllAsRead = useMutation(api.notifications.markAllAsRead);
+  const notifications = useNotificationsList() as Notification[] | undefined;
+  const reminders = useMemberReminders() as MemberReminder[] | undefined;
+  const markAsRead = useMarkNotificationRead();
+  const markAllAsRead = useMarkAllNotificationsRead();
   const markedAllRef = useRef(false);
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0;

@@ -1,23 +1,26 @@
 "use client";
 
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
 import { Ban, ShieldOff } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { useMyBlocks, useUnblockUser } from "@/data/moderation/hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n/context";
 import { getSafeUserError } from "@/lib/safe-error";
 
+type BlockedRow = {
+  blockedUserId: string;
+  name: string;
+  createdAt: number;
+};
+
 export function BlockedUsersCard({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
-  const blockedUsers = useSafeQuery(api.moderation.listMyBlocks);
-  const unblockUser = useMutation(api.moderation.unblockUser);
+  const blockedUsers = useMyBlocks() as BlockedRow[] | undefined;
+  const unblockUser = useUnblockUser();
 
-  const handleUnblock = async (blockedUserId: Id<"users">, name: string) => {
+  const handleUnblock = async (blockedUserId: string, name: string) => {
     try {
       await unblockUser({ blockedUserId });
       toast.success(t("safety.unblockedToast", { name }));

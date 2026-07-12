@@ -2,9 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation } from "convex/react";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { toast } from "sonner";
+import { useUnifiedAuth } from "@/data/auth/hooks";
+import {
+  useAdminAnalytics,
+  useAdminAuditLogs,
+  useAdminBanUser,
+  useAdminBootstrapStatus,
+  useAdminCreateAnnouncement,
+  useAdminPayments,
+  useAdminReports,
+  useAdminStats,
+  useAdminSupportContacts,
+  useAdminUpdateReportStatus,
+  useAdminUsers,
+} from "@/data/admin/hooks";
 import {
   CheckCircle2,
   CreditCard,
@@ -23,7 +35,6 @@ import {
   LayoutDashboard,
   Clock,
 } from "lucide-react";
-import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import type {
   AdminAnalytics,
@@ -128,60 +139,53 @@ export default function AdminPage() {
   });
   const [reportNotes, setReportNotes] = useState<Record<string, string>>({});
 
-  const currentUser = useSafeQuery(api.users.currentUser) as CurrentUser | null | undefined;
+  const { user: authUser } = useUnifiedAuth();
+  const currentUser = authUser as CurrentUser | null | undefined;
   const userTimedOut = useLoadingTimeout(currentUser === undefined, 8_000);
   const isStaff = isStaffRole(currentUser?.profile?.role);
-  const bootstrapStatus = useSafeQuery(
-    api.admin.getBootstrapStatus,
-    currentUser !== undefined && !isStaff ? {} : "skip"
-  );
-  const stats = useSafeQuery(
-    api.admin.getStats,
-    currentUser !== undefined && isStaff ? {} : "skip"
-  ) as AdminStats | null | undefined;
-  const users = useSafeQuery(
-    api.admin.getAllUsers,
-    isStaff && activeTab === "users"
-      ? {
-          search: search || undefined,
-          role: roleFilter,
-          payment: paymentFilter,
-          review: reviewFilter,
-          limit: 100,
-        }
-      : "skip"
-  ) as AdminUser[] | undefined;
-  const analytics = useSafeQuery(
-    api.admin.getAnalytics,
-    isStaff && activeTab === "analytics" ? {} : "skip"
+  const bootstrapStatus = useAdminBootstrapStatus(
+    currentUser !== undefined && !isStaff
+  ) as
+    | { hasAdmins?: boolean; canClaim?: boolean; reason?: string }
+    | null
+    | undefined;
+  const stats = useAdminStats(currentUser !== undefined && !!isStaff) as
+    | AdminStats
+    | null
+    | undefined;
+  const users = useAdminUsers(!!isStaff && activeTab === "users", {
+    search: search || undefined,
+    role: roleFilter,
+    payment: paymentFilter,
+    review: reviewFilter,
+    limit: 100,
+  }) as AdminUser[] | undefined;
+  const analytics = useAdminAnalytics(
+    !!isStaff && activeTab === "analytics"
   ) as AdminAnalytics | undefined;
-  const payments = useSafeQuery(
-    api.admin.getAllPayments,
-    isStaff && activeTab === "payments" ? {} : "skip"
-  ) as AdminPayment[] | undefined;
-  const reports = useSafeQuery(
-    api.moderation.listReports,
-    isStaff && (activeTab === "reports" || activeTab === "dashboard") ? {} : "skip"
-  );
-  const supportContacts = useSafeQuery(
-    api.supportContacts.listSupportContacts,
-    isStaff && (activeTab === "contacts" || activeTab === "dashboard")
-      ? { status: "open" }
-      : "skip"
-  );
-  const auditLogs = useSafeQuery(
-    api.admin.getAuditLogs,
-    isStaff && activeTab === "audit" ? { limit: 80 } : "skip"
-  );
-  const banUser = useMutation(api.admin.banUser);
-  const createAnnouncement = useMutation(api.admin.createAnnouncement);
-  const updateReportStatus = useMutation(api.moderation.updateReportStatus);
+  const payments = useAdminPayments(!!isStaff && activeTab === "payments") as
+    | AdminPayment[]
+    | undefined;
+  const reports = useAdminReports(
+    !!isStaff && (activeTab === "reports" || activeTab === "dashboard")
+  ) as Array<Record<string, any>> | undefined;
+  const supportContacts = useAdminSupportContacts(
+    !!isStaff && (activeTab === "contacts" || activeTab === "dashboard"),
+    { status: "open" }
+  ) as Array<Record<string, any>> | undefined;
+  const auditLogs = useAdminAuditLogs(
+    !!isStaff && activeTab === "audit",
+    80
+  ) as Array<Record<string, any>> | undefined;
+  const banUser = useAdminBanUser();
+  const createAnnouncement = useAdminCreateAnnouncement();
+  const updateReportStatus = useAdminUpdateReportStatus();
 
   useEffect(() => {
     if (currentUser === undefined) return;
     if (isStaffRole(currentUser?.profile?.role)) return;
     // First-time setup: stay on /admin to claim owner.
-    if (bootstrapStatus === undefined) return;
+    if (bootstrapStatus == null) return;
     if (!bootstrapStatus.hasAdmins) return;
     router.replace(getAuthenticatedHomeRoute(currentUser?.profile));
   }, [bootstrapStatus, currentUser, router]);
@@ -217,12 +221,12 @@ export default function AdminPage() {
         toast.error(t("adminPage.scheduleInvalid"));
         return;
       }
-      const result = await createAnnouncement({
+      const result = (await createAnnouncement({
         title: announcement.title,
         body: announcement.body,
         audience: announcement.audience,
         scheduledFor,
-      });
+      })) as { scheduled?: boolean } | undefined;
       toast.success(
         result?.scheduled
           ? t("adminPage.announcementScheduled")
@@ -1094,10 +1098,10 @@ export default function AdminPage() {
                             variant="destructive"
                             className="rounded-lg"
                             onClick={() =>
-                              void banUser({
-                                profileId: report.reportedProfileId!,
-                                banned: true,
-                              }).then(() => toast.success(t("adminPage.userBanned")))
+                              void banUser(
+                                report.reportedProfileId!,
+                                true
+                              ).then(() => toast.success(t("adminPage.userBanned")))
                             }
                           >
                             {t("adminPage.banUser")}

@@ -1,6 +1,5 @@
 "use client";
 
-import { useAction } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -12,7 +11,6 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +20,7 @@ import { getPlanPreference, type PlanPreference } from "@/lib/plan-preference";
 import { cn } from "@/lib/utils";
 import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
 import { EvcPaymentSection } from "@/components/payment/evc-payment-section";
+import { useCreateRegistrationCheckout } from "@/data/payments/hooks";
 
 type RegistrationTier = "basic" | "premium";
 
@@ -42,7 +41,7 @@ export function PaymentCheckoutButton({
   variant?: "default" | "outline";
   labelPrice?: number;
 }) {
-  const createCheckout = useAction(api.stripeActions.createRegistrationCheckout);
+  const createCheckout = useCreateRegistrationCheckout();
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
   const price =
@@ -52,7 +51,9 @@ export function PaymentCheckoutButton({
   const handlePay = async () => {
     setLoading(true);
     try {
-      const { url } = await createCheckout({ tier });
+      const result = await createCheckout({ tier });
+      const url = (result as { url?: string })?.url;
+      if (!url) throw new Error("Missing checkout URL");
       window.location.href = url;
     } catch (error) {
       const { getSafeUserError } = await import("@/lib/safe-error");

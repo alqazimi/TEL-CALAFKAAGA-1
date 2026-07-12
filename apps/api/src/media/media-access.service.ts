@@ -1,0 +1,148 @@
+import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Injectable, ForbiddenException, NotFoundException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import type { MediaPurpose } from "@prisma/client";
+import { PrismaService } from "../prisma/prisma.service";
+
+export type MediaAccessContext = {
+  /** Authenticated user UUID (Postgres). */
+  userId: string;
+  /** Profile roles for staff checks. */
+  roles: Array<"user" | "admin" | "owner">;
+  /** Conversation IDs the user participates in (Postgres UUIDs). */
+  conversationIds?: string[];
+  /** Match partner user IDs who may see private photos (explicit allow-list). */
+  privatePhotoPeerIds?: string[];
+};
+
+/**
+ * Phase 3 access rules for migrated media.
+ * Never returns permanent public URLs — only short-lived signed GET URLs.
+ */
+@Injectable()
+export class MediaAccessService {
+  private readonly s3: S3Client;
+  private readonly ttlSeconds: number;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService
+  ) {
+    const endpoint = this.config.get<string>("S3_ENDPOINT") ?? "http://127.0.0.1:9000";
+    const region = this.config.get<string>("S3_REGION") ?? "us-east-1";
+    const accessKeyId =
+      this.config.get<string>("S3_ACCESS_KEY_ID") ??
+      this.config.get<string>("MINIO_ROOT_USER") ??
+      "";
+    const secretAccessKey =
+      this.config.get<string>("S3_SECRET_ACCESS_KEY") ??
+      this.config.get<string>("MINIO_ROOT_PASSWORD") ??
+      "";
+    this.ttlSeconds = Number(
+      this.config.get<string>("S3_SIGNED_URL_TTL_SECONDS") ?? 300
+    );
+    this.s3 = new S3Client({
+      endpoint,
+      region,
+      forcePathStyle: true,
+      credentials: { accessKeyId, secretAccessKey },
+    });
+  }
+
+  async assertCanAccess(
+    mediaId: string,
+    ctx: MediaAccessContext
+  ): Promise<{ bucket: string; objectKey: string; purpose: MediaPurpose }> {
+    const media = await this.prisma.mediaObject.findUnique({
+      where: { id: mediaId },
+    });
+    if (!media?.bucket || !media.objectKey) {
+      throw new NotFoundException("Media not found");
+    }
+
+    const isStaff =
+      ctx.roles.includes("admin") || ctx.roles.includes("owner");
+    const isOwner = media.ownerUserId === ctx.userId;
+
+    switch (media.purpose) {
+      case "profile_main":
+      case "profile_additional":
+        // Authenticated discovery — caller must be signed in (ctx.userId present).
+        if (!ctx.userId) throw new ForbiddenException("Authentication required");
+        break;
+      case "profile_private":
+        if (
+          !isOwner &&
+          !isStaff &&
+          !(ctx.privatePhotoPeerIds ?? []).includes(media.ownerUserId ?? "")
+        ) {
+          throw new ForbiddenException("Private photo access denied");
+        }
+        break;
+      case "chat_image": {
+        if (isStaff || isOwner) break;
+        const msg = await this.prisma.message.findFirst({
+          where: { imageMediaId: media.id },
+          select: { conversationId: true },
+        });
+        if (
+          !msg ||
+          !(ctx.conversationIds ?? []).includes(msg.conversationId)
+        ) {
+          throw new ForbiddenException("Chat attachment access denied");
+        }
+        break;
+      }
+      case "support_attachment": {
+        if (isStaff || isOwner) break;
+        throw new ForbiddenException("Support attachment access denied");
+      }
+      case "evc_screenshot":
+        if (!isOwner && !isStaff) {
+          throw new ForbiddenException("EVC proof access denied");
+        }
+        break;
+      case "unknown": {
+        // Legacy migrated objects explicitly linked to a chat message.
+        if (isStaff || isOwner) break;
+        const linked = await this.prisma.message.findFirst({
+          where: { imageMediaId: media.id },
+          select: { conversationId: true },
+        });
+        if (
+          linked &&
+          (ctx.conversationIds ?? []).includes(linked.conversationId)
+        ) {
+          break;
+        }
+        throw new ForbiddenException("Media access denied");
+      }
+      default:
+        if (!isOwner && !isStaff) {
+          throw new ForbiddenException("Media access denied");
+        }
+    }
+
+    return {
+      bucket: media.bucket,
+      objectKey: media.objectKey,
+      purpose: media.purpose,
+    };
+  }
+
+  async createSignedDownloadUrl(
+    mediaId: string,
+    ctx: MediaAccessContext
+  ): Promise<{ url: string; expiresInSeconds: number; purpose: MediaPurpose }> {
+    const { bucket, objectKey, purpose } = await this.assertCanAccess(
+      mediaId,
+      ctx
+    );
+    const command = new GetObjectCommand({ Bucket: bucket, Key: objectKey });
+    const url = await getSignedUrl(this.s3, command, {
+      expiresIn: this.ttlSeconds,
+    });
+    return { url, expiresInSeconds: this.ttlSeconds, purpose };
+  }
+}

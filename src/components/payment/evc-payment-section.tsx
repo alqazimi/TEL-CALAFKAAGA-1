@@ -1,11 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Camera, CheckCircle2, Clock, Copy, Phone, Smartphone, XCircle } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,10 +20,14 @@ import {
   WOMEN_BASIC_PRICE,
   formatMoney,
 } from "@/lib/constants";
-import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
+import { resetFileInput } from "@/lib/upload-image";
 import { getSafeUserError } from "@/lib/safe-error";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import { useEvcLatestProof, useSubmitEvcProof } from "@/data/payments/hooks";
+import { useUploadPhoto } from "@/data/photos/hooks";
+import { isApiProvider } from "@/data/provider";
+import { getPaymentsAdapter } from "@/data/payments";
 
 type Tier = "basic" | "premium";
 
@@ -43,10 +44,18 @@ export function EvcPaymentSection({
   const premiumPrice =
     isWoman || freeBasic ? PREMIUM_UPGRADE_PRICE : PERSONAL_SUPPORT_PRICE;
 
-  const latest = useSafeQuery(api.evcPayments.myLatestProof, {});
-  const submitProof = useMutation(api.evcPayments.submitProof);
-  const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
-  const registerUpload = useMutation(api.profiles.registerUpload);
+  const latest = useEvcLatestProof() as
+    | {
+        status?: string;
+        payerFullName?: string;
+        lastFourDigits?: string;
+        tier?: string;
+        rejectionReason?: string | null;
+      }
+    | null
+    | undefined;
+  const submitProof = useSubmitEvcProof();
+  const uploadPhoto = useUploadPhoto();
 
   const [tier, setTier] = useState<Tier>(freeBasic ? "premium" : "basic");
   const [fullName, setFullName] = useState("");
@@ -85,15 +94,30 @@ export function EvcPaymentSection({
     }
     setSubmitting(true);
     try {
-      const storageId = await uploadImageToConvex(file, () =>
-        generateUploadUrl({})
-      );
-      await registerUpload({ storageId });
+      let screenshotId: string;
+      if (isApiProvider()) {
+        const signed = await getPaymentsAdapter().evc.signUpload({
+          contentType: file.type || "image/jpeg",
+        });
+        const uploaded = await uploadPhoto(file);
+        screenshotId = String(
+          (uploaded as { mediaId?: string; storageId?: string }).mediaId ??
+            (uploaded as { storageId?: string }).storageId ??
+            (signed as { mediaId?: string }).mediaId ??
+            ""
+        );
+      } else {
+        const uploaded = await uploadPhoto(file);
+        screenshotId = String(
+          (uploaded as { storageId?: string }).storageId ?? ""
+        );
+      }
+      if (!screenshotId) throw new Error("Upload failed");
       await submitProof({
         tier,
         payerFullName: fullName,
         lastFourDigits: lastFour,
-        screenshotId: storageId,
+        screenshotId,
       });
       toast.success(t("payment.evcSubmitted"));
       setFullName("");

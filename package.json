@@ -2,11 +2,16 @@
   "name": "calaf",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm run dev:next",
     "dev:next": "next dev",
     "dev:convex": "convex dev",
     "dev:all": "convex dev & next dev",
+    "dev:api": "npm run start:dev -w @hel/api",
     "setup:auth": "node scripts/setup-convex-auth.mjs",
     "setup:auth:prod": "node scripts/setup-convex-auth.mjs --prod",
     "setup:stripe": "node scripts/setup-stripe.mjs",
@@ -23,7 +28,37 @@
     "bootstrap:admin:prod": "node scripts/bootstrap-admin.mjs --prod",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prisma:generate": "npm run prisma:generate -w @hel/api",
+    "prisma:validate": "npm run prisma:validate -w @hel/api",
+    "migration:inspect": "npm run inspect -w @hel/migration --",
+    "migration:inspect-auth": "npm run inspect-auth -w @hel/migration --",
+    "migration:dry-run": "npm run dry-run -w @hel/migration --",
+    "migration:import-core": "npm run import-core -w @hel/migration --",
+    "migration:import-domain": "npm run import-domain -w @hel/migration --",
+    "migration:inspect-storage": "npm run inspect-storage -w @hel/migration --",
+    "migration:import-files": "npm run import-files -w @hel/migration --",
+    "migration:validate": "npm run validate -w @hel/migration --",
+    "migration:validate-domain": "npm run validate-domain -w @hel/migration --",
+    "migration:validate-files": "npm run validate-files -w @hel/migration --",
+    "migration:test": "npm run test -w @hel/migration",
+    "auth:test": "npm run test -w @hel/api",
+    "auth:smoke": "npm run auth:smoke -w @hel/api --",
+    "frontend:convex-deps": "node scripts/report-direct-convex-deps.mjs",
+    "frontend:convex-deps:check": "node scripts/report-direct-convex-deps.mjs --fail",
+    "test:frontend": "tsx --test src/data/**/*.test.ts src/data/shadow/**/*.test.ts",
+    "test:e2e:staging": "playwright test",
+    "test:shadow": "tsx --test src/data/shadow/**/*.test.ts",
+    "stack:local:api": "bash scripts/staging/start-local-api-stack.sh",
+    "staging:validate-counts": "tsx scripts/staging/validate-counts.ts",
+    "staging:load-smoke": "node scripts/staging/load-smoke.mjs",
+    "staging:seed-users": "tsx scripts/staging/seed-staging-test-users.ts",
+    "staging:local-smoke": "bash scripts/staging/run-local-staging-smoke.sh",
+    "staging:prepare-snapshot": "tsx scripts/staging/prepare-staging-snapshot.ts",
+    "staging:clone-db": "bash scripts/staging/clone-local-to-staging-db.sh",
+    "staging:validate-media": "node scripts/staging/validate-media.mjs",
+    "staging:backup-restore-test": "bash scripts/staging/backup-restore-test.sh",
+    "phase12:validate": "bash scripts/staging/run-phase12-validation.sh"
   },
   "dependencies": {
     "@auth/core": "^0.41.1",
@@ -62,12 +97,14 @@
     "react-hook-form": "^7.81.0",
     "react-phone-number-input": "^3.4.17",
     "resend": "^6.17.1",
+    "socket.io-client": "^4.8.3",
     "sonner": "^2.0.7",
     "stripe": "^22.3.0",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -75,6 +112,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
+    "tsx": "^4.23.0",
     "typescript": "^5"
   }
 }

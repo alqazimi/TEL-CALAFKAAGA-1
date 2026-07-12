@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useSafeQuery } from "@/lib/use-safe-query";
 import {
   ArrowRight,
   ClipboardList,
@@ -10,7 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { useMemberReminders } from "@/data/notifications/hooks";
 import type { MemberReminder, MemberReminderId } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,9 +34,7 @@ const reminderColors: Record<MemberReminderId, string> = {
 
 export function MemberRemindersCard() {
   const { t } = useTranslation();
-  const reminders = useSafeQuery(api.notifications.getMemberReminders) as
-    | MemberReminder[]
-    | undefined;
+  const reminders = useMemberReminders() as MemberReminder[] | undefined;
 
   if (!reminders?.length) return null;
 

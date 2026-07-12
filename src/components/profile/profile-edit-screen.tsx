@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useMutation } from "convex/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,7 +18,12 @@ import {
   Shield,
   Users,
 } from "lucide-react";
-import { api } from "../../../convex/_generated/api";
+import { useUpdateProfile } from "@/data/profile/hooks";
+import {
+  useUploadPhoto,
+  useAddAdditionalPhoto,
+  useRemoveAdditionalPhoto,
+} from "@/data/photos/hooks";
 import type { CurrentUser, Profile } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +47,7 @@ import { isOwnerRole, isPremiumMember } from "@/lib/access";
 import { MAX_PROFILE_PHOTOS, PREMIUM_UPGRADE_PRICE } from "@/lib/constants";
 import { isValidContactPhone } from "@/lib/phone";
 import { useTranslation } from "@/lib/i18n/context";
-import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
+import { resetFileInput } from "@/lib/upload-image";
 import { cn } from "@/lib/utils";
 import { getSafeUserError } from "@/lib/safe-error";
 
@@ -71,11 +75,10 @@ export function ProfileEditScreen({
   roleLabel,
 }: ProfileEditScreenProps) {
   const { t } = useTranslation();
-  const updateProfile = useMutation(api.profiles.updateProfile);
-  const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
-  const registerUpload = useMutation(api.profiles.registerUpload);
-  const addAdditionalPhoto = useMutation(api.profiles.addAdditionalPhoto);
-  const removeAdditionalPhoto = useMutation(api.profiles.removeAdditionalPhoto);
+  const updateProfile = useUpdateProfile();
+  const uploadPhoto = useUploadPhoto();
+  const addAdditionalPhoto = useAddAdditionalPhoto();
+  const removeAdditionalPhoto = useRemoveAdditionalPhoto();
   const [uploading, setUploading] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -116,8 +119,13 @@ export function ProfileEditScreen({
     if (!file) return;
     setUploading(true);
     try {
-      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
-      await registerUpload({ storageId });
+      const uploaded = await uploadPhoto(file, { slot: "main" });
+      const storageId = String(
+        (uploaded as { storageId?: string; mediaId?: string }).storageId ??
+          (uploaded as { mediaId?: string }).mediaId ??
+          ""
+      );
+      if (!storageId) throw new Error("upload failed");
       await updateProfile({ profileImageId: storageId });
       toast.success(t("profilePage.photoUpdated"));
     } catch (error) {
@@ -134,8 +142,13 @@ export function ProfileEditScreen({
     if (!file) return;
     setUploading(true);
     try {
-      const storageId = await uploadImageToConvex(file, () => generateUploadUrl({}));
-      await registerUpload({ storageId });
+      const uploaded = await uploadPhoto(file, { slot: "additional" });
+      const storageId = String(
+        (uploaded as { storageId?: string; mediaId?: string }).storageId ??
+          (uploaded as { mediaId?: string }).mediaId ??
+          ""
+      );
+      if (!storageId) throw new Error("upload failed");
       await addAdditionalPhoto({ storageId });
       toast.success(t("premium.photoAdded"));
     } catch (error) {
@@ -432,7 +445,7 @@ export function ProfileEditScreen({
                         <button
                           type="button"
                           onClick={() =>
-                            void removeAdditionalPhoto({ storageId: extraIds[index] }).then(() =>
+                            void removeAdditionalPhoto(String(extraIds[index])).then(() =>
                               toast.success(t("premium.photoRemoved"))
                             )
                           }

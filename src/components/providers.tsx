@@ -7,9 +7,12 @@ import { Toaster } from "sonner";
 import { getConvexClient, isConvexConfigured } from "@/lib/convex-client";
 import { ConvexAuthStatus } from "@/components/auth/convex-auth-status";
 import { IdleSessionGuard } from "@/components/auth/idle-session-guard";
+import { ApiAuthProvider } from "@/components/auth/api-auth-provider";
 import { LanguageProvider } from "@/lib/i18n/context";
+import { isApiProvider, isConvexProvider } from "@/data/provider";
+import { validateFrontendEnv } from "@/data/env";
 
-export function Providers({ children }: { children: ReactNode }) {
+function ConvexTree({ children }: { children: ReactNode }) {
   const convex = useMemo(() => getConvexClient(), []);
 
   useEffect(() => {
@@ -30,4 +33,35 @@ export function Providers({ children }: { children: ReactNode }) {
       </LanguageProvider>
     </ConvexAuthProvider>
   );
+}
+
+function ApiTree({ children }: { children: ReactNode }) {
+  return (
+    <ApiAuthProvider>
+      <LanguageProvider>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+          <IdleSessionGuard />
+          {children}
+          <Toaster position="top-right" richColors />
+        </ThemeProvider>
+      </LanguageProvider>
+    </ApiAuthProvider>
+  );
+}
+
+export function Providers({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const report = validateFrontendEnv();
+    if (!report.ok && process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.error("[frontend-env]", report.errors);
+    }
+  }, []);
+
+  // Explicit provider — never auto-infer to api. Default convex.
+  if (isApiProvider() && !isConvexProvider()) {
+    return <ApiTree>{children}</ApiTree>;
+  }
+
+  return <ConvexTree>{children}</ConvexTree>;
 }

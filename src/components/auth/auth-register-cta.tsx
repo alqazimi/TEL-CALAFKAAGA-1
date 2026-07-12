@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { Heart } from "lucide-react";
-import { useConvexAuth } from "convex/react";
 import { Button } from "@/components/ui/button";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 import { useTranslation } from "@/lib/i18n/context";
 import {
   type PlanPreference,
@@ -34,7 +34,7 @@ export function AuthRegisterCta({
   size = "lg",
   variant = "default",
 }: AuthRegisterCtaProps) {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useUnifiedAuth();
   const { t } = useTranslation();
   const dashboardText = dashboardLabel ?? t("common.goToDashboard");
   const href = registerHref ?? registerHrefForPlan(plan);
