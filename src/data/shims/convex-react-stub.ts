@@ -2,6 +2,12 @@
  * Stub used when NEXT_PUBLIC_BACKEND_PROVIDER=api.
  * Prevents Convex client hooks from executing in the API-mode bundle.
  */
+
+/** Minimal stand-in so webpack can resolve imports from `@/lib/convex-client`. */
+export class ConvexReactClient {
+  constructor(_address?: string, _options?: unknown) {}
+}
+
 export function useQuery(): undefined {
   return undefined;
 }

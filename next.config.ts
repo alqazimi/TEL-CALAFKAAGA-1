@@ -38,8 +38,16 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config, { webpack }) => {
+    config.resolve = config.resolve ?? {};
+    // Always pin `convex` to one copy so `ConvexAuthProvider` and app hooks
+    // share the same React context (avoids prerender "missing provider" errors).
+    const convexPkg = path.join(__dirname, "node_modules/convex");
+    config.resolve.alias = {
+      ...(config.resolve.alias ?? {}),
+      convex: convexPkg,
+    };
+
     if (apiMode) {
-      config.resolve = config.resolve ?? {};
       config.resolve.alias = {
         ...(config.resolve.alias ?? {}),
         "convex/react": path.join(

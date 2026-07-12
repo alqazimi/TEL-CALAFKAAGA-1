@@ -6,6 +6,7 @@
 export type TelemetryEvent =
   | "api_error"
   | "login_failure"
+  | "register_failure"
   | "socket_reconnect"
   | "message_failure"
   | "upload_failure"

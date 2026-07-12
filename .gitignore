@@ -52,3 +52,9 @@ next-env.d.ts
 
 backups/
 migration-reports/
+
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+.vercel/

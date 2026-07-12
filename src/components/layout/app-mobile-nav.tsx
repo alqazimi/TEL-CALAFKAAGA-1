@@ -48,9 +48,11 @@ export function AppMobileNav() {
   const profileComplete = profile?.questionnaireComplete ?? false;
   const profileProgress = profile
     ? calculateProfileProgress(
-        profile as Parameters<typeof calculateProfileProgress>[0],
+        profile as unknown as Parameters<typeof calculateProfileProgress>[0],
         !isStaff && preferences
-          ? (preferences as Parameters<typeof calculateProfileProgress>[1])
+          ? (preferences as unknown as Parameters<
+              typeof calculateProfileProgress
+            >[1])
           : undefined
       )
     : 0;
