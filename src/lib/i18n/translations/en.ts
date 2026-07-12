@@ -552,7 +552,7 @@ export const en = {
     evcLastFour: "Last 4 digits of your phone",
     evcLastFourHint: "The last 4 digits of the number you paid from.",
     evcScreenshot: "Payment screenshot",
-    evcScreenshotHint: "Upload a clear screenshot of the successful EVC transfer.",
+    evcScreenshotHint: "Upload from your gallery or take a photo of the successful transfer.",
     evcScreenshotRequired: "Please upload your payment screenshot.",
     evcSubmit: "Submit proof · ${{price}}",
     evcSubmitting: "Submitting...",

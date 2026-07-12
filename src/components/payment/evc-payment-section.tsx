@@ -278,7 +278,6 @@ export function EvcPaymentSection({
                   id="evc-shot"
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/*"
-                  capture="environment"
                   className="cursor-pointer"
                   onChange={(e) => onFile(e.target)}
                 />

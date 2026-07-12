@@ -558,7 +558,7 @@ export const so: Translations = {
     evcLastFour: "4-ta digit ee ugu dambeeya ee telefoonkaaga",
     evcLastFourHint: "4-ta digit ee ugu dambeeya ee lambarka aad ka bixisay.",
     evcScreenshot: "Screenshot-ka lacag bixinta",
-    evcScreenshotHint: "Soo geli screenshot cad oo EVC-gaagu ku guuleystay.",
+    evcScreenshotHint: "Ka soo geli gallery-gaaga ama sawir qaado oo lacag bixinta ku guuleysatay.",
     evcScreenshotRequired: "Fadlan soo geli screenshot-ka lacag bixinta.",
     evcSubmit: "Gudbi caddaynta · ${{price}}",
     evcSubmitting: "Waa la gudbinayaa...",
