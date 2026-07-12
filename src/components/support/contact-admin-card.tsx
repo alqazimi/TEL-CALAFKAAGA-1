@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { WHATSAPP_URL } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import { getSafeUserError } from "@/lib/safe-error";
 
 type Topic = "photo_upload" | "account" | "payment" | "other";
 type Source = "profile" | "questionnaire" | "other";
@@ -62,11 +63,7 @@ export function ContactAdminCard({
       setMessage("");
       if (compact) setOpen(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error && error.message
-          ? error.message
-          : t("support.sendFailed")
-      );
+      toast.error(getSafeUserError(error, t("support.sendFailed")));
     } finally {
       setSending(false);
     }
@@ -84,9 +81,7 @@ export function ContactAdminCard({
       toast.success(t("support.replySent"));
       setFollowUps((prev) => ({ ...prev, [contactId]: "" }));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("support.replyFailed")
-      );
+      toast.error(getSafeUserError(error, t("support.replyFailed")));
     } finally {
       setReplyingId(null);
     }

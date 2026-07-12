@@ -13,6 +13,7 @@ import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
 import { MAX_PROFILE_PHOTOS } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
+import { getSafeUserError } from "@/lib/safe-error";
 
 interface PremiumPhotosCardProps {
   profile: Profile & {
@@ -46,8 +47,7 @@ export function PremiumPhotosCard({ profile }: PremiumPhotosCardProps) {
       await addAdditionalPhoto({ storageId });
       toast.success(t("premium.photoAdded"));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("profilePage.photoFailed")
+      toast.error(getSafeUserError(error, t("profilePage.photoFailed"))
       );
     } finally {
       setUploading(false);

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PREMIUM_UPGRADE_PRICE } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import { getSafeUserError } from "@/lib/safe-error";
 
 export function PremiumUpgradeButton({
   className,
@@ -33,7 +34,7 @@ export function PremiumUpgradeButton({
       window.location.href = url;
     } catch (error) {
       const raw =
-        error instanceof Error ? error.message : t("premium.upgradeFailed");
+        getSafeUserError(error, t("premium.upgradeFailed"));
       if (/complete basic registration/i.test(raw)) {
         toast.error(t("premium.upgradeFailed"));
         window.location.href = "/payment";

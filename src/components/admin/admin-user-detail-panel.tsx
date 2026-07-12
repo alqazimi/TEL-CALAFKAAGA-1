@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
+import { getSafeUserError } from "@/lib/safe-error";
 
 interface AdminUserDetailPanelProps {
   profileId: Id<"profiles">;
@@ -121,18 +122,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
       await approveUser({ profileId });
       toast.success(t("adminPage.approveSuccess"));
     } catch (error) {
-      const raw =
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-            ? error
-            : "";
-      const message = raw
-        .replace(/^\[CONVEX[^\]]*\]\s*/i, "")
-        .replace(/^Uncaught Error:\s*/i, "")
-        .split("\n")[0]
-        ?.trim();
-      toast.error(message || t("adminPage.actionFailed"));
+      toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {
       setActionBusy(false);
     }
@@ -151,7 +141,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
       }
       setConfirm(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("adminPage.actionFailed"));
+      toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {
       setActionBusy(false);
     }
@@ -294,7 +284,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
                             .catch((error: unknown) => {
                               toast.error(
                                 error instanceof Error
-                                  ? error.message
+                                  ? getSafeUserError(error, t("adminPage.actionFailed"))
                                   : t("adminPage.actionFailed")
                               );
                             })

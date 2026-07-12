@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { useTranslation } from "@/lib/i18n/context";
+import { getSafeUserError } from "@/lib/safe-error";
 
 const waliSchema = z.object({
   waliName: z.string().optional(),
@@ -46,8 +47,7 @@ export function PremiumWaliCard({ profile }: PremiumWaliCardProps) {
       await updateWali(data);
       toast.success(t("premium.waliSaved"));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("premium.waliSaveFailed")
+      toast.error(getSafeUserError(error, t("premium.waliSaveFailed"))
       );
     }
   };

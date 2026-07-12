@@ -16,6 +16,7 @@ import {
 } from "@/lib/profile-progress";
 import { PHOTO_STEP_INDEX, STEPS } from "@/components/questionnaire/steps";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
+import { getSafeUserError } from "@/lib/safe-error";
 
 interface QuestionnaireReviewProps {
   profile: Profile;
@@ -118,11 +119,7 @@ export function QuestionnaireReview({
       toast.success(ui("profileComplete"));
       onComplete();
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message.replace(/^\[CONVEX[^\]]*\]\s*/i, "").replace(/^Uncaught Error:\s*/i, "").split("\n")[0]?.trim()
-          : "";
-      toast.error(message || ui("submitFailed"));
+      toast.error(getSafeUserError(error, ui("submitFailed")));
       const step = firstIncompleteStep(profile, preferences);
       if (step !== null) onEditStep(step);
     } finally {

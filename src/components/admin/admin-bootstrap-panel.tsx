@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/lib/i18n/context";
+import { getSafeUserError } from "@/lib/safe-error";
 
 const REASON_KEYS = {
   not_authenticated: "adminPage.bootstrapReasonNotAuthenticated",
@@ -62,8 +63,7 @@ export function AdminBootstrapPanel() {
       toast.success(t("adminPage.bootstrapSuccess"));
       setSecret("");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("adminPage.bootstrapFailed")
+      toast.error(getSafeUserError(error, t("adminPage.bootstrapFailed"))
       );
     } finally {
       setSubmitting(false);

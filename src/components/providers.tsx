@@ -13,10 +13,9 @@ export function Providers({ children }: { children: ReactNode }) {
   const convex = useMemo(() => getConvexClient(), []);
 
   useEffect(() => {
-    if (!isConvexConfigured()) {
-      console.error(
-        "Missing NEXT_PUBLIC_CONVEX_URL. Set it in .env.local locally or in your hosting provider (Vercel → Settings → Environment Variables) before deploying."
-      );
+    if (!isConvexConfigured() && process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.error("Missing NEXT_PUBLIC_CONVEX_URL in local env.");
     }
   }, []);
 

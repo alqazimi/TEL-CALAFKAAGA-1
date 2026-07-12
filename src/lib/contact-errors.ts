@@ -6,6 +6,7 @@ const CONTACT_ERROR_KEYS: Record<string, TranslationPath> = {
   "Subject is required": "contactPage.errorSubject",
   "Message is too short": "contactPage.errorMessage",
   "AUTH_RESEND_KEY is not configured on Convex": "contactPage.errorNotConfigured",
+  // Match stripped / variant server messages without exposing them in UI copy.
   "Could not send message. Please try WhatsApp instead.": "contactPage.failed",
 };
 

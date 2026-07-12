@@ -19,6 +19,7 @@ import {
 } from "@/components/questionnaire/gender-select-cards";
 import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { useTranslation } from "@/lib/i18n/context";
+import { getSafeUserError } from "@/lib/safe-error";
 
 export default function RegisterDetailsPage() {
   const router = useRouter();
@@ -83,8 +84,7 @@ export default function RegisterDetailsPage() {
         router.push("/questionnaire?welcome=true");
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("validation.saveDetailsFailed")
+      toast.error(getSafeUserError(error, t("validation.saveDetailsFailed"))
       );
     } finally {
       setLoading(false);

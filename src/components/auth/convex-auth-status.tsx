@@ -6,23 +6,13 @@ import { useConvexAuth } from "convex/react";
 import { isConvexConfigured } from "@/lib/convex-client";
 import { useTranslation } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
+import { WHATSAPP_URL } from "@/lib/constants";
 
 const AUTH_TIMEOUT_MS = 10_000;
 
-function SetupMessage({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center p-6">
-      <div className="max-w-lg rounded-2xl border border-border bg-card p-8 shadow-sm text-center space-y-4">
-        <h1 className="text-xl font-semibold">{title}</h1>
-        <div className="text-sm text-muted-foreground text-left space-y-3">{children}</div>
-      </div>
-    </div>
-  );
-}
-
 /**
- * Shows a clear setup error instead of an infinite loading skeleton.
- * On auth hang: clear the session and keep the site usable (do not blank the whole app).
+ * Auth gate with user-safe messaging only.
+ * Never expose vendor names, deploy steps, or env var instructions publicly.
  */
 export function ConvexAuthStatus({ children }: { children: ReactNode }) {
   const { isLoading } = useConvexAuth();
@@ -47,7 +37,6 @@ export function ConvexAuthStatus({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!timedOut || dismissed) return;
-    // Bad/stale tokens often leave auth spinning — clear them once.
     void signOut().catch(() => undefined);
   }, [timedOut, dismissed, signOut]);
 
@@ -55,19 +44,23 @@ export function ConvexAuthStatus({ children }: { children: ReactNode }) {
 
   if (!isConvexConfigured()) {
     return (
-      <SetupMessage title={t("setup.convexMissingTitle")}>
-        <p>
-          {t("setup.convexMissingBody", { envVar: "NEXT_PUBLIC_CONVEX_URL" })}
-        </p>
-        <ol className="list-decimal list-inside space-y-1">
-          <li>
-            <code className="text-foreground">{t("setup.convexMissingStep1")}</code>
-          </li>
-          <li>{t("setup.convexMissingStep2")}</li>
-          <li>{t("setup.convexMissingStep3")}</li>
-          <li>{t("setup.convexMissingStep4")}</li>
-        </ol>
-      </SetupMessage>
+      <div className="flex min-h-[50vh] items-center justify-center p-6">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="text-xl font-semibold">{t("setup.serviceUnavailableTitle")}</h1>
+          <p className="text-sm text-muted-foreground">
+            {t("setup.serviceUnavailableBody")}{" "}
+            <a
+              className="font-medium text-primary underline underline-offset-2"
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              WhatsApp
+            </a>
+            .
+          </p>
+        </div>
+      </div>
     );
   }
 

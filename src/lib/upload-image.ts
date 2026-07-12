@@ -1,5 +1,6 @@
 import type { Id } from "../../convex/_generated/dataModel";
 import { prepareImageForUpload } from "@/lib/strip-image-exif";
+import { getSafeUserError } from "@/lib/safe-error";
 
 const IMAGE_EXT =
   /\.(jpe?g|png|webp|gif|bmp|heic|heif|tiff?|avif)$/i;
@@ -21,20 +22,8 @@ function looksLikeImage(file: File): boolean {
   return false;
 }
 
-function friendlyUploadError(error: unknown): string {
-  if (!(error instanceof Error) || !error.message) {
-    return "Upload failed. Please try again.";
-  }
-  const raw = error.message
-    .replace(/^\[CONVEX[^\]]*\]\s*/i, "")
-    .replace(/^Uncaught Error:\s*/i, "")
-    .split("\n")[0]
-    ?.trim();
-  return raw || "Upload failed. Please try again.";
-}
-
 /**
- * Compress + strip EXIF, POST to Convex storage, return storage id.
+ * Compress + strip EXIF, POST to storage, return storage id.
  */
 export async function uploadImageToConvex(
   file: File,
@@ -48,7 +37,9 @@ export async function uploadImageToConvex(
   try {
     prepared = await prepareImageForUpload(file);
   } catch (error) {
-    throw new Error(friendlyUploadError(error));
+    throw new Error(
+      getSafeUserError(error, "Upload failed. Please try again.")
+    );
   }
 
   const uploadUrl = await generateUploadUrl();

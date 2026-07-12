@@ -54,12 +54,8 @@ export function PaymentCheckoutButton({
       const { url } = await createCheckout({ tier });
       window.location.href = url;
     } catch (error) {
-      const raw =
-        error instanceof Error ? error.message : "Payment failed. Please try again.";
-      const message = /invalid api key/i.test(raw)
-        ? "Payment is not configured yet. The Stripe secret key on Convex must be fixed."
-        : raw;
-      toast.error(message);
+      const { getSafeUserError } = await import("@/lib/safe-error");
+      toast.error(getSafeUserError(error, "Payment failed. Please try again."));
     } finally {
       setLoading(false);
     }

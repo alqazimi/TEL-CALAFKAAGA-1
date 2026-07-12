@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
+import { getSafeUserError } from "@/lib/safe-error";
 
 type StatusFilter = "all" | "open" | "reviewed" | "closed";
 
@@ -75,8 +76,7 @@ export function AdminContactsInbox({ onOpenUser }: AdminContactsInboxProps) {
       toast.success(t("adminPage.contactReplySent"));
       setReplies((prev) => ({ ...prev, [contactId]: "" }));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("adminPage.contactReplyFailed")
+      toast.error(getSafeUserError(error, t("adminPage.contactReplyFailed"))
       );
     } finally {
       setSendingId(null);

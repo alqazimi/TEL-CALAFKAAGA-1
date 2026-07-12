@@ -332,19 +332,17 @@ export const so: Translations = {
   setup: {
     convexMissingTitle: "Adeegga lama dejin",
     convexMissingBody: "{{envVar}} maqan yahay deployment-kan.",
-    convexMissingStep1: "Orod npx convex deploy",
-    convexMissingStep2: "Nuqul URL-ka production (wuxuu ku dhamaadaa .convex.cloud)",
-    convexMissingStep3: "Ku dar Vercel → Settings → Environment Variables",
-    convexMissingStep4: "Dib u deploy Vercel",
+    convexMissingStep1: "Nala soo xiriir",
+    convexMissingStep2: "Waxaan dib u soo celinaynaa adeegga",
+    convexMissingStep3: "Fadlan dib u isku day",
+    convexMissingStep4: "Ama noo soo dir WhatsApp",
     convexTimeoutTitle: "Dhibaato xiriir",
     convexTimeoutBody:
       "Waan awoodi waynay inaan dhammaystirno galitaanka. Hubi internetkaaga oo isku day mar kale.",
-    convexTimeoutStep1: "Deploy backend: npx convex deploy",
-    convexTimeoutStep2:
-      "Deji Vercel NEXT_PUBLIC_CONVEX_URL URL-ka production (ma aha dev)",
-    convexTimeoutStep3:
-      "Orod: SITE_URL=https://hel-calafkaaga-d9g4.vercel.app npm run setup:auth:prod",
-    convexTimeoutStep4: "Dib u deploy Vercel",
+    convexTimeoutStep1: "Hubi internetkaaga",
+    convexTimeoutStep2: "Isku day dhowr daqiiqo ka dib",
+    convexTimeoutStep3: "Ka bax oo dib u gal",
+    convexTimeoutStep4: "Nala soo xiriir WhatsApp haddii ay sii socoto",
     serviceUnavailableTitle: "Adeegga waa ku meel gaar ah xiran yahay",
     serviceUnavailableBody:
       "Waxaan hagaajinaynaa dhibaato ku meel gaar ah. Fadlan dib u isku day, ama noo soo dir",
@@ -1213,7 +1211,7 @@ export const so: Translations = {
     bootstrapClaimDesc:
       "Weli milkiile ma jiro. Geli sirta bootstrap si aad u noqoto milkiilaha platform-ka. Tani hal mar oo keliya ayay shaqeysaa waxayna ku siinaysaa helitaan bilaash ah iyo maamulka admin.",
     bootstrapSecretLabel: "Sirta Bootstrap",
-    bootstrapSecretPlaceholder: "Ku dheji ADMIN_BOOTSTRAP_SECRET",
+    bootstrapSecretPlaceholder: "Geli sirta bootstrap",
     bootstrapClaiming: "Waa la sheeganayaa...",
     bootstrapBecomeOwner: "Noqo Milkiile",
     bootstrapReasonNotAuthenticated:
@@ -1221,11 +1219,11 @@ export const so: Translations = {
     bootstrapReasonAdminsExist:
       "Milkiile ama admin hore ayaa jira. Ka codso inay ku siiyaan helitaan.",
     bootstrapReasonNotConfigured:
-      "Bootstrap weli lama dejin. Deji ADMIN_BOOTSTRAP_EMAIL iyo ADMIN_BOOTSTRAP_SECRET Convex deployment-kaaga.",
+      "Dejinta milkiilaha weli ma jirto. Nala soo xiriir.",
     bootstrapReasonNoEmail:
-      "Akoonkaagu ma laha email. Isku diiwaangeli cinwaanka emailka bootstrap.",
+      "Akoonkaagu ma laha email. Marka hore iska diiwaangeli emailka dejinta milkiilaha.",
     bootstrapReasonEmailMismatch:
-      "Emailka akoonkaagu kuma habboona ADMIN_BOOTSTRAP_EMAIL.",
+      "Gal emailka dejinta milkiilaha, ka dib isku day.",
   },
   adminInvites: {
     title: "Casuum maamule",

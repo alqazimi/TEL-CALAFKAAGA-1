@@ -329,19 +329,17 @@ export const en = {
   setup: {
     convexMissingTitle: "Service is not configured",
     convexMissingBody: "{{envVar}} is missing on this deployment.",
-    convexMissingStep1: "Run npx convex deploy",
-    convexMissingStep2: "Copy the production URL (ends with .convex.cloud)",
-    convexMissingStep3: "Add it in Vercel → Settings → Environment Variables",
-    convexMissingStep4: "Redeploy Vercel",
+    convexMissingStep1: "Contact support",
+    convexMissingStep2: "We will restore service shortly",
+    convexMissingStep3: "Please try again later",
+    convexMissingStep4: "Or message us on WhatsApp",
     convexTimeoutTitle: "Connection problem",
     convexTimeoutBody:
       "We could not finish signing you in. Please check your internet and try again.",
-    convexTimeoutStep1: "Deploy backend: npx convex deploy",
-    convexTimeoutStep2:
-      "Set Vercel NEXT_PUBLIC_CONVEX_URL to the production URL (not dev)",
-    convexTimeoutStep3:
-      "Run: SITE_URL=https://hel-calafkaaga-d9g4.vercel.app npm run setup:auth:prod",
-    convexTimeoutStep4: "Redeploy Vercel again",
+    convexTimeoutStep1: "Check your internet connection",
+    convexTimeoutStep2: "Try again in a few minutes",
+    convexTimeoutStep3: "Sign out and sign in again",
+    convexTimeoutStep4: "Contact support on WhatsApp if it continues",
     serviceUnavailableTitle: "Service temporarily unavailable",
     serviceUnavailableBody:
       "We are fixing a temporary issue. Please try again shortly, or message us on",
@@ -1204,7 +1202,7 @@ export const en = {
     bootstrapClaimDesc:
       "No owner exists yet. Enter your bootstrap secret to become the platform owner. This only works once and grants free access plus admin management.",
     bootstrapSecretLabel: "Bootstrap Secret",
-    bootstrapSecretPlaceholder: "Paste ADMIN_BOOTSTRAP_SECRET",
+    bootstrapSecretPlaceholder: "Paste bootstrap secret",
     bootstrapClaiming: "Claiming...",
     bootstrapBecomeOwner: "Become Owner",
     bootstrapReasonNotAuthenticated:
@@ -1212,11 +1210,11 @@ export const en = {
     bootstrapReasonAdminsExist:
       "An owner or admin already exists. Ask them to grant you access.",
     bootstrapReasonNotConfigured:
-      "Bootstrap is not configured yet. Set ADMIN_BOOTSTRAP_EMAIL and ADMIN_BOOTSTRAP_SECRET on your Convex deployment.",
+      "Owner setup is not available yet. Contact support.",
     bootstrapReasonNoEmail:
-      "Your account has no email. Register with the bootstrap email address.",
+      "Your account has no email. Register with the owner setup email first.",
     bootstrapReasonEmailMismatch:
-      "Your account email does not match ADMIN_BOOTSTRAP_EMAIL.",
+      "Sign in with the owner setup email, then try again.",
   },
   adminInvites: {
     title: "Invite admin",

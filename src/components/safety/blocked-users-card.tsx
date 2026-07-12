@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n/context";
+import { getSafeUserError } from "@/lib/safe-error";
 
 export function BlockedUsersCard({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
@@ -21,8 +22,7 @@ export function BlockedUsersCard({ embedded = false }: { embedded?: boolean }) {
       await unblockUser({ blockedUserId });
       toast.success(t("safety.unblockedToast", { name }));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("safety.actionFailed")
+      toast.error(getSafeUserError(error, t("safety.actionFailed"))
       );
     }
   };

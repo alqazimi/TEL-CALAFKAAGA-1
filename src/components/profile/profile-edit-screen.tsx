@@ -45,6 +45,7 @@ import { isValidContactPhone } from "@/lib/phone";
 import { useTranslation } from "@/lib/i18n/context";
 import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
 import { cn } from "@/lib/utils";
+import { getSafeUserError } from "@/lib/safe-error";
 
 const profileSchema = z.object({
   name: z.string().min(2),
@@ -120,11 +121,7 @@ export function ProfileEditScreen({
       await updateProfile({ profileImageId: storageId });
       toast.success(t("profilePage.photoUpdated"));
     } catch (error) {
-      toast.error(
-        error instanceof Error && error.message
-          ? error.message
-          : t("profilePage.photoFailed")
-      );
+      toast.error(getSafeUserError(error, t("profilePage.photoFailed")));
     } finally {
       setUploading(false);
       resetFileInput(input);
@@ -142,7 +139,7 @@ export function ProfileEditScreen({
       await addAdditionalPhoto({ storageId });
       toast.success(t("premium.photoAdded"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("profilePage.photoFailed"));
+      toast.error(getSafeUserError(error, t("profilePage.photoFailed")));
     } finally {
       setUploading(false);
       resetFileInput(input);

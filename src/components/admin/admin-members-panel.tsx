@@ -36,6 +36,7 @@ import type { TranslationPath } from "@/lib/i18n/translations";
 import { resolveReviewStatus, requiresAdminProfileApproval } from "@/lib/review-status";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog, type ConfirmDialogTone } from "@/components/ui/confirm-dialog";
+import { getSafeUserError } from "@/lib/safe-error";
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
 type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
@@ -206,18 +207,7 @@ export function AdminMembersPanel({
       toast.success(successMessage);
       setPendingConfirm(null);
     } catch (error) {
-      const raw =
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-            ? error
-            : "";
-      const message = raw
-        .replace(/^\[CONVEX[^\]]*\]\s*/i, "")
-        .replace(/^Uncaught Error:\s*/i, "")
-        .split("\n")[0]
-        ?.trim();
-      toast.error(message || t("adminPage.actionFailed"));
+      toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {
       setBusyId(null);
     }

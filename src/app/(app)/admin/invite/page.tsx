@@ -23,6 +23,7 @@ import { createAccountSchema, createLoginSchema } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
 import { isStaffRole } from "@/lib/access";
 import { useSignOut } from "@/hooks/use-sign-out";
+import { getSafeUserError } from "@/lib/safe-error";
 
 type AccountForm = z.infer<ReturnType<typeof createAccountSchema>>;
 type LoginForm = z.infer<ReturnType<typeof createLoginSchema>>;
@@ -81,8 +82,7 @@ function AdminInviteContent() {
     try {
       await finishAcceptance();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("adminInvite.acceptFailed")
+      toast.error(getSafeUserError(error, t("adminInvite.acceptFailed"))
       );
     } finally {
       setLoading(false);

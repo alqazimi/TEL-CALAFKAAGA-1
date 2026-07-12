@@ -12,6 +12,7 @@ import { ProfilePhotoPreview } from "@/components/profile/profile-photo-preview"
 import { ContactAdminCard } from "@/components/support/contact-admin-card";
 import { resetFileInput, uploadImageToConvex } from "@/lib/upload-image";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
+import { getSafeUserError } from "@/lib/safe-error";
 
 interface QuestionnairePhotoStepProps {
   profile: Profile & { imageUrl?: string | null };
@@ -44,11 +45,7 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
       });
       toast.success(ui("photoUploaded"));
     } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : ui("uploadFailed");
-      toast.error(message);
+      toast.error(getSafeUserError(error, ui("uploadFailed")));
     } finally {
       setUploading(false);
       resetFileInput(input);

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
+import { getSafeUserError } from "@/lib/safe-error";
 
 const REASONS: { value: string; key: TranslationPath }[] = [
   { value: "fake_profile", key: "safety.reasonFake" },
@@ -71,7 +72,7 @@ export function ReportBlockMenu({
       close();
       onDone?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("safety.actionFailed"));
+      toast.error(getSafeUserError(error, t("safety.actionFailed")));
     } finally {
       setBusy(false);
     }
@@ -103,7 +104,7 @@ export function ReportBlockMenu({
       close();
       onDone?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("safety.actionFailed"));
+      toast.error(getSafeUserError(error, t("safety.actionFailed")));
     } finally {
       setBusy(false);
     }

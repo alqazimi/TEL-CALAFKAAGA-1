@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
+import { getSafeUserError } from "@/lib/safe-error";
 
 function formatInviteStatus(status: string, t: (key: TranslationPath) => string) {
   switch (status) {
@@ -69,8 +70,7 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
       setEmail("");
       toast.success(t("adminInvites.sentTo", { email: result.email }));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("adminInvites.sendFailed")
+      toast.error(getSafeUserError(error, t("adminInvites.sendFailed"))
       );
     } finally {
       setSubmitting(false);
@@ -83,8 +83,7 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
       await revokeInvite({ inviteId });
       toast.success(t("adminInvites.revoked"));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("adminInvites.revokeFailed")
+      toast.error(getSafeUserError(error, t("adminInvites.revokeFailed"))
       );
     } finally {
       setBusyId(null);
@@ -97,8 +96,7 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
       await resendInvite({ inviteId });
       toast.success(t("adminInvites.resent"));
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("adminInvites.resendFailed")
+      toast.error(getSafeUserError(error, t("adminInvites.resendFailed"))
       );
     } finally {
       setBusyId(null);

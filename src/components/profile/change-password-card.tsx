@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { FormField, InputIconWrapper } from "@/components/ui/form-field";
 import { createChangePasswordSchema } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
+import { getSafeUserError } from "@/lib/safe-error";
 
 type ChangePasswordForm = z.infer<ReturnType<typeof createChangePasswordSchema>>;
 
@@ -43,7 +44,7 @@ export function ChangePasswordCard({ embedded = false }: { embedded?: boolean })
       toast.success(t("profilePage.passwordChanged"));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : t("profilePage.passwordChangeFailed");
+        getSafeUserError(error, t("profilePage.passwordChangeFailed"));
       toast.error(
         message.includes("incorrect") || message.includes("InvalidSecret")
           ? t("profilePage.passwordChangeFailed")
