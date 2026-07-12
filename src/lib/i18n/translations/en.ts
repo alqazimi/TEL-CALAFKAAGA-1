@@ -324,24 +324,27 @@ export const en = {
       "Too many failed sign-in attempts. Please wait a few minutes and try again.",
     errorServerNotConfigured: "Server auth is not configured. Contact support.",
     errorBackendUnavailable:
-      "Login is temporarily unavailable. Your Convex project may be over Free plan limits — open the Convex dashboard, upgrade or free usage, then try again.",
+      "Login is temporarily unavailable. Please try again in a few minutes, or contact support on WhatsApp.",
   },
   setup: {
-    convexMissingTitle: "Convex is not configured",
+    convexMissingTitle: "Service is not configured",
     convexMissingBody: "{{envVar}} is missing on this deployment.",
     convexMissingStep1: "Run npx convex deploy",
     convexMissingStep2: "Copy the production URL (ends with .convex.cloud)",
     convexMissingStep3: "Add it in Vercel → Settings → Environment Variables",
     convexMissingStep4: "Redeploy Vercel",
-    convexTimeoutTitle: "Cannot connect to Convex",
+    convexTimeoutTitle: "Connection problem",
     convexTimeoutBody:
-      "Auth is stuck loading. This usually means production Convex auth is not set up yet.",
+      "We could not finish signing you in. Please check your internet and try again.",
     convexTimeoutStep1: "Deploy backend: npx convex deploy",
     convexTimeoutStep2:
       "Set Vercel NEXT_PUBLIC_CONVEX_URL to the production URL (not dev)",
     convexTimeoutStep3:
       "Run: SITE_URL=https://hel-calafkaaga-d9g4.vercel.app npm run setup:auth:prod",
     convexTimeoutStep4: "Redeploy Vercel again",
+    serviceUnavailableTitle: "Service temporarily unavailable",
+    serviceUnavailableBody:
+      "We are fixing a temporary issue. Please try again shortly, or message us on",
   },
   approvalGate: {
     title: "Your profile is under review",

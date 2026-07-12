@@ -327,24 +327,27 @@ export const so: Translations = {
       "Isku dayo badan oo galitaan ah ayaa fashilantay. Fadlan sug dhowr daqiiqo oo mar kale isku day.",
     errorServerNotConfigured: "Auth-ka server-ka lama dejin. La xiriir taageerada.",
     errorBackendUnavailable:
-      "Galitaanku hadda ma shaqeynayo. Convex project-kaagu wuxuu dhaafay Free plan limits — fur Convex dashboard, upgrade ama yaree isticmaalka, ka dibna isku day.",
+      "Galitaanku hadda ma shaqeynayo. Fadlan isku day dhowr daqiiqo ka dib, ama nala soo xiriir WhatsApp.",
   },
   setup: {
-    convexMissingTitle: "Convex lama dejin",
+    convexMissingTitle: "Adeegga lama dejin",
     convexMissingBody: "{{envVar}} maqan yahay deployment-kan.",
     convexMissingStep1: "Orod npx convex deploy",
     convexMissingStep2: "Nuqul URL-ka production (wuxuu ku dhamaadaa .convex.cloud)",
     convexMissingStep3: "Ku dar Vercel → Settings → Environment Variables",
     convexMissingStep4: "Dib u deploy Vercel",
-    convexTimeoutTitle: "Lama xiriiri karo Convex",
+    convexTimeoutTitle: "Dhibaato xiriir",
     convexTimeoutBody:
-      "Galitaanku wuu hakaday. Badanaa tani waxay ka dhigan tahay in auth-ka production aan weli la dejin.",
+      "Waan awoodi waynay inaan dhammaystirno galitaanka. Hubi internetkaaga oo isku day mar kale.",
     convexTimeoutStep1: "Deploy backend: npx convex deploy",
     convexTimeoutStep2:
       "Deji Vercel NEXT_PUBLIC_CONVEX_URL URL-ka production (ma aha dev)",
     convexTimeoutStep3:
       "Orod: SITE_URL=https://hel-calafkaaga-d9g4.vercel.app npm run setup:auth:prod",
     convexTimeoutStep4: "Dib u deploy Vercel",
+    serviceUnavailableTitle: "Adeegga waa ku meel gaar ah xiran yahay",
+    serviceUnavailableBody:
+      "Waxaan hagaajinaynaa dhibaato ku meel gaar ah. Fadlan dib u isku day, ama noo soo dir",
   },
   approvalGate: {
     title: "Profile-kaaga waa la eegayaa",

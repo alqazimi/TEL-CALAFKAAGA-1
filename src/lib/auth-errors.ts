@@ -53,7 +53,7 @@ export function getAuthErrorMessage(
     ) {
       return (
         t?.("auth.errorBackendUnavailable") ??
-        "Login is temporarily unavailable. The backend may be over plan limits — check the Convex dashboard, then try again."
+        "Login is temporarily unavailable. Please try again in a few minutes."
       );
     }
     if (msg && !msg.includes("[Request ID:")) {

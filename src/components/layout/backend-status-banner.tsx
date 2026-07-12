@@ -5,6 +5,8 @@ import {
   isConvexBackendUnavailable,
   subscribeConvexBackendStatus,
 } from "@/lib/use-safe-query";
+import { useTranslation } from "@/lib/i18n/context";
+import { WHATSAPP_URL } from "@/lib/constants";
 
 function markDownFromProbe(message: string) {
   if (
@@ -12,8 +14,6 @@ function markDownFromProbe(message: string) {
     message.includes("free plan limits") ||
     message.includes("deployments have been disabled")
   ) {
-    // Re-use the same signal path as useSafeQuery by throwing a synthetic error
-    // through a tiny shared setter — import side effect via custom event.
     window.dispatchEvent(
       new CustomEvent("hel-convex-down", { detail: message })
     );
@@ -21,10 +21,11 @@ function markDownFromProbe(message: string) {
 }
 
 /**
- * Shown when Convex returns plan-limit / Server Error so users know
- * why login and app features are down — instead of a blank error page.
+ * Friendly notice when the backend is down.
+ * Never expose plan names, vendor dashboards, or internal errors to members.
  */
 export function BackendStatusBanner() {
+  const { t } = useTranslation();
   const [down, setDown] = useState(false);
 
   useEffect(() => {
@@ -74,20 +75,18 @@ export function BackendStatusBanner() {
       role="alert"
       className="border-b border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950"
     >
-      <p className="font-semibold">
-        Adeegga waa ku meel gaar ah xiran yahay / Backend temporarily unavailable
-      </p>
+      <p className="font-semibold">{t("setup.serviceUnavailableTitle")}</p>
       <p className="mt-1 text-amber-900/90">
-        Convex Free plan limits exceeded — open{" "}
+        {t("setup.serviceUnavailableBody")}{" "}
         <a
           className="font-medium underline underline-offset-2"
-          href="https://dashboard.convex.dev"
+          href={WHATSAPP_URL}
           target="_blank"
           rel="noreferrer"
         >
-          dashboard.convex.dev
-        </a>{" "}
-        and upgrade (or free usage), then reload this page.
+          WhatsApp
+        </a>
+        .
       </p>
     </div>
   );
