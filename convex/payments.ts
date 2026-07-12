@@ -5,12 +5,9 @@ import type { MutationCtx } from "./_generated/server";
 import {
   internalMutation,
   internalQuery,
-  mutation,
   query,
 } from "./_generated/server";
-import { internal } from "./_generated/api";
-import { sendNotification } from "./lib/sendNotification";
-import { scheduleSiteMetricsRebuild } from "./siteMetrics";
+import { grantPaidAccess } from "./lib/grantPaidAccess";
 
 export const REGISTRATION_AMOUNT_CENTS = 500;
 /** Women Basic registration — $2.50. */
@@ -72,51 +69,16 @@ async function applyPaymentCompletion(
       payment.paymentType === "registration_premium" ||
       payment.paymentType === "premium_upgrade";
 
-    await ctx.db.patch(profile._id, {
-      hasPaid: true,
-      genderLocked: true,
-      ...(isPremium ? { hasPersonalSupport: true } : {}),
-      // Men + women Premium: live after payment.
-      // Women Basic: paid but still needs admin profile approval.
-      ...(isPremium || profile.gender === "male"
-        ? {
-            approved: true,
-            reviewStatus: "approved" as const,
-          }
-        : {
-            approved: false,
-            reviewStatus: "pending_review" as const,
-          }),
+    await grantPaidAccess(ctx, {
+      userId: payment.userId,
+      isPremium,
+      isUpgrade: payment.paymentType === "premium_upgrade",
+      notify:
+        payment.paymentType === "registration" ||
+        payment.paymentType === "registration_premium" ||
+        payment.paymentType === "premium_upgrade" ||
+        payment.paymentType === undefined,
     });
-
-    await scheduleSiteMetricsRebuild(ctx);
-
-    if (profile.questionnaireComplete) {
-      await ctx.scheduler.runAfter(0, internal.matchingEngine.recalculateScores, {
-        userId: payment.userId,
-      });
-    }
-
-    if (
-      payment.paymentType === "registration" ||
-      payment.paymentType === "registration_premium" ||
-      payment.paymentType === "premium_upgrade" ||
-      payment.paymentType === undefined
-    ) {
-      await sendNotification(ctx, {
-        userId: payment.userId,
-        type: "payment",
-        title: "Payment successful",
-        body: isPremium
-          ? payment.paymentType === "premium_upgrade"
-            ? "Your premium plan is active. WhatsApp support and match-search help are ready."
-            : "Your registration and personal support plan are active. Browse matches from your dashboard."
-          : profile.gender === "female"
-            ? "Payment received. An admin will review your profile shortly — you will be notified when matches unlock."
-            : "Your registration is complete. Browse matches from your dashboard.",
-        sendEmail: true,
-      });
-    }
   }
 
   if (

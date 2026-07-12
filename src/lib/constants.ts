@@ -12,6 +12,14 @@ export const WHATSAPP_NUMBER = "254793692710";
 export const WHATSAPP_DISPLAY = "+254 793 692710";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 export const SUPPORT_EMAIL = "hello@helcalafkaaga.com";
+/** Manual EVC / Hormuud mobile-money payee (Somalia). */
+export const EVC_PAYEE_NAME = "Axmed Xaaji";
+export const EVC_PAYEE_PHONE = "+252617975403";
+export const EVC_PAYEE_PHONE_DISPLAY = "+252 617 975 403";
+/** Manual M-PESA payee (Kenya). */
+export const MPESA_PAYEE_NAME = "Abdulkadir Mohamed Farah";
+export const MPESA_PAYEE_PHONE = "+254793692710";
+export const MPESA_PAYEE_PHONE_DISPLAY = "+254 793 692 710";
 /** Homepage demo — how to create an account and use the site. */
 export const HOW_TO_USE_YOUTUBE_ID = "ID4GXE8UFBo";
 export const HOW_TO_USE_YOUTUBE_EMBED_URL = `https://www.youtube-nocookie.com/embed/${HOW_TO_USE_YOUTUBE_ID}`;

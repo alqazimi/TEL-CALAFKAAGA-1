@@ -38,6 +38,7 @@ import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-p
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
 import { AdminMessagesInbox } from "@/components/admin/admin-messages-inbox";
 import { AdminContactsInbox } from "@/components/admin/admin-contacts-inbox";
+import { AdminEvcPaymentsPanel } from "@/components/admin/admin-evc-payments-panel";
 import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -660,7 +661,9 @@ export default function AdminPage() {
         )}
 
         {activeTab === "payments" && (
-          <div className="space-y-3">
+          <div className="space-y-8">
+            <AdminEvcPaymentsPanel />
+            <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{t("adminPage.paymentsShowingCompleted")}</p>
             <div className="overflow-hidden rounded-2xl border border-border bg-card">
               {payments?.length === 0 ? (
@@ -705,6 +708,7 @@ export default function AdminPage() {
                   ))}
                 </ul>
               )}
+            </div>
             </div>
           </div>
         )}

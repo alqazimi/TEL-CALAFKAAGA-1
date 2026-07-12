@@ -1,7 +1,7 @@
 "use client";
 
 import { useAction } from "convex/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   Check,
@@ -21,6 +21,7 @@ import { useTranslation } from "@/lib/i18n/context";
 import { getPlanPreference, type PlanPreference } from "@/lib/plan-preference";
 import { cn } from "@/lib/utils";
 import { PremiumUpgradeButton } from "@/components/premium/premium-upgrade-button";
+import { EvcPaymentSection } from "@/components/payment/evc-payment-section";
 
 type RegistrationTier = "basic" | "premium";
 
@@ -149,14 +150,10 @@ export function PaymentGate({
   gender,
 }: PaymentGateProps) {
   const { t } = useTranslation();
-  const [preferredPlan, setPreferredPlan] = useState<PlanPreference | null>(null);
+  const [preferredPlan] = useState<PlanPreference | null>(() => getPlanPreference());
   const isWoman = gender === "female";
   const basicPrice = isWoman ? WOMEN_BASIC_PRICE : REGISTRATION_PRICE;
   const premiumDisplayPrice = isWoman || freeBasic ? PREMIUM_UPGRADE_PRICE : PERSONAL_SUPPORT_PRICE;
-
-  useEffect(() => {
-    setPreferredPlan(getPlanPreference());
-  }, []);
 
   return (
     <div className="max-w-4xl mx-auto py-6 sm:py-8 px-2">
@@ -316,6 +313,8 @@ export function PaymentGate({
         <span className="font-semibold tracking-wide">MC</span>
         <span className="font-semibold tracking-wide">AMEX</span>
       </div>
+
+      <EvcPaymentSection gender={gender} freeBasic={freeBasic} />
     </div>
   );
 }

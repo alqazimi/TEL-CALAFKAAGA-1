@@ -453,4 +453,30 @@ export default defineSchema({
     .index("by_createdAt", ["createdAt"])
     .index("by_actor", ["actorUserId"])
     .index("by_targetUser", ["targetUserId"]),
+
+  /**
+   * Manual EVC / mobile-money payment proofs.
+   * Member pays Axmed Xaaji, uploads screenshot; admin approves.
+   */
+  evcPaymentProofs: defineTable({
+    userId: v.id("users"),
+    profileId: v.id("profiles"),
+    tier: v.union(v.literal("basic"), v.literal("premium")),
+    payerFullName: v.string(),
+    lastFourDigits: v.string(),
+    screenshotId: v.id("_storage"),
+    amountCents: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected")
+    ),
+    createdAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.id("users")),
+    rejectionReason: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"])
+    .index("by_status_createdAt", ["status", "createdAt"]),
 });
