@@ -155,6 +155,9 @@ interface AdminMembersPanelProps {
   currentProfileId?: Id<"profiles">;
   canManageRoles: boolean;
   onOpenUser: (profileId: Id<"profiles">) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
 }
 
 export function AdminMembersPanel({
@@ -173,6 +176,9 @@ export function AdminMembersPanel({
   currentProfileId,
   canManageRoles,
   onOpenUser,
+  onLoadMore,
+  hasMore,
+  loadingMore,
 }: AdminMembersPanelProps) {
   const { t } = useTranslation();
   const approveUser = useAdminApproveUser();
@@ -612,6 +618,24 @@ export function AdminMembersPanel({
               );
             })}
           </ul>
+        )}
+        {hasMore && (
+          <div className="flex justify-center pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-xl"
+              disabled={loadingMore}
+              onClick={() => onLoadMore?.()}
+            >
+              {loadingMore ? t("common.loading") : t("adminPage.loadMoreMembers")}
+            </Button>
+          </div>
+        )}
+        {users && users.length > 0 && (
+          <p className="text-center text-xs text-muted-foreground">
+            {t("adminPage.showingMembers", { count: users.length })}
+          </p>
         )}
       </div>
 

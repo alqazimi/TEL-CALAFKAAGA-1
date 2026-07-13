@@ -1,5 +1,6 @@
 # Create MinIO buckets for Hel Calafkaaga local file migration (Phase 3).
 # Buckets are private — no anonymous/public policies.
+# Browser PUT/GET uses presigned URLs; MinIO API-level CORS covers that.
 set -eu
 
 endpoint="${MINIO_ENDPOINT:-http://minio:9000}"
@@ -16,6 +17,10 @@ until mc alias set local "${endpoint}" "${user}" "${pass}" >/dev/null 2>&1; do
   fi
   sleep 1
 done
+
+# Presigned browser uploads from the Next.js app (bucket CORS is not
+# implemented on all MinIO builds — API cors_allow_origin is the reliable path).
+mc admin config set local api cors_allow_origin="*" >/dev/null 2>&1 || true
 
 # Separate private buckets by purpose / access class
 for bucket in \

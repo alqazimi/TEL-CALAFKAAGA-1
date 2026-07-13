@@ -56,7 +56,7 @@ export default function LikesPage() {
     profileReady && hasPaidAccess(profile) && !needsApprovalGate(profile);
   const isPremium = isPremiumMember(profile);
 
-  const matchListsRaw = useMatchLists(canQuery ? {} : undefined);
+  const matchListsRaw = useMatchLists({}, canQuery);
   const matchLists = (canQuery ? matchListsRaw : undefined) as
     | {
         shortlist?: MatchResult[];

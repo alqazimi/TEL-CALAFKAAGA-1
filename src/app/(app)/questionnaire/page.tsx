@@ -7,12 +7,13 @@ import { toast } from "sonner";
 import { Check } from "lucide-react";
 import type { Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
-import { useProfile, usePreferencesQuery, useEnsureProfile } from "@/data/profile/hooks";
+import { useProfile, usePreferences, useEnsureProfile } from "@/data/profile/hooks";
 import {
   useUpdateQuestionnaire,
   useAutoSaveQuestionnaire,
   useSaveProfileEdits,
 } from "@/data/questionnaire/hooks";
+import { isApiProvider } from "@/data/provider";
 import {
   calculateProfileProgress,
   getResumeStepIndex,
@@ -33,6 +34,7 @@ import { QuestionnairePhotoStep } from "@/components/questionnaire/questionnaire
 import { QuestionnaireShell } from "@/components/questionnaire/questionnaire-shell";
 import { STEPS, ABOUT_YOU_STEP_COUNT, CONTACT_STEP_INDEX, PARTNER_PREFERENCES_STEP_INDEX } from "@/components/questionnaire/steps";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
+import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { useTranslation } from "@/lib/i18n/context";
 import { useQuestionnaireI18n } from "@/lib/i18n/questionnaire-i18n";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,9 +45,18 @@ export default function QuestionnairePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isEditMode = searchParams.get("edit") === "1";
-  const { profile } = useProfile() as { profile: Profile | null | undefined };
+  const { profile, refresh: refreshProfile } = useProfile() as {
+    profile: Profile | null | undefined;
+    refresh: () => Promise<void>;
+  };
   const isStaff = isStaffRole(profile?.role);
-  const preferences = usePreferencesQuery() as Preferences | null | undefined;
+  const {
+    preferences,
+    refresh: refreshPreferences,
+  } = usePreferences() as {
+    preferences: Preferences | null | undefined;
+    refresh: () => Promise<void>;
+  };
   const updateQuestionnaire = useUpdateQuestionnaire();
   const autoSaveProfile = useAutoSaveQuestionnaire();
   const saveProfileEdits = useSaveProfileEdits();
@@ -53,6 +64,20 @@ export default function QuestionnairePage() {
   const { ui } = useQuestionnaireI18n();
   const { t } = useTranslation();
   const welcome = searchParams.get("welcome") === "true";
+
+  const refreshQuestionnaireState = async () => {
+    if (!isApiProvider()) {
+      return { profile: profile ?? null, preferences: preferences ?? null };
+    }
+    const [nextProfile, nextPreferences] = await Promise.all([
+      refreshProfile(),
+      refreshPreferences(),
+    ]);
+    return {
+      profile: (nextProfile as Profile | null) ?? null,
+      preferences: (nextPreferences as Preferences | null) ?? null,
+    };
+  };
 
   const [stepOverride, setStepOverride] = useState<number | null>(
     isEditMode ? REVIEW_STEP_INDEX : null
@@ -147,12 +172,14 @@ export default function QuestionnairePage() {
     if (currentStep === null || isReviewStep) return;
     if (isEditMode) {
       await saveProfileEdits({ data });
+      await refreshQuestionnaireState();
       return;
     }
     await autoSaveProfile({
       step: currentStep + 1,
       data,
     });
+    await refreshQuestionnaireState();
   };
 
   const handleNext = async (stepData: Record<string, unknown>) => {
@@ -171,6 +198,7 @@ export default function QuestionnairePage() {
       if (!isReviewStep) {
         if (isEditMode) {
           await saveProfileEdits({ data: stepData });
+          await refreshQuestionnaireState();
           toast.success(ui("changesSaved"));
           setStepOverride(REVIEW_STEP_INDEX);
           return;
@@ -179,6 +207,7 @@ export default function QuestionnairePage() {
           step: currentStep + 1,
           data: stepData,
         });
+        await refreshQuestionnaireState();
       }
 
       if (currentStep < REVIEW_STEP_INDEX) {
@@ -315,7 +344,7 @@ export default function QuestionnairePage() {
       router.push("/profile");
       return;
     }
-    router.push("/matches");
+    router.push(getAuthenticatedHomeRoute(profile));
   };
 
   useEffect(() => {
@@ -479,6 +508,7 @@ export default function QuestionnairePage() {
               onEditGender={handleEditGender}
               onComplete={handleComplete}
               isEditMode={isEditMode}
+              onRefreshState={refreshQuestionnaireState}
             />
           ) : isPhotoPhase ? (
             <QuestionnairePhotoStep

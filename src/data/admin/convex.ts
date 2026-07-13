@@ -167,6 +167,21 @@ export const convexAdmin: AdminAdapter = {
     const client = getConvexClient();
     return client.query(api.admin.getAuditLogs, (opts ?? {}) as never);
   },
+  conversations: {
+    async list(opts) {
+      const client = getConvexClient();
+      return client.query(api.admin.getAdminConversations, {
+        limit: opts?.limit,
+      } as never);
+    },
+    async thread(id, opts) {
+      const client = getConvexClient();
+      return client.query(api.admin.getAdminConversationThread, {
+        conversationId: id,
+        limit: opts?.limit,
+      } as never);
+    },
+  },
   staffInvites: {
     async list() {
       const client = getConvexClient();

@@ -286,19 +286,22 @@ export class ProfilePhotosService {
           `You can upload up to ${MAX_ADDITIONAL_PHOTOS} extra photos`
         );
       }
-      await this.prisma.profile.update({
-        where: { id: profile.id },
-        data: {
-          additionalImageMediaIds: [
-            ...profile.additionalImageMediaIds,
-            media.id,
-          ],
-          additionalImageConvexIds: [
-            ...profile.additionalImageConvexIds,
-            media.convexStorageId,
-          ],
-        },
-      });
+      // Idempotent: confirm may be called twice (upload helper + legacy addAdditional).
+      if (!profile.additionalImageMediaIds.includes(media.id)) {
+        await this.prisma.profile.update({
+          where: { id: profile.id },
+          data: {
+            additionalImageMediaIds: [
+              ...profile.additionalImageMediaIds,
+              media.id,
+            ],
+            additionalImageConvexIds: [
+              ...profile.additionalImageConvexIds,
+              media.convexStorageId,
+            ],
+          },
+        });
+      }
       await this.prisma.mediaObject.update({
         where: { id: media.id },
         data: { purpose: "profile_additional" },

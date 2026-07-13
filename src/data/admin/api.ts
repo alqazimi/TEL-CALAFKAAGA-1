@@ -12,6 +12,32 @@ function q(opts?: Record<string, unknown>): string {
   return s ? `?${s}` : "";
 }
 
+/** Map Convex admin filter names to Nest query params. */
+function nestUserListQuery(opts?: Record<string, unknown>): string {
+  if (!opts) return "";
+  const params: Record<string, unknown> = {};
+  if (opts.search) params.search = opts.search;
+  if (opts.cursor) params.cursor = opts.cursor;
+  if (opts.limit != null) params.limit = opts.limit;
+
+  const role = opts.role;
+  if (role && role !== "all") params.role = role;
+
+  const review = opts.review ?? opts.reviewStatus;
+  if (review && review !== "all") {
+    params.reviewStatus = review;
+  }
+
+  const payment = opts.payment;
+  if (payment === "paid" || payment === "basic" || payment === "premium") {
+    params.hasPaid = true;
+  } else if (payment === "unpaid") {
+    params.hasPaid = false;
+  }
+
+  return q(params);
+}
+
 export const apiAdmin: AdminAdapter = {
   async stats() {
     return apiClient.get("/admin/stats");
@@ -30,7 +56,7 @@ export const apiAdmin: AdminAdapter = {
   },
   users: {
     async list(opts) {
-      return apiClient.get(`/admin/users${q(opts)}`);
+      return apiClient.get(`/admin/users${nestUserListQuery(opts)}`);
     },
     async detail(id) {
       return apiClient.get(`/admin/users/${encodeURIComponent(id)}`);
@@ -141,6 +167,18 @@ export const apiAdmin: AdminAdapter = {
   },
   async auditLogs(opts) {
     return apiClient.get(`/admin/audit-logs${q(opts)}`);
+  },
+  conversations: {
+    async list(opts) {
+      return apiClient.get(
+        `/admin/conversations${q(opts as Record<string, unknown>)}`
+      );
+    },
+    async thread(id, opts) {
+      return apiClient.get(
+        `/admin/conversations/${encodeURIComponent(id)}${q(opts as Record<string, unknown>)}`
+      );
+    },
   },
   staffInvites: {
     async list() {

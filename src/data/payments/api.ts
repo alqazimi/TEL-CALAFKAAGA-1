@@ -35,7 +35,13 @@ export const apiPayments: PaymentsAdapter = {
       return apiClient.get("/payments/evc/me/latest");
     },
     async submitProof(body) {
-      return apiClient.post("/payments/evc/proof/submit", body);
+      const mediaId = String(body.mediaId ?? body.screenshotId ?? "");
+      return apiClient.post("/payments/evc/proof/submit", {
+        tier: body.tier,
+        payerFullName: body.payerFullName,
+        lastFourDigits: body.lastFourDigits,
+        mediaId,
+      });
     },
     async signUpload(body) {
       return apiClient.post("/payments/evc/proof/sign-upload", body);

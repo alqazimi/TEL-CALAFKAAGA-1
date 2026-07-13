@@ -96,29 +96,45 @@ export function EvcPaymentSection({
     try {
       let screenshotId: string;
       if (isApiProvider()) {
-        const signed = await getPaymentsAdapter().evc.signUpload({
-          contentType: file.type || "image/jpeg",
+        const { prepareImageForUpload } = await import("@/lib/strip-image-exif");
+        const prepared = await prepareImageForUpload(file);
+        const contentType = prepared.type || "image/jpeg";
+        const signed = (await getPaymentsAdapter().evc.signUpload({
+          contentType,
+          sizeBytes: prepared.size,
+        })) as { mediaId?: string; uploadUrl?: string };
+        const uploadUrl = String(signed.uploadUrl ?? "");
+        const mediaId = String(signed.mediaId ?? "");
+        if (!uploadUrl || !mediaId) throw new Error("Upload failed");
+
+        const put = await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": contentType },
+          body: prepared,
         });
-        const uploaded = await uploadPhoto(file);
-        screenshotId = String(
-          (uploaded as { mediaId?: string; storageId?: string }).mediaId ??
-            (uploaded as { storageId?: string }).storageId ??
-            (signed as { mediaId?: string }).mediaId ??
-            ""
-        );
+        if (!put.ok) {
+          throw new Error("Upload failed. Please try a smaller JPG or PNG.");
+        }
+        screenshotId = mediaId;
+        await submitProof({
+          tier,
+          payerFullName: fullName,
+          lastFourDigits: lastFour,
+          mediaId: screenshotId,
+        });
       } else {
         const uploaded = await uploadPhoto(file);
         screenshotId = String(
           (uploaded as { storageId?: string }).storageId ?? ""
         );
+        if (!screenshotId) throw new Error("Upload failed");
+        await submitProof({
+          tier,
+          payerFullName: fullName,
+          lastFourDigits: lastFour,
+          screenshotId,
+        });
       }
-      if (!screenshotId) throw new Error("Upload failed");
-      await submitProof({
-        tier,
-        payerFullName: fullName,
-        lastFourDigits: lastFour,
-        screenshotId,
-      });
       toast.success(t("payment.evcSubmitted"));
       setFullName("");
       setLastFour("");

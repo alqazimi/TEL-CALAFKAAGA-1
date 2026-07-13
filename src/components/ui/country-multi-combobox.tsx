@@ -97,17 +97,30 @@ export function CountryMultiCombobox({
                   const selected = value.includes(country);
                   return (
                     <li key={country}>
-                      <button
-                        type="button"
+                      <div
+                        role="option"
+                        aria-selected={selected}
+                        tabIndex={0}
                         className={cn(
-                          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-left hover:bg-accent",
+                          "flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-left hover:bg-accent",
                           selected && "bg-accent"
                         )}
                         onClick={() => toggle(country)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            toggle(country);
+                          }
+                        }}
                       >
-                        <Checkbox checked={selected} />
+                        <Checkbox
+                          checked={selected}
+                          tabIndex={-1}
+                          className="pointer-events-none"
+                          aria-hidden
+                        />
                         {country}
-                      </button>
+                      </div>
                     </li>
                   );
                 })

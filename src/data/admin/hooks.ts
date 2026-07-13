@@ -15,6 +15,26 @@ import { getModerationAdapter } from "../moderation";
  * IDs are always profile/report/invite UUIDs or Convex profile ids as used by the UI.
  */
 
+function withConvexIds(rows: unknown): unknown[] {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((row) => {
+    const item = row as Record<string, unknown>;
+    const id =
+      (typeof item._id === "string" && item._id) ||
+      (typeof item.id === "string" && item.id) ||
+      "";
+    return { ...item, _id: id, id: id || item.id };
+  });
+}
+
+function unwrapItems(d: unknown): unknown[] {
+  if (Array.isArray(d)) return d;
+  if (d && typeof d === "object" && Array.isArray((d as { items?: unknown[] }).items)) {
+    return (d as { items: unknown[] }).items;
+  }
+  return [];
+}
+
 export function useAdminBootstrapStatus(enabled: boolean) {
   const convex = useSafeQuery(
     api.admin.getBootstrapStatus,
@@ -67,33 +87,82 @@ export function useAdminUsers(
     api.admin.getAllUsers,
     !isApiProvider() && enabled ? ((opts ?? {}) as never) : "skip"
   );
-  const [apiData, setApiData] = useState<unknown>(undefined);
+  const [apiData, setApiData] = useState<unknown[] | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const key = JSON.stringify(opts ?? {});
   useEffect(() => {
     if (!isApiProvider() || !enabled) {
       setApiData(undefined);
+      setNextCursor(null);
       return;
     }
     let c = false;
+    setApiData(undefined);
+    setNextCursor(null);
     void getAdminAdapter()
       .users.list(opts)
       .then((d) => {
-        if (!c) {
-          // Nest returns { items, nextCursor }; Convex returns array.
-          const items = Array.isArray(d)
-            ? d
-            : ((d as { items?: unknown[] })?.items ?? d);
-          setApiData(items);
-        }
+        if (c) return;
+        const payload = d as { items?: unknown[]; nextCursor?: string | null };
+        const raw = Array.isArray(d) ? d : (payload?.items ?? []);
+        const items = withConvexIds(raw);
+        setApiData(items);
+        setNextCursor(
+          !Array.isArray(d) && typeof payload.nextCursor === "string"
+            ? payload.nextCursor
+            : null
+        );
       })
       .catch(() => {
-        if (!c) setApiData([]);
+        if (!c) {
+          setApiData([]);
+          setNextCursor(null);
+        }
       });
     return () => {
       c = true;
     };
   }, [enabled, key]);
-  return isApiProvider() ? apiData : convex;
+
+  const loadMore = useCallback(async () => {
+    if (!isApiProvider() || !enabled || !nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const d = await getAdminAdapter().users.list({
+        ...(opts ?? {}),
+        cursor: nextCursor,
+      });
+      const payload = d as { items?: unknown[]; nextCursor?: string | null };
+      const raw = Array.isArray(d) ? d : (payload?.items ?? []);
+      const items = withConvexIds(raw);
+      setApiData((prev) => [...(prev ?? []), ...items]);
+      setNextCursor(
+        !Array.isArray(d) && typeof payload.nextCursor === "string"
+          ? payload.nextCursor
+          : null
+      );
+    } catch {
+      // keep existing page
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [enabled, loadingMore, nextCursor, opts]);
+
+  if (!isApiProvider()) {
+    return {
+      users: convex as unknown[] | undefined,
+      loadMore: async () => {},
+      hasMore: false,
+      loadingMore: false,
+    };
+  }
+  return {
+    users: apiData,
+    loadMore,
+    hasMore: Boolean(nextCursor),
+    loadingMore,
+  };
 }
 
 export function useAdminAnalytics(enabled: boolean) {
@@ -136,10 +205,7 @@ export function useAdminPayments(enabled: boolean) {
       .payments.list({ status: "completed", limit: 100 })
       .then((d) => {
         if (!c) {
-          const items = Array.isArray(d)
-            ? d
-            : ((d as { items?: unknown[] })?.items ?? []);
-          setApiData(items);
+          setApiData(withConvexIds(unwrapItems(d)));
         }
       });
     return () => {
@@ -165,10 +231,7 @@ export function useAdminReports(enabled: boolean) {
       .reports.list()
       .then((d) => {
         if (!c) {
-          const items = Array.isArray(d)
-            ? d
-            : ((d as { items?: unknown[] })?.items ?? []);
-          setApiData(items);
+          setApiData(withConvexIds(unwrapItems(d)));
         }
       });
     return () => {
@@ -197,10 +260,7 @@ export function useAdminSupportContacts(
       .admin.list(opts)
       .then((d) => {
         if (!c) {
-          const items = Array.isArray(d)
-            ? d
-            : ((d as { items?: unknown[] })?.items ?? []);
-          setApiData(items);
+          setApiData(withConvexIds(unwrapItems(d)));
         }
       })
       .catch(() => {
@@ -229,10 +289,7 @@ export function useAdminAuditLogs(enabled: boolean, limit = 80) {
       .auditLogs({ limit })
       .then((d) => {
         if (!c) {
-          const items = Array.isArray(d)
-            ? d
-            : ((d as { items?: unknown[] })?.items ?? []);
-          setApiData(items);
+          setApiData(withConvexIds(unwrapItems(d)));
         }
       });
     return () => {
@@ -511,9 +568,25 @@ export function useStaffInvitesList(enabled = true) {
       .staffInvites.list()
       .then((d) => {
         if (!c) {
-          const items = Array.isArray(d)
+          const raw = Array.isArray(d)
             ? d
             : ((d as { items?: unknown[] })?.items ?? d);
+          const items = Array.isArray(raw)
+            ? raw.map((row) => {
+                const invite = row as Record<string, unknown>;
+                const id =
+                  (typeof invite._id === "string" && invite._id) ||
+                  (typeof invite.id === "string" && invite.id) ||
+                  "";
+                const expiresAt =
+                  typeof invite.expiresAt === "number"
+                    ? invite.expiresAt
+                    : typeof invite.expiresAt === "string"
+                      ? Date.parse(invite.expiresAt) || 0
+                      : 0;
+                return { ...invite, _id: id, id, expiresAt };
+              })
+            : [];
           setApiData(items);
         }
       })

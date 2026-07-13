@@ -20,6 +20,9 @@ export function useMyBlocks() {
       .listMyBlocks()
       .then((d) => {
         if (!c) setApiData(d);
+      })
+      .catch(() => {
+        if (!c) setApiData(null);
       });
     return () => {
       c = true;

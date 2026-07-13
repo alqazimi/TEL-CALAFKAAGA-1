@@ -1160,6 +1160,8 @@ export const so: Translations = {
     clickHint: "Guji isticmaale kasta si aad u aragto profile-kiisa iyo jawaabaha su'aalaha.",
     noUsers: "Ma jiro isticmaale u dhigma shaandhadan.",
     noPayments: "Weli lacag bixin lama diiwaangelin.",
+    loadMoreMembers: "Soo celi xubno dheeraad ah",
+    showingMembers: "Waxaa la muujinayaa {count} xubnood",
     paymentsShowingCompleted: "Lacag bixinta dhammaystiran oo keliya — checkout-yada la iska dayay si toos ah ayaa loo maamulaa.",
     evcPendingTitle: "Lacagaha EVC ee sugaya",
     evcPendingDesc:

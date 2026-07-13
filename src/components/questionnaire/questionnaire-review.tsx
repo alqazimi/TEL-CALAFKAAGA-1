@@ -24,6 +24,11 @@ interface QuestionnaireReviewProps {
   onEditGender?: () => void;
   onComplete: () => void;
   isEditMode?: boolean;
+  /** Refetch profile/preferences before completeness checks (API mode). */
+  onRefreshState?: () => Promise<{
+    profile: Profile | null;
+    preferences: Preferences | null;
+  }>;
 }
 
 /** Map questionnaire step `id` → 0-based index in `STEPS` (Edit must use index, not id). */
@@ -85,6 +90,7 @@ export function QuestionnaireReview({
   onEditGender,
   onComplete,
   isEditMode = false,
+  onRefreshState,
 }: QuestionnaireReviewProps) {
   const completeQuestionnaire = useCompleteQuestionnaire();
   const [submitting, setSubmitting] = useState(false);
@@ -99,13 +105,34 @@ export function QuestionnaireReview({
       return;
     }
 
-    if (!profile.profileImageId) {
+    let latestProfile = profile;
+    let latestPreferences = preferences;
+
+    // API mode can have stale caches; validate against freshly fetched state.
+    if (onRefreshState) {
+      try {
+        const fresh = await onRefreshState();
+        if (fresh.profile) latestProfile = fresh.profile;
+        latestPreferences = fresh.preferences;
+      } catch {
+        // Fall through and validate with whatever we have.
+      }
+    }
+
+    const hasPhoto = !!(
+      latestProfile.profileImageId ||
+      (latestProfile as Profile & { imageUrl?: string | null }).imageUrl
+    );
+    if (!hasPhoto) {
       toast.error(ui("photoRequired"));
       onEditStep(PHOTO_STEP_INDEX);
       return;
     }
 
-    const incompleteStep = firstIncompleteStep(profile, preferences);
+    const incompleteStep = firstIncompleteStep(
+      latestProfile,
+      latestPreferences
+    );
     if (incompleteStep !== null) {
       toast.error(ui("answerAllRequired"));
       onEditStep(incompleteStep);
@@ -119,7 +146,7 @@ export function QuestionnaireReview({
       onComplete();
     } catch (error) {
       toast.error(getSafeUserError(error, ui("submitFailed")));
-      const step = firstIncompleteStep(profile, preferences);
+      const step = firstIncompleteStep(latestProfile, latestPreferences);
       if (step !== null) onEditStep(step);
     } finally {
       setSubmitting(false);

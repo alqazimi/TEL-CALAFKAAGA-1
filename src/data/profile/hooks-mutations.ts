@@ -73,4 +73,9 @@ export function useUpdateWaliContact() {
 }
 
 // Re-export query hooks from the fuller hooks file sections
-export { useProfile, usePreferencesQuery, useWaliForMatch } from "./hooks-queries";
+export {
+  useProfile,
+  usePreferencesQuery,
+  usePreferences,
+  useWaliForMatch,
+} from "./hooks-queries";

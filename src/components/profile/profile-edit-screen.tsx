@@ -24,6 +24,7 @@ import {
   useAddAdditionalPhoto,
   useRemoveAdditionalPhoto,
 } from "@/data/photos/hooks";
+import { isApiProvider } from "@/data/provider";
 import type { CurrentUser, Profile } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,10 +63,16 @@ const profileSchema = z.object({
 type ProfileForm = z.infer<typeof profileSchema>;
 
 interface ProfileEditScreenProps {
-  profile: Profile & { imageUrl?: string | null; additionalImageUrls?: string[] };
+  profile: Profile & {
+    imageUrl?: string | null;
+    additionalImageUrls?: string[];
+    additionalImageIds?: string[];
+  };
   currentUser: CurrentUser;
   isStaff: boolean;
   roleLabel: string;
+  /** Refresh profile after API-mode photo mutations (Nest confirm already persists). */
+  onProfileRefresh?: () => Promise<void>;
 }
 
 export function ProfileEditScreen({
@@ -73,6 +80,7 @@ export function ProfileEditScreen({
   currentUser,
   isStaff,
   roleLabel,
+  onProfileRefresh,
 }: ProfileEditScreenProps) {
   const { t } = useTranslation();
   const updateProfile = useUpdateProfile();
@@ -126,7 +134,12 @@ export function ProfileEditScreen({
           ""
       );
       if (!storageId) throw new Error("upload failed");
-      await updateProfile({ profileImageId: storageId });
+      // Nest confirm-upload already sets the main photo; Convex still needs updateProfile.
+      if (isApiProvider()) {
+        await onProfileRefresh?.();
+      } else {
+        await updateProfile({ profileImageId: storageId });
+      }
       toast.success(t("profilePage.photoUpdated"));
     } catch (error) {
       toast.error(getSafeUserError(error, t("profilePage.photoFailed")));
@@ -149,7 +162,12 @@ export function ProfileEditScreen({
           ""
       );
       if (!storageId) throw new Error("upload failed");
-      await addAdditionalPhoto({ storageId });
+      // Nest confirm-upload already attaches additional photos; Convex needs addAdditionalPhoto.
+      if (isApiProvider()) {
+        await onProfileRefresh?.();
+      } else {
+        await addAdditionalPhoto({ storageId });
+      }
       toast.success(t("premium.photoAdded"));
     } catch (error) {
       toast.error(getSafeUserError(error, t("profilePage.photoFailed")));
@@ -445,9 +463,11 @@ export function ProfileEditScreen({
                         <button
                           type="button"
                           onClick={() =>
-                            void removeAdditionalPhoto(String(extraIds[index])).then(() =>
-                              toast.success(t("premium.photoRemoved"))
-                            )
+                            void removeAdditionalPhoto(String(extraIds[index]))
+                              .then(async () => {
+                                if (isApiProvider()) await onProfileRefresh?.();
+                                toast.success(t("premium.photoRemoved"));
+                              })
                           }
                           className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-white"
                         >

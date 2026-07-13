@@ -1152,6 +1152,8 @@ export const en = {
     clickHint: "Use View to open the full profile. Action buttons are labeled so you know what each one does.",
     noUsers: "No members match these filters.",
     noPayments: "No payments recorded yet.",
+    loadMoreMembers: "Load more members",
+    showingMembers: "Showing {count} members",
     paymentsShowingCompleted: "Completed payments only.",
     evcPendingTitle: "EVC payments waiting",
     evcPendingDesc:

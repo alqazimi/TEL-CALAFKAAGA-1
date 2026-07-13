@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useQueries } from "convex/react";
 import type { FunctionReference } from "convex/server";
 import { getFunctionName } from "convex/server";
+import { isApiProvider } from "@/data/provider";
 
 let backendUnavailable = false;
 const listeners = new Set<() => void>();
@@ -20,6 +21,9 @@ export function subscribeConvexBackendStatus(listener: () => void) {
 }
 
 function markBackendUnavailable(error: Error) {
+  // API mode never depends on Convex availability.
+  if (isApiProvider()) return;
+
   const message = error.message || "";
   const looksDown =
     message.includes("Server Error") ||
@@ -29,7 +33,10 @@ function markBackendUnavailable(error: Error) {
     message.includes("Overloaded");
   if (!looksDown || backendUnavailable) return;
   backendUnavailable = true;
-  listeners.forEach((listener) => listener());
+  // Never notify subscribers during render — that updates other components mid-render.
+  queueMicrotask(() => {
+    listeners.forEach((listener) => listener());
+  });
 }
 
 type Skip = "skip";
@@ -43,7 +50,7 @@ export function useSafeQuery<Query extends FunctionReference<"query">>(
   query: Query,
   args?: Query["_args"] | Skip
 ): Query["_returnType"] | undefined {
-  const skip = args === "skip";
+  const skip = args === "skip" || isApiProvider();
   const argsObject = (skip ? {} : (args ?? {})) as Record<string, unknown>;
   const queryName = getFunctionName(query);
 
@@ -60,6 +67,8 @@ export function useSafeQuery<Query extends FunctionReference<"query">>(
 
   const results = useQueries(queries as Parameters<typeof useQueries>[0]);
   const result = results["query"];
+
+  if (skip) return undefined;
 
   if (result instanceof Error) {
     markBackendUnavailable(result);

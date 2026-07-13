@@ -133,10 +133,12 @@ export default function ChatPage() {
     !!profile &&
     !queriesLoading &&
     (profile.questionnaireComplete || isMemberProfileReady(profile, preferences));
+  const canQueryChat =
+    profileReady && hasPaidAccess(profile) && !needsApprovalGate(profile);
 
   const conversations = useConversations({
     list: matchList,
-    enabled: profileReady,
+    enabled: canQueryChat,
   }) as Conversation[] | undefined;
 
   // Drive the open thread from the URL so phone/browser Back closes chat first.

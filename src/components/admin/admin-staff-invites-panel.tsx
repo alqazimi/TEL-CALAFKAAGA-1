@@ -41,10 +41,11 @@ function statusVariant(status: string): "default" | "secondary" | "outline" {
 }
 
 type StaffInvite = {
-  _id: string;
+  _id?: string;
+  id?: string;
   email: string;
   status: string;
-  expiresAt: number;
+  expiresAt: number | string;
 };
 
 export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolean }) {
@@ -147,9 +148,12 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
             {t("adminInvites.recent")}
           </p>
           <ul className="space-y-2">
-            {invites.slice(0, 8).map((invite) => (
+            {invites.slice(0, 8).map((invite, index) => {
+              const id = invite._id || invite.id || "";
+              const rowKey = id || `${invite.email}-${index}`;
+              return (
               <li
-                key={invite._id}
+                key={rowKey}
                 className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0 space-y-1">
@@ -173,8 +177,11 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={busyId === invite._id}
-                      onClick={() => void handleResend(invite._id)}
+                      disabled={!id || busyId === id}
+                      onClick={() => {
+                        if (!id) return;
+                        void handleResend(id);
+                      }}
                     >
                       <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                       {t("adminInvites.resend")}
@@ -182,8 +189,11 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
                     <Button
                       size="sm"
                       variant="ghost"
-                      disabled={busyId === invite._id}
-                      onClick={() => void handleRevoke(invite._id)}
+                      disabled={!id || busyId === id}
+                      onClick={() => {
+                        if (!id) return;
+                        void handleRevoke(id);
+                      }}
                     >
                       <XCircle className="mr-1.5 h-3.5 w-3.5" />
                       {t("adminInvites.revoke")}
@@ -191,7 +201,8 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
                   </div>
                 )}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       )}

@@ -24,6 +24,9 @@ function useApiMySupport() {
       .listMine()
       .then((d) => {
         if (!cancelled) setApiData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setApiData(null);
       });
     return () => {
       cancelled = true;

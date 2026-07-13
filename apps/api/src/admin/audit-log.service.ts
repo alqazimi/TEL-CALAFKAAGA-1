@@ -94,6 +94,7 @@ export class AuditLogService {
 
     return {
       items: page.map((log) => ({
+        _id: log.id,
         id: log.id,
         action: log.action,
         metadata: log.metadata ?? null,

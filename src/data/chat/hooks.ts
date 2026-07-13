@@ -31,7 +31,13 @@ function useApiConversations(list: string | undefined, enabled: boolean) {
   const [apiData, setApiData] = useState<unknown>(undefined);
   const refresh = useCallback(async () => {
     if (!enabled) return;
-    setApiData(await getChatAdapter().getConversations(list ? { list } : undefined));
+    try {
+      setApiData(
+        await getChatAdapter().getConversations(list ? { list } : undefined)
+      );
+    } catch {
+      setApiData(null);
+    }
   }, [enabled, list]);
   useEffect(() => {
     if (!enabled) {
@@ -63,7 +69,11 @@ function useApiMessages(conversationId: string | undefined) {
   const [apiData, setApiData] = useState<unknown>(undefined);
   const refresh = useCallback(async () => {
     if (!conversationId) return;
-    setApiData(await getChatAdapter().getMessages(conversationId));
+    try {
+      setApiData(await getChatAdapter().getMessages(conversationId));
+    } catch {
+      setApiData(null);
+    }
   }, [conversationId]);
   useEffect(() => {
     if (!conversationId) return;

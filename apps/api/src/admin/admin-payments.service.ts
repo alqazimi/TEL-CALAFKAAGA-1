@@ -44,18 +44,22 @@ export class AdminPaymentsService {
     for (const p of page) {
       const profile = await this.prisma.profile.findUnique({
         where: { userId: p.userId },
-        select: { name: true },
+        select: { name: true, phone: true },
       });
       items.push({
+        _id: p.id,
         id: p.id,
         amount: p.amount,
         status: p.status,
         paymentType: p.paymentType,
         registrationTier: p.registrationTier,
-        createdAt: p.paymentCreatedAt.toISOString(),
-        fulfilledAt: p.fulfilledAt?.toISOString() ?? null,
+        createdAt: p.paymentCreatedAt.getTime(),
+        fulfilledAt: p.fulfilledAt?.getTime() ?? null,
         userEmail: maskEmail(p.user.email),
+        userName: profile?.name ?? "Unknown",
         profileName: profile?.name ?? null,
+        userPhone: profile?.phone ?? null,
+        stripeSessionId: p.stripeSessionId,
         stripeSessionIdPrefix: p.stripeSessionId.slice(0, 12) + "…",
       });
     }

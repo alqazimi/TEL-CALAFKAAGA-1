@@ -58,28 +58,31 @@ export function useVerifyCheckoutSession() {
 }
 
 export function useEvcLatestProof() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiEvcLatest();
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(api.evcPayments.myLatestProof, {});
-}
-
-function useApiEvcLatest() {
+  const apiMode = isApiProvider();
+  // Always call the same hooks (Rules of Hooks). Skip Convex entirely in API mode.
+  const convexData = useSafeQuery(
+    api.evcPayments.myLatestProof,
+    apiMode ? ("skip" as const) : {}
+  );
   const [apiData, setApiData] = useState<unknown>(undefined);
+
   useEffect(() => {
+    if (!apiMode) return;
     let cancelled = false;
     void getPaymentsAdapter()
       .evc.myLatest()
       .then((d) => {
         if (!cancelled) setApiData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setApiData(null);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
-  return apiData;
+  }, [apiMode]);
+
+  return apiMode ? apiData : convexData;
 }
 
 export function useSubmitEvcProof() {

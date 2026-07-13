@@ -23,7 +23,11 @@ export function useNotificationsList() {
 function useApiNotificationsList() {
   const [apiData, setApiData] = useState<unknown>(undefined);
   const refresh = useCallback(async () => {
-    setApiData(await getNotificationsAdapter().list());
+    try {
+      setApiData(await getNotificationsAdapter().list());
+    } catch {
+      setApiData(null);
+    }
   }, []);
   useEffect(() => {
     void refresh();
@@ -47,7 +51,11 @@ export function useUnreadCount() {
 function useApiUnreadCount() {
   const [apiData, setApiData] = useState<unknown>(undefined);
   const refresh = useCallback(async () => {
-    setApiData(await getNotificationsAdapter().unreadCount());
+    try {
+      setApiData(await getNotificationsAdapter().unreadCount());
+    } catch {
+      setApiData(null);
+    }
   }, []);
   useEffect(() => {
     void refresh();
@@ -79,6 +87,9 @@ function useApiReminders() {
       .getMemberReminders()
       .then((d) => {
         if (!cancelled) setApiData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setApiData(null);
       });
     return () => {
       cancelled = true;

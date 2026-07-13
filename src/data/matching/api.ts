@@ -1,4 +1,4 @@
-import { apiClient } from "../api-client";
+import { apiClient, ApiClientError } from "../api-client";
 import type { MatchingAdapter } from "./types";
 
 function toQuery(filters?: Record<string, unknown>): string {
@@ -12,18 +12,53 @@ function toQuery(filters?: Record<string, unknown>): string {
   return q ? `?${q}` : "";
 }
 
+/** Unpaid / gated reads should not crash the app shell — return empty data. */
+function isPaidGateError(error: unknown): boolean {
+  return (
+    error instanceof ApiClientError &&
+    error.status === 403 &&
+    /paid access required/i.test(error.message)
+  );
+}
+
 export const apiMatching: MatchingAdapter = {
   async getMatches(filters) {
-    return apiClient.get(`/matches/discover${toQuery(filters)}`);
+    try {
+      return await apiClient.get(`/matches/discover${toQuery(filters)}`);
+    } catch (error) {
+      if (isPaidGateError(error)) return [];
+      throw error;
+    }
   },
   async getMyMatches(list = "active") {
-    return apiClient.get(`/matches/mutual?list=${encodeURIComponent(list)}`);
+    try {
+      return await apiClient.get(
+        `/matches/mutual?list=${encodeURIComponent(list)}`
+      );
+    } catch (error) {
+      if (isPaidGateError(error)) return [];
+      throw error;
+    }
   },
   async getMatchLists(filters) {
-    return apiClient.get(`/matches/lists${toQuery(filters)}`);
+    try {
+      return await apiClient.get(`/matches/lists${toQuery(filters)}`);
+    } catch (error) {
+      if (isPaidGateError(error)) {
+        return { shortlist: [], liked: [], likedYou: [], passed: [] };
+      }
+      throw error;
+    }
   },
   async getCompatibilityBreakdown(userId) {
-    return apiClient.get(`/matches/${encodeURIComponent(userId)}/breakdown`);
+    try {
+      return await apiClient.get(
+        `/matches/${encodeURIComponent(userId)}/breakdown`
+      );
+    } catch (error) {
+      if (isPaidGateError(error)) return null;
+      throw error;
+    }
   },
   async likeUser(userId, action = "like") {
     return apiClient.post(`/matches/${encodeURIComponent(userId)}/action`, {

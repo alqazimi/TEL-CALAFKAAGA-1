@@ -29,12 +29,15 @@ export default function ApiLoginForm() {
       await refresh?.();
       const user = await auth.getCurrentUser();
       toast.success(t("auth.welcomeBackToast"));
-      router.push(
-        getAuthenticatedHomeRoute(
-          (user?.profile as Parameters<typeof getAuthenticatedHomeRoute>[0]) ??
-            undefined
-        )
-      );
+      const profileForRoute =
+        (user?.profile as Parameters<typeof getAuthenticatedHomeRoute>[0]) ??
+        ({
+          role: (user as { role?: string } | null)?.role,
+          hasPaid: (user as { hasPaid?: boolean } | null)?.hasPaid,
+          questionnaireComplete: true,
+          registrationComplete: true,
+        } as Parameters<typeof getAuthenticatedHomeRoute>[0]);
+      router.push(getAuthenticatedHomeRoute(profileForRoute));
     } catch (error) {
       toast.error(getAuthErrorMessage(error, t("validation.invalidCredentials"), t));
     } finally {

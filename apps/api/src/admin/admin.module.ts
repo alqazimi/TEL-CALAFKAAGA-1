@@ -24,6 +24,7 @@ import { StaffInvitesService } from "./staff-invites.service";
 import { StaffInvitesController } from "./staff-invites.controller";
 import { AnnouncementsService } from "./announcements.service";
 import { AnnouncementsController } from "./announcements.controller";
+import { AdminChatService } from "./admin-chat.service";
 import { AdminStatsService } from "./admin-stats.service";
 import { AdminMiscController } from "./admin-misc.controller";
 
@@ -60,6 +61,7 @@ import { AdminMiscController } from "./admin-misc.controller";
     AnnouncementsService,
     AnnouncementQueueService,
     AdminStatsService,
+    AdminChatService,
   ],
   exports: [
     AuditLogService,

@@ -66,12 +66,14 @@ export class StaffInvitesService {
           ? ("expired" as const)
           : invite.status;
       return {
+        // UI expects Convex-shaped `_id` for keys and revoke/resend actions.
+        _id: invite.id,
         id: invite.id,
         email: invite.email,
         role: invite.role,
         status,
         createdAt: invite.inviteCreatedAt.toISOString(),
-        expiresAt: invite.expiresAt.toISOString(),
+        expiresAt: invite.expiresAt.getTime(),
         acceptedAt: invite.acceptedAt?.toISOString() ?? null,
       };
     });

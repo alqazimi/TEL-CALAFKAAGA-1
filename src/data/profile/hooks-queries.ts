@@ -24,7 +24,12 @@ function useApiProfile() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      setApiData(await apiProfile.getProfile());
+      const next = await apiProfile.getProfile();
+      setApiData(next);
+      return next;
+    } catch {
+      setApiData(null);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -44,33 +49,60 @@ function useConvexProfile() {
   return {
     profile: convexProfile,
     loading: convexProfile === undefined,
-    refresh: async () => undefined,
+    refresh: async () => convexProfile ?? null,
   };
 }
 
 export function usePreferencesQuery() {
   if (isApiProvider()) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiPreferences();
+    return useApiPreferences().preferences;
   }
   // eslint-disable-next-line react-hooks/rules-of-hooks
   return useSafeQuery(api.profiles.getPreferences, {});
 }
 
+/** Preferences plus a refresh helper (API mode). Convex refresh is a no-op. */
+export function usePreferences() {
+  if (isApiProvider()) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useApiPreferences();
+  }
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const preferences = useSafeQuery(api.profiles.getPreferences, {});
+  return {
+    preferences,
+    loading: preferences === undefined,
+    refresh: async () => preferences ?? null,
+  };
+}
+
 function useApiPreferences() {
-  const [apiData, setApiData] = useState<unknown>(undefined);
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
+  const [preferences, setPreferences] = useState<unknown>(undefined);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
       const { apiPreferences } = await import("../preferences/api");
-      const data = await apiPreferences.getPreferences();
-      if (!cancelled) setApiData(data);
-    })();
-    return () => {
-      cancelled = true;
-    };
+      const next = await apiPreferences.getPreferences();
+      setPreferences(next);
+      return next;
+    } catch {
+      setPreferences(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
   }, []);
-  return apiData;
+
+  useEffect(() => {
+    void refresh();
+    const t = setInterval(() => void refresh(), POLL_MS);
+    return () => clearInterval(t);
+  }, [refresh]);
+
+  return { preferences, loading, refresh };
 }
 
 export function useWaliForMatch(targetUserId: string | undefined) {

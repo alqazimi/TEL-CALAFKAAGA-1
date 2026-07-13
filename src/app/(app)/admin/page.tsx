@@ -130,7 +130,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
-  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("needs_action");
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
   const [announcement, setAnnouncement] = useState({
     title: "",
     body: "",
@@ -142,7 +142,10 @@ export default function AdminPage() {
   const { user: authUser } = useUnifiedAuth();
   const currentUser = authUser as CurrentUser | null | undefined;
   const userTimedOut = useLoadingTimeout(currentUser === undefined, 8_000);
-  const isStaff = isStaffRole(currentUser?.profile?.role);
+  const staffRole =
+    currentUser?.profile?.role ??
+    (currentUser as { role?: string } | null | undefined)?.role;
+  const isStaff = isStaffRole(staffRole);
   const bootstrapStatus = useAdminBootstrapStatus(
     currentUser !== undefined && !isStaff
   ) as
@@ -153,13 +156,19 @@ export default function AdminPage() {
     | AdminStats
     | null
     | undefined;
-  const users = useAdminUsers(!!isStaff && activeTab === "users", {
+  const {
+    users,
+    loadMore: loadMoreUsers,
+    hasMore: hasMoreUsers,
+    loadingMore: loadingMoreUsers,
+  } = useAdminUsers(!!isStaff && activeTab === "users", {
     search: search || undefined,
     role: roleFilter,
     payment: paymentFilter,
     review: reviewFilter,
-    limit: 100,
-  }) as AdminUser[] | undefined;
+    limit: 150,
+  });
+  const adminUsers = users as AdminUser[] | undefined;
   const analytics = useAdminAnalytics(
     !!isStaff && activeTab === "analytics"
   ) as AdminAnalytics | undefined;
@@ -183,12 +192,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (currentUser === undefined) return;
-    if (isStaffRole(currentUser?.profile?.role)) return;
+    if (isStaffRole(staffRole)) return;
     // First-time setup: stay on /admin to claim owner.
     if (bootstrapStatus == null) return;
     if (!bootstrapStatus.hasAdmins) return;
     router.replace(getAuthenticatedHomeRoute(currentUser?.profile));
-  }, [bootstrapStatus, currentUser, router]);
+  }, [bootstrapStatus, currentUser, router, staffRole]);
 
   const setTab = (tab: AdminTab) => {
     router.replace(`/admin?tab=${tab}`, { scroll: false });
@@ -268,7 +277,8 @@ export default function AdminPage() {
     );
   }
 
-  const canManageRoles = currentUser.profile?.role === "owner" || stats?.isOwner === true;
+  const canManageRoles =
+    staffRole === "owner" || stats?.isOwner === true;
   const pendingReviewCount = stats?.pendingApproval ?? 0;
   const openReports = reports?.filter((r) => r.status === "open").length ?? 0;
   const openContacts = supportContacts?.length ?? 0;
@@ -645,7 +655,7 @@ export default function AdminPage() {
           <div className="space-y-5">
             {canManageRoles && <AdminStaffInvitesPanel />}
             <AdminMembersPanel
-              users={users}
+              users={adminUsers}
               search={search}
               onSearchChange={setSearch}
               roleFilter={roleFilter}
@@ -660,6 +670,9 @@ export default function AdminPage() {
               currentProfileId={currentUser?.profile?._id}
               canManageRoles={canManageRoles}
               onOpenUser={openUserProfile}
+              onLoadMore={() => void loadMoreUsers()}
+              hasMore={hasMoreUsers}
+              loadingMore={loadingMoreUsers}
             />
           </div>
         )}

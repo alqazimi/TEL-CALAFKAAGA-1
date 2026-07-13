@@ -40,6 +40,10 @@ export type AdminAdapter = {
     schedule(id: string, scheduledFor: string): Promise<unknown>;
   };
   auditLogs(opts?: Record<string, unknown>): Promise<unknown>;
+  conversations: {
+    list(opts?: { limit?: number }): Promise<unknown>;
+    thread(id: string, opts?: { limit?: number }): Promise<unknown>;
+  };
   staffInvites: {
     list(): Promise<unknown>;
     create(body: Record<string, unknown>): Promise<unknown>;

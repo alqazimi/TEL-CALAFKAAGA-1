@@ -288,17 +288,38 @@ export class SupportService {
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
     return {
-      items: page.map((c) => ({
-        id: c.id,
-        name: c.name,
-        email: maskEmail(c.email),
-        topic: c.topic,
-        subject: c.subject,
-        status: c.status,
-        source: c.source,
-        createdAt: c.contactCreatedAt.toISOString(),
-        canReply: !!c.userId,
-      })),
+      items: await Promise.all(
+        page.map(async (c) => {
+          const profile = c.userId
+            ? await this.prisma.profile.findUnique({
+                where: { userId: c.userId },
+                select: { id: true, phone: true },
+              })
+            : null;
+          const thread = await this.loadThread(c.id, c);
+          return {
+            _id: c.id,
+            id: c.id,
+            name: c.name,
+            email: maskEmail(c.email),
+            phone: profile?.phone ?? c.phone ?? null,
+            topic: c.topic,
+            subject: c.subject,
+            status: c.status,
+            source: c.source,
+            profileId: profile?.id ?? null,
+            createdAt: c.contactCreatedAt.getTime(),
+            canReply: !!c.userId,
+            thread: thread.map((m) => ({
+              ...m,
+              createdAt:
+                typeof m.createdAt === "string"
+                  ? Date.parse(m.createdAt) || 0
+                  : m.createdAt,
+            })),
+          };
+        })
+      ),
       nextCursor: hasMore ? page[page.length - 1]?.id ?? null : null,
     };
   }

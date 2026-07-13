@@ -86,7 +86,7 @@ export default function MatchesPage() {
 
   const filterArgs = useMemo(() => buildFilterArgs(filters), [filters]);
 
-  const discoverMatchesRaw = useMatches(canQuery ? filterArgs : undefined);
+  const discoverMatchesRaw = useMatches(filterArgs, canQuery);
   const discoverMatches = (
     canQuery ? discoverMatchesRaw : undefined
   ) as MatchResult[] | undefined;

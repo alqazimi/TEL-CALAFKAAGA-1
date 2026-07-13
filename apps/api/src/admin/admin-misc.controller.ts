@@ -9,6 +9,7 @@ import {
 import { Roles } from "../auth/auth.guards";
 import { CsrfGuard } from "../auth/csrf";
 import { RateLimitGuard } from "../redis/rate-limit.guard";
+import { AdminChatService } from "./admin-chat.service";
 import { AdminStatsService } from "./admin-stats.service";
 import { AuditLogService } from "./audit-log.service";
 import { MetricsService } from "./metrics.service";
@@ -19,7 +20,8 @@ export class AdminMiscController {
   constructor(
     private readonly stats: AdminStatsService,
     private readonly audit: AuditLogService,
-    private readonly metrics: MetricsService
+    private readonly metrics: MetricsService,
+    private readonly chat: AdminChatService
   ) {}
 
   @Get("stats")
@@ -35,6 +37,19 @@ export class AdminMiscController {
   @Get("activity")
   getActivity(@Query("limit") limit?: string) {
     return this.stats.getActivity(limit ? Number(limit) : 40);
+  }
+
+  @Get("conversations")
+  listConversations(@Query("limit") limit?: string) {
+    return this.chat.listConversations(limit ? Number(limit) : 40);
+  }
+
+  @Get("conversations/:id")
+  getConversation(
+    @Param("id") id: string,
+    @Query("limit") limit?: string
+  ) {
+    return this.chat.getThread(id, limit ? Number(limit) : 500);
   }
 
   @Get("site-metrics")

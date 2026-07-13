@@ -219,6 +219,7 @@ export class ModerationService {
           where: { userId: report.reporterId },
         });
         return {
+          _id: report.id,
           id: report.id,
           reason: report.reason,
           details: report.details ?? "",
@@ -226,8 +227,8 @@ export class ModerationService {
           priority: report.priority ?? "medium",
           adminNotes: report.adminNotes ?? "",
           resolution: report.resolution ?? "",
-          createdAt: report.reportCreatedAt.toISOString(),
-          reviewedAt: report.reviewedAt?.toISOString() ?? null,
+          createdAt: report.reportCreatedAt.getTime(),
+          reviewedAt: report.reviewedAt?.getTime() ?? null,
           reportedUserId: report.reportedUserId,
           reportedName: reported?.name ?? "Unknown",
           reportedProfileId: reported?.id ?? null,

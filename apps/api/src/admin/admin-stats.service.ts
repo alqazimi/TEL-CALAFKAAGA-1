@@ -14,51 +14,103 @@ export class AdminStatsService {
     const completedPayments = await this.prisma.payment.findMany({
       where: { status: "completed" },
       select: { amount: true, registrationTier: true, paymentType: true },
-      take: 500,
+      take: 2000,
     });
-    let registrationCents = 0;
-    let premiumCents = 0;
-    for (const p of completedPayments) {
+
+    let basicPaidCount = 0;
+    let basicRevenueCents = 0;
+    let premiumSignupCount = 0;
+    let premiumSignupRevenueCents = 0;
+    let premiumUpgradeCount = 0;
+    let premiumUpgradeRevenueCents = 0;
+    let otherRevenueCents = 0;
+
+    for (const payment of completedPayments) {
+      const amount = payment.amount ?? 0;
+      const type = payment.paymentType;
       if (
-        p.paymentType === "premium_upgrade" ||
-        p.registrationTier === "premium" ||
-        p.paymentType === "registration_premium"
+        type === "registration" ||
+        (type == null && payment.registrationTier === "basic")
       ) {
-        premiumCents += p.amount;
+        basicPaidCount++;
+        basicRevenueCents += amount;
+      } else if (type === "registration_premium") {
+        premiumSignupCount++;
+        premiumSignupRevenueCents += amount;
+      } else if (type === "premium_upgrade") {
+        premiumUpgradeCount++;
+        premiumUpgradeRevenueCents += amount;
+      } else if (type === "chat") {
+        otherRevenueCents += amount;
+      } else if (payment.registrationTier === "premium") {
+        premiumSignupCount++;
+        premiumSignupRevenueCents += amount;
+      } else if (amount >= 1500) {
+        premiumSignupCount++;
+        premiumSignupRevenueCents += amount;
+      } else if (amount >= 400) {
+        basicPaidCount++;
+        basicRevenueCents += amount;
       } else {
-        registrationCents += p.amount;
+        otherRevenueCents += amount;
       }
     }
+
+    const premiumPaidCount = premiumSignupCount + premiumUpgradeCount;
+    const premiumRevenueCents =
+      premiumSignupRevenueCents + premiumUpgradeRevenueCents;
+    const revenue =
+      basicRevenueCents + premiumRevenueCents + otherRevenueCents;
+
+    const [activeMatches, totalMessages] = await Promise.all([
+      this.prisma.match.count({ where: { status: "active" } }),
+      this.prisma.message.count(),
+    ]);
 
     const stale =
       !m ||
       Date.now() - m.metricsUpdatedAt.getTime() > 30 * 60 * 1000;
 
+    // Flat Convex-shaped payload so the admin dashboard can render without
+    // an extra frontend adapter layer.
     return {
-      metrics: m
-        ? {
-            totalUsers: m.totalUsers,
-            maleUsers: m.maleUsers,
-            femaleUsers: m.femaleUsers,
-            approvedTotal: m.approvedTotal,
-            paidMembers: m.paidMembers,
-            memberCount: m.memberCount,
-            pendingApproval: m.pendingApproval,
-            bannedUsers: m.bannedUsers,
-            paidBasicMembers: m.paidBasicMembers,
-            freeBasicWomen: m.freeBasicWomen,
-            paidPremiumCount: m.paidPremiumCount,
-            unpaidCount: m.unpaidCount,
-            completeMembers: m.completeMembers,
-            updatedAt: m.metricsUpdatedAt.toISOString(),
-          }
-        : null,
-      money: {
-        registrationCents,
-        premiumCents,
-        totalCents: registrationCents + premiumCents,
-      },
+      totalUsers: m?.totalUsers ?? 0,
+      maleUsers: m?.maleUsers ?? 0,
+      femaleUsers: m?.femaleUsers ?? 0,
+      approvedMale: m?.approvedMale ?? 0,
+      approvedFemale: m?.approvedFemale ?? 0,
+      approvedTotal: m?.approvedTotal ?? 0,
+      totalMatches: activeMatches,
+      totalMessages,
+      revenue,
+      paidBasicCount: basicPaidCount,
+      paidPremiumCount: m?.paidPremiumCount ?? 0,
+      unpaidCount: m?.unpaidCount ?? 0,
+      trialCount: 0,
+      freeBasicWomen: m?.freeBasicWomen ?? 0,
+      // Profile-flag count (paid basic men). Dashboard "Basic ($5)" uses money.basicPaidCount.
+      paidBasicMembers: m?.paidBasicMembers ?? 0,
+      pendingApproval: m?.pendingApproval ?? 0,
+      bannedUsers: m?.bannedUsers ?? 0,
       metricsStale: stale,
+      metricsUpdatedAt: m?.metricsUpdatedAt.toISOString() ?? null,
+      isOwner: true,
+      money: {
+        basicPaidCount,
+        basicRevenueCents,
+        basicPriceCents: 500,
+        premiumSignupCount,
+        premiumSignupRevenueCents,
+        premiumSignupPriceCents: 2000,
+        premiumUpgradeCount,
+        premiumUpgradeRevenueCents,
+        premiumUpgradePriceCents: 1500,
+        premiumPaidCount,
+        premiumRevenueCents,
+        otherRevenueCents,
+        totalPaidCount: basicPaidCount + premiumPaidCount,
+        totalRevenueCents: revenue,
+      },
     };
   }
 
@@ -105,6 +157,7 @@ export class AdminStatsService {
     });
     return logs.map((l) => ({
       id: l.id,
+      _id: l.id,
       action: l.action,
       actorName: l.actor.profile?.name ?? "Staff",
       createdAt: l.loggedAt.toISOString(),

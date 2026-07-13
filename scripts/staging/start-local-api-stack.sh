@@ -13,7 +13,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 API_PORT="${API_PORT:-4001}"
-NEXT_PORT="${NEXT_PORT:-3000}"
+NEXT_PORT="${NEXT_PORT:-3020}"
 COMPOSE=(docker compose -f infra/docker-compose.yml)
 
 echo "==> Hel Calafkaaga local API stack"

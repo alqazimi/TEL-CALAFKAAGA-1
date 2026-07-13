@@ -97,10 +97,24 @@ export class AdminUsersService {
     cursor?: string;
     limit?: number;
   }) {
-    const limit = parseLimit(String(opts.limit ?? 50), 50, 100);
+    const limit = parseLimit(String(opts.limit ?? 50), 50, 250);
     const where: Prisma.ProfileWhereInput = {};
-    if (opts.role) where.role = opts.role as never;
-    if (opts.reviewStatus) where.reviewStatus = opts.reviewStatus as never;
+
+    const role = opts.role?.trim();
+    if (role && role !== "all") {
+      where.role = role as never;
+    }
+
+    const reviewStatus = opts.reviewStatus?.trim();
+    if (reviewStatus && reviewStatus !== "all") {
+      if (reviewStatus === "needs_action") {
+        // Convex "needs_action" = pending_review OR rejected (then approval rules).
+        where.reviewStatus = { in: ["pending_review", "rejected"] };
+      } else {
+        where.reviewStatus = reviewStatus as never;
+      }
+    }
+
     if (opts.hasPaid !== undefined) where.hasPaid = opts.hasPaid;
     if (opts.search?.trim()) {
       const q = opts.search.trim();
@@ -114,16 +128,29 @@ export class AdminUsersService {
       where.id = { lt: opts.cursor };
     }
 
+    // Over-fetch for needs_action so we can apply Convex-equivalent approval rules.
+    const fetchLimit =
+      reviewStatus === "needs_action" ? Math.min(limit * 3, 150) : limit + 1;
+
     const rows = await this.prisma.profile.findMany({
       where,
       orderBy: { id: "desc" },
-      take: limit + 1,
+      take: fetchLimit,
       include: {
         user: { select: { email: true, id: true, convexId: true } },
       },
     });
-    const hasMore = rows.length > limit;
-    const page = hasMore ? rows.slice(0, limit) : rows;
+
+    const filtered =
+      reviewStatus === "needs_action"
+        ? rows.filter((p) => requiresAdminProfileApproval(p))
+        : rows;
+
+    const hasMore =
+      reviewStatus === "needs_action"
+        ? filtered.length > limit
+        : rows.length > limit;
+    const page = hasMore ? filtered.slice(0, limit) : filtered.slice(0, limit);
 
     const items = await Promise.all(
       page.map(async (p) => {
@@ -132,6 +159,8 @@ export class AdminUsersService {
           _sum: { amount: true },
         });
         return {
+          // UI still uses Convex-shaped `_id` as the profile id.
+          _id: p.id,
           id: p.id,
           userId: p.userId,
           name: p.name,
@@ -144,6 +173,7 @@ export class AdminUsersService {
           banned: p.banned,
           reviewStatus: p.reviewStatus,
           questionnaireComplete: p.questionnaireComplete,
+          profileImageId: p.profileImageMediaId ?? p.profileImageConvexId,
           paidCents: paidAgg._sum.amount ?? 0,
           country: p.country,
           city: p.city,
@@ -173,6 +203,7 @@ export class AdminUsersService {
     return {
       profile: {
         ...profile,
+        _id: profile.id,
         email: profile.user.email,
         paidCents: paidAgg._sum.amount ?? 0,
         user: undefined,

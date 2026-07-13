@@ -17,11 +17,12 @@ export default function ProfilePage() {
   const { user: currentUser } = useUnifiedAuth() as {
     user: CurrentUser | null | undefined;
   };
-  const { profile } = useProfile() as {
+  const { profile, refresh: refreshProfile } = useProfile() as {
     profile:
       | (Profile & { imageUrl?: string | null; additionalImageUrls?: string[] })
       | null
       | undefined;
+    refresh: () => Promise<void>;
   };
   const preferences = usePreferencesQuery() as Preferences | null | undefined;
 
@@ -60,6 +61,7 @@ export default function ProfilePage() {
           currentUser={currentUser}
           isStaff={isStaff}
           roleLabel={roleLabel}
+          onProfileRefresh={refreshProfile}
         />
       </div>
     </DashboardLayout>

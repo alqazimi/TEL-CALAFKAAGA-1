@@ -41,6 +41,20 @@ export const STAGING_TEST_USERS = [
     convexId: "staging_e2e_admin",
   },
   {
+    email: "staging.e2e.owner@hel.local",
+    password: "StagingOwner1!",
+    role: "owner" as const,
+    name: "Staging Owner",
+    convexId: "staging_e2e_owner",
+  },
+  {
+    email: "staging.owner@hel.local",
+    password: "StagingOwner1!",
+    role: "owner" as const,
+    name: "Staging Owner",
+    convexId: "staging_allow_owner",
+  },
+  {
     email: "staging.e2e.unpaid@hel.local",
     password: "StagingUnpaid1!",
     role: "user" as const,

@@ -9,7 +9,9 @@ import { isStaffRole } from "@/lib/access";
 export function useStaffRedirect(adminPath = "/admin") {
   const router = useRouter();
   const { user } = useUnifiedAuth();
-  const role = (user?.profile as { role?: string } | null | undefined)?.role;
+  const role =
+    (user?.profile as { role?: string } | null | undefined)?.role ??
+    (user as { role?: string } | null | undefined)?.role;
   const isStaff = isStaffRole(role);
 
   useEffect(() => {

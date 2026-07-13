@@ -6,4 +6,4 @@ export {
   useCompleteRegistrationGender,
   useUpdateWaliContact,
 } from "./hooks-mutations";
-export { useProfile, usePreferencesQuery, useWaliForMatch } from "./hooks-queries";
+export { useProfile, usePreferencesQuery, usePreferences, useWaliForMatch } from "./hooks-queries";

@@ -3,9 +3,14 @@ import type { PreferencesAdapter } from "./types";
 
 export const apiPreferences: PreferencesAdapter = {
   async getPreferences() {
-    return apiClient.get("/preferences/me");
+    const res = await apiClient.get<{ preferences: unknown }>("/preferences/me");
+    return res?.preferences ?? null;
   },
   async updatePreferences(patch) {
-    return apiClient.patch("/preferences/me", patch);
+    const res = await apiClient.patch<{ preferences: unknown }>(
+      "/preferences/me",
+      patch
+    );
+    return res?.preferences ?? null;
   },
 };

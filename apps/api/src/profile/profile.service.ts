@@ -30,6 +30,7 @@ import {
 } from "./questionnaire";
 import { isDiscoverable } from "../common/review-status";
 import { ScoreRecalcStub } from "./score-recalc.stub";
+import { MediaAccessService } from "../media/media-access.service";
 
 const MEMBER_PATCH_ALLOW = new Set([
   "name",
@@ -77,7 +78,8 @@ const MEMBER_PATCH_ALLOW = new Set([
 export class ProfileService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly scoreStub: ScoreRecalcStub
+    private readonly scoreStub: ScoreRecalcStub,
+    private readonly mediaAccess: MediaAccessService
   ) {}
 
   private async audit(
@@ -719,6 +721,47 @@ export class ProfileService {
   }
 
   toPublicProfile(profile: Profile) {
+    return this.toPublicProfileAsync(profile);
+  }
+
+  async toPublicProfileAsync(profile: Profile) {
+    const profileImageId =
+      profile.profileImageMediaId ?? profile.profileImageConvexId;
+    const additionalImageIds =
+      profile.additionalImageMediaIds.length > 0
+        ? profile.additionalImageMediaIds
+        : profile.additionalImageConvexIds;
+
+    let imageUrl: string | null = null;
+    const additionalImageUrls: string[] = [];
+
+    if (profile.profileImageMediaId) {
+      try {
+        const signed = await this.mediaAccess.createSignedDownloadUrl(
+          profile.profileImageMediaId,
+          {
+            userId: profile.userId,
+            roles: [profile.role as "user" | "admin" | "owner"],
+          }
+        );
+        imageUrl = signed.url;
+      } catch {
+        imageUrl = null;
+      }
+    }
+
+    for (const mediaId of profile.additionalImageMediaIds) {
+      try {
+        const signed = await this.mediaAccess.createSignedDownloadUrl(mediaId, {
+          userId: profile.userId,
+          roles: [profile.role as "user" | "admin" | "owner"],
+        });
+        additionalImageUrls.push(signed.url);
+      } catch {
+        // Skip broken / missing objects so the rest of the gallery still works.
+      }
+    }
+
     return {
       id: profile.id,
       userId: profile.userId,
@@ -770,8 +813,12 @@ export class ProfileService {
       hasPaid: profile.hasPaid,
       genderLocked: profile.genderLocked,
       hasPersonalSupport: profile.hasPersonalSupport,
+      profileImageId,
       profileImageConvexId: profile.profileImageConvexId,
       profileImageMediaId: profile.profileImageMediaId,
+      imageUrl,
+      additionalImageIds,
+      additionalImageUrls,
       additionalImageConvexIds: profile.additionalImageConvexIds,
       additionalImageMediaIds: profile.additionalImageMediaIds,
       privateImageConvexIds: profile.privateImageConvexIds,

@@ -37,6 +37,9 @@ function useApiMatches(
       .getMatches(filters)
       .then((d) => {
         if (!cancelled) setApiData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setApiData(null);
       });
     return () => {
       cancelled = true;
@@ -46,29 +49,45 @@ function useApiMatches(
   return apiData;
 }
 
-export function useMatchLists(filters?: Record<string, unknown>) {
+export function useMatchLists(
+  filters?: Record<string, unknown>,
+  enabled = true
+) {
   if (isApiProvider()) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiMatchLists(filters);
+    return useApiMatchLists(enabled ? filters : undefined, enabled);
   }
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(api.matches.getMatchLists, (filters ?? {}) as never);
+  return useSafeQuery(
+    api.matches.getMatchLists,
+    enabled ? ((filters ?? {}) as never) : "skip"
+  );
 }
 
-function useApiMatchLists(filters?: Record<string, unknown>) {
+function useApiMatchLists(
+  filters: Record<string, unknown> | undefined,
+  enabled: boolean
+) {
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
+    if (!enabled) {
+      setApiData(undefined);
+      return;
+    }
     let cancelled = false;
     void getMatchingAdapter()
       .getMatchLists(filters)
       .then((d) => {
         if (!cancelled) setApiData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setApiData(null);
       });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(filters ?? {})]);
+  }, [JSON.stringify(filters ?? {}), enabled]);
   return apiData;
 }
 
@@ -93,6 +112,9 @@ function useApiMyMatches(enabled: boolean) {
       .getMyMatches()
       .then((d) => {
         if (!cancelled) setApiData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setApiData(null);
       });
     return () => {
       cancelled = true;
@@ -205,6 +227,9 @@ function useApiBreakdown(userId: string | undefined) {
       .getCompatibilityBreakdown(userId)
       .then((d) => {
         if (!cancelled) setApiData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setApiData(null);
       });
     return () => {
       cancelled = true;
