@@ -41,7 +41,7 @@ function parseCookieHeader(header: string | undefined): Record<string, string> {
   cors: {
     origin: (process.env.CORS_ORIGINS ?? "http://127.0.0.1:3001")
       .split(",")
-      .map((s) => s.trim())
+      .map((s) => s.trim().replace(/\/$/, ""))
       .filter(Boolean),
     credentials: true,
   },

@@ -32,7 +32,13 @@ async function bootstrap() {
     expressApp.set("trust proxy", 1);
   }
 
-  app.use(helmet({ contentSecurityPolicy: false }));
+  // Browser clients (Vercel) call this API cross-origin; do not force same-origin CORP.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
   app.use(cookieParser());
 
   app.use((req: Request, res: Response, next: NextFunction) => {
@@ -45,7 +51,7 @@ async function bootstrap() {
 
   const origins = (process.env.CORS_ORIGINS ?? "http://127.0.0.1:3001,http://localhost:3001")
     .split(",")
-    .map((s) => s.trim())
+    .map((s) => s.trim().replace(/\/$/, ""))
     .filter(Boolean);
 
   app.enableCors({
@@ -61,6 +67,7 @@ async function bootstrap() {
       "X-Session-Token",
     ],
   });
+  logger.log(`CORS allowlist: ${origins.join(", ") || "(empty)"}`);
 
   // Validate required secrets early (non-dev soft warn)
   const sessionSecret = process.env.SESSION_SECRET ?? process.env.AUTH_SECRET;
