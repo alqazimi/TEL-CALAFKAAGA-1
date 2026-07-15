@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useMutation } from "convex/react";
+import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
 import { api } from "../../../convex/_generated/api";
 import { isApiProvider } from "../provider";
 import { getProfileAdapter } from "./index";

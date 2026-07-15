@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback } from "react";
-import { useAction, useMutation } from "convex/react";
+import { useAction } from "convex/react";
+import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
 import { api } from "../../../convex/_generated/api";
 import { isApiProvider } from "../provider";
 import { getQuestionnaireAdapter } from "./index";

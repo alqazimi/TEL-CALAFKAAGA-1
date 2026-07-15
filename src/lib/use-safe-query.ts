@@ -50,10 +50,17 @@ export function useSafeQuery<Query extends FunctionReference<"query">>(
   query: Query,
   args?: Query["_args"] | Skip
 ): Query["_returnType"] | undefined {
-  const skip = args === "skip" || isApiProvider();
+  // API mode has no ConvexProvider — must not call useQueries at all.
+  // Provider is fixed per deploy, so hook order stays stable within each mode.
+  if (isApiProvider()) {
+    return undefined;
+  }
+
+  const skip = args === "skip";
   const argsObject = (skip ? {} : (args ?? {})) as Record<string, unknown>;
   const queryName = getFunctionName(query);
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const queries = useMemo(() => {
     if (skip) return {};
     return {
@@ -65,6 +72,7 @@ export function useSafeQuery<Query extends FunctionReference<"query">>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(argsObject), queryName, skip]);
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const results = useQueries(queries as Parameters<typeof useQueries>[0]);
   const result = results["query"];
 

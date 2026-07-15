@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useAction, useMutation } from "convex/react";
+import { useAction } from "convex/react";
+import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
 import { api } from "../../../convex/_generated/api";
 import { useSafeQuery } from "@/lib/use-safe-query";
 import { isApiProvider } from "../provider";
