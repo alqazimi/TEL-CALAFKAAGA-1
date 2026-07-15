@@ -47,7 +47,7 @@ export default function QuestionnairePage() {
   const isEditMode = searchParams.get("edit") === "1";
   const { profile, refresh: refreshProfile } = useProfile() as {
     profile: Profile | null | undefined;
-    refresh: () => Promise<void>;
+    refresh: () => Promise<Profile | null | undefined>;
   };
   const isStaff = isStaffRole(profile?.role);
   const {
@@ -55,7 +55,7 @@ export default function QuestionnairePage() {
     refresh: refreshPreferences,
   } = usePreferences() as {
     preferences: Preferences | null | undefined;
-    refresh: () => Promise<void>;
+    refresh: () => Promise<Preferences | null | undefined>;
   };
   const updateQuestionnaire = useUpdateQuestionnaire();
   const autoSaveProfile = useAutoSaveQuestionnaire();
@@ -74,8 +74,8 @@ export default function QuestionnairePage() {
       refreshPreferences(),
     ]);
     return {
-      profile: (nextProfile as Profile | null) ?? null,
-      preferences: (nextPreferences as Preferences | null) ?? null,
+      profile: nextProfile ?? null,
+      preferences: nextPreferences ?? null,
     };
   };
 

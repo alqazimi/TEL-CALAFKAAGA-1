@@ -27,6 +27,9 @@ This will prompt you to create a Convex project and generate your `.env.local` f
 
 ### 3. Configure Convex Auth (required for login/register)
 
+
+
+
 ```bash
 npm run setup:auth
 ```

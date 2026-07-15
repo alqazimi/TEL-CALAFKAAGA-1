@@ -43,6 +43,13 @@ const DOMAIN_TABLES = [
   "userUploads",
 ] as const;
 
+/** Same ordering as apps/api matching makePairKey. */
+function makePairKey(userAId: string, userBId: string): string {
+  return userAId < userBId
+    ? `${userAId}:${userBId}`
+    : `${userBId}:${userAId}`;
+}
+
 type DomainTable = (typeof DOMAIN_TABLES)[number];
 
 const LIKE_ACTIONS = ["like", "pass", "shortlist"] as const;
@@ -155,6 +162,20 @@ async function loadConvexIdsFromExport(
   return map;
 }
 
+function withPrismaPoolLimits(url: string): string {
+  const u = new URL(url);
+  if (!u.searchParams.has("connection_limit")) {
+    u.searchParams.set("connection_limit", "5");
+  }
+  if (!u.searchParams.has("pool_timeout")) {
+    u.searchParams.set("pool_timeout", "60");
+  }
+  if (!u.searchParams.has("connect_timeout")) {
+    u.searchParams.set("connect_timeout", "30");
+  }
+  return u.toString();
+}
+
 function makeQuarantine(
   prisma: PrismaClient | null,
   runId: string | null,
@@ -162,15 +183,23 @@ function makeQuarantine(
 ): QuarantineFn {
   return async ({ table, convexId, reasonCode, safeDetail }) => {
     if (dryRun || !prisma || !runId) return;
-    await prisma.migrationFailure.create({
-      data: {
-        runId,
-        tableName: table,
-        convexId: convexId ?? null,
-        reasonCode,
-        safeDetail: safeDetail ?? null,
-      },
-    });
+    try {
+      await prisma.migrationFailure.create({
+        data: {
+          runId,
+          tableName: table,
+          convexId: convexId ?? null,
+          reasonCode,
+          safeDetail: safeDetail ?? null,
+        },
+      });
+    } catch (error) {
+      // Never abort the import because quarantine logging failed (e.g. pool timeout).
+      console.warn(
+        `[quarantine] failed to record ${table}/${convexId ?? "?"} (${reasonCode}):`,
+        error instanceof Error ? error.message : error
+      );
+    }
   };
 }
 
@@ -194,7 +223,7 @@ export async function runImportDomain(opts: {
   const prisma = dryRun
     ? null
     : new (await loadPrisma())({
-        datasources: { db: { url: databaseUrl } },
+        datasources: { db: { url: withPrismaPoolLimits(databaseUrl) } },
       });
 
   const counts = emptyCounts([...DOMAIN_TABLES]);
@@ -872,10 +901,12 @@ async function importMatches(
     }
     try {
       const existing = await prisma.match.findUnique({ where: { convexId } });
+      const pairKey = makePairKey(userAId, userBId);
       const saved = await prisma.match.upsert({
         where: { convexId },
         create: {
           convexId,
+          pairKey,
           userAId,
           userBId,
           convexUserA: userAConvex,
@@ -888,6 +919,7 @@ async function importMatches(
           convexCreatedAt: convexCreatedAt(row),
         },
         update: {
+          pairKey,
           score,
           status,
           chatUnlocked,

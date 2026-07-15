@@ -21,6 +21,17 @@ NEXT_PUBLIC_SOCKET_URL=https://api.staging.example.com
 NEXT_PUBLIC_APP_URL=https://staging.example.com
 ```
 
+Current Vercel preview frontend (API mode):
+
+```bash
+# See also: infra/staging/vercel-api-mode.env.example
+NEXT_PUBLIC_BACKEND_PROVIDER=api
+NEXT_PUBLIC_APP_URL=https://tel-calafkaaga-1-api-one.vercel.app
+NEXT_PUBLIC_API_URL=https://YOUR-NEST-API.example.com
+NEXT_PUBLIC_SOCKET_URL=https://YOUR-NEST-API.example.com
+# Nest CORS_ORIGINS must include https://tel-calafkaaga-1-api-one.vercel.app
+```
+
 Convex URL is **not** required for API-mode auth.
 
 ## STOP — environment gate

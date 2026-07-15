@@ -38,6 +38,7 @@ yarn-error.log*
 
 # Phase 1 migration / backend local artifacts
 /migration-reports/
+/convex-exports/
 /apps/api/dist/
 /packages/migration/dist/
 /apps/api/.env
