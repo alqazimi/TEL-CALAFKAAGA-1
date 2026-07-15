@@ -105,6 +105,8 @@ export class AuthController {
     return {
       user: result.user,
       csrfToken: csrf,
+      // For Vercel↔Render (cross-site cookies often blocked); frontend sends X-Session-Token
+      sessionToken: result.rawToken,
     };
   }
 
@@ -140,6 +142,7 @@ export class AuthController {
     return {
       user: result.user,
       csrfToken: csrf,
+      sessionToken: result.rawToken,
     };
   }
 

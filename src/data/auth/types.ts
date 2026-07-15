@@ -3,6 +3,8 @@ import type { AccessStateLike, SessionUser } from "../types";
 export type LoginResult = {
   user: SessionUser;
   csrfToken?: string;
+  /** Present in Nest API mode for cross-site auth (X-Session-Token). */
+  sessionToken?: string;
 };
 
 export type AuthAdapter = {

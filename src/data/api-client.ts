@@ -39,6 +39,9 @@ export type ApiRequestOptions = {
 
 const CSRF_COOKIE = "hel_csrf";
 const CSRF_HEADER = "X-CSRF-Token";
+const SESSION_HEADER = "X-Session-Token";
+const SESSION_STORAGE_KEY = "hel_session_token";
+const CSRF_STORAGE_KEY = "hel_csrf_token";
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function readCookie(name: string): string | undefined {
@@ -49,6 +52,38 @@ function readCookie(name: string): string | undefined {
     .find((c) => c.startsWith(`${name}=`));
   if (!match) return undefined;
   return decodeURIComponent(match.slice(name.length + 1));
+}
+
+/** Persist Nest session for cross-site Vercel↔API (cookies often blocked). */
+export function setApiSessionToken(token: string | null | undefined) {
+  if (typeof sessionStorage === "undefined") return;
+  if (token) sessionStorage.setItem(SESSION_STORAGE_KEY, token);
+  else sessionStorage.removeItem(SESSION_STORAGE_KEY);
+}
+
+export function getApiSessionToken(): string | undefined {
+  if (typeof sessionStorage === "undefined") return undefined;
+  return sessionStorage.getItem(SESSION_STORAGE_KEY) ?? undefined;
+}
+
+export function setApiCsrfToken(token: string | null | undefined) {
+  if (typeof sessionStorage === "undefined") return;
+  if (token) sessionStorage.setItem(CSRF_STORAGE_KEY, token);
+  else sessionStorage.removeItem(CSRF_STORAGE_KEY);
+}
+
+export function getApiCsrfToken(): string | undefined {
+  if (typeof sessionStorage === "undefined") return undefined;
+  return (
+    readCookie(CSRF_COOKIE) ??
+    sessionStorage.getItem(CSRF_STORAGE_KEY) ??
+    undefined
+  );
+}
+
+export function clearApiAuthStorage() {
+  setApiSessionToken(null);
+  setApiCsrfToken(null);
 }
 
 function newRequestId(): string {
@@ -154,8 +189,11 @@ export async function apiFetch<T = unknown>(
         }
       }
 
+      const sessionToken = getApiSessionToken();
+      if (sessionToken) headers[SESSION_HEADER] = sessionToken;
+
       if (MUTATING.has(method)) {
-        const csrf = readCookie(CSRF_COOKIE);
+        const csrf = getApiCsrfToken();
         if (csrf) headers[CSRF_HEADER] = csrf;
       }
 

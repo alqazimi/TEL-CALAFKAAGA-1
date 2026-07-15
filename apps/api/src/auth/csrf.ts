@@ -46,12 +46,22 @@ export class CsrfGuard implements CanActivate {
   }
 }
 
+/** Cross-site Vercel↔API needs SameSite=None; Secure. Local stays Lax. */
+export function cookieSameSite(
+  secure: boolean
+): "lax" | "none" | "strict" {
+  const raw = (process.env.COOKIE_SAMESITE ?? "").trim().toLowerCase();
+  if (raw === "none" || raw === "lax" || raw === "strict") return raw;
+  return secure ? "none" : "lax";
+}
+
 export function issueCsrfCookie(res: Response, secure: boolean, domain?: string) {
   const token = generateToken(24);
+  const sameSite = cookieSameSite(secure);
   res.cookie(CSRF_COOKIE, token, {
     httpOnly: false,
-    secure,
-    sameSite: "lax",
+    secure: sameSite === "none" ? true : secure,
+    sameSite,
     path: "/",
     domain: domain || undefined,
     maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -64,10 +74,11 @@ export function setSessionCookie(
   rawToken: string,
   opts: { secure: boolean; domain?: string; expiresAt: Date }
 ) {
+  const sameSite = cookieSameSite(opts.secure);
   res.cookie(SESSION_COOKIE, rawToken, {
     httpOnly: true,
-    secure: opts.secure,
-    sameSite: "lax",
+    secure: sameSite === "none" ? true : opts.secure,
+    sameSite,
     path: "/",
     domain: opts.domain || undefined,
     expires: opts.expiresAt,
@@ -78,11 +89,12 @@ export function clearAuthCookies(
   res: Response,
   opts: { secure: boolean; domain?: string }
 ) {
+  const sameSite = cookieSameSite(opts.secure);
   const base = {
     path: "/",
     domain: opts.domain || undefined,
-    secure: opts.secure,
-    sameSite: "lax" as const,
+    secure: sameSite === "none" ? true : opts.secure,
+    sameSite,
   };
   res.clearCookie(SESSION_COOKIE, { ...base, httpOnly: true });
   res.clearCookie(CSRF_COOKIE, { ...base, httpOnly: false });

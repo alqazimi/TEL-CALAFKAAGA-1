@@ -1,4 +1,9 @@
-import { apiClient } from "../api-client";
+import {
+  apiClient,
+  clearApiAuthStorage,
+  setApiCsrfToken,
+  setApiSessionToken,
+} from "../api-client";
 import { disconnectRealtime } from "../realtime/socket-client";
 import { track } from "../telemetry";
 import type { AccessStateLike, SessionUser } from "../types";
@@ -57,12 +62,19 @@ function toSessionUser(raw: NestAuthUser | null | undefined): SessionUser | null
 }
 
 function toLoginResult(
-  res: (LoginResult & { csrfToken?: string; user?: NestAuthUser }) | null
+  res: (LoginResult & {
+    csrfToken?: string;
+    sessionToken?: string;
+    user?: NestAuthUser;
+  }) | null
 ): LoginResult {
+  if (res?.sessionToken) setApiSessionToken(res.sessionToken);
+  if (res?.csrfToken) setApiCsrfToken(res.csrfToken);
   return {
     ...res,
     user: toSessionUser(res?.user as NestAuthUser) as SessionUser,
     csrfToken: res?.csrfToken,
+    sessionToken: res?.sessionToken,
   };
 }
 
@@ -82,10 +94,9 @@ export const apiAuth: AuthAdapter = {
 
   async login(email, password) {
     try {
-      const res = await apiClient.post<LoginResult & { csrfToken?: string }>(
-        "/auth/login",
-        { email, password }
-      );
+      const res = await apiClient.post<
+        LoginResult & { csrfToken?: string; sessionToken?: string }
+      >("/auth/login", { email, password });
       return toLoginResult(res);
     } catch (e) {
       track("login_failure", { status: (e as { status?: number })?.status });
@@ -95,10 +106,9 @@ export const apiAuth: AuthAdapter = {
 
   async register(email, password) {
     try {
-      const res = await apiClient.post<LoginResult & { csrfToken?: string }>(
-        "/auth/register",
-        { email, password }
-      );
+      const res = await apiClient.post<
+        LoginResult & { csrfToken?: string; sessionToken?: string }
+      >("/auth/register", { email, password });
       return toLoginResult(res);
     } catch (e) {
       track("register_failure", { status: (e as { status?: number })?.status });
@@ -116,6 +126,7 @@ export const apiAuth: AuthAdapter = {
     try {
       await apiClient.post("/auth/logout", {});
     } finally {
+      clearApiAuthStorage();
       disconnectRealtime();
     }
   },
@@ -124,6 +135,7 @@ export const apiAuth: AuthAdapter = {
     try {
       await apiClient.post("/auth/logout-all", {});
     } finally {
+      clearApiAuthStorage();
       disconnectRealtime();
     }
   },
@@ -151,6 +163,7 @@ export const apiAuth: AuthAdapter = {
   async bootstrapMe() {
     try {
       const res = await apiClient.get<MeResponse>("/auth/me");
+      if (res?.csrfToken) setApiCsrfToken(res.csrfToken);
       return {
         user: toSessionUser(res?.user),
         accessState: res?.accessState ?? null,
