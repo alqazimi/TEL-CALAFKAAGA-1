@@ -5,7 +5,8 @@
 #   set -a && source TEL-CALAFKAAGA-1.env && set +a
 #   ./infra/staging/apply-r2-cors.sh
 #
-# Optional: CORS_ORIGIN=https://tel-calafkaaga-1-api-one.vercel.app
+# Origins (comma-separated). Defaults include Vercel staging + production domain.
+#   CORS_ORIGINS=https://www.helcalafkaaga.com,https://helcalafkaaga.com,https://tel-calafkaaga-1-api-one.vercel.app
 
 set -euo pipefail
 
@@ -13,15 +14,26 @@ set -euo pipefail
 : "${S3_ACCESS_KEY_ID:?Set S3_ACCESS_KEY_ID}"
 : "${S3_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY}"
 
-ORIGIN="${CORS_ORIGIN:-https://tel-calafkaaga-1-api-one.vercel.app}"
+ORIGINS="${CORS_ORIGINS:-https://www.helcalafkaaga.com,https://helcalafkaaga.com,https://tel-calafkaaga-1-api-one.vercel.app}"
+# Back-compat with single CORS_ORIGIN
+if [[ -n "${CORS_ORIGIN:-}" ]]; then
+  ORIGINS="${CORS_ORIGIN},${ORIGINS}"
+fi
 
-export CORS_ORIGIN="$ORIGIN"
+export CORS_ORIGINS_LIST="$ORIGINS"
 export CORS_BUCKETS="${S3_BUCKET_PROFILE:-hel-profile},${S3_BUCKET_PROFILE_PRIVATE:-hel-profile-private},${S3_BUCKET_CHAT:-hel-chat},${S3_BUCKET_SUPPORT:-hel-support},${S3_BUCKET_EVC:-hel-evc}"
 
 node --input-type=module <<'EOF'
 import { S3Client, PutBucketCorsCommand } from "@aws-sdk/client-s3";
 
-const origin = process.env.CORS_ORIGIN;
+const origins = [
+  ...new Set(
+    (process.env.CORS_ORIGINS_LIST ?? "")
+      .split(",")
+      .map((s) => s.trim().replace(/\/$/, ""))
+      .filter(Boolean)
+  ),
+];
 const buckets = process.env.CORS_BUCKETS.split(",").filter(Boolean);
 
 const client = new S3Client({
@@ -36,7 +48,7 @@ const client = new S3Client({
 
 const CORSRules = [
   {
-    AllowedOrigins: [origin],
+    AllowedOrigins: origins,
     AllowedMethods: ["GET", "HEAD", "PUT"],
     AllowedHeaders: ["*"],
     ExposeHeaders: ["ETag", "Content-Type", "Content-Length"],
@@ -45,8 +57,13 @@ const CORSRules = [
 ];
 
 for (const bucket of buckets) {
-  await client.send(new PutBucketCorsCommand({ Bucket: bucket, CORSConfiguration: { CORSRules } }));
-  console.log(`CORS applied: ${bucket} -> ${origin}`);
+  await client.send(
+    new PutBucketCorsCommand({
+      Bucket: bucket,
+      CORSConfiguration: { CORSRules },
+    })
+  );
+  console.log(`CORS applied: ${bucket} -> ${origins.join(", ")}`);
 }
 EOF
 
