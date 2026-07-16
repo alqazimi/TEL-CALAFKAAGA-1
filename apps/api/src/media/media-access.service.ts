@@ -42,10 +42,15 @@ export class MediaAccessService {
     this.ttlSeconds = Number(
       this.config.get<string>("S3_SIGNED_URL_TTL_SECONDS") ?? 300
     );
+    const forcePathStyle =
+      this.config.get<string>("S3_FORCE_PATH_STYLE") === undefined
+        ? true
+        : this.config.get<string>("S3_FORCE_PATH_STYLE") === "true" ||
+          this.config.get<string>("S3_FORCE_PATH_STYLE") === "1";
     this.s3 = new S3Client({
       endpoint,
       region,
-      forcePathStyle: true,
+      forcePathStyle,
       credentials: { accessKeyId, secretAccessKey },
     });
   }
@@ -145,16 +150,47 @@ export class MediaAccessService {
       await this.assertCanAccess(mediaId, ctx);
     // Force a browser-friendly Content-Type so Firefox ORB does not treat
     // missing/mis-typed R2 responses as opaque blocked resources when possible.
+    const responseType =
+      contentType && contentType.trim()
+        ? contentType
+        : purpose.startsWith("profile") ||
+            purpose === "evc_screenshot" ||
+            purpose === "chat_image" ||
+            purpose === "unknown"
+          ? "image/jpeg"
+          : "application/octet-stream";
     const command = new GetObjectCommand({
       Bucket: bucket,
       Key: objectKey,
-      ...(contentType
-        ? { ResponseContentType: contentType, ResponseContentDisposition: "inline" }
-        : { ResponseContentDisposition: "inline" }),
+      ResponseContentType: responseType,
+      ResponseContentDisposition: "inline",
     });
     const url = await getSignedUrl(this.s3, command, {
       expiresIn: this.ttlSeconds,
     });
     return { url, expiresInSeconds: this.ttlSeconds, purpose };
+  }
+
+  async getObjectStream(mediaId: string, ctx: MediaAccessContext) {
+    const { bucket, objectKey, purpose, contentType } =
+      await this.assertCanAccess(mediaId, ctx);
+    const res = await this.s3.send(
+      new GetObjectCommand({ Bucket: bucket, Key: objectKey })
+    );
+    const resolvedType =
+      contentType?.trim() ||
+      res.ContentType ||
+      (purpose.startsWith("profile") ||
+      purpose === "evc_screenshot" ||
+      purpose === "chat_image" ||
+      purpose === "unknown"
+        ? "image/jpeg"
+        : "application/octet-stream");
+    return {
+      body: res.Body,
+      contentType: resolvedType,
+      contentLength: res.ContentLength,
+      purpose,
+    };
   }
 }

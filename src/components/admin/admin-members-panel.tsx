@@ -27,7 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AdminUserAvatar } from "@/components/admin/admin-user-avatar";
 import {
   Select,
   SelectContent,
@@ -436,12 +436,15 @@ export function AdminMembersPanel({
                     className="flex min-w-0 items-start gap-3 text-left"
                     onClick={() => onOpenUser(user._id)}
                   >
-                    <Avatar className="h-11 w-11 border border-border">
-                      <AvatarImage src={user.imageUrl ?? undefined} />
-                      <AvatarFallback className="bg-muted font-semibold">
-                        {user.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <AdminUserAvatar
+                      name={user.name}
+                      imageUrl={user.imageUrl}
+                      profileImageMediaId={
+                        (user as { profileImageMediaId?: string | null })
+                          .profileImageMediaId
+                      }
+                      profileImageId={user.profileImageId as string | undefined}
+                    />
                     <span className="min-w-0 space-y-0.5">
                       <span className="block truncate font-semibold text-foreground">
                         {user.name}

@@ -28,7 +28,7 @@ import {
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AdminUserAvatar } from "@/components/admin/admin-user-avatar";
 import { CITIZENSHIP_NOT_REQUIRED_COUNTRIES } from "@/lib/constants";
 import { isOwnerRole, isStaffRole } from "@/lib/access";
 import { useTranslation } from "@/lib/i18n/context";
@@ -187,12 +187,21 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
           ) : (
             <>
               <div className="flex flex-col sm:flex-row gap-4 items-start">
-                <Avatar className="h-24 w-24 border-2 border-border shrink-0">
-                  <AvatarImage src={detail.profile.imageUrl ?? undefined} />
-                  <AvatarFallback className="text-2xl">
-                    {detail.profile.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
+                <AdminUserAvatar
+                  className="h-24 w-24 border-2 border-border shrink-0"
+                  name={detail.profile.name}
+                  imageUrl={detail.profile.imageUrl}
+                  profileImageMediaId={
+                    (
+                      detail.profile as {
+                        profileImageMediaId?: string | null;
+                      }
+                    ).profileImageMediaId
+                  }
+                  profileImageId={
+                    detail.profile.profileImageId as string | undefined
+                  }
+                />
                 <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-2xl font-bold">{detail.profile.name}</h2>

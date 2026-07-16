@@ -265,6 +265,31 @@ export async function apiFetch<T = unknown>(
 export const apiClient = {
   get: <T>(path: string, opts?: Omit<ApiRequestOptions, "method" | "body">) =>
     apiFetch<T>(path, { ...opts, method: "GET" }),
+  async getBlob(
+    path: string,
+    opts?: Omit<ApiRequestOptions, "method" | "body" | "parseJson">
+  ): Promise<Blob> {
+    const method = "GET";
+    const base = getApiBaseUrl();
+    const url = path.startsWith("http")
+      ? path
+      : `${base}${path.startsWith("/") ? path : `/${path}`}`;
+    const headers: Record<string, string> = {
+      Accept: "*/*",
+      "X-Request-Id": newRequestId(),
+      ...opts?.headers,
+    };
+    const sessionToken = getApiSessionToken();
+    if (sessionToken) headers[SESSION_HEADER] = sessionToken;
+    const res = await fetch(url, {
+      method,
+      credentials: "include",
+      headers,
+      signal: opts?.signal,
+    });
+    if (!res.ok) throw await normalizeError(res);
+    return res.blob();
+  },
   post: <T>(
     path: string,
     body?: unknown,
