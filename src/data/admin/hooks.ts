@@ -431,7 +431,7 @@ export function useAdminEvcPending() {
     void getAdminAdapter()
       .evc.pending()
       .then((d) => {
-        if (!c) setApiData(d);
+        if (!c) setApiData(withConvexIds(unwrapItems(d)));
       });
     return () => {
       c = true;

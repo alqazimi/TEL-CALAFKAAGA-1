@@ -65,9 +65,11 @@ export function AdminEvcPaymentsPanel() {
         </div>
       ) : (
         <ul className="space-y-4">
-          {pending.map((proof) => (
+          {pending.map((proof) => {
+            const proofId = String(proof._id ?? proof.id ?? "");
+            return (
             <li
-              key={proof._id}
+              key={proofId}
               className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4"
             >
               <div className="flex flex-col gap-4 sm:flex-row">
@@ -129,18 +131,18 @@ export function AdminEvcPaymentsPanel() {
                 <Button
                   size="sm"
                   className="rounded-xl"
-                  disabled={busyId === proof._id}
-                  onClick={() => void onApprove(proof._id)}
+                  disabled={!proofId || busyId === proofId}
+                  onClick={() => void onApprove(proofId as Id<"evcPaymentProofs">)}
                 >
                   <Check className="mr-1.5 h-4 w-4" />
                   {t("adminPage.evcApprove")}
                 </Button>
                 <Input
-                  value={rejectReason[proof._id] ?? ""}
+                  value={rejectReason[proofId] ?? ""}
                   onChange={(e) =>
                     setRejectReason((prev) => ({
                       ...prev,
-                      [proof._id]: e.target.value,
+                      [proofId]: e.target.value,
                     }))
                   }
                   placeholder={t("adminPage.evcRejectReason")}
@@ -150,15 +152,16 @@ export function AdminEvcPaymentsPanel() {
                   size="sm"
                   variant="outline"
                   className="rounded-xl text-destructive"
-                  disabled={busyId === proof._id}
-                  onClick={() => void onReject(proof._id)}
+                  disabled={!proofId || busyId === proofId}
+                  onClick={() => void onReject(proofId as Id<"evcPaymentProofs">)}
                 >
                   <X className="mr-1.5 h-4 w-4" />
                   {t("adminPage.evcReject")}
                 </Button>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

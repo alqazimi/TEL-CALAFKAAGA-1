@@ -34,6 +34,7 @@ yarn-error.log*
 .env*
 !.env.example
 !.env*.example
+TEL-CALAFKAAGA-1.env
 .convex-auth-keys.json
 
 # Phase 1 migration / backend local artifacts

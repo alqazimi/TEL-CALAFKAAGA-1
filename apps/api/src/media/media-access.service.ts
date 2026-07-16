@@ -53,7 +53,12 @@ export class MediaAccessService {
   async assertCanAccess(
     mediaId: string,
     ctx: MediaAccessContext
-  ): Promise<{ bucket: string; objectKey: string; purpose: MediaPurpose }> {
+  ): Promise<{
+    bucket: string;
+    objectKey: string;
+    purpose: MediaPurpose;
+    contentType: string | null;
+  }> {
     const media = await this.prisma.mediaObject.findUnique({
       where: { id: mediaId },
     });
@@ -128,6 +133,7 @@ export class MediaAccessService {
       bucket: media.bucket,
       objectKey: media.objectKey,
       purpose: media.purpose,
+      contentType: media.contentType ?? null,
     };
   }
 
@@ -135,11 +141,17 @@ export class MediaAccessService {
     mediaId: string,
     ctx: MediaAccessContext
   ): Promise<{ url: string; expiresInSeconds: number; purpose: MediaPurpose }> {
-    const { bucket, objectKey, purpose } = await this.assertCanAccess(
-      mediaId,
-      ctx
-    );
-    const command = new GetObjectCommand({ Bucket: bucket, Key: objectKey });
+    const { bucket, objectKey, purpose, contentType } =
+      await this.assertCanAccess(mediaId, ctx);
+    // Force a browser-friendly Content-Type so Firefox ORB does not treat
+    // missing/mis-typed R2 responses as opaque blocked resources when possible.
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: objectKey,
+      ...(contentType
+        ? { ResponseContentType: contentType, ResponseContentDisposition: "inline" }
+        : { ResponseContentDisposition: "inline" }),
+    });
     const url = await getSignedUrl(this.s3, command, {
       expiresIn: this.ttlSeconds,
     });

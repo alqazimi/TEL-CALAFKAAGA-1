@@ -274,27 +274,54 @@ export class EvcPaymentsService {
   /** Staff-only — used in local e2e with admin fixture. */
   async listPending(actorUserId: string) {
     await this.requireStaff(actorUserId);
+    const actor = await this.prisma.profile.findUnique({
+      where: { userId: actorUserId },
+      select: { role: true },
+    });
     const pending = await this.prisma.evcPaymentProof.findMany({
       where: { status: "pending" },
       orderBy: { proofCreatedAt: "desc" },
       take: 100,
       include: {
-        user: { select: { email: true } },
+        user: { select: { email: true, phone: true } },
         profile: { select: { name: true, phone: true, gender: true } },
       },
     });
-    return pending.map((p) => ({
-      id: p.id,
-      userId: p.userId,
-      tier: p.tier,
-      amountCents: p.amountCents,
-      payerFullName: p.payerFullName,
-      lastFourDigits: p.lastFourDigits,
-      createdAt: p.proofCreatedAt.toISOString(),
-      userEmail: p.user.email,
-      profileName: p.profile.name,
-      gender: p.profile.gender,
-    }));
+    return Promise.all(
+      pending.map(async (p) => {
+        let screenshotUrl: string | null = null;
+        if (p.screenshotMediaId) {
+          try {
+            const signed = await this.media.createSignedDownloadUrl(
+              p.screenshotMediaId,
+              {
+                userId: actorUserId,
+                roles: [actor?.role ?? "admin"],
+              }
+            );
+            screenshotUrl = signed.url;
+          } catch {
+            screenshotUrl = null;
+          }
+        }
+        return {
+          // Admin UI expects Convex-style `_id` for approve/reject routes.
+          _id: p.id,
+          id: p.id,
+          userId: p.userId,
+          tier: p.tier,
+          amountCents: p.amountCents,
+          payerFullName: p.payerFullName,
+          lastFourDigits: p.lastFourDigits,
+          createdAt: p.proofCreatedAt.toISOString(),
+          screenshotUrl,
+          userEmail: p.user.email,
+          userPhone: p.profile.phone ?? p.user.phone ?? null,
+          profileName: p.profile.name,
+          gender: p.profile.gender,
+        };
+      })
+    );
   }
 
   async approveProof(actorUserId: string, proofId: string) {
