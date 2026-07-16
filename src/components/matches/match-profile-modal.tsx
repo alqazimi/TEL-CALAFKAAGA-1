@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 import {
   X,
   Heart,
@@ -127,12 +126,8 @@ function MatchProfileModalInner({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-card text-card-foreground rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-border"
-        >
+      <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="bg-card text-card-foreground rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-border">
           <div className="relative h-72 sm:h-80 md:h-[22rem] bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
             {imageUrl ? (
               <button
@@ -346,7 +341,7 @@ function MatchProfileModalInner({
               />
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       <PhotoGalleryLightbox

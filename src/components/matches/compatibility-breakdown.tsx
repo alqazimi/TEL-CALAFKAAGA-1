@@ -26,8 +26,29 @@ const COMPAT_LABEL_KEYS: Record<string, TranslationPath> = {
   polygyny: "premium.compatPolygyny",
 };
 
+type Category = {
+  key: string;
+  score: number;
+  maxScore: number;
+};
+
+function asCategories(value: unknown): Category[] {
+  if (!value || typeof value !== "object") return [];
+  const raw = (value as { categories?: unknown }).categories;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Record<string, unknown>;
+    if (typeof row.key !== "string") return [];
+    const score = Number(row.score);
+    const maxScore = Number(row.maxScore);
+    if (!Number.isFinite(score) || !Number.isFinite(maxScore)) return [];
+    return [{ key: row.key, score, maxScore }];
+  });
+}
+
 interface CompatibilityBreakdownProps {
-  targetUserId: Id<"users">;
+  targetUserId: Id<"users"> | string;
   isPremium: boolean;
   overallScore?: number;
 }
@@ -38,38 +59,33 @@ export function CompatibilityBreakdown({
   overallScore,
 }: CompatibilityBreakdownProps) {
   const { t } = useTranslation();
-  const breakdown = useCompatibilityBreakdown(targetUserId, isPremium) as
-    | {
-        categories: Array<{
-          key: string;
-          score: number;
-          maxScore: number;
-          weight?: number;
-          matched?: boolean;
-        }>;
-      }
-    | undefined
-    | null;
+  const breakdownRaw = useCompatibilityBreakdown(
+    targetUserId ? String(targetUserId) : undefined,
+    isPremium
+  );
+  const categories = useMemo(() => asCategories(breakdownRaw), [breakdownRaw]);
 
   const narrative = useMemo(() => {
-    if (!breakdown || !Array.isArray(breakdown.categories)) return null;
-    const ranked = [...breakdown.categories]
+    if (categories.length === 0) return null;
+    const ranked = categories
       .map((item) => ({
         ...item,
         pct: item.maxScore > 0 ? item.score / item.maxScore : 0,
       }))
       .sort((a, b) => b.pct - a.pct);
 
-    const strong = ranked.filter((c) => c.pct >= 0.75).slice(0, 3);
-    const different = ranked.filter((c) => c.pct < 0.45).slice(0, 2);
-
-    return { strong, different };
-  }, [breakdown]);
+    return {
+      strong: ranked.filter((c) => c.pct >= 0.75).slice(0, 3),
+      different: ranked.filter((c) => c.pct < 0.45).slice(0, 2),
+    };
+  }, [categories]);
 
   if (!isPremium) {
     return (
       <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4">
-        <p className="text-sm font-semibold">{t("premium.compatibilityLockedTitle")}</p>
+        <p className="text-sm font-semibold">
+          {t("premium.compatibilityLockedTitle")}
+        </p>
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
           {t("premium.compatibilityLockedDesc")}
         </p>
@@ -77,11 +93,11 @@ export function CompatibilityBreakdown({
     );
   }
 
-  if (breakdown === undefined) {
+  if (breakdownRaw === undefined) {
     return <div className="h-24 rounded-2xl bg-muted/50 animate-pulse" />;
   }
 
-  if (!breakdown || !Array.isArray(breakdown.categories)) return null;
+  if (categories.length === 0) return null;
 
   return (
     <div className="rounded-2xl bg-muted/50 p-4 space-y-4">
@@ -147,10 +163,13 @@ export function CompatibilityBreakdown({
       )}
 
       <div className="space-y-2.5 pt-1 border-t border-border/60">
-        {breakdown.categories.map((item) => {
+        {categories.map((item) => {
           const labelKey = COMPAT_LABEL_KEYS[item.key];
           if (!labelKey) return null;
-          const pct = Math.round((item.score / item.maxScore) * 100);
+          const pct =
+            item.maxScore > 0
+              ? Math.round((item.score / item.maxScore) * 100)
+              : 0;
           return (
             <div key={item.key}>
               <div className="flex justify-between text-xs mb-1">
@@ -163,9 +182,13 @@ export function CompatibilityBreakdown({
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    pct >= 75 ? "bg-primary" : pct >= 45 ? "bg-primary/60" : "bg-amber-500"
+                    pct >= 75
+                      ? "bg-primary"
+                      : pct >= 45
+                        ? "bg-primary/60"
+                        : "bg-amber-500"
                   )}
-                  style={{ width: `${Math.min(100, pct)}%` }}
+                  style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
                 />
               </div>
             </div>

@@ -156,10 +156,15 @@ export function MatchProfileCard({
               <Bookmark className="h-4 w-4" />
             </Button>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               className="h-11 flex-1 rounded-full"
-              onClick={onView}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onView();
+              }}
             >
               <Eye className="h-4 w-4 mr-1" />
               {t("matchesPage.view")}
