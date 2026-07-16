@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { AppModule } from "./app.module";
 import { RedisIoAdapter } from "./chat/redis-io.adapter";
+import { resolveCorsOrigins } from "./config/cors-origins";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -49,10 +50,7 @@ async function bootstrap() {
     next();
   });
 
-  const origins = (process.env.CORS_ORIGINS ?? "http://127.0.0.1:3001,http://localhost:3001")
-    .split(",")
-    .map((s) => s.trim().replace(/\/$/, ""))
-    .filter(Boolean);
+  const origins = resolveCorsOrigins();
 
   app.enableCors({
     origin: origins,

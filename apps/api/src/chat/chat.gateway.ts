@@ -14,6 +14,7 @@ import { SessionService } from "../auth/session.service";
 import { ConversationService } from "./conversation.service";
 import { ChatRealtimeService } from "./chat-realtime.service";
 import { RedisService } from "../redis/redis.module";
+import { resolveCorsOrigins } from "../config/cors-origins";
 
 type AuthedSocket = Socket & {
   data: {
@@ -39,10 +40,7 @@ function parseCookieHeader(header: string | undefined): Record<string, string> {
 
 @WebSocketGateway({
   cors: {
-    origin: (process.env.CORS_ORIGINS ?? "http://127.0.0.1:3001")
-      .split(",")
-      .map((s) => s.trim().replace(/\/$/, ""))
-      .filter(Boolean),
+    origin: resolveCorsOrigins(),
     credentials: true,
   },
   transports: ["websocket", "polling"],

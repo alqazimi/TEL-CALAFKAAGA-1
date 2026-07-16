@@ -13,6 +13,7 @@ import { RedisService } from "../redis/redis.module";
 import { ScoreQueueService } from "../queue/score-queue.service";
 import { ChatGateway } from "../chat/chat.gateway";
 import { MetricsService } from "../observability/metrics.service";
+import { resolveCorsOrigins } from "../config/cors-origins";
 
 type Probe = "up" | "down" | "skipped";
 
@@ -90,10 +91,11 @@ export class HealthController {
     return {
       status: criticalDown ? "degraded" : "ok",
       service: "hel-api",
-      phase: 16,
+      phase: 17,
       photoDelivery: "signed-url",
       viewModal: "minimal-portal",
       adminActivity: "likes-arrays",
+      corsOrigins: resolveCorsOrigins(),
       database,
       redis,
       objectStorage,
