@@ -115,7 +115,7 @@ export function PhotoGalleryLightbox({
               transition={{ duration: 0.2 }}
             >
               <LazyImage
-                src={images[index]}
+                src={images[index] ?? images[0]!}
                 alt={alt}
                 className="max-h-[min(72vh,640px)] w-full object-contain rounded-lg"
               />

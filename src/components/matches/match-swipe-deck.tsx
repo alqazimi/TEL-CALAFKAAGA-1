@@ -145,7 +145,7 @@ function SwipeCard({
                 <div className="flex h-full flex-col items-center justify-center gap-2">
                   <Avatar className="h-24 w-24">
                     <AvatarFallback className="text-4xl font-display">
-                      {match.name.charAt(0)}
+                      {(match.name || "?").charAt(0)}
                     </AvatarFallback>
                   </Avatar>
                   {match.photoHidden && (

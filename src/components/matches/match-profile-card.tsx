@@ -79,7 +79,7 @@ export function MatchProfileCard({
             <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 to-gold/10">
               <Avatar className="h-24 w-24 sm:h-28 sm:w-28">
                 <AvatarFallback className="text-3xl font-display sm:text-4xl">
-                  {match.name.charAt(0)}
+                  {(match.name || "?").charAt(0)}
                 </AvatarFallback>
               </Avatar>
               {match.photoHidden && (
