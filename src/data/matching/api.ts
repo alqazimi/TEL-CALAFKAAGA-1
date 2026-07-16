@@ -24,7 +24,19 @@ function isPaidGateError(error: unknown): boolean {
 export const apiMatching: MatchingAdapter = {
   async getMatches(filters) {
     try {
-      return await apiClient.get(`/matches/discover${toQuery(filters)}`);
+      const res = await apiClient.get<{ items?: unknown } | unknown>(
+        `/matches/discover${toQuery(filters)}`
+      );
+      // Nest returns { items }; Convex returns array — normalize for UI.
+      if (
+        res &&
+        typeof res === "object" &&
+        "items" in res &&
+        Array.isArray(res.items)
+      ) {
+        return res.items;
+      }
+      return Array.isArray(res) ? res : [];
     } catch (error) {
       if (isPaidGateError(error)) return [];
       throw error;
@@ -32,9 +44,18 @@ export const apiMatching: MatchingAdapter = {
   },
   async getMyMatches(list = "active") {
     try {
-      return await apiClient.get(
+      const res = await apiClient.get<{ items?: unknown } | unknown>(
         `/matches/mutual?list=${encodeURIComponent(list)}`
       );
+      if (
+        res &&
+        typeof res === "object" &&
+        "items" in res &&
+        Array.isArray(res.items)
+      ) {
+        return res.items;
+      }
+      return Array.isArray(res) ? res : [];
     } catch (error) {
       if (isPaidGateError(error)) return [];
       throw error;

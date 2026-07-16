@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { AuthenticatedMediaImage } from "@/components/ui/authenticated-media-image";
 import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import { TrustBadges } from "@/components/profile/trust-badges";
@@ -15,6 +16,7 @@ import type { TrustBadgeProfile } from "@/components/profile/trust-badges";
 import { CompatibilityBreakdown } from "@/components/matches/compatibility-breakdown";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "@/lib/i18n/context";
+import { useAuthenticatedMediaSrc } from "@/lib/use-authenticated-media-src";
 
 interface MatchProfileModalProps {
   match: {
@@ -33,6 +35,7 @@ interface MatchProfileModalProps {
     marriageTimeline?: string;
     wantChildren?: string;
     imageUrl: string | null;
+    photoMediaId?: string | null;
     additionalImageUrls?: string[];
     score: number;
     shortlisted?: boolean;
@@ -57,7 +60,8 @@ export function MatchProfileModal({
     | { name?: string; phone?: string; waliName?: string; waliPhone?: string }
     | null
     | undefined;
-  const gallery = [match.imageUrl, ...(match.additionalImageUrls ?? [])].filter(
+  const mainSrc = useAuthenticatedMediaSrc(match.imageUrl, match.photoMediaId);
+  const gallery = [mainSrc, ...(match.additionalImageUrls ?? [])].filter(
     (url): url is string => !!url
   );
 
@@ -76,9 +80,14 @@ export function MatchProfileModal({
         className="bg-card text-card-foreground rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-border"
       >
         <div className="relative h-72 sm:h-80 md:h-[22rem] bg-gradient-to-br from-accent to-accent/50 dark:from-primary/20 dark:to-primary/10">
-          {gallery[0] ? (
+          {gallery[0] || match.photoMediaId || match.imageUrl ? (
             <button type="button" className="block h-full w-full" onClick={() => openGallery(0)}>
-              <LazyImage src={gallery[0]} alt={match.name} className="h-full w-full object-cover" />
+              <AuthenticatedMediaImage
+                imageUrl={match.imageUrl}
+                mediaId={match.photoMediaId}
+                alt={match.name}
+                className="h-full w-full object-cover"
+              />
             </button>
           ) : (
             <div className="flex h-full items-center justify-center">

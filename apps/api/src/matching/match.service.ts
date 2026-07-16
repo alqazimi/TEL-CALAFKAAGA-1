@@ -223,7 +223,7 @@ export class MatchService {
         where: { userId: otherId },
       });
       const photo = other
-        ? await this.photoMeta(userId, other, profile.role)
+        ? await this.photoMeta(userId, other, profile.role, true)
         : { imageUrl: null, photoHidden: false, mediaId: null };
 
       items.push({
@@ -246,6 +246,7 @@ export class MatchService {
               city: other.city,
               imageUrl: photo.imageUrl,
               photoHidden: photo.photoHidden,
+              photoMediaId: photo.mediaId,
               reviewStatus: other.reviewStatus,
               approved: other.approved,
             }

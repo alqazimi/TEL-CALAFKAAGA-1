@@ -93,6 +93,7 @@ export interface MatchResult {
   prayerFrequency?: string;
   imageUrl: string | null;
   additionalImageUrls?: string[];
+  photoMediaId?: string | null;
   photoHidden?: boolean;
   photoVisibility?: "everyone" | "matches" | "private";
   score: number;
@@ -119,6 +120,7 @@ export interface Conversation {
   profile: {
     name: string;
     imageUrl: string | null;
+    photoMediaId?: string | null;
     photoHidden?: boolean;
     userId: Id<"users">;
     verified?: boolean;
