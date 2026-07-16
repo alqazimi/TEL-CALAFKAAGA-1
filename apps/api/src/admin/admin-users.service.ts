@@ -258,16 +258,50 @@ export class AdminUsersService {
       },
     });
 
-    const likesGiven = await this.prisma.like.findMany({
-      where: { fromUserId: profile.userId },
+    const conversationIds = [...new Set(messages.map((m) => m.conversationId))];
+    const conversations =
+      conversationIds.length > 0
+        ? await this.prisma.conversation.findMany({
+            where: { id: { in: conversationIds } },
+            select: {
+              id: true,
+              match: { select: { userAId: true, userBId: true } },
+            },
+          })
+        : [];
+    const peerByConversation = new Map<string, string>();
+    for (const c of conversations) {
+      const peerId =
+        c.match.userAId === profile.userId ? c.match.userBId : c.match.userAId;
+      peerByConversation.set(c.id, peerId);
+    }
+
+    const likesGivenRaw = await this.prisma.like.findMany({
+      where: { fromUserId: profile.userId, action: "like" },
       take: likeLimit,
       orderBy: { createdAt: "desc" },
     });
-    const likesReceived = await this.prisma.like.findMany({
-      where: { toUserId: profile.userId },
+    const likesReceivedRaw = await this.prisma.like.findMany({
+      where: { toUserId: profile.userId, action: "like" },
       take: likeLimit,
       orderBy: { createdAt: "desc" },
     });
+
+    const peerUserIds = [
+      ...peerByConversation.values(),
+      ...likesGivenRaw.map((l) => l.toUserId),
+      ...likesReceivedRaw.map((l) => l.fromUserId),
+    ];
+    const peerProfiles =
+      peerUserIds.length > 0
+        ? await this.prisma.profile.findMany({
+            where: { userId: { in: [...new Set(peerUserIds)] } },
+            select: { id: true, userId: true, name: true },
+          })
+        : [];
+    const peerByUserId = new Map(
+      peerProfiles.map((p) => [p.userId, { profileId: p.id, name: p.name }])
+    );
 
     const matches = await this.prisma.match.findMany({
       where: {
@@ -277,17 +311,47 @@ export class AdminUsersService {
       take: 40,
     });
 
-    return {
-      messages: messages.map((m) => ({
+    const enrichedMessages = messages.map((m) => {
+      const peerUserId = peerByConversation.get(m.conversationId);
+      const peer = peerUserId ? peerByUserId.get(peerUserId) : undefined;
+      return {
         id: m.id,
         direction: "sent" as const,
         body: m.body?.trim() || (m.imageMediaId ? "[Image]" : ""),
         hasImage: Boolean(m.imageMediaId),
         createdAt: m.messageCreatedAt.toISOString(),
-      })),
-      likesGiven: likesGiven.length,
-      likesReceived: likesReceived.length,
+        peerName: peer?.name ?? "Unknown",
+        peerProfileId: peer?.profileId ?? null,
+      };
+    });
+
+    const likesGiven = likesGivenRaw.map((like) => {
+      const peer = peerByUserId.get(like.toUserId);
+      return {
+        id: like.id,
+        action: like.action,
+        peerName: peer?.name ?? "Unknown",
+        peerProfileId: peer?.profileId ?? null,
+      };
+    });
+    const likesReceived = likesReceivedRaw.map((like) => {
+      const peer = peerByUserId.get(like.fromUserId);
+      return {
+        id: like.id,
+        action: like.action,
+        peerName: peer?.name ?? "Unknown",
+        peerProfileId: peer?.profileId ?? null,
+      };
+    });
+
+    return {
+      messages: enrichedMessages,
+      likesGiven,
+      likesReceived,
       activeMatches: matches.length,
+      messageCount: enrichedMessages.length,
+      likesGivenCount: likesGiven.length,
+      likesReceivedCount: likesReceived.length,
     };
   }
 

@@ -90,9 +90,10 @@ export class HealthController {
     return {
       status: criticalDown ? "degraded" : "ok",
       service: "hel-api",
-      phase: 15,
+      phase: 16,
       photoDelivery: "signed-url",
       viewModal: "minimal-portal",
+      adminActivity: "likes-arrays",
       database,
       redis,
       objectStorage,

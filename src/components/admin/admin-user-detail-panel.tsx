@@ -96,7 +96,37 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
   const { t } = useTranslation();
   const detail = useAdminUserDetail(profileId, true) as any;
   const activityRaw = useAdminUserActivity(profileId, true);
-  const activity = activityRaw as any;
+  const activity = (() => {
+    if (!activityRaw || typeof activityRaw !== "object") return activityRaw as any;
+    const raw = activityRaw as Record<string, unknown>;
+    const likesGiven = Array.isArray(raw.likesGiven) ? raw.likesGiven : [];
+    const likesReceived = Array.isArray(raw.likesReceived)
+      ? raw.likesReceived
+      : [];
+    const messages = Array.isArray(raw.messages) ? raw.messages : [];
+    return {
+      ...raw,
+      messages,
+      likesGiven,
+      likesReceived,
+      messageCount:
+        typeof raw.messageCount === "number"
+          ? raw.messageCount
+          : messages.length,
+      likesGivenCount:
+        typeof raw.likesGivenCount === "number"
+          ? raw.likesGivenCount
+          : typeof raw.likesGiven === "number"
+            ? raw.likesGiven
+            : likesGiven.length,
+      likesReceivedCount:
+        typeof raw.likesReceivedCount === "number"
+          ? raw.likesReceivedCount
+          : typeof raw.likesReceived === "number"
+            ? raw.likesReceived
+            : likesReceived.length,
+    };
+  })();
   const setAdvisorReviewed = useAdminAdvisorReviewed();
   const requestProfilePhoto = useAdminRequestPhoto();
   const banUser = useAdminBanUser();
