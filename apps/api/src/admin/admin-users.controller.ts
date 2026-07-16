@@ -39,6 +39,7 @@ export class AdminUsersController {
   @Get()
   @UseGuards(RateLimitGuard)
   list(
+    @CurrentUser() user: RequestUser,
     @Query("search") search?: string,
     @Query("role") role?: string,
     @Query("reviewStatus") reviewStatus?: string,
@@ -47,6 +48,8 @@ export class AdminUsersController {
     @Query("limit") limit?: string
   ) {
     return this.users.listUsers({
+      actorUserId: user.id,
+      actorRole: user.role === "owner" ? "owner" : "admin",
       search,
       role,
       reviewStatus,
@@ -58,8 +61,12 @@ export class AdminUsersController {
   }
 
   @Get(":id")
-  get(@Param("id") id: string) {
-    return this.users.getUserDetail(id);
+  get(@CurrentUser() user: RequestUser, @Param("id") id: string) {
+    return this.users.getUserDetail(
+      id,
+      user.id,
+      user.role === "owner" ? "owner" : "admin"
+    );
   }
 
   @Get(":id/activity")

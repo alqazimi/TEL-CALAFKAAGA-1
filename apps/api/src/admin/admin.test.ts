@@ -167,6 +167,13 @@ describe("Phase 9 admin unit tests", () => {
       metrics,
       scoreStub as never,
       notifStub as never,
+      {
+        createSignedDownloadUrl: async () => ({
+          url: "https://example.test/photo.jpg",
+          expiresInSeconds: 300,
+          purpose: "profile_main",
+        }),
+      } as never,
       mail
     );
     moderation = new ModerationService(prisma as never, audit);

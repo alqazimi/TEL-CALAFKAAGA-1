@@ -290,15 +290,20 @@ export class EvcPaymentsService {
     return Promise.all(
       pending.map(async (p) => {
         let screenshotUrl: string | null = null;
-        if (p.screenshotMediaId) {
+        let mediaId = p.screenshotMediaId;
+        if (!mediaId && p.screenshotConvexId) {
+          const media = await this.prisma.mediaObject.findUnique({
+            where: { convexStorageId: p.screenshotConvexId },
+            select: { id: true },
+          });
+          mediaId = media?.id ?? null;
+        }
+        if (mediaId) {
           try {
-            const signed = await this.media.createSignedDownloadUrl(
-              p.screenshotMediaId,
-              {
-                userId: actorUserId,
-                roles: [actor?.role ?? "admin"],
-              }
-            );
+            const signed = await this.media.createSignedDownloadUrl(mediaId, {
+              userId: actorUserId,
+              roles: [actor?.role ?? "admin"],
+            });
             screenshotUrl = signed.url;
           } catch {
             screenshotUrl = null;

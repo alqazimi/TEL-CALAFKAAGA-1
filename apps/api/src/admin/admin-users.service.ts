@@ -22,6 +22,8 @@ import type { MailAdapter } from "../auth/mail.adapter";
 import { AuditLogService } from "./audit-log.service";
 import { DeletionService } from "./deletion.service";
 import { MetricsService } from "./metrics.service";
+import { MediaAccessService } from "../media/media-access.service";
+import { resolveProfileMainImageUrl } from "../media/profile-image-url";
 import {
   assertCanBanTarget,
   assertCanRejectTarget,
@@ -50,6 +52,7 @@ export class AdminUsersService {
     private readonly metrics: MetricsService,
     private readonly scores: ScoreQueueService,
     private readonly notifQueue: NotificationQueueService,
+    private readonly mediaAccess: MediaAccessService,
     @Inject(MAIL_ADAPTER) private readonly mail: MailAdapter
   ) {}
 
@@ -90,6 +93,8 @@ export class AdminUsersService {
   }
 
   async listUsers(opts: {
+    actorUserId: string;
+    actorRole: "admin" | "owner";
     search?: string;
     role?: string;
     reviewStatus?: string;
@@ -158,6 +163,12 @@ export class AdminUsersService {
           where: { userId: p.userId, status: "completed" },
           _sum: { amount: true },
         });
+        const imageUrl = await resolveProfileMainImageUrl(
+          this.prisma,
+          this.mediaAccess,
+          p,
+          { userId: opts.actorUserId, roles: [opts.actorRole] }
+        );
         return {
           // UI still uses Convex-shaped `_id` as the profile id.
           _id: p.id,
@@ -174,6 +185,7 @@ export class AdminUsersService {
           reviewStatus: p.reviewStatus,
           questionnaireComplete: p.questionnaireComplete,
           profileImageId: p.profileImageMediaId ?? p.profileImageConvexId,
+          imageUrl,
           paidCents: paidAgg._sum.amount ?? 0,
           country: p.country,
           city: p.city,
@@ -187,7 +199,7 @@ export class AdminUsersService {
     };
   }
 
-  async getUserDetail(profileId: string) {
+  async getUserDetail(profileId: string, actorUserId: string, actorRole: "admin" | "owner") {
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },
       include: { user: { select: { email: true, id: true, convexId: true } } },
@@ -200,12 +212,20 @@ export class AdminUsersService {
       where: { userId: profile.userId, status: "completed" },
       _sum: { amount: true },
     });
+    const imageUrl = await resolveProfileMainImageUrl(
+      this.prisma,
+      this.mediaAccess,
+      profile,
+      { userId: actorUserId, roles: [actorRole] }
+    );
     return {
       profile: {
         ...profile,
         _id: profile.id,
         email: profile.user.email,
         paidCents: paidAgg._sum.amount ?? 0,
+        profileImageId: profile.profileImageMediaId ?? profile.profileImageConvexId,
+        imageUrl,
         user: undefined,
       },
       preferences,

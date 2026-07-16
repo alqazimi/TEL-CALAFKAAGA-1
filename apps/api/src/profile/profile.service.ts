@@ -31,6 +31,11 @@ import {
 import { isDiscoverable } from "../common/review-status";
 import { ScoreRecalcStub } from "./score-recalc.stub";
 import { MediaAccessService } from "../media/media-access.service";
+import {
+  resolveAdditionalImageUrls,
+  resolveProfileMainImageUrl,
+  resolveProfileMainMediaId,
+} from "../media/profile-image-url";
 
 const MEMBER_PATCH_ALLOW = new Set([
   "name",
@@ -725,42 +730,29 @@ export class ProfileService {
   }
 
   async toPublicProfileAsync(profile: Profile) {
-    const profileImageId =
-      profile.profileImageMediaId ?? profile.profileImageConvexId;
+    const mainMediaId = await resolveProfileMainMediaId(this.prisma, profile);
+    const profileImageId = mainMediaId ?? profile.profileImageConvexId;
     const additionalImageIds =
       profile.additionalImageMediaIds.length > 0
         ? profile.additionalImageMediaIds
         : profile.additionalImageConvexIds;
 
-    let imageUrl: string | null = null;
-    const additionalImageUrls: string[] = [];
-
-    if (profile.profileImageMediaId) {
-      try {
-        const signed = await this.mediaAccess.createSignedDownloadUrl(
-          profile.profileImageMediaId,
-          {
-            userId: profile.userId,
-            roles: [profile.role as "user" | "admin" | "owner"],
-          }
-        );
-        imageUrl = signed.url;
-      } catch {
-        imageUrl = null;
-      }
-    }
-
-    for (const mediaId of profile.additionalImageMediaIds) {
-      try {
-        const signed = await this.mediaAccess.createSignedDownloadUrl(mediaId, {
-          userId: profile.userId,
-          roles: [profile.role as "user" | "admin" | "owner"],
-        });
-        additionalImageUrls.push(signed.url);
-      } catch {
-        // Skip broken / missing objects so the rest of the gallery still works.
-      }
-    }
+    const viewer = {
+      userId: profile.userId,
+      roles: [profile.role as "user" | "admin" | "owner"],
+    };
+    const imageUrl = await resolveProfileMainImageUrl(
+      this.prisma,
+      this.mediaAccess,
+      profile,
+      viewer
+    );
+    const additionalImageUrls = await resolveAdditionalImageUrls(
+      this.prisma,
+      this.mediaAccess,
+      profile,
+      viewer
+    );
 
     return {
       id: profile.id,
