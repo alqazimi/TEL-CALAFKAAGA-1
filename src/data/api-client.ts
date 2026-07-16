@@ -274,21 +274,31 @@ export const apiClient = {
     const url = path.startsWith("http")
       ? path
       : `${base}${path.startsWith("/") ? path : `/${path}`}`;
-    const headers: Record<string, string> = {
-      Accept: "*/*",
-      "X-Request-Id": newRequestId(),
-      ...opts?.headers,
-    };
-    const sessionToken = getApiSessionToken();
-    if (sessionToken) headers[SESSION_HEADER] = sessionToken;
-    const res = await fetch(url, {
-      method,
-      credentials: "include",
-      headers,
-      signal: opts?.signal,
-    });
-    if (!res.ok) throw await normalizeError(res);
-    return res.blob();
+    const controller = new AbortController();
+    const timeoutMs = opts?.timeoutMs ?? 15_000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const onAbort = () => controller.abort();
+    opts?.signal?.addEventListener("abort", onAbort);
+    try {
+      const headers: Record<string, string> = {
+        Accept: "*/*",
+        "X-Request-Id": newRequestId(),
+        ...opts?.headers,
+      };
+      const sessionToken = getApiSessionToken();
+      if (sessionToken) headers[SESSION_HEADER] = sessionToken;
+      const res = await fetch(url, {
+        method,
+        credentials: "include",
+        headers,
+        signal: controller.signal,
+      });
+      if (!res.ok) throw await normalizeError(res);
+      return res.blob();
+    } finally {
+      clearTimeout(timer);
+      opts?.signal?.removeEventListener("abort", onAbort);
+    }
   },
   post: <T>(
     path: string,

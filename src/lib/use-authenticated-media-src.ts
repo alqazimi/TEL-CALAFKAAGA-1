@@ -13,8 +13,8 @@ function asMediaId(value: unknown): string | null {
 }
 
 /**
- * Prefer Nest /media/:id (session token) so photos work cross-site;
- * fall back to a pre-signed imageUrl.
+ * Show signed imageUrl immediately (works like admin today).
+ * Only fetch Nest /media/:id when no signed URL is available.
  */
 export function useAuthenticatedMediaSrc(
   imageUrl?: string | null,
@@ -27,22 +27,24 @@ export function useAuthenticatedMediaSrc(
     let objectUrl: string | null = null;
     let cancelled = false;
 
-    async function load() {
-      if (isApiProvider() && id) {
-        try {
-          const blob = await apiClient.getBlob(`/media/${id}`);
-          if (cancelled) return;
-          objectUrl = URL.createObjectURL(blob);
-          setSrc(objectUrl);
-          return;
-        } catch {
-          // fall through
-        }
+    setSrc(imageUrl ?? undefined);
+
+    async function loadProxy() {
+      if (!isApiProvider() || !id || imageUrl) return;
+      try {
+        const blob = await apiClient.getBlob(`/media/${id}`, {
+          timeoutMs: 12_000,
+        });
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      } catch {
+        if (!cancelled) setSrc(undefined);
       }
-      if (!cancelled) setSrc(imageUrl ?? undefined);
     }
 
-    void load();
+    void loadProxy();
+
     return () => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);

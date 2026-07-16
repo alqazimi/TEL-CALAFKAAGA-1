@@ -480,6 +480,9 @@ export function useAdminUserDetail(profileId: string | null, enabled: boolean) {
       .users.detail(profileId)
       .then((d) => {
         if (!c) setApiData(d);
+      })
+      .catch(() => {
+        if (!c) setApiData(null);
       });
     return () => {
       c = true;
@@ -509,6 +512,9 @@ export function useAdminUserActivity(
       .users.activity(profileId)
       .then((d) => {
         if (!c) setApiData(d);
+      })
+      .catch(() => {
+        if (!c) setApiData(null);
       });
     return () => {
       c = true;

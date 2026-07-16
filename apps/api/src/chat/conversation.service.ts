@@ -9,9 +9,11 @@ import {
 } from "@nestjs/common";
 import type { Conversation, Match, Profile } from "@prisma/client";
 import { randomUUID } from "node:crypto";
-import { hasPaidAccess } from "../common/access";
+import { hasPaidAccess, isStaffRole } from "../common/access";
 import { MediaAccessService } from "../media/media-access.service";
+import { resolveProfileMainImageUrl } from "../media/profile-image-url";
 import { PrismaService } from "../prisma/prisma.service";
+import { canViewerSeePhotos } from "../profile/photo-rules";
 import { RedisService } from "../redis/redis.module";
 import { NotificationQueueService } from "../queue/notification-queue.service";
 import { ChatRealtimeService } from "./chat-realtime.service";
@@ -176,22 +178,28 @@ export class ConversationService {
 
       let imageUrl: string | null = null;
       let photoHidden = false;
-      if (other?.profileImageMediaId) {
-        try {
-          const signed = await this.media.createSignedDownloadUrl(
-            other.profileImageMediaId,
-            {
-              userId,
-              roles: [profile.role],
-              privatePhotoPeerIds: [otherId],
-            }
+      if (other) {
+        const hasPhoto = !!(
+          other.profileImageMediaId || other.profileImageConvexId
+        );
+        const allowed = canViewerSeePhotos({
+          viewerUserId: userId,
+          profileOwnerUserId: otherId,
+          photoVisibility: other.photoVisibility,
+          isStaff: isStaffRole(profile.role),
+          hasActiveMatch: m.status === "active",
+        });
+        if (!allowed) {
+          photoHidden = hasPhoto;
+        } else if (hasPhoto) {
+          imageUrl = await resolveProfileMainImageUrl(
+            this.prisma,
+            this.media,
+            other,
+            { userId, roles: [profile.role] }
           );
-          imageUrl = signed.url;
-        } catch {
-          photoHidden = true;
+          if (!imageUrl) photoHidden = true;
         }
-      } else if (other?.profileImageConvexId) {
-        photoHidden = true;
       }
 
       items.push({

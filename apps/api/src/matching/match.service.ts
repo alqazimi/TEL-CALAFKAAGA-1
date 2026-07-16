@@ -12,6 +12,10 @@ import { isDiscoverable } from "../common/review-status";
 import { canViewerSeePhotos } from "../profile/photo-rules";
 import { MediaAccessService } from "../media/media-access.service";
 import {
+  resolveProfileMainImageUrl,
+  resolveProfileMainMediaId,
+} from "../media/profile-image-url";
+import {
   MATCH_DISCOVER_LIMIT,
   MATCH_LIST_LIMIT,
   MIN_COMPATIBILITY_SCORE,
@@ -636,14 +640,7 @@ export class MatchService {
       isStaff: isStaffRole(viewerRole),
       hasActiveMatch,
     });
-    let mediaId = profile.profileImageMediaId;
-    if (!mediaId && profile.profileImageConvexId) {
-      const m = await this.prisma.mediaObject.findUnique({
-        where: { convexStorageId: profile.profileImageConvexId },
-        select: { id: true },
-      });
-      mediaId = m?.id ?? null;
-    }
+    const mediaId = await resolveProfileMainMediaId(this.prisma, profile);
     if (!allowed) {
       return {
         imageUrl: null as string | null,
@@ -652,18 +649,12 @@ export class MatchService {
         additionalUrls: [] as string[],
       };
     }
-    let imageUrl: string | null = null;
-    if (mediaId) {
-      try {
-        const signed = await this.media.createSignedDownloadUrl(mediaId, {
+    const imageUrl = mediaId
+      ? await resolveProfileMainImageUrl(this.prisma, this.media, profile, {
           userId: viewerId,
           roles: [viewerRole],
-        });
-        imageUrl = signed.url;
-      } catch {
-        imageUrl = null;
-      }
-    }
+        })
+      : null;
     return {
       imageUrl,
       photoHidden: false,

@@ -74,6 +74,7 @@ export function MatchProfileCard({
               imageUrl={match.imageUrl}
               mediaId={match.photoMediaId}
               alt={match.name}
+              fallbackName={match.name}
               className="h-full w-full object-cover"
             />
           ) : (

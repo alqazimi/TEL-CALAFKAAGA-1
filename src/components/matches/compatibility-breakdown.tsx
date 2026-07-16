@@ -52,7 +52,7 @@ export function CompatibilityBreakdown({
     | null;
 
   const narrative = useMemo(() => {
-    if (!breakdown) return null;
+    if (!breakdown || !Array.isArray(breakdown.categories)) return null;
     const ranked = [...breakdown.categories]
       .map((item) => ({
         ...item,
@@ -81,7 +81,7 @@ export function CompatibilityBreakdown({
     return <div className="h-24 rounded-2xl bg-muted/50 animate-pulse" />;
   }
 
-  if (!breakdown) return null;
+  if (!breakdown || !Array.isArray(breakdown.categories)) return null;
 
   return (
     <div className="rounded-2xl bg-muted/50 p-4 space-y-4">

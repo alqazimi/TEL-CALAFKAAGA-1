@@ -23,8 +23,7 @@ type AdminUserAvatarProps = {
 };
 
 /**
- * Admin avatars load through Nest `/media/:id` with the session token so
- * photos show even when direct R2 signed URLs are blocked by the browser.
+ * Prefer signed imageUrl (already working in admin). Proxy /media only as backup.
  */
 export function AdminUserAvatar({
   name,
@@ -41,19 +40,21 @@ export function AdminUserAvatar({
     let objectUrl: string | null = null;
     let cancelled = false;
 
+    setSrc(imageUrl ?? undefined);
+
     async function load() {
-      if (isApiProvider() && mediaId) {
-        try {
-          const blob = await apiClient.getBlob(`/media/${mediaId}`);
-          if (cancelled) return;
-          objectUrl = URL.createObjectURL(blob);
-          setSrc(objectUrl);
-          return;
-        } catch {
-          // fall through to signed URL
-        }
+      if (imageUrl) return;
+      if (!isApiProvider() || !mediaId) return;
+      try {
+        const blob = await apiClient.getBlob(`/media/${mediaId}`, {
+          timeoutMs: 12_000,
+        });
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSrc(objectUrl);
+      } catch {
+        if (!cancelled) setSrc(undefined);
       }
-      if (!cancelled) setSrc(imageUrl ?? undefined);
     }
 
     void load();
