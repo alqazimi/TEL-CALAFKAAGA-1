@@ -159,7 +159,7 @@ export function MatchProfileCard({
               type="button"
               variant="outline"
               size="sm"
-              className="h-11 flex-1 rounded-full"
+              className="h-11 flex-1 rounded-full relative z-20"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
