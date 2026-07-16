@@ -18,7 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AuthenticatedMediaImage } from "@/components/ui/authenticated-media-image";
+import { LazyImage } from "@/components/ui/lazy-image";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import type { MatchResult } from "@/types";
@@ -69,12 +69,10 @@ export function MatchProfileCard({
     >
       <Card className="overflow-hidden group hover:shadow-xl hover:shadow-primary/8 transition-all duration-300 border-border/80">
         <div className="relative h-72 sm:h-80 lg:h-[22rem] bg-muted">
-          {match.imageUrl || match.photoMediaId ? (
-            <AuthenticatedMediaImage
-              imageUrl={match.imageUrl}
-              mediaId={match.photoMediaId}
+          {match.imageUrl ? (
+            <LazyImage
+              src={match.imageUrl}
               alt={match.name}
-              fallbackName={match.name}
               className="h-full w-full object-cover"
             />
           ) : (

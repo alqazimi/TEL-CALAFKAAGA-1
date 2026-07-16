@@ -22,14 +22,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AuthenticatedMediaImage } from "@/components/ui/authenticated-media-image";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import type { MatchResult } from "@/types";
 import { useTranslation } from "@/lib/i18n/context";
-import { useAuthenticatedMediaSrc } from "@/lib/use-authenticated-media-src";
 import { cn } from "@/lib/utils";
 
 const SWIPE_THRESHOLD = 96;
@@ -65,13 +63,12 @@ function SwipeCard({
   const [galleryIndex, setGalleryIndex] = useState(0);
 
   const location = [match.city, match.country].filter(Boolean).join(", ");
-  const mainSrc = useAuthenticatedMediaSrc(match.imageUrl, match.photoMediaId);
   const photos = useMemo(
     () =>
-      [mainSrc, ...(match.additionalImageUrls ?? [])].filter(
+      [match.imageUrl, ...(match.additionalImageUrls ?? [])].filter(
         (url): url is string => !!url
       ),
-    [mainSrc, match.additionalImageUrls]
+    [match.imageUrl, match.additionalImageUrls]
   );
 
   const openGallery = (index = 0) => {
@@ -138,12 +135,10 @@ function SwipeCard({
               onClick={() => openGallery(0)}
               disabled={!photos.length}
             >
-              {mainSrc || match.imageUrl || match.photoMediaId ? (
-                <AuthenticatedMediaImage
-                  imageUrl={match.imageUrl}
-                  mediaId={match.photoMediaId}
+              {match.imageUrl ? (
+                <LazyImage
+                  src={match.imageUrl}
                   alt={match.name}
-                  fallbackName={match.name}
                   className="h-full w-full object-cover"
                 />
               ) : (

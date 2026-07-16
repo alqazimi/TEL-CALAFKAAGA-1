@@ -2,29 +2,29 @@
 
 import { LazyImage } from "@/components/ui/lazy-image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useAuthenticatedMediaSrc } from "@/lib/use-authenticated-media-src";
 import { cn } from "@/lib/utils";
 
 type AuthenticatedMediaImageProps = {
   imageUrl?: string | null;
+  /** Ignored — kept for call-site compatibility. Photos use signed imageUrl. */
   mediaId?: string | null;
   alt: string;
   className?: string;
-  /** When set, show initials instead of an empty hole if the photo cannot load. */
   fallbackName?: string;
 };
 
-/** Profile/match photo — prefers signed imageUrl; /media proxy only as backup. */
+/**
+ * Member profile photo — same approach as admin: render the signed imageUrl.
+ * No /media proxy (avoids blank photos when that route is not deployed).
+ */
 export function AuthenticatedMediaImage({
   imageUrl,
-  mediaId,
   alt,
   className,
   fallbackName,
 }: AuthenticatedMediaImageProps) {
-  const src = useAuthenticatedMediaSrc(imageUrl, mediaId);
-  if (src) {
-    return <LazyImage src={src} alt={alt} className={cn(className)} />;
+  if (imageUrl) {
+    return <LazyImage src={imageUrl} alt={alt} className={cn(className)} />;
   }
   if (fallbackName) {
     return (
