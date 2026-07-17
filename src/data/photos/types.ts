@@ -1,4 +1,5 @@
 export type PhotosAdapter = {
+  listMine(): Promise<unknown>;
   requestUploadUrl(args: {
     contentType: string;
     slot?: "main" | "additional" | "private";
@@ -16,6 +17,7 @@ export type PhotosAdapter = {
 };
 
 export const PHOTOS_METHOD_NAMES = [
+  "listMine",
   "requestUploadUrl",
   "confirmUpload",
   "addAdditional",

@@ -107,8 +107,14 @@ function groupNotifications(notifications: Notification[]) {
 export default function NotificationsPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const notifications = useNotificationsList() as Notification[] | undefined;
-  const reminders = useMemberReminders() as MemberReminder[] | undefined;
+  const notificationsRaw = useNotificationsList();
+  const remindersRaw = useMemberReminders();
+  const notifications = Array.isArray(notificationsRaw)
+    ? (notificationsRaw as Notification[])
+    : undefined;
+  const reminders = Array.isArray(remindersRaw)
+    ? (remindersRaw as MemberReminder[])
+    : [];
   const markAsRead = useMarkNotificationRead();
   const markAllAsRead = useMarkAllNotificationsRead();
   const markedAllRef = useRef(false);
@@ -126,7 +132,7 @@ export default function NotificationsPage() {
     void markAllAsRead();
   }, [notifications, markAllAsRead]);
 
-  if (notifications === undefined || reminders === undefined) {
+  if (notifications === undefined) {
     return (
       <DashboardLayout>
         <div className="space-y-4 max-w-2xl">

@@ -662,6 +662,25 @@ export const en = {
     nextBrowseDesc: "{{count}} compatible profiles are waiting for you.",
     nextBrowseAction: "Start browsing",
   },
+  privateReveal: {
+    title: "Private photo",
+    someone: "your match",
+    availableDesc:
+      "{{name}} shared {{count}} private photo(s). You have {{remaining}} reveal left for this match.",
+    unlockedDesc: "You unlocked a private photo from {{name}}.",
+    usedUpDesc: "You have used your private photo reveals for this match.",
+    revealCta: "Reveal private photo ({{remaining}} left)",
+    revealing: "Revealing…",
+    revealedToast: "Private photo revealed",
+    errorToast: "Could not reveal this photo",
+    noCreditsLeft: "No reveals left. Premium members get an extra reveal per match.",
+    ownerTitle: "Private photos (reveal once)",
+    ownerDesc:
+      "These stay hidden until a mutual match chooses to reveal one. Basic matches get 1 reveal; Premium gets 2.",
+    addPrivate: "Add private",
+    privateUploaded: "Private photo added",
+    ownerCount: "{{count}} of {{max}} private photos",
+  },
   homeFeed: {
     hello: "Hello, {{name}}",
     subtitle: "Your personalized updates for today.",
@@ -1444,6 +1463,11 @@ export const en = {
     unarchive: "Restore",
     archivedEmpty: "No archived matches",
     newEmpty: "No new matches",
+    streakDays: "{{count}}-day streak",
+    streakStart: "Start streak",
+    streakHint: "Send a photo every day together to keep your streak.",
+    streakSendPhoto: "Send a photo today to keep your streak alive",
+    streakSafeToday: "You both sent photos today — streak is safe",
   },
   safety: {
     reportOrBlock: "Report / Block",

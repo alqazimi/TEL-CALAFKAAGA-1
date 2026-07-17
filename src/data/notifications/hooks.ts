@@ -20,13 +20,38 @@ export function useNotificationsList() {
   return useSafeQuery(api.notifications.getNotifications, {});
 }
 
+/**
+ * The Nest API returns `{ items, nextCursor }` with string ids/dates, while
+ * the UI expects a Convex-style array of `{ _id, createdAt: number, ... }`.
+ */
+function normalizeNotificationsResponse(data: unknown): unknown[] {
+  const list = Array.isArray(data)
+    ? data
+    : data && Array.isArray((data as { items?: unknown[] }).items)
+      ? (data as { items: unknown[] }).items
+      : [];
+  return list.map((raw) => {
+    if (!raw || typeof raw !== "object") return raw;
+    const n = raw as Record<string, unknown>;
+    const createdAtRaw = n.createdAt;
+    const createdAt =
+      typeof createdAtRaw === "number"
+        ? createdAtRaw
+        : typeof createdAtRaw === "string"
+          ? Date.parse(createdAtRaw) || Date.now()
+          : Date.now();
+    return { ...n, _id: n._id ?? n.id, createdAt };
+  });
+}
+
 function useApiNotificationsList() {
   const [apiData, setApiData] = useState<unknown>(undefined);
   const refresh = useCallback(async () => {
     try {
-      setApiData(await getNotificationsAdapter().list());
+      const data = await getNotificationsAdapter().list();
+      setApiData(normalizeNotificationsResponse(data));
     } catch {
-      setApiData(null);
+      setApiData([]);
     }
   }, []);
   useEffect(() => {
@@ -86,10 +111,10 @@ function useApiReminders() {
     void getNotificationsAdapter()
       .getMemberReminders()
       .then((d) => {
-        if (!cancelled) setApiData(d);
+        if (!cancelled) setApiData(Array.isArray(d) ? d : []);
       })
       .catch(() => {
-        if (!cancelled) setApiData(null);
+        if (!cancelled) setApiData([]);
       });
     return () => {
       cancelled = true;

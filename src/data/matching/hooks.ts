@@ -292,3 +292,35 @@ function useApiBreakdown(userId: string | undefined) {
   }, [userId]);
   return apiData;
 }
+
+export function usePrivateRevealStatus(matchId: string | undefined, enabled = true) {
+  const [data, setData] = useState<unknown>(undefined);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!enabled || !matchId) {
+      setData(undefined);
+      return;
+    }
+    let cancelled = false;
+    void getMatchingAdapter()
+      .getPrivateRevealStatus(matchId)
+      .then((d) => {
+        if (!cancelled) setData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [matchId, enabled, tick]);
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
+  return { data, refresh };
+}
+
+export function useRevealPrivatePhoto() {
+  return useCallback(async (matchId: string, mediaId?: string) => {
+    return getMatchingAdapter().revealPrivatePhoto(matchId, mediaId);
+  }, []);
+}
+

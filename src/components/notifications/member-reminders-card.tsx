@@ -34,9 +34,12 @@ const reminderColors: Record<MemberReminderId, string> = {
 
 export function MemberRemindersCard() {
   const { t } = useTranslation();
-  const reminders = useMemberReminders() as MemberReminder[] | undefined;
+  const remindersRaw = useMemberReminders();
+  const reminders = Array.isArray(remindersRaw)
+    ? (remindersRaw as MemberReminder[])
+    : [];
 
-  if (!reminders?.length) return null;
+  if (!reminders.length) return null;
 
   return (
     <div className="space-y-3">

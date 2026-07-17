@@ -2,6 +2,11 @@
 
 export const MAX_PROFILE_PHOTOS = 5;
 export const MAX_ADDITIONAL_PHOTOS = MAX_PROFILE_PHOTOS - 1;
+/** Private “reveal once” gallery — separate from public profile photos. */
+export const MAX_PRIVATE_PHOTOS = 2;
+/** Basic members get 1 reveal per active match; premium gets 2. */
+export const PRIVATE_REVEALS_PER_MATCH_BASIC = 1;
+export const PRIVATE_REVEALS_PER_MATCH_PREMIUM = 2;
 export const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 
 export const ALLOWED_IMAGE_CONTENT_TYPES = new Set([

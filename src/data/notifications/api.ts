@@ -22,11 +22,7 @@ export const apiNotifications: NotificationsAdapter = {
     return apiClient.post("/notifications/read", { ids });
   },
   async getMemberReminders() {
-    // Nest may fold reminders into notifications list; fallback empty
-    try {
-      return await apiClient.get("/notifications?reminders=1");
-    } catch {
-      return [];
-    }
+    // The Nest API has no reminders endpoint; the UI expects an array.
+    return [];
   },
 };

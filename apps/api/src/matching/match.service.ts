@@ -10,6 +10,10 @@ import { PrismaService } from "../prisma/prisma.service";
 import { hasPaidAccess, isPremiumMember, isStaffRole } from "../common/access";
 import { isDiscoverable } from "../common/review-status";
 import { canViewerSeePhotos } from "../profile/photo-rules";
+import {
+  PRIVATE_REVEALS_PER_MATCH_BASIC,
+  PRIVATE_REVEALS_PER_MATCH_PREMIUM,
+} from "../profile/photo-rules";
 import { MediaAccessService } from "../media/media-access.service";
 import {
   resolveProfileMainImageUrl,
@@ -764,6 +768,194 @@ export class MatchService {
     return {
       waliName: other?.waliName ?? null,
       waliPhone: other?.waliPhone ?? null,
+    };
+  }
+
+  /**
+   * Status of one-time private photo reveals for this mutual match.
+   * Never exposes unreaveled private media IDs — only a count teaser.
+   */
+  async getPrivateRevealStatus(userId: string, matchId: string) {
+    const { match, ownerId, viewerProfile } = await this.requireActiveMatchPeer(
+      userId,
+      matchId
+    );
+    const owner = await this.prisma.profile.findUnique({
+      where: { userId: ownerId },
+    });
+    const privateIds = owner?.privateImageMediaIds ?? [];
+    const reveals = await this.prisma.photoReveal.findMany({
+      where: { matchId: match.id, viewerUserId: userId },
+      orderBy: { revealedAt: "asc" },
+    });
+    const maxReveals = isPremiumMember(viewerProfile)
+      ? PRIVATE_REVEALS_PER_MATCH_PREMIUM
+      : PRIVATE_REVEALS_PER_MATCH_BASIC;
+    const remaining = Math.max(0, maxReveals - reveals.length);
+
+    const revealed = [];
+    for (const row of reveals) {
+      try {
+        const signed = await this.media.createSignedDownloadUrl(row.mediaId, {
+          userId,
+          roles: [viewerProfile.role],
+          privatePhotoPeerIds: [ownerId],
+        });
+        revealed.push({
+          mediaId: row.mediaId,
+          url: signed.url,
+          revealedAt: row.revealedAt.toISOString(),
+        });
+      } catch {
+        revealed.push({
+          mediaId: row.mediaId,
+          url: null as string | null,
+          revealedAt: row.revealedAt.toISOString(),
+        });
+      }
+    }
+
+    const unreaveledCount = privateIds.filter(
+      (id) => !reveals.some((r) => r.mediaId === id)
+    ).length;
+
+    return {
+      matchId: match.id,
+      hasPrivatePhotos: privateIds.length > 0,
+      privatePhotoCount: privateIds.length,
+      unreaveledCount,
+      maxReveals,
+      usedReveals: reveals.length,
+      remainingReveals: remaining,
+      canReveal: remaining > 0 && unreaveledCount > 0,
+      revealed,
+      isPremium: isPremiumMember(viewerProfile),
+    };
+  }
+
+  /**
+   * Spend one reveal credit to unlock the next (or specified) private photo.
+   */
+  async revealPrivatePhoto(
+    userId: string,
+    matchId: string,
+    mediaId?: string
+  ) {
+    const { match, ownerId, viewerProfile, ownerConvexId, viewerConvexId } =
+      await this.requireActiveMatchPeer(userId, matchId);
+    const owner = await this.prisma.profile.findUnique({
+      where: { userId: ownerId },
+    });
+    if (!owner) throw new NotFoundException("Profile not found");
+
+    const privateIds = owner.privateImageMediaIds ?? [];
+    if (privateIds.length === 0) {
+      throw new BadRequestException("This member has no private photos");
+    }
+
+    const reveals = await this.prisma.photoReveal.findMany({
+      where: { matchId: match.id, viewerUserId: userId },
+    });
+    const maxReveals = isPremiumMember(viewerProfile)
+      ? PRIVATE_REVEALS_PER_MATCH_PREMIUM
+      : PRIVATE_REVEALS_PER_MATCH_BASIC;
+    if (reveals.length >= maxReveals) {
+      throw new ForbiddenException(
+        "You have used all private photo reveals for this match"
+      );
+    }
+
+    const already = new Set(reveals.map((r) => r.mediaId));
+    const targetMediaId =
+      mediaId && privateIds.includes(mediaId) && !already.has(mediaId)
+        ? mediaId
+        : privateIds.find((id) => !already.has(id));
+
+    if (!targetMediaId) {
+      throw new BadRequestException("No more private photos to reveal");
+    }
+
+    const media = await this.prisma.mediaObject.findUnique({
+      where: { id: targetMediaId },
+    });
+    if (
+      !media ||
+      media.ownerUserId !== ownerId ||
+      media.purpose !== "profile_private"
+    ) {
+      throw new NotFoundException("Private photo not found");
+    }
+
+    try {
+      await this.prisma.photoReveal.create({
+        data: {
+          matchId: match.id,
+          viewerUserId: userId,
+          ownerUserId: ownerId,
+          mediaId: targetMediaId,
+        },
+      });
+    } catch (err: unknown) {
+      const code =
+        err && typeof err === "object" && "code" in err
+          ? (err as { code?: string }).code
+          : undefined;
+      if (code !== "P2002") throw err;
+    }
+
+    const signed = await this.media.createSignedDownloadUrl(targetMediaId, {
+      userId,
+      roles: [viewerProfile.role],
+      privatePhotoPeerIds: [ownerId],
+    });
+
+    await this.createNotificationSafe({
+      userId: ownerId,
+      convexUserId: ownerConvexId,
+      type: "match",
+      title: "Private photo revealed",
+      body: `${viewerProfile.name ?? "Your match"} viewed one of your private photos.`,
+      relatedUserId: userId,
+      convexRelatedUserId: viewerConvexId,
+      sourceKey: `photo_reveal:${match.id}:${userId}:${targetMediaId}`,
+    });
+
+    return {
+      mediaId: targetMediaId,
+      url: signed.url,
+      remainingReveals: Math.max(0, maxReveals - reveals.length - 1),
+    };
+  }
+
+  private async requireActiveMatchPeer(userId: string, matchId: string) {
+    const match = await this.prisma.match.findUnique({ where: { id: matchId } });
+    if (!match) throw new NotFoundException("Match not found");
+    if (match.userAId !== userId && match.userBId !== userId) {
+      throw new ForbiddenException("Not authorized");
+    }
+    if (match.status !== "active") {
+      throw new BadRequestException("This match is no longer available");
+    }
+    const ownerId = match.userAId === userId ? match.userBId : match.userAId;
+    if (await this.isEitherBlocked(userId, ownerId)) {
+      throw new ForbiddenException("Access denied");
+    }
+    const viewerProfile = await this.prisma.profile.findUnique({
+      where: { userId },
+    });
+    if (!viewerProfile) throw new ForbiddenException("Profile required");
+    const ownerUser = await this.prisma.user.findUniqueOrThrow({
+      where: { id: ownerId },
+    });
+    const viewerUser = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    return {
+      match,
+      ownerId,
+      viewerProfile,
+      ownerConvexId: ownerUser.convexId,
+      viewerConvexId: viewerUser.convexId,
     };
   }
 

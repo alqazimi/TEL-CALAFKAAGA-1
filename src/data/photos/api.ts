@@ -4,6 +4,10 @@ import { track } from "../telemetry";
 import type { PhotosAdapter } from "./types";
 
 export const apiPhotos: PhotosAdapter = {
+  async listMine() {
+    return apiClient.get("/profile/me/photos");
+  },
+
   async requestUploadUrl(args) {
     return apiClient.post("/profile/photos/sign-upload", {
       contentType: args.contentType,

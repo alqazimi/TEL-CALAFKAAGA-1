@@ -150,4 +150,29 @@ export class MatchController {
   ) {
     return this.matches.getWali(user.id, matchId);
   }
+
+  @Get(":matchId/private-reveal")
+  async privateRevealStatus(
+    @CurrentUser() user: RequestUser,
+    @Param("matchId") matchId: string
+  ) {
+    return this.matches.getPrivateRevealStatus(user.id, matchId);
+  }
+
+  @Post(":matchId/private-reveal")
+  @HttpCode(200)
+  async privateReveal(
+    @CurrentUser() user: RequestUser,
+    @Param("matchId") matchId: string,
+    @Body() body: unknown
+  ) {
+    const parsed = z
+      .object({ mediaId: z.string().uuid().optional() })
+      .safeParse(body ?? {});
+    return this.matches.revealPrivatePhoto(
+      user.id,
+      matchId,
+      parsed.success ? parsed.data.mediaId : undefined
+    );
+  }
 }

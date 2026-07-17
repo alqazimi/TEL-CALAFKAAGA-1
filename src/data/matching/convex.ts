@@ -77,6 +77,21 @@ export const convexMatching: MatchingAdapter = {
       userId,
     } as never);
   },
+  async getPrivateRevealStatus() {
+    return {
+      hasPrivatePhotos: false,
+      canReveal: false,
+      revealed: [],
+      remainingReveals: 0,
+      unreaveledCount: 0,
+      privatePhotoCount: 0,
+      maxReveals: 0,
+      usedReveals: 0,
+    };
+  },
+  async revealPrivatePhoto() {
+    throw new Error("Private photo reveal requires API mode");
+  },
   async likeUser(userId) {
     const client = getConvexClient();
     return client.mutation(api.matches.likeUser, { userId } as never);

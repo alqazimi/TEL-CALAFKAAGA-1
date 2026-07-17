@@ -669,6 +669,26 @@ export const so: Translations = {
     nextBrowseDesc: "{{count}} profile oo ku habboon ayaa ku sugaya.",
     nextBrowseAction: "Bilow baadhista",
   },
+  privateReveal: {
+    title: "Sawir gaar ah",
+    someone: "isdhaafkaaga",
+    availableDesc:
+      "{{name}} wuxuu la wadaagay {{count}} sawir(yo) gaar ah. Waxaad haysataa {{remaining}} furitaan isdhaafkan.",
+    unlockedDesc: "Waxaad furtay sawir gaar ah oo ka yimid {{name}}.",
+    usedUpDesc: "Waxaad isticmaashay furitaannada sawirka gaarka ah ee isdhaafkan.",
+    revealCta: "Fur sawirka gaarka ah ({{remaining}} hadhay)",
+    revealing: "Waa la furayaa…",
+    revealedToast: "Sawirka gaarka ah waa la furay",
+    errorToast: "Sawirkan lama furi karin",
+    noCreditsLeft:
+      "Furitaan ma hadhin. Xubnaha Premium waxay helaan furitaan dheeraad ah isdhaaf kasta.",
+    ownerTitle: "Sawirro gaar ah (hal mar la furo)",
+    ownerDesc:
+      "Kuwan way qarsoon yihiin ilaa isdhaafku doorto inuu mid furo. Basic 1 furitaan; Premium 2.",
+    addPrivate: "Kudar gaar",
+    privateUploaded: "Sawir gaar ah ayaa lagu daray",
+    ownerCount: "{{count}} ka mid ah {{max}} sawirro gaar ah",
+  },
   homeFeed: {
     hello: "Salaan, {{name}}",
     subtitle: "Cusboonaysiintaada maanta.",
@@ -1453,6 +1473,12 @@ export const so: Translations = {
     unarchive: "Soo celi",
     archivedEmpty: "Ma jiraan isbarbardhigyo kaydsan",
     newEmpty: "Ma jiraan isbarbardhigyo cusub",
+    streakDays: "{{count}} maalmood oo isku xigta",
+    streakStart: "Bilow streak",
+    streakHint:
+      "Maalin walba labadiinaba sawir u soo dira si aad u ilaalyaan streak-ka.",
+    streakSendPhoto: "Maanta sawir u dir si aad u ilaaliso streak-ka",
+    streakSafeToday: "Labadiinuba maanta sawir ayaad dirtay — streak-ku waa ammaan",
   },
   safety: {
     reportOrBlock: "Soo sheeg / Jooji",

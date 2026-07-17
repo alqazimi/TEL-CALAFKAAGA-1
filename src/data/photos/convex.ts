@@ -5,6 +5,10 @@ import { track } from "../telemetry";
 import type { PhotosAdapter } from "./types";
 
 export const convexPhotos: PhotosAdapter = {
+  async listMine() {
+    return { photos: [], maxPhotos: 5, photoVisibility: "everyone" };
+  },
+
   async requestUploadUrl() {
     const client = getConvexClient();
     const uploadUrl = await client.mutation(api.profiles.generateUploadUrl, {});

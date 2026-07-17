@@ -224,6 +224,8 @@ model User {
   sessions           Session[]
   passwordResetTokens PasswordResetToken[]
   authAuditEvents    AuthAuditEvent[]
+  photoRevealsViewed PhotoReveal[] @relation("PhotoRevealViewer")
+  photoRevealsOwned  PhotoReveal[] @relation("PhotoRevealOwner")
   profileAuditEvents ProfileAuditEvent[]
 
   @@map("users")
@@ -446,12 +448,38 @@ model Match {
   userB        User          @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Restrict)
   conversation Conversation?
   payments     Payment[]
+  photoReveals PhotoReveal[]
 
   @@unique([userAId, userBId])
   @@index([userAId, status])
   @@index([userBId, status])
   @@index([status, archivedAt])
   @@map("matches")
+}
+
+/**
+ * One-time private photo unlock within an active mutual match.
+ * Viewer spends a reveal credit to permanently unlock one private photo
+ * for that match (while the match stays active).
+ */
+model PhotoReveal {
+  id           String   @id @default(uuid()) @db.Uuid
+  matchId      String   @map("match_id") @db.Uuid
+  viewerUserId String   @map("viewer_user_id") @db.Uuid
+  ownerUserId  String   @map("owner_user_id") @db.Uuid
+  mediaId      String   @map("media_id") @db.Uuid
+  revealedAt   DateTime @default(now()) @map("revealed_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  match  Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  viewer User  @relation("PhotoRevealViewer", fields: [viewerUserId], references: [id], onDelete: Restrict)
+  owner  User  @relation("PhotoRevealOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+
+  @@unique([matchId, viewerUserId, mediaId])
+  @@index([matchId, viewerUserId])
+  @@index([ownerUserId])
+  @@map("photo_reveals")
 }
 
 model Conversation {
@@ -464,6 +492,12 @@ model Conversation {
   participantUserIds   String[] @default([]) @map("participant_user_ids")
   lastMessageAt        DateTime @map("last_message_at")
   unreadByUser         Json?    @map("unread_by_user")
+  /// Daily photo streak (both partners send a chat photo on the same UTC day).
+  streakCount          Int      @default(0) @map("streak_count")
+  longestStreak        Int      @default(0) @map("longest_streak")
+  streakLastDay        String?  @map("streak_last_day")
+  streakPendingDay     String?  @map("streak_pending_day")
+  streakPendingUserIds Json?    @map("streak_pending_user_ids")
   convexCreatedAt      DateTime? @map("convex_created_at")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")

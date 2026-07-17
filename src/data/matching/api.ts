@@ -102,6 +102,29 @@ export const apiMatching: MatchingAdapter = {
       throw error;
     }
   },
+  async getPrivateRevealStatus(matchId) {
+    try {
+      return await apiClient.get(
+        `/matches/${encodeURIComponent(matchId)}/private-reveal`
+      );
+    } catch (error) {
+      if (isPaidGateError(error)) {
+        return {
+          hasPrivatePhotos: false,
+          canReveal: false,
+          revealed: [],
+          remainingReveals: 0,
+        };
+      }
+      throw error;
+    }
+  },
+  async revealPrivatePhoto(matchId, mediaId) {
+    return apiClient.post(
+      `/matches/${encodeURIComponent(matchId)}/private-reveal`,
+      mediaId ? { mediaId } : {}
+    );
+  },
   async likeUser(userId, action = "like") {
     return apiClient.post(`/matches/${encodeURIComponent(userId)}/action`, {
       action,

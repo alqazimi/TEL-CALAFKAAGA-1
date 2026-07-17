@@ -123,17 +123,20 @@ export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
         />
       </div>
 
-      <section className="rounded-3xl border border-border/80 bg-card overflow-hidden shadow-sm">
+      <section className="romance-card rounded-3xl overflow-hidden">
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary/80">
               {t("homeFeed.dailyMatch")}
             </p>
             <p className="text-sm text-muted-foreground mt-0.5">
               {t("homeFeed.dailyMatchDesc")}
             </p>
           </div>
-          <Badge variant="secondary" className="rounded-full">
+          <Badge
+            variant="secondary"
+            className="rounded-full border border-gold/30 bg-gold/10 text-gold-foreground"
+          >
             {t("homeFeed.today")}
           </Badge>
         </div>
@@ -222,10 +225,10 @@ export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
         )}
       </section>
 
-      <section className="rounded-3xl border border-border/80 bg-card p-4 space-y-3 shadow-sm">
+      <section className="romance-card rounded-3xl p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary/80">
               {t("homeFeed.likedYou")}
             </p>
             <p className="text-sm text-muted-foreground mt-0.5">

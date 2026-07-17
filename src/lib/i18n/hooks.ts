@@ -33,6 +33,7 @@ export function useAppNavLinks(profileComplete = true) {
   const { t } = useTranslation();
 
   if (profileComplete) {
+    // Profile lives in the account menu / settings — not the main tabs.
     return [
       {
         href: "/dashboard",
@@ -60,12 +61,6 @@ export function useAppNavLinks(profileComplete = true) {
         tab: true,
       },
       {
-        href: "/profile",
-        label: t("app.profile"),
-        icon: "User" as const,
-        tab: true,
-      },
-      {
         href: "/notifications",
         label: t("app.notifications"),
         icon: "Bell" as const,
@@ -77,9 +72,9 @@ export function useAppNavLinks(profileComplete = true) {
   return [
     {
       href: "/dashboard",
-      label: t("app.completeProfile"),
+      label: t("app.home"),
       mobileLabel: t("app.home"),
-      icon: "ClipboardList" as const,
+      icon: "LayoutDashboard" as const,
       tab: true,
     },
     {

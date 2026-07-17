@@ -19,6 +19,7 @@ import {
   ALLOWED_IMAGE_CONTENT_TYPES,
   canViewerSeePhotos,
   MAX_ADDITIONAL_PHOTOS,
+  MAX_PRIVATE_PHOTOS,
   MAX_PROFILE_PHOTOS,
   MAX_UPLOAD_BYTES,
 } from "./photo-rules";
@@ -113,7 +114,13 @@ export class ProfilePhotosService {
     }
 
     const counts = await this.countPhotos(profile);
-    if (opts.slot !== "private" && counts.total >= MAX_PROFILE_PHOTOS) {
+    if (opts.slot === "private") {
+      if (profile.privateImageMediaIds.length >= MAX_PRIVATE_PHOTOS) {
+        throw new BadRequestException(
+          `You can upload up to ${MAX_PRIVATE_PHOTOS} private photos`
+        );
+      }
+    } else if (counts.total >= MAX_PROFILE_PHOTOS) {
       throw new BadRequestException(
         `You can upload up to ${MAX_PROFILE_PHOTOS} photos`
       );
@@ -258,6 +265,14 @@ export class ProfilePhotosService {
       (!profile.profileImageMediaId && !profile.profileImageConvexId);
 
     if (media.purpose === "profile_private") {
+      if (profile.privateImageMediaIds.includes(media.id)) {
+        return this.listMine(userId);
+      }
+      if (profile.privateImageMediaIds.length >= MAX_PRIVATE_PHOTOS) {
+        throw new BadRequestException(
+          `You can upload up to ${MAX_PRIVATE_PHOTOS} private photos`
+        );
+      }
       const next = [...profile.privateImageMediaIds, media.id];
       await this.prisma.profile.update({
         where: { id: profile.id },
@@ -443,11 +458,26 @@ export class ProfilePhotosService {
     }
 
     if (media.purpose === "profile_private") {
-      if (
-        viewerUserId !== target.userId &&
-        !isStaffRole(viewer?.role)
-      ) {
-        throw new ForbiddenException("Private photo access denied");
+      const isOwner = viewerUserId === target.userId;
+      const isStaff = isStaffRole(viewer?.role);
+      if (!isOwner && !isStaff) {
+        const revealed = await this.prisma.photoReveal.findFirst({
+          where: {
+            viewerUserId,
+            ownerUserId: target.userId,
+            mediaId,
+          },
+          select: { id: true },
+        });
+        if (!revealed) {
+          throw new ForbiddenException("Private photo access denied");
+        }
+        // Already revealed for this viewer — skip main-gallery visibility gate.
+        return this.mediaAccess.createSignedDownloadUrl(mediaId, {
+          userId: viewerUserId,
+          roles: viewer ? [viewer.role] : ["user"],
+          privatePhotoPeerIds: [target.userId],
+        });
       }
     }
 

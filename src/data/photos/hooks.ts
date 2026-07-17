@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
 import { api } from "../../../convex/_generated/api";
 import { uploadImageToConvex } from "@/lib/upload-image";
@@ -72,4 +72,29 @@ export function useRemoveAdditionalPhoto() {
     async (id: string) => mut({ storageId: id } as never),
     [mut]
   );
+}
+
+export function useMyPhotos(enabled = true) {
+  const [data, setData] = useState<unknown>(undefined);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!enabled || !isApiProvider()) {
+      setData(enabled ? { photos: [] } : undefined);
+      return;
+    }
+    let cancelled = false;
+    void getPhotosAdapter()
+      .listMine()
+      .then((d) => {
+        if (!cancelled) setData(d);
+      })
+      .catch(() => {
+        if (!cancelled) setData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, tick]);
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
+  return { data, refresh };
 }

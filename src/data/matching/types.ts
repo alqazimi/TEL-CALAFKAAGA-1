@@ -4,6 +4,8 @@ export type MatchingAdapter = {
   getMatchLists(filters?: Record<string, unknown>): Promise<unknown>;
   getHomeFeed(): Promise<unknown>;
   getCompatibilityBreakdown(userId: string): Promise<unknown>;
+  getPrivateRevealStatus(matchId: string): Promise<unknown>;
+  revealPrivatePhoto(matchId: string, mediaId?: string): Promise<unknown>;
   likeUser(userId: string, action?: "like" | "pass" | "shortlist"): Promise<unknown>;
   markMatchSeen(matchId: string): Promise<unknown>;
   archiveMatch(matchId: string, archived?: boolean): Promise<unknown>;
@@ -15,6 +17,8 @@ export const MATCHING_METHOD_NAMES = [
   "getMatchLists",
   "getHomeFeed",
   "getCompatibilityBreakdown",
+  "getPrivateRevealStatus",
+  "revealPrivatePhoto",
   "likeUser",
   "markMatchSeen",
   "archiveMatch",

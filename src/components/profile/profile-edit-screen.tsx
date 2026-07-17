@@ -23,6 +23,7 @@ import {
   useUploadPhoto,
   useAddAdditionalPhoto,
   useRemoveAdditionalPhoto,
+  useMyPhotos,
 } from "@/data/photos/hooks";
 import { isApiProvider } from "@/data/provider";
 import type { CurrentUser, Profile } from "@/types";
@@ -51,6 +52,8 @@ import { useTranslation } from "@/lib/i18n/context";
 import { resetFileInput } from "@/lib/upload-image";
 import { cn } from "@/lib/utils";
 import { getSafeUserError } from "@/lib/safe-error";
+
+const MAX_PRIVATE_PHOTOS = 2;
 
 const profileSchema = z.object({
   name: z.string().min(2),
@@ -87,6 +90,9 @@ export function ProfileEditScreen({
   const uploadPhoto = useUploadPhoto();
   const addAdditionalPhoto = useAddAdditionalPhoto();
   const removeAdditionalPhoto = useRemoveAdditionalPhoto();
+  const { data: myPhotosRaw, refresh: refreshMyPhotos } = useMyPhotos(
+    isApiProvider() && !isStaff
+  );
   const [uploading, setUploading] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -174,6 +180,38 @@ export function ProfileEditScreen({
     } finally {
       setUploading(false);
       resetFileInput(input);
+    }
+  };
+
+  const privatePhotos = (
+    (myPhotosRaw as { photos?: Array<{ role?: string; mediaId?: string; url?: string | null }> } | null)
+      ?.photos ?? []
+  ).filter((p) => p.role === "private" && p.url);
+
+  const handlePrivateUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const file = input.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      await uploadPhoto(file, { slot: "private" });
+      await refreshMyPhotos();
+      toast.success(t("privateReveal.privateUploaded"));
+    } catch (error) {
+      toast.error(getSafeUserError(error, t("profilePage.photoFailed")));
+    } finally {
+      setUploading(false);
+      resetFileInput(input);
+    }
+  };
+
+  const handlePrivateRemove = async (mediaId: string) => {
+    try {
+      await removeAdditionalPhoto(mediaId);
+      await refreshMyPhotos();
+      toast.success(t("premium.photoRemoved"));
+    } catch (error) {
+      toast.error(getSafeUserError(error, t("profilePage.photoFailed")));
     }
   };
 
@@ -537,6 +575,65 @@ export function ProfileEditScreen({
                   </button>
                 ))}
               </div>
+
+              {isApiProvider() && !isStaff && profile.questionnaireComplete && (
+                <div className="rounded-2xl border border-border p-4 space-y-3">
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2 text-sm">
+                      <EyeOff className="h-4 w-4 text-primary" />
+                      {t("privateReveal.ownerTitle")}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      {t("privateReveal.ownerDesc")}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {privatePhotos.map((photo) => (
+                      <div
+                        key={photo.mediaId}
+                        className="relative aspect-square rounded-xl overflow-hidden"
+                      >
+                        <LazyImage
+                          src={photo.url!}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void handlePrivateRemove(String(photo.mediaId))
+                          }
+                          className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-white"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                    {privatePhotos.length < MAX_PRIVATE_PHOTOS && (
+                      <ImageFileHitArea
+                        disabled={uploading}
+                        aria-label={t("privateReveal.addPrivate")}
+                        onChange={(e) => void handlePrivateUpload(e)}
+                        className={`aspect-square rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary text-[10px] gap-1 ${
+                          uploading ? "opacity-60" : ""
+                        }`}
+                      >
+                        <span className="flex flex-col items-center gap-1">
+                          <Lock className="h-4 w-4" />
+                          {t("privateReveal.addPrivate")}
+                        </span>
+                      </ImageFileHitArea>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("privateReveal.ownerCount", {
+                      count: privatePhotos.length,
+                      max: MAX_PRIVATE_PHOTOS,
+                    })}
+                  </p>
+                </div>
+              )}
+
               {!isStaff && (
                 <div className="pt-2">
                   <h3 className="font-semibold mb-3">{t("profilePage.safetySection")}</h3>

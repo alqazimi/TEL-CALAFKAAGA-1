@@ -356,7 +356,7 @@ export type AppNavIcon =
   | "Sparkles"
   | "Bell";
 
-/** App navigation — Home feed first, then Discover / Messages / Likes / Profile. */
+/** App navigation — Home feed first, then Discover / Messages / Likes. Profile is in account menu. */
 export function getAppNavLinks(profileComplete = true) {
   if (profileComplete) {
     return [
@@ -364,13 +364,12 @@ export function getAppNavLinks(profileComplete = true) {
       { href: "/matches", label: "Discover", icon: "Heart" as AppNavIcon, tab: true },
       { href: "/chat", label: "Messages", icon: "MessageCircle" as AppNavIcon, tab: true },
       { href: "/likes", label: "Likes", icon: "Sparkles" as AppNavIcon, tab: true },
-      { href: "/profile", label: "Profile", icon: "User" as AppNavIcon, tab: true },
       { href: "/notifications", label: "Notifications", icon: "Bell" as AppNavIcon, tab: false },
     ] as const;
   }
 
   return [
-    { href: "/dashboard", label: "Complete profile", mobileLabel: "Home", icon: "ClipboardList" as AppNavIcon, tab: true },
+    { href: "/dashboard", label: "Home", mobileLabel: "Home", icon: "LayoutDashboard" as AppNavIcon, tab: true },
     { href: "/matches", label: "Matches", icon: "Heart" as AppNavIcon, tab: true, locked: true },
     { href: "/chat", label: "Messages", icon: "MessageCircle" as AppNavIcon, tab: true, locked: true },
     {

@@ -31,6 +31,8 @@ import {
 import { LazyEmojiPicker, type EmojiClickData } from "@/components/chat/lazy-emoji-picker";
 import { ChatIcebreakers } from "@/components/chat/chat-icebreakers";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
+import { ChatStreakBadge } from "@/components/chat/chat-streak-badge";
+import { PrivatePhotoRevealCard } from "@/components/matches/private-photo-reveal-card";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
@@ -137,10 +139,13 @@ export default function ChatPage() {
   const canQueryChat =
     profileReady && hasPaidAccess(profile) && !needsApprovalGate(profile);
 
-  const conversations = useConversations({
+  const conversationsRaw = useConversations({
     list: matchList,
     enabled: canQueryChat,
-  }) as Conversation[] | undefined;
+  });
+  const conversations = Array.isArray(conversationsRaw)
+    ? (conversationsRaw as Conversation[])
+    : undefined;
 
   // Drive the open thread from the URL so phone/browser Back closes chat first.
   const activeConversation = conversationParam
@@ -422,11 +427,14 @@ export default function ChatPage() {
                               </Badge>
                             )}
                           </p>
-                          {conv.unreadCount > 0 && (
-                            <Badge className="text-[10px] h-5 min-w-5 px-1.5 shrink-0">
-                              {conv.unreadCount}
-                            </Badge>
-                          )}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <ChatStreakBadge streak={conv.streak} compact />
+                            {conv.unreadCount > 0 && (
+                              <Badge className="text-[10px] h-5 min-w-5 px-1.5">
+                                {conv.unreadCount}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
                           {conv.lastMessage ?? t("chatPage.sayHello")}
@@ -467,9 +475,14 @@ export default function ChatPage() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold text-sm truncate">
-                      {activeConv.profile?.name}
-                    </p>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="font-bold text-sm truncate">
+                        {activeConv.profile?.name}
+                      </p>
+                      {activeConv.chatUnlocked && (
+                        <ChatStreakBadge streak={activeConv.streak} />
+                      )}
+                    </div>
                     {activeConv.profile && (
                       <TrustBadges profile={activeConv.profile} size="sm" className="mt-1" />
                     )}
@@ -477,6 +490,14 @@ export default function ChatPage() {
                       <p className="text-xs text-muted-foreground mt-1">{t("chatPage.locked")}</p>
                     ) : isTyping ? (
                       <p className="text-xs text-primary mt-1">{t("chatPage.typing")}</p>
+                    ) : activeConv.streak?.atRisk ||
+                      (activeConv.streak &&
+                        !activeConv.streak.youSentToday &&
+                        (activeConv.streak.count > 0 ||
+                          activeConv.streak.partnerSentToday)) ? (
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                        {t("chatPage.streakSendPhoto")}
+                      </p>
                     ) : null}
                   </div>
                   {activeConv.profile?.userId && (
@@ -548,6 +569,14 @@ export default function ChatPage() {
                     <div className="shrink-0">
                       <ChatSafetyBanner />
                     </div>
+                    {activeConv.chatUnlocked && (
+                      <div className="shrink-0 px-4 pt-3">
+                        <PrivatePhotoRevealCard
+                          matchId={String(activeConv.matchId)}
+                          partnerName={activeConv.profile?.name}
+                        />
+                      </div>
+                    )}
                     <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-4 py-4 space-y-3">
                       {messages?.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-full py-12 text-center">

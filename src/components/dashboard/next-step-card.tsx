@@ -44,7 +44,10 @@ interface NextStepCardProps {
 export function NextStepCard({ user, matches, mutualCount = 0 }: NextStepCardProps) {
   const { t } = useTranslation();
   const preferences = usePreferencesQuery() as Preferences | null | undefined;
-  const reminders = useMemberReminders() as MemberReminder[] | undefined;
+  const remindersRaw = useMemberReminders();
+  const reminders = Array.isArray(remindersRaw)
+    ? (remindersRaw as MemberReminder[])
+    : [];
 
   const profile = user.profile;
   const isComplete = profile?.questionnaireComplete ?? false;
