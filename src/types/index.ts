@@ -1,8 +1,6 @@
-import { Id } from "../../convex/_generated/dataModel";
-
 export interface Profile {
-  _id: Id<"profiles">;
-  userId: Id<"users">;
+  _id: string;
+  userId: string;
   name: string;
   gender: "male" | "female";
   age: number;
@@ -16,7 +14,7 @@ export interface Profile {
   maritalStatus: string;
   children: number;
   bio: string;
-  profileImageId?: Id<"_storage">;
+  profileImageId?: string;
   prayerFrequency?: string;
   spousePrayerImportance?: string;
   wearsHijab?: boolean;
@@ -56,7 +54,7 @@ export interface Profile {
   isInTrial?: boolean;
   hasPersonalSupport?: boolean;
   advisorReviewed?: boolean;
-  additionalImageIds?: Id<"_storage">[];
+  additionalImageIds?: string[];
   additionalImageUrls?: string[];
   waliName?: string;
   waliPhone?: string;
@@ -70,7 +68,7 @@ export interface Profile {
     | "rejected"
     | "suspended";
   photoVisibility?: "everyone" | "matches" | "private";
-  privateImageIds?: Id<"_storage">[];
+  privateImageIds?: string[];
   locationLat?: number;
   locationLng?: number;
   locationAccuracyM?: number;
@@ -81,7 +79,7 @@ export interface Profile {
 }
 
 export interface MatchResult {
-  userId: Id<"users">;
+  userId: string;
   name: string;
   age: number;
   country: string;
@@ -121,8 +119,8 @@ export interface ConversationStreak {
 }
 
 export interface Conversation {
-  matchId: Id<"matches">;
-  conversationId?: Id<"conversations">;
+  matchId: string;
+  conversationId?: string;
   chatUnlocked: boolean;
   status?: "active" | "archived" | "unmatched";
   isNew?: boolean;
@@ -132,7 +130,7 @@ export interface Conversation {
     imageUrl: string | null;
     photoMediaId?: string | null;
     photoHidden?: boolean;
-    userId: Id<"users">;
+    userId: string;
     verified?: boolean;
     hasPaid?: boolean;
     questionnaireComplete?: boolean;
@@ -144,9 +142,9 @@ export interface Conversation {
 }
 
 export interface ChatMessage {
-  _id: Id<"messages">;
-  conversationId: Id<"conversations">;
-  senderId: Id<"users">;
+  _id: string;
+  conversationId: string;
+  senderId: string;
   message: string;
   imageUrl?: string | null;
   read: boolean;
@@ -154,12 +152,12 @@ export interface ChatMessage {
 }
 
 export interface Notification {
-  _id: Id<"notifications">;
+  _id: string;
   type: "like" | "match" | "message" | "announcement" | "approval" | "payment";
   title: string;
   body: string;
   read: boolean;
-  relatedUserId?: Id<"users">;
+  relatedUserId?: string;
   relatedImageUrl?: string | null;
   createdAt: number;
 }
@@ -216,8 +214,8 @@ export interface AdminStats {
 }
 
 export interface AdminPayment {
-  _id: Id<"payments">;
-  userId: Id<"users">;
+  _id: string;
+  userId: string;
   stripeSessionId: string;
   amount: number;
   paymentType?: "registration" | "registration_premium" | "premium_upgrade" | "chat";
@@ -242,14 +240,14 @@ export interface AdminAnalytics {
 }
 
 export interface CurrentUser {
-  userId: Id<"users">;
+  userId: string;
   email: string | null;
   profile: Profile | null;
 }
 
 export interface MutualMatch {
-  matchId: Id<"matches">;
-  conversationId?: Id<"conversations">;
+  matchId: string;
+  conversationId?: string;
   score: number;
   chatUnlocked: boolean;
   status?: "active" | "archived" | "unmatched";
@@ -262,7 +260,7 @@ export interface MutualMatch {
     city?: string;
     imageUrl: string | null;
     photoHidden?: boolean;
-    userId: Id<"users">;
+    userId: string;
     reviewStatus?: string;
     approved?: boolean;
   } | null;

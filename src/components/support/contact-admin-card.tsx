@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Headphones, Send } from "lucide-react";
-import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -39,7 +38,7 @@ export function ContactAdminCard({
   const replyAsMember = useReplyAsMember();
   const myMessages = useMySupportMessages() as
     | Array<{
-        _id: Id<"supportContacts">;
+        _id: string;
         topic?: string;
         subject?: string;
         message?: string;
@@ -88,7 +87,7 @@ export function ContactAdminCard({
     }
   };
 
-  const onFollowUp = async (contactId: Id<"supportContacts">) => {
+  const onFollowUp = async (contactId: string) => {
     const body = (followUps[contactId] ?? "").trim();
     if (body.length < 2) {
       toast.error(t("support.replyTooShort"));

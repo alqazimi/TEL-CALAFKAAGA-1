@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useUnifiedAuth } from "@/data/auth/hooks";
 
-/** Must match `session.inactiveDurationMs` in `convex/auth.ts` / Nest idle timeout. */
+/** Must match Nest idle session timeout. */
 export const IDLE_LOGOUT_MS = 3 * 60 * 60 * 1000;
 
 const WINDOW_ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [

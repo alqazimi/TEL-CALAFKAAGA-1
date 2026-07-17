@@ -2,9 +2,7 @@
 
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { isApiProvider } from "@/data/provider";
 import ApiAdminInviteContent from "./api-invite-content";
-import ConvexAdminInviteContent from "./invite-content.convex";
 
 export default function AdminInvitePage() {
   return (
@@ -15,7 +13,7 @@ export default function AdminInvitePage() {
         </div>
       }
     >
-      {isApiProvider() ? <ApiAdminInviteContent /> : <ConvexAdminInviteContent />}
+      <ApiAdminInviteContent />
     </Suspense>
   );
 }

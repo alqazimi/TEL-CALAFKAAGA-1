@@ -13,7 +13,6 @@ import {
   useAutoSaveQuestionnaire,
   useSaveProfileEdits,
 } from "@/data/questionnaire/hooks";
-import { isApiProvider } from "@/data/provider";
 import {
   calculateProfileProgress,
   getResumeStepIndex,
@@ -66,9 +65,6 @@ export default function QuestionnairePage() {
   const welcome = searchParams.get("welcome") === "true";
 
   const refreshQuestionnaireState = async () => {
-    if (!isApiProvider()) {
-      return { profile: profile ?? null, preferences: preferences ?? null };
-    }
     const [nextProfile, nextPreferences] = await Promise.all([
       refreshProfile(),
       refreshPreferences(),

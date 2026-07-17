@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, MessageCircle, Search, UserRound } from "lucide-react";
-import { Id } from "../../../convex/_generated/dataModel";
 import { getAdminAdapter } from "@/data/admin";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
 
 interface AdminMessagesInboxProps {
-  onOpenUser: (profileId: Id<"profiles">) => void;
+  onOpenUser: (profileId: string) => void;
 }
 
 type MemberCard = {
@@ -311,7 +310,7 @@ export function ApiAdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
                       className="h-8 rounded-lg px-2 text-xs"
                       onClick={() =>
                         onOpenUser(
-                          activeConversation.memberA.profileId as Id<"profiles">
+                          activeConversation.memberA.profileId as string
                         )
                       }
                     >
@@ -327,7 +326,7 @@ export function ApiAdminMessagesInbox({ onOpenUser }: AdminMessagesInboxProps) {
                       className="h-8 rounded-lg px-2 text-xs"
                       onClick={() =>
                         onOpenUser(
-                          activeConversation.memberB.profileId as Id<"profiles">
+                          activeConversation.memberB.profileId as string
                         )
                       }
                     >

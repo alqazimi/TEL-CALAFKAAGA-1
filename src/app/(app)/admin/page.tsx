@@ -35,7 +35,6 @@ import {
   LayoutDashboard,
   Clock,
 } from "lucide-react";
-import { Id } from "../../../../convex/_generated/dataModel";
 import type {
   AdminAnalytics,
   AdminPayment,
@@ -124,7 +123,7 @@ export default function AdminPage() {
   const profileParam = searchParams.get("profile");
   const selectedProfileId =
     profileParam && profileParam.length > 0
-      ? (profileParam as Id<"profiles">)
+      ? (profileParam as string)
       : null;
 
   const [search, setSearch] = useState("");
@@ -203,7 +202,7 @@ export default function AdminPage() {
     router.replace(`/admin?tab=${tab}`, { scroll: false });
   };
 
-  const openUserProfile = (profileId: Id<"profiles">) => {
+  const openUserProfile = (profileId: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (!params.get("tab")) params.set("tab", activeTab);
     params.set("profile", profileId);

@@ -1,7 +1,6 @@
 "use client";
 
 import { Bookmark, Heart, Sparkles, X } from "lucide-react";
-import { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { MatchProfileCard } from "@/components/matches/match-profile-card";
 import type { MatchResult } from "@/types";
@@ -33,7 +32,7 @@ interface MatchListsViewProps {
   /** Kept for callers; liked-you is available on Basic. */
   isPremium?: boolean;
   onView: (match: MatchResult) => void;
-  onAction: (userId: Id<"users">, action: "like" | "pass" | "shortlist") => void;
+  onAction: (userId: string, action: "like" | "pass" | "shortlist") => void;
 }
 
 export function MatchListsView({

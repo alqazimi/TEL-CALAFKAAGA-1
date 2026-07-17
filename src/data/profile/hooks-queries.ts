@@ -1,23 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api } from "../../../convex/_generated/api";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { isApiProvider } from "../provider";
 import { apiProfile } from "./api";
 
 const POLL_MS = 15_000;
 
 export function useProfile() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiProfile();
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useConvexProfile();
-}
-
-function useApiProfile() {
   const [apiData, setApiData] = useState<unknown>(undefined);
   const [loading, setLoading] = useState(true);
 
@@ -44,37 +32,13 @@ function useApiProfile() {
   return { profile: apiData, loading, refresh };
 }
 
-function useConvexProfile() {
-  const convexProfile = useSafeQuery(api.profiles.getProfile, {});
-  return {
-    profile: convexProfile,
-    loading: convexProfile === undefined,
-    refresh: async () => convexProfile ?? null,
-  };
-}
-
 export function usePreferencesQuery() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiPreferences().preferences;
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(api.profiles.getPreferences, {});
+  return useApiPreferences().preferences;
 }
 
-/** Preferences plus a refresh helper (API mode). Convex refresh is a no-op. */
+/** Preferences plus a refresh helper. */
 export function usePreferences() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiPreferences();
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const preferences = useSafeQuery(api.profiles.getPreferences, {});
-  return {
-    preferences,
-    loading: preferences === undefined,
-    refresh: async () => preferences ?? null,
-  };
+  return useApiPreferences();
 }
 
 function useApiPreferences() {
@@ -106,18 +70,6 @@ function useApiPreferences() {
 }
 
 export function useWaliForMatch(targetUserId: string | undefined) {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiWali(targetUserId);
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(
-    api.profiles.getWaliForMatch,
-    targetUserId ? ({ targetUserId } as never) : "skip"
-  );
-}
-
-function useApiWali(targetUserId: string | undefined) {
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
     if (!targetUserId) {

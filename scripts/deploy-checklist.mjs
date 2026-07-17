@@ -1,57 +1,36 @@
 #!/usr/bin/env node
 /**
- * Print production deploy checklist for helcalafkaaga.com
- *
- * Usage: npm run deploy:checklist
+ * Production deploy checklist (Nest API + Next.js).
  */
 
 const steps = [
-  ["1. Convex production deploy", "npx convex deploy"],
+  ["1. Nest API (Render)", "Deploy apps/api; confirm Prisma migrate + /health"],
   [
-    "2. Convex Auth (JWT + SITE_URL)",
-    "SITE_URL=https://helcalafkaaga.com npm run setup:auth:prod",
+    "2. Stripe webhook",
+    "Point Stripe webhook to https://YOUR-API-HOST/webhooks/stripe (checkout.session.completed)",
   ],
   [
-    "3. Stripe keys on Convex",
-    "npm run setup:stripe:prod -- sk_live_...",
-    "npx convex env set STRIPE_WEBHOOK_SECRET whsec_... --prod",
+    "3. Stripe secrets on API",
+    "Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET on Render",
   ],
   [
-    "4. Resend (password reset & contact form)",
-    'AUTH_EMAIL_FROM="Calaf <hello@helcalafkaaga.com>" SUPPORT_EMAIL=hello@helcalafkaaga.com npm run setup:resend:prod -- re_...',
-    "Verify helcalafkaaga.com domain in Resend dashboard",
+    "4. Email on API",
+    "Set AUTH_RESEND_KEY / AUTH_EMAIL_FROM / SUPPORT_EMAIL (or MAIL_DRIVER) on Render",
   ],
   [
-    "5. Stripe webhook",
-    "npm run convex:webhook-url:prod",
-    "Event: checkout.session.completed",
+    "5. Vercel frontend env",
+    "NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SOCKET_URL (see infra/staging/vercel-api-mode.env.example)",
   ],
   [
-    "6. Vercel",
-    "NEXT_PUBLIC_CONVEX_URL = production Convex URL",
-    "Custom domain: helcalafkaaga.com",
+    "6. CORS on API",
+    "CORS_ORIGINS must include www + apex + any Vercel preview URLs",
   ],
-  [
-    "7. Admin bootstrap (one-time)",
-    "npm run bootstrap:admin:prod -- you@example.com",
-    "Register/login with that email, open /admin, claim owner",
-  ],
-  [
-    "8. Smoke test",
-    "npm run preflight",
-    "npm run preflight:prod",
-    "Register → verify email → pay → questionnaire → matches",
-    "Forgot password + contact form emails",
-  ],
+  ["7. Redeploy frontend", "Vercel Redeploy after changing NEXT_PUBLIC_* vars"],
+  ["8. Smoke test", "Login, profile photo, chat, payment status"],
 ];
 
-console.log("Calaf production deploy checklist\n");
-
-for (const block of steps) {
-  const [title, ...commands] = block;
-  console.log(title);
-  for (const cmd of commands) {
-    console.log(`  ${cmd}`);
-  }
-  console.log();
+console.log("Calaf production checklist\n");
+for (const [title, detail] of steps) {
+  console.log(`☐ ${title}`);
+  console.log(`   ${detail}\n`);
 }

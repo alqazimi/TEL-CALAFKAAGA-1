@@ -14,7 +14,6 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import { Id } from "../../../convex/_generated/dataModel";
 import type { Profile as AdminUser } from "@/types";
 import {
   useAdminApproveUser,
@@ -152,9 +151,9 @@ interface AdminMembersPanelProps {
   approvedMale?: number;
   approvedFemale?: number;
   approvedTotal?: number;
-  currentProfileId?: Id<"profiles">;
+  currentProfileId?: string;
   canManageRoles: boolean;
-  onOpenUser: (profileId: Id<"profiles">) => void;
+  onOpenUser: (profileId: string) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
@@ -187,7 +186,7 @@ export function AdminMembersPanel({
   const banUser = useAdminBanUser();
   const deleteUser = useAdminDeleteUser();
   const setUserRole = useAdminSetRole();
-  const [busyId, setBusyId] = useState<Id<"profiles"> | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
   const canApproveMember = (user: AdminUser) => {
@@ -209,7 +208,7 @@ export function AdminMembersPanel({
   };
 
   const runAction = async (
-    profileId: Id<"profiles">,
+    profileId: string,
     action: () => Promise<unknown>,
     successMessage: string
   ) => {

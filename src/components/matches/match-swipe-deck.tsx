@@ -17,7 +17,6 @@ import {
   Ruler,
   X,
 } from "lucide-react";
-import { Id } from "../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +37,7 @@ interface MatchSwipeDeckProps {
   startUserId?: string;
   onView: (match: MatchResult) => void;
   onAction: (
-    userId: Id<"users">,
+    userId: string,
     action: "like" | "pass" | "shortlist"
   ) => Promise<void>;
 }

@@ -1,28 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
-import { api } from "../../../convex/_generated/api";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { isApiProvider } from "../provider";
 import {
   connectRealtime,
   subscribeRealtime,
 } from "../realtime/socket-client";
-import { getNotificationsAdapter } from "./index";
+import { apiNotifications } from "./api";
 
 export function useNotificationsList() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiNotificationsList();
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(api.notifications.getNotifications, {});
+  return useApiNotificationsList();
 }
 
 /**
  * The Nest API returns `{ items, nextCursor }` with string ids/dates, while
- * the UI expects a Convex-style array of `{ _id, createdAt: number, ... }`.
+ * the UI expects an array of `{ _id, createdAt: number, ... }`.
  */
 function normalizeNotificationsResponse(data: unknown): unknown[] {
   const list = Array.isArray(data)
@@ -48,7 +39,7 @@ function useApiNotificationsList() {
   const [apiData, setApiData] = useState<unknown>(undefined);
   const refresh = useCallback(async () => {
     try {
-      const data = await getNotificationsAdapter().list();
+      const data = await apiNotifications.list();
       setApiData(normalizeNotificationsResponse(data));
     } catch {
       setApiData([]);
@@ -65,19 +56,14 @@ function useApiNotificationsList() {
 }
 
 export function useUnreadCount() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiUnreadCount();
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(api.notifications.getUnreadCount, {});
+  return useApiUnreadCount();
 }
 
 function useApiUnreadCount() {
   const [apiData, setApiData] = useState<unknown>(undefined);
   const refresh = useCallback(async () => {
     try {
-      setApiData(await getNotificationsAdapter().unreadCount());
+      setApiData(await apiNotifications.unreadCount());
     } catch {
       setApiData(null);
     }
@@ -96,19 +82,14 @@ function useApiUnreadCount() {
 }
 
 export function useMemberReminders() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiReminders();
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(api.notifications.getMemberReminders, {});
+  return useApiReminders();
 }
 
 function useApiReminders() {
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
     let cancelled = false;
-    void getNotificationsAdapter()
+    void apiNotifications
       .getMemberReminders()
       .then((d) => {
         if (!cancelled) setApiData(Array.isArray(d) ? d : []);
@@ -124,57 +105,19 @@ function useApiReminders() {
 }
 
 export function useMarkNotificationRead() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: { notificationId: string } | string) => {
-        const id =
-          typeof args === "string" ? args : args.notificationId;
-        return getNotificationsAdapter().markAsRead(id);
-      },
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.notifications.markAsRead);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useCallback(
-    async (args: { notificationId: string } | string) => {
-      const id = typeof args === "string" ? args : args.notificationId;
-      return mut({ notificationId: id } as never);
-    },
-    [mut]
-  );
+  return useCallback(async (args: { notificationId: string } | string) => {
+    const id = typeof args === "string" ? args : args.notificationId;
+    return apiNotifications.markAsRead(id);
+  }, []);
 }
 
 export function useMarkAllNotificationsRead() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async () => getNotificationsAdapter().markAllAsRead(),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.notifications.markAllAsRead);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useCallback(async () => mut({}), [mut]);
+  return useCallback(async () => apiNotifications.markAllAsRead(), []);
 }
 
 export function useMarkNotificationsRead() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (ids: string[]) =>
-        getNotificationsAdapter().markNotificationsRead(ids),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.notifications.markNotificationsRead);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
-    async (ids: string[]) => mut({ ids } as never),
-    [mut]
+    async (ids: string[]) => apiNotifications.markNotificationsRead(ids),
+    []
   );
 }

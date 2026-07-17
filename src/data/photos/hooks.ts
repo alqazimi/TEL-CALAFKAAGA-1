@@ -1,76 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
-import { api } from "../../../convex/_generated/api";
-import { uploadImageToConvex } from "@/lib/upload-image";
-import { isApiProvider } from "../provider";
-import { getPhotosAdapter } from "./index";
+import { apiPhotos } from "./api";
 
-/** Drop-in upload helper that preserves EXIF strip via upload-image / prepareImageForUpload. */
+/** Drop-in upload helper that preserves EXIF strip via prepareImageForUpload. */
 export function useUploadPhoto() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (
-        file: File,
-        opts?: { slot?: "main" | "additional" | "private" }
-      ) => getPhotosAdapter().uploadFile(file, opts),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const generateUploadUrl = useMutation(api.profiles.generateUploadUrl);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const registerUpload = useMutation(api.profiles.registerUpload);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
     async (
       file: File,
-      _opts?: { slot?: "main" | "additional" | "private" }
-    ) => {
-      const storageId = await uploadImageToConvex(file, () =>
-        generateUploadUrl({})
-      );
-      await registerUpload({ storageId } as never);
-      return { storageId };
-    },
-    [generateUploadUrl, registerUpload]
+      opts?: { slot?: "main" | "additional" | "private" }
+    ) => apiPhotos.uploadFile(file, opts),
+    []
   );
 }
 
 export function useAddAdditionalPhoto() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: Record<string, unknown>) =>
-        getPhotosAdapter().addAdditional(args),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.profiles.addAdditionalPhoto);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
-    async (args: Record<string, unknown>) => mut(args as never),
-    [mut]
+    async (args: Record<string, unknown>) => apiPhotos.addAdditional(args),
+    []
   );
 }
 
 export function useRemoveAdditionalPhoto() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (id: string) => getPhotosAdapter().removeAdditional(id),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.profiles.removeAdditionalPhoto);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
-    async (id: string) => mut({ storageId: id } as never),
-    [mut]
+    async (id: string) => apiPhotos.removeAdditional(id),
+    []
   );
 }
 
@@ -78,12 +32,12 @@ export function useMyPhotos(enabled = true) {
   const [data, setData] = useState<unknown>(undefined);
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    if (!enabled || !isApiProvider()) {
-      setData(enabled ? { photos: [] } : undefined);
+    if (!enabled) {
+      setData(undefined);
       return;
     }
     let cancelled = false;
-    void getPhotosAdapter()
+    void apiPhotos
       .listMine()
       .then((d) => {
         if (!cancelled) setData(d);

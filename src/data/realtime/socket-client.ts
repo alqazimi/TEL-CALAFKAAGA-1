@@ -1,6 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 import { getApiSessionToken } from "../api-client";
-import { getSocketUrl, isApiProvider } from "../provider";
+import { getSocketUrl } from "../provider";
 import { track } from "../telemetry";
 
 export type RealtimeEvent =
@@ -24,7 +24,6 @@ const listeners = new Set<ListenerEntry>();
 const joinedRooms = new Set<string>();
 
 function ensureSocket(): Socket | null {
-  if (!isApiProvider()) return null;
   if (socket) return socket;
 
   const url = getSocketUrl();

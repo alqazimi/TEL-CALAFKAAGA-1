@@ -1,13 +1,11 @@
-import { isApiProvider } from "../provider";
 import { apiSupport } from "./api";
-import { convexSupport } from "./convex";
 import type { SupportAdapter } from "./types";
 
 export type { SupportAdapter } from "./types";
 export { SUPPORT_METHOD_NAMES } from "./types";
 
 export function getSupportAdapter(): SupportAdapter {
-  return isApiProvider() ? apiSupport : convexSupport;
+  return apiSupport;
 }
 
 export const support = new Proxy({} as SupportAdapter, {

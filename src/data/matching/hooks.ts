@@ -1,25 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
-import { api } from "../../../convex/_generated/api";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { isApiProvider } from "../provider";
-import { getMatchingAdapter } from "./index";
+import { apiMatching } from "./api";
 
 export function useMatches(
   filters?: Record<string, unknown>,
   enabled = true
 ) {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiMatches(enabled ? filters : undefined, enabled);
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(
-    api.matches.getMatches,
-    enabled ? ((filters ?? {}) as never) : "skip"
-  );
+  return useApiMatches(enabled ? filters : undefined, enabled);
 }
 
 function useApiMatches(
@@ -33,7 +21,7 @@ function useApiMatches(
       return;
     }
     let cancelled = false;
-    void getMatchingAdapter()
+    void apiMatching
       .getMatches(filters)
       .then((d) => {
         if (!cancelled) setApiData(d);
@@ -53,15 +41,7 @@ export function useMatchLists(
   filters?: Record<string, unknown>,
   enabled = true
 ) {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiMatchLists(enabled ? filters : undefined, enabled);
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(
-    api.matches.getMatchLists,
-    enabled ? ((filters ?? {}) as never) : "skip"
-  );
+  return useApiMatchLists(enabled ? filters : undefined, enabled);
 }
 
 function useApiMatchLists(
@@ -75,7 +55,7 @@ function useApiMatchLists(
       return;
     }
     let cancelled = false;
-    void getMatchingAdapter()
+    void apiMatching
       .getMatchLists(filters)
       .then((d) => {
         if (!cancelled) setApiData(d);
@@ -92,12 +72,7 @@ function useApiMatchLists(
 }
 
 export function useMyMatches(enabled = true) {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiMyMatches(enabled);
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(api.matches.getMyMatches, enabled ? {} : "skip");
+  return useApiMyMatches(enabled);
 }
 
 function useApiMyMatches(enabled: boolean) {
@@ -108,7 +83,7 @@ function useApiMyMatches(enabled: boolean) {
       return;
     }
     let cancelled = false;
-    void getMatchingAdapter()
+    void apiMatching
       .getMyMatches()
       .then((d) => {
         if (!cancelled) setApiData(d);
@@ -131,7 +106,7 @@ export function useHomeFeed(enabled = true) {
       return;
     }
     let cancelled = false;
-    void getMatchingAdapter()
+    void apiMatching
       .getHomeFeed()
       .then((d) => {
         if (!cancelled) setData(d);
@@ -147,79 +122,39 @@ export function useHomeFeed(enabled = true) {
 }
 
 export function useLikeUser() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: {
-        userId?: string;
-        toUserId?: string;
-        action?: "like" | "pass" | "shortlist";
-      }) => {
-        const userId = args.userId ?? args.toUserId;
-        if (!userId) throw new Error("userId required");
-        return getMatchingAdapter().likeUser(
-          userId,
-          args.action === "pass"
-            ? "pass"
-            : args.action === "shortlist"
-              ? "shortlist"
-              : "like"
-        );
-      },
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.matches.likeUser);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
     async (args: {
       userId?: string;
       toUserId?: string;
       action?: "like" | "pass" | "shortlist";
-    }) => mut(args as never),
-    [mut]
+    }) => {
+      const userId = args.userId ?? args.toUserId;
+      if (!userId) throw new Error("userId required");
+      return apiMatching.likeUser(
+        userId,
+        args.action === "pass"
+          ? "pass"
+          : args.action === "shortlist"
+            ? "shortlist"
+            : "like"
+      );
+    },
+    []
   );
 }
 
 export function useMarkMatchSeen() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: { matchId: string } | string) => {
-        const matchId = typeof args === "string" ? args : args.matchId;
-        return getMatchingAdapter().markMatchSeen(matchId);
-      },
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.matches.markMatchSeen);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useCallback(
-    async (args: { matchId: string } | string) => {
-      const matchId = typeof args === "string" ? args : args.matchId;
-      return mut({ matchId } as never);
-    },
-    [mut]
-  );
+  return useCallback(async (args: { matchId: string } | string) => {
+    const matchId = typeof args === "string" ? args : args.matchId;
+    return apiMatching.markMatchSeen(matchId);
+  }, []);
 }
 
 export function useArchiveMatch() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: { matchId: string; archived?: boolean }) =>
-        getMatchingAdapter().archiveMatch(args.matchId, args.archived ?? true),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.matches.archiveMatch);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
-    async (args: { matchId: string; archived?: boolean }) => mut(args as never),
-    [mut]
+    async (args: { matchId: string; archived?: boolean }) =>
+      apiMatching.archiveMatch(args.matchId, args.archived ?? true),
+    []
   );
 }
 
@@ -227,15 +162,7 @@ export function useCompatibilityBreakdown(
   targetUserId: string | undefined,
   enabled = true
 ) {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiBreakdown(enabled ? targetUserId : undefined);
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(
-    api.matches.getCompatibilityBreakdown,
-    enabled && targetUserId ? ({ targetUserId } as never) : "skip"
-  );
+  return useApiBreakdown(enabled ? targetUserId : undefined);
 }
 
 function useApiBreakdown(userId: string | undefined) {
@@ -246,7 +173,7 @@ function useApiBreakdown(userId: string | undefined) {
       return;
     }
     let cancelled = false;
-    void getMatchingAdapter()
+    void apiMatching
       .getCompatibilityBreakdown(userId)
       .then((d) => {
         if (!cancelled) setApiData(d);
@@ -261,7 +188,10 @@ function useApiBreakdown(userId: string | undefined) {
   return apiData;
 }
 
-export function usePrivateRevealStatus(matchId: string | undefined, enabled = true) {
+export function usePrivateRevealStatus(
+  matchId: string | undefined,
+  enabled = true
+) {
   const [data, setData] = useState<unknown>(undefined);
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -270,7 +200,7 @@ export function usePrivateRevealStatus(matchId: string | undefined, enabled = tr
       return;
     }
     let cancelled = false;
-    void getMatchingAdapter()
+    void apiMatching
       .getPrivateRevealStatus(matchId)
       .then((d) => {
         if (!cancelled) setData(d);
@@ -288,7 +218,6 @@ export function usePrivateRevealStatus(matchId: string | undefined, enabled = tr
 
 export function useRevealPrivatePhoto() {
   return useCallback(async (matchId: string, mediaId?: string) => {
-    return getMatchingAdapter().revealPrivatePhoto(matchId, mediaId);
+    return apiMatching.revealPrivatePhoto(matchId, mediaId);
   }, []);
 }
-

@@ -1,21 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
-import { api } from "../../../convex/_generated/api";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { isApiProvider } from "../provider";
-import { getAdminAdapter } from "./index";
-import { getSupportAdapter } from "../support";
-import { getModerationAdapter } from "../moderation";
+import { apiAdmin } from "./api";
+import { apiSupport } from "../support/api";
+import { apiModeration } from "../moderation/api";
 
 /**
- * Admin reactive/query hooks — Convex subscriptions when provider=convex,
- * one-shot REST fetch when provider=api.
- * IDs are always profile/report/invite UUIDs or Convex profile ids as used by the UI.
+ * Admin reactive/query hooks — one-shot REST fetch via Nest adapters.
+ * IDs are profile/report/invite UUIDs as used by the UI.
  */
 
-function withConvexIds(rows: unknown): unknown[] {
+function withEntityIds(rows: unknown): unknown[] {
   if (!Array.isArray(rows)) return [];
   return rows.map((row) => {
     const item = row as Record<string, unknown>;
@@ -36,35 +31,27 @@ function unwrapItems(d: unknown): unknown[] {
 }
 
 export function useAdminBootstrapStatus(enabled: boolean) {
-  const convex = useSafeQuery(
-    api.admin.getBootstrapStatus,
-    !isApiProvider() && enabled ? {} : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled) {
+    if (!enabled) {
       setApiData(undefined);
       return;
     }
     // Nest has no bootstrap claim API — treat as admins already exist.
     setApiData({ hasAdmins: true, canClaim: false, reason: "api_mode" });
   }, [enabled]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useAdminStats(enabled: boolean) {
-  const convex = useSafeQuery(
-    api.admin.getStats,
-    !isApiProvider() && enabled ? {} : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled) {
+    if (!enabled) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void getAdminAdapter()
+    void apiAdmin
       .stats()
       .then((d) => {
         if (!c) setApiData(d);
@@ -76,23 +63,19 @@ export function useAdminStats(enabled: boolean) {
       c = true;
     };
   }, [enabled]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useAdminUsers(
   enabled: boolean,
   opts?: Record<string, unknown>
 ) {
-  const convex = useSafeQuery(
-    api.admin.getAllUsers,
-    !isApiProvider() && enabled ? ((opts ?? {}) as never) : "skip"
-  );
   const [apiData, setApiData] = useState<unknown[] | undefined>(undefined);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const key = JSON.stringify(opts ?? {});
   useEffect(() => {
-    if (!isApiProvider() || !enabled) {
+    if (!enabled) {
       setApiData(undefined);
       setNextCursor(null);
       return;
@@ -100,13 +83,13 @@ export function useAdminUsers(
     let c = false;
     setApiData(undefined);
     setNextCursor(null);
-    void getAdminAdapter()
-      .users.list(opts)
+    void apiAdmin.users
+      .list(opts)
       .then((d) => {
         if (c) return;
         const payload = d as { items?: unknown[]; nextCursor?: string | null };
         const raw = Array.isArray(d) ? d : (payload?.items ?? []);
-        const items = withConvexIds(raw);
+        const items = withEntityIds(raw);
         setApiData(items);
         setNextCursor(
           !Array.isArray(d) && typeof payload.nextCursor === "string"
@@ -126,16 +109,16 @@ export function useAdminUsers(
   }, [enabled, key]);
 
   const loadMore = useCallback(async () => {
-    if (!isApiProvider() || !enabled || !nextCursor || loadingMore) return;
+    if (!enabled || !nextCursor || loadingMore) return;
     setLoadingMore(true);
     try {
-      const d = await getAdminAdapter().users.list({
+      const d = await apiAdmin.users.list({
         ...(opts ?? {}),
         cursor: nextCursor,
       });
       const payload = d as { items?: unknown[]; nextCursor?: string | null };
       const raw = Array.isArray(d) ? d : (payload?.items ?? []);
-      const items = withConvexIds(raw);
+      const items = withEntityIds(raw);
       setApiData((prev) => [...(prev ?? []), ...items]);
       setNextCursor(
         !Array.isArray(d) && typeof payload.nextCursor === "string"
@@ -149,14 +132,6 @@ export function useAdminUsers(
     }
   }, [enabled, loadingMore, nextCursor, opts]);
 
-  if (!isApiProvider()) {
-    return {
-      users: convex as unknown[] | undefined,
-      loadMore: async () => {},
-      hasMore: false,
-      loadingMore: false,
-    };
-  }
   return {
     users: apiData,
     loadMore,
@@ -166,101 +141,81 @@ export function useAdminUsers(
 }
 
 export function useAdminAnalytics(enabled: boolean) {
-  const convex = useSafeQuery(
-    api.admin.getAnalytics,
-    !isApiProvider() && enabled ? {} : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled) {
+    if (!enabled) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void getAdminAdapter()
-      .analytics()
-      .then((d) => {
-        if (!c) setApiData(d);
-      });
+    void apiAdmin.analytics().then((d) => {
+      if (!c) setApiData(d);
+    });
     return () => {
       c = true;
     };
   }, [enabled]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useAdminPayments(enabled: boolean) {
-  const convex = useSafeQuery(
-    api.admin.getAllPayments,
-    !isApiProvider() && enabled ? {} : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled) {
+    if (!enabled) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void getAdminAdapter()
-      .payments.list({ status: "completed", limit: 100 })
+    void apiAdmin.payments
+      .list({ status: "completed", limit: 100 })
       .then((d) => {
         if (!c) {
-          setApiData(withConvexIds(unwrapItems(d)));
+          setApiData(withEntityIds(unwrapItems(d)));
         }
       });
     return () => {
       c = true;
     };
   }, [enabled]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useAdminReports(enabled: boolean) {
-  const convex = useSafeQuery(
-    api.moderation.listReports,
-    !isApiProvider() && enabled ? {} : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled) {
+    if (!enabled) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void getAdminAdapter()
-      .reports.list()
-      .then((d) => {
-        if (!c) {
-          setApiData(withConvexIds(unwrapItems(d)));
-        }
-      });
+    void apiAdmin.reports.list().then((d) => {
+      if (!c) {
+        setApiData(withEntityIds(unwrapItems(d)));
+      }
+    });
     return () => {
       c = true;
     };
   }, [enabled]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useAdminSupportContacts(
   enabled: boolean,
   opts?: { status?: string }
 ) {
-  const convex = useSafeQuery(
-    api.supportContacts.listSupportContacts,
-    !isApiProvider() && enabled ? ((opts ?? {}) as never) : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled) {
+    if (!enabled) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void getSupportAdapter()
-      .admin.list(opts)
+    void apiSupport.admin
+      .list(opts)
       .then((d) => {
         if (!c) {
-          setApiData(withConvexIds(unwrapItems(d)));
+          setApiData(withEntityIds(unwrapItems(d)));
         }
       })
       .catch(() => {
@@ -270,122 +225,85 @@ export function useAdminSupportContacts(
       c = true;
     };
   }, [enabled, opts?.status]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useAdminAuditLogs(enabled: boolean, limit = 80) {
-  const convex = useSafeQuery(
-    api.admin.getAuditLogs,
-    !isApiProvider() && enabled ? ({ limit } as never) : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled) {
+    if (!enabled) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void getAdminAdapter()
-      .auditLogs({ limit })
-      .then((d) => {
-        if (!c) {
-          setApiData(withConvexIds(unwrapItems(d)));
-        }
-      });
+    void apiAdmin.auditLogs({ limit }).then((d) => {
+      if (!c) {
+        setApiData(withEntityIds(unwrapItems(d)));
+      }
+    });
     return () => {
       c = true;
     };
   }, [enabled, limit]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
-/** profileId — Convex Id or Nest UUID */
+/** profileId — Nest UUID */
 export function useAdminApproveUser() {
-  const mut = useMutation(api.admin.approveUser);
   return useCallback(
-    async (profileId: string) => {
-      if (isApiProvider()) return getAdminAdapter().users.approve(profileId);
-      return mut({ profileId } as never);
-    },
-    [mut]
+    async (profileId: string) => apiAdmin.users.approve(profileId),
+    []
   );
 }
 
 export function useAdminRejectUser() {
-  const mut = useMutation(api.admin.rejectUser);
   return useCallback(
-    async (profileId: string, reason?: string) => {
-      if (isApiProvider())
-        return getAdminAdapter().users.reject(profileId, reason);
-      return mut({ profileId, reason } as never);
-    },
-    [mut]
+    async (profileId: string, reason?: string) =>
+      apiAdmin.users.reject(profileId, reason),
+    []
   );
 }
 
 export function useAdminBanUser() {
-  const mut = useMutation(api.admin.banUser);
-  return useCallback(
-    async (profileId: string, banned = true) => {
-      if (isApiProvider()) {
-        return banned
-          ? getAdminAdapter().users.ban(profileId)
-          : getAdminAdapter().users.unban(profileId);
-      }
-      return mut({ profileId, banned } as never);
-    },
-    [mut]
-  );
+  return useCallback(async (profileId: string, banned = true) => {
+    return banned
+      ? apiAdmin.users.ban(profileId)
+      : apiAdmin.users.unban(profileId);
+  }, []);
 }
 
 export function useAdminRequestPhoto() {
-  const mut = useMutation(api.admin.requestProfilePhoto);
   return useCallback(
-    async (profileId: string, message?: string) => {
-      if (isApiProvider())
-        return getAdminAdapter().users.requestPhoto(profileId);
-      return mut({ profileId, message } as never);
-    },
-    [mut]
+    async (profileId: string, _message?: string) =>
+      apiAdmin.users.requestPhoto(profileId),
+    []
   );
 }
 
 export function useAdminDeleteUser() {
-  const mut = useMutation(api.admin.deleteUser);
   return useCallback(
-    async (profileId: string) => {
-      if (isApiProvider()) return getAdminAdapter().users.delete(profileId);
-      return mut({ profileId } as never);
-    },
-    [mut]
+    async (profileId: string) => apiAdmin.users.delete(profileId),
+    []
   );
 }
 
 export function useAdminSetRole() {
-  const mut = useMutation(api.admin.setUserRole);
   return useCallback(
-    async (profileId: string, role: string) => {
-      if (isApiProvider())
-        return getAdminAdapter().users.setRole(profileId, role);
-      return mut({ profileId, role } as never);
-    },
-    [mut]
+    async (profileId: string, role: string) =>
+      apiAdmin.users.setRole(profileId, role),
+    []
   );
 }
 
 export function useAdminCreateAnnouncement() {
-  const mut = useMutation(api.admin.createAnnouncement);
   return useCallback(
-    async (body: Record<string, unknown>) => {
-      if (isApiProvider()) return getAdminAdapter().announcements.create(body);
-      return mut(body as never);
-    },
-    [mut]
+    async (body: Record<string, unknown>) =>
+      apiAdmin.announcements.create(body),
+    []
   );
 }
 
 export function useAdminUpdateReportStatus() {
-  const mut = useMutation(api.moderation.updateReportStatus);
   return useCallback(
     async (args: {
       reportId: string;
@@ -396,88 +314,58 @@ export function useAdminUpdateReportStatus() {
       resolution?: string;
     }) => {
       const notes = args.notes ?? args.adminNotes;
-      if (isApiProvider()) {
-        const body = {
-          notes,
-          priority: args.priority,
-          resolution: args.resolution,
-        };
-        return args.status === "reviewed"
-          ? getAdminAdapter().reports.resolve(args.reportId, body)
-          : getAdminAdapter().reports.dismiss(args.reportId, body);
-      }
-      return mut({
-        reportId: args.reportId,
-        status: args.status,
+      const body = {
         notes,
         priority: args.priority,
         resolution: args.resolution,
-        adminNotes: args.adminNotes ?? notes,
-      } as never);
+      };
+      return args.status === "reviewed"
+        ? apiAdmin.reports.resolve(args.reportId, body)
+        : apiAdmin.reports.dismiss(args.reportId, body);
     },
-    [mut]
+    []
   );
 }
 
 export function useAdminEvcPending() {
-  const convex = useSafeQuery(
-    api.evcPayments.listPending,
-    isApiProvider() ? "skip" : {}
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider()) return;
     let c = false;
-    void getAdminAdapter()
-      .evc.pending()
-      .then((d) => {
-        if (!c) setApiData(withConvexIds(unwrapItems(d)));
-      });
+    void apiAdmin.evc.pending().then((d) => {
+      if (!c) setApiData(withEntityIds(unwrapItems(d)));
+    });
     return () => {
       c = true;
     };
   }, []);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useAdminApproveEvc() {
-  const mut = useMutation(api.evcPayments.approveProof);
   return useCallback(
-    async (proofId: string) => {
-      if (isApiProvider()) return getAdminAdapter().evc.approve(proofId);
-      return mut({ proofId } as never);
-    },
-    [mut]
+    async (proofId: string) => apiAdmin.evc.approve(proofId),
+    []
   );
 }
 
 export function useAdminRejectEvc() {
-  const mut = useMutation(api.evcPayments.rejectProof);
   return useCallback(
-    async (proofId: string, reason?: string) => {
-      if (isApiProvider()) return getAdminAdapter().evc.reject(proofId, reason);
-      return mut({ proofId, reason } as never);
-    },
-    [mut]
+    async (proofId: string, reason?: string) =>
+      apiAdmin.evc.reject(proofId, reason),
+    []
   );
 }
 
 export function useAdminUserDetail(profileId: string | null, enabled: boolean) {
-  const convex = useSafeQuery(
-    api.admin.getUserDetail,
-    !isApiProvider() && enabled && profileId
-      ? ({ profileId } as never)
-      : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled || !profileId) {
+    if (!enabled || !profileId) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void getAdminAdapter()
-      .users.detail(profileId)
+    void apiAdmin.users
+      .detail(profileId)
       .then((d) => {
         if (!c) setApiData(d);
       })
@@ -488,28 +376,22 @@ export function useAdminUserDetail(profileId: string | null, enabled: boolean) {
       c = true;
     };
   }, [enabled, profileId]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useAdminUserActivity(
   profileId: string | null,
   enabled: boolean
 ) {
-  const convex = useSafeQuery(
-    api.admin.getUserActivity,
-    !isApiProvider() && enabled && profileId
-      ? ({ profileId } as never)
-      : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled || !profileId) {
+    if (!enabled || !profileId) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void getAdminAdapter()
-      .users.activity(profileId)
+    void apiAdmin.users
+      .activity(profileId)
       .then((d) => {
         if (!c) setApiData(d);
       })
@@ -520,58 +402,40 @@ export function useAdminUserActivity(
       c = true;
     };
   }, [enabled, profileId]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useAdminAdvisorReviewed() {
-  const mut = useMutation(api.admin.setAdvisorReviewed);
   return useCallback(
-    async (profileId: string, advisorReviewed: boolean) => {
-      if (isApiProvider())
-        return getAdminAdapter().users.advisorReviewed(
-          profileId,
-          advisorReviewed
-        );
-      return mut({ profileId, advisorReviewed } as never);
-    },
-    [mut]
+    async (profileId: string, advisorReviewed: boolean) =>
+      apiAdmin.users.advisorReviewed(profileId, advisorReviewed),
+    []
   );
 }
 
 /** Prefer moderation adapter for member safety actions. */
 export function useModerationBlock() {
   return useCallback(async (userId: string) => {
-    return getModerationAdapter().blockUser(userId);
+    return apiModeration.blockUser(userId);
   }, []);
 }
 
 export function useClaimFirstAdmin() {
-  const mut = useMutation(api.admin.claimFirstAdmin);
-  return useCallback(
-    async (args: { secret: string }) => {
-      if (isApiProvider()) {
-        throw new Error("Admin bootstrap claim is not available in API mode");
-      }
-      return mut(args as never);
-    },
-    [mut]
-  );
+  return useCallback(async (_args: { secret: string }) => {
+    throw new Error("Admin bootstrap claim is not available in API mode");
+  }, []);
 }
 
 export function useStaffInvitesList(enabled = true) {
-  const convex = useSafeQuery(
-    api.staffInvites.list,
-    !isApiProvider() && enabled ? {} : "skip"
-  );
   const [apiData, setApiData] = useState<unknown>(undefined);
   useEffect(() => {
-    if (!isApiProvider() || !enabled) {
+    if (!enabled) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void getAdminAdapter()
-      .staffInvites.list()
+    void apiAdmin.staffInvites
+      .list()
       .then((d) => {
         if (!c) {
           const raw = Array.isArray(d)
@@ -603,44 +467,27 @@ export function useStaffInvitesList(enabled = true) {
       c = true;
     };
   }, [enabled]);
-  return isApiProvider() ? apiData : convex;
+  return apiData;
 }
 
 export function useCreateStaffInvite() {
-  const mut = useMutation(api.staffInvites.create);
   return useCallback(
-    async (args: { email: string }) => {
-      if (isApiProvider())
-        return getAdminAdapter().staffInvites.create(args) as Promise<{
-          email: string;
-        }>;
-      return mut(args as never) as Promise<{ email: string }>;
-    },
-    [mut]
+    async (args: { email: string }) =>
+      apiAdmin.staffInvites.create(args) as Promise<{ email: string }>,
+    []
   );
 }
 
 export function useRevokeStaffInvite() {
-  const mut = useMutation(api.staffInvites.revoke);
   return useCallback(
-    async (args: { inviteId: string }) => {
-      if (isApiProvider())
-        return getAdminAdapter().staffInvites.revoke(args.inviteId);
-      return mut(args as never);
-    },
-    [mut]
+    async (args: { inviteId: string }) =>
+      apiAdmin.staffInvites.revoke(args.inviteId),
+    []
   );
 }
 
 export function useResendStaffInvite() {
-  const mut = useMutation(api.staffInvites.resend);
-  return useCallback(
-    async (args: { inviteId: string }) => {
-      if (isApiProvider()) {
-        throw new Error("Staff invite resend is not available in API mode");
-      }
-      return mut(args as never);
-    },
-    [mut]
-  );
+  return useCallback(async (_args: { inviteId: string }) => {
+    throw new Error("Staff invite resend is not available in API mode");
+  }, []);
 }

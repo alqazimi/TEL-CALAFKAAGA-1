@@ -50,7 +50,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   if (isLoading && waitedTooLong) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-6 text-center">
-        <p className="text-lg font-semibold">{t("setup.convexTimeoutTitle")}</p>
+        <p className="text-lg font-semibold">{t("setup.connectionTimeoutTitle")}</p>
         <p className="max-w-md text-sm text-muted-foreground">
           {t("common.loadingStuck")}
         </p>

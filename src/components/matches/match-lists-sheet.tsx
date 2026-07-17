@@ -2,7 +2,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import {
   MatchListsView,
@@ -24,7 +23,7 @@ interface MatchListsSheetProps {
   passed: MatchResult[];
   isPremium: boolean;
   onView: (match: MatchResult) => void;
-  onAction: (userId: Id<"users">, action: "like" | "pass" | "shortlist") => void;
+  onAction: (userId: string, action: "like" | "pass" | "shortlist") => void;
 }
 
 export function MatchListsSheet({

@@ -1,21 +1,11 @@
-import { isApiProvider } from "../provider";
-import { wrapWithShadowReads } from "../shadow";
 import { apiChat } from "./api";
-import { convexChat } from "./convex";
 import type { ChatAdapter } from "./types";
 
 export type { ChatAdapter } from "./types";
 export { CHAT_METHOD_NAMES } from "./types";
 
-const SHADOW_READS = [
-  "getConversations",
-  "getMessages",
-  "getTypingStatus",
-] as const satisfies readonly (keyof ChatAdapter)[];
-
 export function getChatAdapter(): ChatAdapter {
-  if (isApiProvider()) return apiChat;
-  return wrapWithShadowReads(convexChat, apiChat, [...SHADOW_READS]);
+  return apiChat;
 }
 
 export const chat = new Proxy({} as ChatAdapter, {

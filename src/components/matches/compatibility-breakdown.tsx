@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { useCompatibilityBreakdown } from "@/data/matching/hooks";
-import { Id } from "../../../convex/_generated/dataModel";
 import { useTranslation } from "@/lib/i18n/context";
 import type { TranslationPath } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
@@ -48,7 +47,7 @@ function asCategories(value: unknown): Category[] {
 }
 
 interface CompatibilityBreakdownProps {
-  targetUserId: Id<"users"> | string;
+  targetUserId: string;
   isPremium: boolean;
   overallScore?: number;
 }

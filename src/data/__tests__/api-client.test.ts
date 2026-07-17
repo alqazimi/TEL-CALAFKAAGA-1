@@ -6,7 +6,6 @@ describe("api-client", () => {
   const originalDocument = globalThis.document;
 
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_BACKEND_PROVIDER = "api";
     process.env.NEXT_PUBLIC_API_URL = "http://127.0.0.1:3001";
     // @ts-expect-error test stub
     globalThis.document = {

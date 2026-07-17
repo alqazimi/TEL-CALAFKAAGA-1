@@ -9,7 +9,6 @@ import { getTrialDaysRemaining, isInTrialPeriod } from "@/lib/trial";
 import { markTrialWelcomeNoticeSeen, hasSeenTrialWelcomeNotice } from "@/lib/trial-notice";
 import { REGISTRATION_PRICE, PERSONAL_SUPPORT_PRICE } from "@/lib/constants";
 import type { Profile } from "@/types";
-import type { Id } from "../../../convex/_generated/dataModel";
 
 interface TrialBannerProps {
   profile: Pick<Profile, "trialEndsAt" | "hasPaid" | "isInTrial" | "userId">;
@@ -18,7 +17,7 @@ interface TrialBannerProps {
 
 export function TrialBanner({ profile, className }: TrialBannerProps) {
   const { t } = useTranslation();
-  const userId = profile.userId as Id<"users"> | undefined;
+  const userId = profile.userId;
   const inTrial = isInTrialPeriod(profile);
   const alreadySeen = userId ? hasSeenTrialWelcomeNotice(userId) : false;
   const shouldShow = inTrial && !alreadySeen;

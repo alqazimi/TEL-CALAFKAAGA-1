@@ -326,19 +326,13 @@ export const en = {
       "Login is temporarily unavailable. Please try again in a few minutes, or contact support on WhatsApp.",
   },
   setup: {
-    convexMissingTitle: "Service is not configured",
-    convexMissingBody: "{{envVar}} is missing on this deployment.",
-    convexMissingStep1: "Contact support",
-    convexMissingStep2: "We will restore service shortly",
-    convexMissingStep3: "Please try again later",
-    convexMissingStep4: "Or message us on WhatsApp",
-    convexTimeoutTitle: "Connection problem",
-    convexTimeoutBody:
+    connectionTimeoutTitle: "Connection problem",
+    connectionTimeoutBody:
       "We could not finish signing you in. Please check your internet and try again.",
-    convexTimeoutStep1: "Check your internet connection",
-    convexTimeoutStep2: "Try again in a few minutes",
-    convexTimeoutStep3: "Sign out and sign in again",
-    convexTimeoutStep4: "Contact support on WhatsApp if it continues",
+    connectionTimeoutStep1: "Check your internet connection",
+    connectionTimeoutStep2: "Try again in a few minutes",
+    connectionTimeoutStep3: "Sign out and sign in again",
+    connectionTimeoutStep4: "Contact support on WhatsApp if it continues",
     serviceUnavailableTitle: "Service temporarily unavailable",
     serviceUnavailableBody:
       "We are fixing a temporary issue. Please try again shortly, or message us on",

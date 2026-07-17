@@ -1,21 +1,11 @@
-import { isApiProvider } from "../provider";
-import { wrapWithShadowReads } from "../shadow";
 import { apiAdmin } from "./api";
-import { convexAdmin } from "./convex";
 import type { AdminAdapter } from "./types";
 
 export type { AdminAdapter } from "./types";
 export { ADMIN_TOP_METHOD_NAMES } from "./types";
 
-const SHADOW_READS = [
-  "stats",
-  "analytics",
-  "siteMetrics",
-] as const satisfies readonly (keyof AdminAdapter)[];
-
 export function getAdminAdapter(): AdminAdapter {
-  if (isApiProvider()) return apiAdmin;
-  return wrapWithShadowReads(convexAdmin, apiAdmin, [...SHADOW_READS]);
+  return apiAdmin;
 }
 
 export const admin = new Proxy({} as AdminAdapter, {

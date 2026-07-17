@@ -8,7 +8,6 @@ import {
   useAdminReplySupport,
   useAdminUpdateSupportStatus,
 } from "@/data/support/hooks";
-import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +20,7 @@ import { getSafeUserError } from "@/lib/safe-error";
 type StatusFilter = "all" | "open" | "reviewed" | "closed";
 
 interface AdminContactsInboxProps {
-  onOpenUser?: (profileId: Id<"profiles">) => void;
+  onOpenUser?: (profileId: string) => void;
 }
 
 type SupportContact = {
@@ -29,7 +28,7 @@ type SupportContact = {
   status: string;
   topic: string;
   source: string;
-  profileId?: Id<"profiles"> | null;
+  profileId?: string | null;
   name: string;
   subject: string;
   thread: Array<{

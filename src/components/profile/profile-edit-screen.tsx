@@ -21,11 +21,9 @@ import {
 import { useUpdateProfile } from "@/data/profile/hooks";
 import {
   useUploadPhoto,
-  useAddAdditionalPhoto,
   useRemoveAdditionalPhoto,
   useMyPhotos,
 } from "@/data/photos/hooks";
-import { isApiProvider } from "@/data/provider";
 import type { CurrentUser, Profile } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,11 +86,8 @@ export function ProfileEditScreen({
   const { t } = useTranslation();
   const updateProfile = useUpdateProfile();
   const uploadPhoto = useUploadPhoto();
-  const addAdditionalPhoto = useAddAdditionalPhoto();
   const removeAdditionalPhoto = useRemoveAdditionalPhoto();
-  const { data: myPhotosRaw, refresh: refreshMyPhotos } = useMyPhotos(
-    isApiProvider() && !isStaff
-  );
+  const { data: myPhotosRaw, refresh: refreshMyPhotos } = useMyPhotos(!isStaff);
   const [uploading, setUploading] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -140,12 +135,8 @@ export function ProfileEditScreen({
           ""
       );
       if (!storageId) throw new Error("upload failed");
-      // Nest confirm-upload already sets the main photo; Convex still needs updateProfile.
-      if (isApiProvider()) {
-        await onProfileRefresh?.();
-      } else {
-        await updateProfile({ profileImageId: storageId });
-      }
+      // Nest confirm-upload already sets the main photo.
+      await onProfileRefresh?.();
       toast.success(t("profilePage.photoUpdated"));
     } catch (error) {
       toast.error(getSafeUserError(error, t("profilePage.photoFailed")));
@@ -168,12 +159,8 @@ export function ProfileEditScreen({
           ""
       );
       if (!storageId) throw new Error("upload failed");
-      // Nest confirm-upload already attaches additional photos; Convex needs addAdditionalPhoto.
-      if (isApiProvider()) {
-        await onProfileRefresh?.();
-      } else {
-        await addAdditionalPhoto({ storageId });
-      }
+      // Nest confirm-upload already attaches additional photos.
+      await onProfileRefresh?.();
       toast.success(t("premium.photoAdded"));
     } catch (error) {
       toast.error(getSafeUserError(error, t("profilePage.photoFailed")));
@@ -503,7 +490,7 @@ export function ProfileEditScreen({
                           onClick={() =>
                             void removeAdditionalPhoto(String(extraIds[index]))
                               .then(async () => {
-                                if (isApiProvider()) await onProfileRefresh?.();
+                                await onProfileRefresh?.();
                                 toast.success(t("premium.photoRemoved"));
                               })
                           }
@@ -576,7 +563,7 @@ export function ProfileEditScreen({
                 ))}
               </div>
 
-              {isApiProvider() && !isStaff && profile.questionnaireComplete && (
+              {!isStaff && profile.questionnaireComplete && (
                 <div className="rounded-2xl border border-border p-4 space-y-3">
                   <div>
                     <h3 className="font-semibold flex items-center gap-2 text-sm">

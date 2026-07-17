@@ -13,7 +13,6 @@ import {
   Moon,
   Ruler,
 } from "lucide-react";
-import { Id } from "../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -108,7 +107,7 @@ export function MatchProfileCard({
           </div>
           <div className="absolute top-3 left-3">
             <ReportBlockMenu
-              userId={match.userId as Id<"users">}
+              userId={match.userId as string}
               userName={match.name}
               compact
             />

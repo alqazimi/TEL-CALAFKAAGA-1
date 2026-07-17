@@ -73,12 +73,10 @@ export function setApiCsrfToken(token: string | null | undefined) {
 }
 
 export function getApiCsrfToken(): string | undefined {
+  const fromCookie = readCookie(CSRF_COOKIE);
+  if (fromCookie) return fromCookie;
   if (typeof sessionStorage === "undefined") return undefined;
-  return (
-    readCookie(CSRF_COOKIE) ??
-    sessionStorage.getItem(CSRF_STORAGE_KEY) ??
-    undefined
-  );
+  return sessionStorage.getItem(CSRF_STORAGE_KEY) ?? undefined;
 }
 
 export function clearApiAuthStorage() {

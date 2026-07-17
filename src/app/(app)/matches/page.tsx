@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Filter, LayoutGrid, Layers } from "lucide-react";
-import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Card } from "@/components/ui/card";
@@ -105,7 +104,7 @@ export default function MatchesPage() {
   }, [focusUserId, discoverMatches]);
 
   const handleAction = async (
-    userId: Id<"users">,
+    userId: string,
     action: "like" | "pass" | "shortlist"
   ) => {
     try {

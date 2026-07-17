@@ -329,19 +329,13 @@ export const so: Translations = {
       "Galitaanku hadda ma shaqeynayo. Fadlan isku day dhowr daqiiqo ka dib, ama nala soo xiriir WhatsApp.",
   },
   setup: {
-    convexMissingTitle: "Adeegga lama dejin",
-    convexMissingBody: "{{envVar}} maqan yahay deployment-kan.",
-    convexMissingStep1: "Nala soo xiriir",
-    convexMissingStep2: "Waxaan dib u soo celinaynaa adeegga",
-    convexMissingStep3: "Fadlan dib u isku day",
-    convexMissingStep4: "Ama noo soo dir WhatsApp",
-    convexTimeoutTitle: "Dhibaato xiriir",
-    convexTimeoutBody:
+    connectionTimeoutTitle: "Dhibaato xiriir",
+    connectionTimeoutBody:
       "Waan awoodi waynay inaan dhammaystirno galitaanka. Hubi internetkaaga oo isku day mar kale.",
-    convexTimeoutStep1: "Hubi internetkaaga",
-    convexTimeoutStep2: "Isku day dhowr daqiiqo ka dib",
-    convexTimeoutStep3: "Ka bax oo dib u gal",
-    convexTimeoutStep4: "Nala soo xiriir WhatsApp haddii ay sii socoto",
+    connectionTimeoutStep1: "Hubi internetkaaga",
+    connectionTimeoutStep2: "Isku day dhowr daqiiqo ka dib",
+    connectionTimeoutStep3: "Ka bax oo dib u gal",
+    connectionTimeoutStep4: "Nala soo xiriir WhatsApp haddii ay sii socoto",
     serviceUnavailableTitle: "Adeegga waa ku meel gaar ah xiran yahay",
     serviceUnavailableBody:
       "Waxaan hagaajinaynaa dhibaato ku meel gaar ah. Fadlan dib u isku day, ama noo soo dir",

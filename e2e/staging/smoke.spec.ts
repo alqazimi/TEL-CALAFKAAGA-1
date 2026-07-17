@@ -8,8 +8,8 @@ import path from "node:path";
  * Required:
  *   STAGING_E2E=1
  *   STAGING_BASE_URL=http://127.0.0.1:3000
- *   NEXT_PUBLIC_BACKEND_PROVIDER=api (Next under test)
  *   STAGING_API_URL=http://127.0.0.1:4001
+ *   NEXT_PUBLIC_API_URL (Next under test must point at Nest)
  *
  * Prefer Nest current build (auth routes). Stale Phase-1 on :4000 returns 404.
  * No skipped scenarios when STAGING_E2E=1 — failures document blockers.
@@ -60,7 +60,7 @@ async function writeReport() {
     enabled,
     baseUrl: BASE,
     apiUrl: API,
-    provider: process.env.NEXT_PUBLIC_BACKEND_PROVIDER ?? "(unset at test runner)",
+    provider: "api",
     results,
     passed: results.filter((r) => r.status === "passed").length,
     failed: results.filter((r) => r.status === "failed").length,
@@ -638,17 +638,11 @@ test.describe("phase11 staging e2e", () => {
     record("18-logout", "passed", `api logout=${logout.status()} me=${me.status()}`);
   });
 
-  // ── 19. Provider rollback smoke ─────────────────────────────────────
-  test("19 provider rollback smoke", async () => {
-    const provider = process.env.NEXT_PUBLIC_BACKEND_PROVIDER ?? "convex";
-    expect(["api", "convex"]).toContain(provider);
-    // Documented rollback: rebuild Next with NEXT_PUBLIC_BACKEND_PROVIDER=convex
-    // Convex mode remains available; no DB rollback.
-    record(
-      "19-provider-rollback",
-      "passed",
-      `runner provider=${provider}; rollback=set NEXT_PUBLIC_BACKEND_PROVIDER=convex and redeploy frontend only`
-    );
+  // ── 19. API backend smoke ───────────────────────────────────────────
+  test("19 api backend configured", async () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+    expect(apiUrl.length).toBeGreaterThan(0);
+    record("19-api-backend", "passed", `NEXT_PUBLIC_API_URL=${apiUrl}`);
   });
 
   // ── 20. Unauthorized / admin denial ─────────────────────────────────

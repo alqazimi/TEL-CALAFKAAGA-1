@@ -168,7 +168,7 @@ export function useApiAuth(): ApiAuthContextValue {
   return ctx;
 }
 
-/** Safe variant — returns null outside provider (e.g. convex mode). */
+/** Safe variant — returns null outside provider. */
 export function useApiAuthOptional(): ApiAuthContextValue | null {
   return useContext(ApiAuthContext);
 }

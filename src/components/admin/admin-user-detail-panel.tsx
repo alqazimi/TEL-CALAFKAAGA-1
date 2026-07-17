@@ -15,7 +15,6 @@ import {
   Heart,
   CheckCircle,
 } from "lucide-react";
-import { Id } from "../../../convex/_generated/dataModel";
 import {
   useAdminAdvisorReviewed,
   useAdminApproveUser,
@@ -40,9 +39,9 @@ import { cn } from "@/lib/utils";
 import { getSafeUserError } from "@/lib/safe-error";
 
 interface AdminUserDetailPanelProps {
-  profileId: Id<"profiles">;
+  profileId: string;
   onClose: () => void;
-  onOpenUser?: (profileId: Id<"profiles">) => void;
+  onOpenUser?: (profileId: string) => void;
 }
 
 function DetailSection({

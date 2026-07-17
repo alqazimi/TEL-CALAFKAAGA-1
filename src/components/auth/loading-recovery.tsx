@@ -1,14 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useUnifiedAuth } from "@/data/auth/hooks";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n/context";
 
 export function LoadingRecovery({ stuck }: { stuck: boolean }) {
   const { t } = useTranslation();
-  const { signOut } = useAuthActions();
+  const { signOut } = useUnifiedAuth();
   const router = useRouter();
 
   if (!stuck) {
@@ -24,7 +24,7 @@ export function LoadingRecovery({ stuck }: { stuck: boolean }) {
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-      <p className="text-lg font-semibold">{t("setup.convexTimeoutTitle")}</p>
+      <p className="text-lg font-semibold">{t("setup.connectionTimeoutTitle")}</p>
       <p className="max-w-md text-sm text-muted-foreground">
         {t("common.loadingStuck")}
       </p>

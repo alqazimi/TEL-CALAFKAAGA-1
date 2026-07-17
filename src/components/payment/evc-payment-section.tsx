@@ -25,8 +25,6 @@ import { getSafeUserError } from "@/lib/safe-error";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { useEvcLatestProof, useSubmitEvcProof } from "@/data/payments/hooks";
-import { useUploadPhoto } from "@/data/photos/hooks";
-import { isApiProvider } from "@/data/provider";
 import { getPaymentsAdapter } from "@/data/payments";
 
 type Tier = "basic" | "premium";
@@ -55,7 +53,6 @@ export function EvcPaymentSection({
     | null
     | undefined;
   const submitProof = useSubmitEvcProof();
-  const uploadPhoto = useUploadPhoto();
 
   const [tier, setTier] = useState<Tier>(freeBasic ? "premium" : "basic");
   const [fullName, setFullName] = useState("");
@@ -94,47 +91,31 @@ export function EvcPaymentSection({
     }
     setSubmitting(true);
     try {
-      let screenshotId: string;
-      if (isApiProvider()) {
-        const { prepareImageForUpload } = await import("@/lib/strip-image-exif");
-        const prepared = await prepareImageForUpload(file);
-        const contentType = prepared.type || "image/jpeg";
-        const signed = (await getPaymentsAdapter().evc.signUpload({
-          contentType,
-          sizeBytes: prepared.size,
-        })) as { mediaId?: string; uploadUrl?: string };
-        const uploadUrl = String(signed.uploadUrl ?? "");
-        const mediaId = String(signed.mediaId ?? "");
-        if (!uploadUrl || !mediaId) throw new Error("Upload failed");
+      const { prepareImageForUpload } = await import("@/lib/strip-image-exif");
+      const prepared = await prepareImageForUpload(file);
+      const contentType = prepared.type || "image/jpeg";
+      const signed = (await getPaymentsAdapter().evc.signUpload({
+        contentType,
+        sizeBytes: prepared.size,
+      })) as { mediaId?: string; uploadUrl?: string };
+      const uploadUrl = String(signed.uploadUrl ?? "");
+      const mediaId = String(signed.mediaId ?? "");
+      if (!uploadUrl || !mediaId) throw new Error("Upload failed");
 
-        const put = await fetch(uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": contentType },
-          body: prepared,
-        });
-        if (!put.ok) {
-          throw new Error("Upload failed. Please try a smaller JPG or PNG.");
-        }
-        screenshotId = mediaId;
-        await submitProof({
-          tier,
-          payerFullName: fullName,
-          lastFourDigits: lastFour,
-          mediaId: screenshotId,
-        });
-      } else {
-        const uploaded = await uploadPhoto(file);
-        screenshotId = String(
-          (uploaded as { storageId?: string }).storageId ?? ""
-        );
-        if (!screenshotId) throw new Error("Upload failed");
-        await submitProof({
-          tier,
-          payerFullName: fullName,
-          lastFourDigits: lastFour,
-          screenshotId,
-        });
+      const put = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        body: prepared,
+      });
+      if (!put.ok) {
+        throw new Error("Upload failed. Please try a smaller JPG or PNG.");
       }
+      await submitProof({
+        tier,
+        payerFullName: fullName,
+        lastFourDigits: lastFour,
+        mediaId,
+      });
       toast.success(t("payment.evcSubmitted"));
       setFullName("");
       setLastFour("");

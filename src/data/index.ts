@@ -1,4 +1,4 @@
-export { getBackendProvider, isApiProvider, isConvexProvider } from "./provider";
+export { getBackendProvider, isApiProvider } from "./provider";
 export { validateFrontendEnv } from "./env";
 export { apiClient, apiFetch, ApiClientError } from "./api-client";
 export { track } from "./telemetry";

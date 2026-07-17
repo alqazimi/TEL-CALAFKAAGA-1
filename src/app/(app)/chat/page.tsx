@@ -41,7 +41,6 @@ import { useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isMemberProfileReady, isProfileQueriesLoading } from "@/lib/profile-progress";
 import { isTrialExpired } from "@/lib/trial";
 import { formatMoney, planPricesForGender } from "@/lib/constants";
-import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Card, CardContent } from "@/components/ui/card";
@@ -145,7 +144,7 @@ export default function ChatPage() {
 
   // Drive the open thread from the URL so phone/browser Back closes chat first.
   const activeConversation = conversationParam
-    ? (conversationParam as Id<"conversations">)
+    ? (conversationParam as string)
     : null;
 
   const messagesRaw = useMessages(activeConversation ?? undefined);

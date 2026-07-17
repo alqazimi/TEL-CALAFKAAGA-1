@@ -1,105 +1,55 @@
 "use client";
 
 import { useCallback } from "react";
-import { useAction } from "convex/react";
-import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
-import { api } from "../../../convex/_generated/api";
-import { isApiProvider } from "../provider";
-import { getQuestionnaireAdapter } from "./index";
 import { apiClient } from "../api-client";
+import { apiQuestionnaire } from "./api";
 
 type StepDataArgs = { step: number; data: Record<string, unknown> };
 type DataArgs = { data: Record<string, unknown> };
 
 export function useUpdateQuestionnaire() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: StepDataArgs) =>
-        getQuestionnaireAdapter().updateQuestionnaire(args.step, args.data),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.profiles.updateQuestionnaire);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useCallback(async (args: StepDataArgs) => mut(args as never), [mut]);
+  return useCallback(
+    async (args: StepDataArgs) =>
+      apiQuestionnaire.updateQuestionnaire(args.step, args.data),
+    []
+  );
 }
 
 export function useAutoSaveQuestionnaire() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: StepDataArgs) =>
-        getQuestionnaireAdapter().autoSave(args.step, args.data),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.profiles.autoSaveProfile);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useCallback(async (args: StepDataArgs) => mut(args as never), [mut]);
+  return useCallback(
+    async (args: StepDataArgs) =>
+      apiQuestionnaire.autoSave(args.step, args.data),
+    []
+  );
 }
 
 export function useCompleteQuestionnaire() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (data?: Record<string, unknown>) =>
-        getQuestionnaireAdapter().completeQuestionnaire(data),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.profiles.completeQuestionnaire);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
-    async (data?: Record<string, unknown>) => mut((data ?? {}) as never),
-    [mut]
+    async (data?: Record<string, unknown>) =>
+      apiQuestionnaire.completeQuestionnaire(data),
+    []
   );
 }
 
 export function useSaveProfileEdits() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: DataArgs) =>
-        getQuestionnaireAdapter().saveProfileEdits(args.data),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.profiles.saveProfileEdits);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useCallback(async (args: DataArgs) => mut(args as never), [mut]);
+  return useCallback(
+    async (args: DataArgs) => apiQuestionnaire.saveProfileEdits(args.data),
+    []
+  );
 }
 
-/** GPS verify + persist — Nest route optional; falls back to Convex action. */
+/** GPS verify + persist via Nest. */
 export function useVerifyAndSaveLocation() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: {
-        latitude: number;
-        longitude: number;
-        accuracy?: number;
-      }) =>
-        apiClient.post<{ country: string; city: string }>(
-          "/profile/geolocation/verify",
-          args
-        ),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const action = useAction(api.geolocation.verifyAndSaveLocation);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
     async (args: {
       latitude: number;
       longitude: number;
       accuracy?: number;
-    }) => action(args as never) as Promise<{ country: string; city: string }>,
-    [action]
+    }) =>
+      apiClient.post<{ country: string; city: string }>(
+        "/profile/geolocation/verify",
+        args
+      ),
+    []
   );
 }

@@ -1,30 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSafeMutation as useMutation } from "@/lib/use-safe-mutation";
-import { api } from "../../../convex/_generated/api";
-import { useSafeQuery } from "@/lib/use-safe-query";
-import { isApiProvider } from "../provider";
 import {
   connectRealtime,
   joinConversation,
   leaveConversation,
   subscribeRealtime,
 } from "../realtime/socket-client";
-import { getChatAdapter } from "./index";
+import { apiChat } from "./api";
 
 export function useConversations(opts?: { list?: string; enabled?: boolean }) {
   const enabled = opts?.enabled !== false;
   const list = opts?.list;
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiConversations(enabled ? list : undefined, enabled);
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(
-    api.messages.getConversations,
-    enabled ? ((list ? { list } : {}) as never) : "skip"
-  );
+  return useApiConversations(enabled ? list : undefined, enabled);
 }
 
 function useApiConversations(list: string | undefined, enabled: boolean) {
@@ -33,7 +21,7 @@ function useApiConversations(list: string | undefined, enabled: boolean) {
     if (!enabled) return;
     try {
       setApiData(
-        await getChatAdapter().getConversations(list ? { list } : undefined)
+        await apiChat.getConversations(list ? { list } : undefined)
       );
     } catch {
       setApiData(null);
@@ -54,15 +42,7 @@ function useApiConversations(list: string | undefined, enabled: boolean) {
 }
 
 export function useMessages(conversationId: string | undefined) {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiMessages(conversationId);
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(
-    api.messages.getMessages,
-    conversationId ? ({ conversationId } as never) : "skip"
-  );
+  return useApiMessages(conversationId);
 }
 
 function useApiMessages(conversationId: string | undefined) {
@@ -70,7 +50,7 @@ function useApiMessages(conversationId: string | undefined) {
   const refresh = useCallback(async () => {
     if (!conversationId) return;
     try {
-      setApiData(await getChatAdapter().getMessages(conversationId));
+      setApiData(await apiChat.getMessages(conversationId));
     } catch {
       setApiData(null);
     }
@@ -92,107 +72,57 @@ function useApiMessages(conversationId: string | undefined) {
 }
 
 export function useSendMessage() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: {
-        conversationId: string;
-        message?: string;
-        imageMediaId?: string;
-        imageId?: string;
-        storageId?: string;
-        idempotencyKey?: string;
-      }) =>
-        getChatAdapter().sendMessage(args.conversationId, {
-          message: args.message,
-          imageMediaId:
-            args.imageMediaId ?? args.imageId ?? args.storageId,
-          idempotencyKey: args.idempotencyKey,
-        }),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.messages.sendMessage);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
-    async (args: Record<string, unknown>) => mut(args as never),
-    [mut]
+    async (args: {
+      conversationId: string;
+      message?: string;
+      imageMediaId?: string;
+      imageId?: string;
+      storageId?: string;
+      idempotencyKey?: string;
+    }) =>
+      apiChat.sendMessage(args.conversationId, {
+        message: args.message,
+        imageMediaId: args.imageMediaId ?? args.imageId ?? args.storageId,
+        idempotencyKey: args.idempotencyKey,
+      }),
+    []
   );
 }
 
-/** Upload a chat attachment via the active adapter (API chat bucket or Convex). */
+/** Upload a chat attachment via the Nest chat adapter. */
 export function useUploadChatImage() {
   return useCallback(
     async (conversationId: string, file: File) =>
-      getChatAdapter().uploadChatImage(conversationId, file),
+      apiChat.uploadChatImage(conversationId, file),
     []
   );
 }
 
 export function useMarkAsRead() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: { conversationId: string } | string) => {
-        const id =
-          typeof args === "string" ? args : args.conversationId;
-        return getChatAdapter().markAsRead(id);
-      },
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.messages.markAsRead);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useCallback(
-    async (args: { conversationId: string } | string) => {
-      const id = typeof args === "string" ? args : args.conversationId;
-      return mut({ conversationId: id } as never);
-    },
-    [mut]
-  );
+  return useCallback(async (args: { conversationId: string } | string) => {
+    const id = typeof args === "string" ? args : args.conversationId;
+    return apiChat.markAsRead(id);
+  }, []);
 }
 
 export function useSetTyping() {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useCallback(
-      async (args: {
-        conversationId: string;
-        typing?: boolean;
-        isTyping?: boolean;
-      }) =>
-        getChatAdapter().setTyping(
-          args.conversationId,
-          args.typing ?? args.isTyping ?? false
-        ),
-      []
-    );
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const mut = useMutation(api.messages.setTyping);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   return useCallback(
     async (args: {
       conversationId: string;
       typing?: boolean;
       isTyping?: boolean;
-    }) => mut(args as never),
-    [mut]
+    }) =>
+      apiChat.setTyping(
+        args.conversationId,
+        args.typing ?? args.isTyping ?? false
+      ),
+    []
   );
 }
 
 export function useTypingStatus(conversationId: string | undefined) {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiTyping(conversationId);
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useSafeQuery(
-    api.messages.getTypingStatus,
-    conversationId ? ({ conversationId } as never) : "skip"
-  );
+  return useApiTyping(conversationId);
 }
 
 function useApiTyping(conversationId: string | undefined) {
@@ -201,7 +131,7 @@ function useApiTyping(conversationId: string | undefined) {
     if (!conversationId) return;
     let cancelled = false;
     const poll = async () => {
-      const d = await getChatAdapter().getTypingStatus(conversationId);
+      const d = await apiChat.getTypingStatus(conversationId);
       if (!cancelled) setApiData(d);
     };
     void poll();

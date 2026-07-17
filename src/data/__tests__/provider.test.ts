@@ -5,7 +5,6 @@ import {
   getApiBaseUrl,
   getSocketUrl,
   isApiProvider,
-  isConvexProvider,
   validateBackendProvider,
 } from "../provider";
 
@@ -27,32 +26,26 @@ function withEnv<T>(vars: Record<string, string | undefined>, fn: () => T): T {
 }
 
 describe("provider", () => {
-  it("defaults to convex when unset", () => {
-    withEnv({ NEXT_PUBLIC_BACKEND_PROVIDER: undefined }, () => {
-      assert.equal(getBackendProvider(), "convex");
-      assert.equal(isConvexProvider(), true);
-      assert.equal(isApiProvider(), false);
+  it("always returns api", () => {
+    withEnv({ NEXT_PUBLIC_API_URL: undefined }, () => {
+      assert.equal(getBackendProvider(), "api");
+      assert.equal(validateBackendProvider(), "api");
+      assert.equal(isApiProvider(), true);
     });
   });
 
-  it("rejects invalid value in validateBackendProvider", () => {
-    withEnv({ NEXT_PUBLIC_BACKEND_PROVIDER: "postgres" }, () => {
-      assert.throws(() => validateBackendProvider(), /Invalid NEXT_PUBLIC_BACKEND_PROVIDER/);
-      assert.equal(getBackendProvider(), "convex");
-    });
-  });
-
-  it("api requires URLs", () => {
+  it("requires API URL", () => {
     withEnv(
       {
-        NEXT_PUBLIC_BACKEND_PROVIDER: "api",
         NEXT_PUBLIC_API_URL: undefined,
         NEXT_PUBLIC_SOCKET_URL: undefined,
       },
       () => {
-        assert.equal(getBackendProvider(), "api");
         assert.throws(() => getApiBaseUrl(), /NEXT_PUBLIC_API_URL/);
-        assert.throws(() => getSocketUrl(), /NEXT_PUBLIC_SOCKET_URL|NEXT_PUBLIC_API_URL/);
+        assert.throws(
+          () => getSocketUrl(),
+          /NEXT_PUBLIC_SOCKET_URL|NEXT_PUBLIC_API_URL/
+        );
       }
     );
   });
@@ -60,7 +53,6 @@ describe("provider", () => {
   it("api with URLs succeeds", () => {
     withEnv(
       {
-        NEXT_PUBLIC_BACKEND_PROVIDER: "api",
         NEXT_PUBLIC_API_URL: "http://127.0.0.1:3001/",
         NEXT_PUBLIC_SOCKET_URL: "http://127.0.0.1:3001/",
       },

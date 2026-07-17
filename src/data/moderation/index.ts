@@ -1,13 +1,11 @@
-import { isApiProvider } from "../provider";
 import { apiModeration } from "./api";
-import { convexModeration } from "./convex";
 import type { ModerationAdapter } from "./types";
 
 export type { ModerationAdapter } from "./types";
 export { MODERATION_METHOD_NAMES } from "./types";
 
 export function getModerationAdapter(): ModerationAdapter {
-  return isApiProvider() ? apiModeration : convexModeration;
+  return apiModeration;
 }
 
 export const moderation = new Proxy({} as ModerationAdapter, {

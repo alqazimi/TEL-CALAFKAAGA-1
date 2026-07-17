@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Id } from "../../../../convex/_generated/dataModel";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,7 +88,7 @@ export default function LikesPage() {
   const likeUser = useLikeUser();
 
   const handleAction = async (
-    userId: Id<"users">,
+    userId: string,
     action: "like" | "pass" | "shortlist"
   ) => {
     try {

@@ -16,14 +16,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { createTokenResetPasswordSchema } from "@/lib/form-schemas";
 import { useTranslation } from "@/lib/i18n/context";
-import { isApiProvider } from "@/data/provider";
 import { auth } from "@/data/auth";
 
 type TokenResetForm = z.infer<ReturnType<typeof createTokenResetPasswordSchema>>;
 
 /**
  * Nest link-token password reset landing page (`/reset-password?token=`).
- * Convex mode keeps OTP flow on `/forgot-password`.
  */
 function ApiResetPasswordContent() {
   const router = useRouter();
@@ -143,36 +141,6 @@ function ApiResetPasswordContent() {
   );
 }
 
-function ConvexResetPasswordRedirect() {
-  const router = useRouter();
-  const { t } = useTranslation();
-
-  return (
-    <AuthShell
-      title={t("auth.resetTitle")}
-      description={t("auth.resetDesc")}
-      footer={
-        <div className="text-center">
-          <Link
-            href="/forgot-password"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {t("auth.backToReset")}
-          </Link>
-        </div>
-      }
-    >
-      <Button
-        className="w-full"
-        onClick={() => router.replace("/forgot-password")}
-      >
-        {t("auth.sendResetCode")}
-      </Button>
-    </AuthShell>
-  );
-}
-
 export default function ResetPasswordPage() {
   return (
     <Suspense
@@ -182,7 +150,7 @@ export default function ResetPasswordPage() {
         </div>
       }
     >
-      {isApiProvider() ? <ApiResetPasswordContent /> : <ConvexResetPasswordRedirect />}
+      <ApiResetPasswordContent />
     </Suspense>
   );
 }

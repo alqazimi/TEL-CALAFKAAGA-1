@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Camera, Loader2, User } from "lucide-react";
-import { useUpdateProfile } from "@/data/profile/hooks";
 import { useUploadPhoto } from "@/data/photos/hooks";
 import type { Profile } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,6 @@ interface QuestionnairePhotoStepProps {
 export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhotoStepProps) {
   const { ui } = useQuestionnaireI18n();
   const uploadPhoto = useUploadPhoto();
-  const updateProfile = useUpdateProfile();
   const [uploading, setUploading] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const displayUrl = localPreview ?? profile.imageUrl ?? null;
@@ -42,7 +40,7 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
           ""
       );
       if (!storageId) throw new Error("upload failed");
-      await updateProfile({ profileImageId: storageId });
+      // Nest confirm-upload already sets the main photo.
       setLocalPreview((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return URL.createObjectURL(file);

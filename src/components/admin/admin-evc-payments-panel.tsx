@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Check, Smartphone, X } from "lucide-react";
-import type { Id } from "../../../convex/_generated/dataModel";
 import {
   useAdminApproveEvc,
   useAdminEvcPending,
@@ -20,10 +19,10 @@ export function AdminEvcPaymentsPanel() {
   const pending = useAdminEvcPending() as any[] | undefined;
   const approve = useAdminApproveEvc();
   const reject = useAdminRejectEvc();
-  const [busyId, setBusyId] = useState<Id<"evcPaymentProofs"> | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
 
-  const onApprove = async (proofId: Id<"evcPaymentProofs">) => {
+  const onApprove = async (proofId: string) => {
     setBusyId(proofId);
     try {
       await approve(proofId);
@@ -35,7 +34,7 @@ export function AdminEvcPaymentsPanel() {
     }
   };
 
-  const onReject = async (proofId: Id<"evcPaymentProofs">) => {
+  const onReject = async (proofId: string) => {
     setBusyId(proofId);
     try {
       await reject(
@@ -132,7 +131,7 @@ export function AdminEvcPaymentsPanel() {
                   size="sm"
                   className="rounded-xl"
                   disabled={!proofId || busyId === proofId}
-                  onClick={() => void onApprove(proofId as Id<"evcPaymentProofs">)}
+                  onClick={() => void onApprove(proofId as string)}
                 >
                   <Check className="mr-1.5 h-4 w-4" />
                   {t("adminPage.evcApprove")}
@@ -153,7 +152,7 @@ export function AdminEvcPaymentsPanel() {
                   variant="outline"
                   className="rounded-xl text-destructive"
                   disabled={!proofId || busyId === proofId}
-                  onClick={() => void onReject(proofId as Id<"evcPaymentProofs">)}
+                  onClick={() => void onReject(proofId as string)}
                 >
                   <X className="mr-1.5 h-4 w-4" />
                   {t("adminPage.evcReject")}
