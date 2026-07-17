@@ -136,6 +136,23 @@ export function DashboardSidebar() {
               );
             })}
 
+          {!isLoading && !isStaff && (
+            // Desktop has no avatar/account menu (the app header is mobile-only),
+            // so the sidebar is the only way for members to reach their profile.
+            <Link
+              href="/profile"
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all",
+                pathname === "/profile"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <User className="h-5 w-5 shrink-0" />
+              {t("app.myProfile")}
+            </Link>
+          )}
+
           {isStaff && (
             <>
               <div className="flex items-center gap-2 px-4 pb-2 pt-1">
