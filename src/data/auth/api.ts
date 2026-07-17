@@ -82,6 +82,8 @@ export const apiAuth: AuthAdapter = {
   async getSession() {
     try {
       const res = await apiClient.get<MeResponse>("/auth/me");
+      // Keep the stored CSRF token in sync with the cookie the API holds.
+      if (res?.csrfToken) setApiCsrfToken(res.csrfToken);
       return toSessionUser(res?.user);
     } catch {
       return null;

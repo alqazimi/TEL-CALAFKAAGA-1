@@ -24,6 +24,7 @@ import { RateLimitGuard } from "../redis/rate-limit.guard";
 import { ProfileService } from "../profile/profile.service";
 import {
   clearAuthCookies,
+  CSRF_COOKIE,
   CsrfGuard,
   issueCsrfCookie,
   setSessionCookie,
@@ -194,12 +195,17 @@ export class AuthController {
   @Get("me")
   async me(
     @CurrentUser() user: RequestUser,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response
   ) {
     const view = await this.auth.me(user.id);
     const accessState = await this.auth.accessState(user.id);
     const opts = this.cookieOpts();
-    const csrf = issueCsrfCookie(res, opts.secure, opts.domain);
+    // Reuse the existing CSRF token — rotating on every /auth/me left the
+    // cross-site client (which cannot read the cookie) holding a stale header
+    // token, so mutating requests started failing with 403.
+    const existing = req.cookies?.[CSRF_COOKIE] as string | undefined;
+    const csrf = existing || issueCsrfCookie(res, opts.secure, opts.domain);
     return { user: view, accessState, csrfToken: csrf };
   }
 
