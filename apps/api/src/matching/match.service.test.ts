@@ -97,6 +97,7 @@ describe("MatchService race-safe match creation", () => {
         findUnique: async () => ({ score: 85 }),
       },
       profileAuditEvent: { create: async () => ({}) },
+      notification: { create: async () => ({}) },
       $transaction: async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx),
     };
 

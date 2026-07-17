@@ -353,6 +353,17 @@ export default function QuestionnairePage() {
     }
   }, [isStaff, router]);
 
+  // Members who already finished the questionnaire and paid should never see
+  // the static "Profile submitted" screen (it confused people at login) —
+  // send them straight to their home feed.
+  const completedAndPaid =
+    !!profile?.questionnaireComplete && !isEditMode && hasPaidAccess(profile);
+  useEffect(() => {
+    if (completedAndPaid && !isStaff) {
+      router.replace("/dashboard");
+    }
+  }, [completedAndPaid, isStaff, router]);
+
   const phaseLabel = useMemo(() => {
     if (phaseComplete === "about") return ui("part1Complete");
     if (phaseComplete === "partner") return ui("part2Complete");
@@ -395,6 +406,19 @@ export default function QuestionnairePage() {
   if (profile.questionnaireComplete && !isEditMode) {
     const paid = hasPaidAccess(profile);
 
+    // Paid members are redirected to /dashboard (effect above) — show a
+    // short loading state instead of the confusing static screen.
+    if (paid) {
+      return (
+        <QuestionnaireShell progress={100} phaseLabel={ui("profileCompleteTitle")}>
+          <div className="space-y-4 py-12" role="status" aria-busy>
+            <Skeleton className="h-10 w-full" aria-hidden />
+            <Skeleton className="h-48 w-full rounded-2xl" aria-hidden />
+          </div>
+        </QuestionnaireShell>
+      );
+    }
+
     return (
       <QuestionnaireShell progress={100} phaseLabel={ui("profileCompleteTitle")}>
         <div className="text-center py-12 sm:py-16">
@@ -405,18 +429,12 @@ export default function QuestionnairePage() {
             {ui("profileCompleteTitle")}
           </h1>
           <p className="text-muted-foreground mb-8 max-w-sm mx-auto leading-relaxed">
-            {paid ? ui("profileReadySub") : ui("profileReadyPaySub")}
+            {ui("profileReadyPaySub")}
           </p>
           <div className="flex flex-col gap-3 max-w-xs mx-auto">
-            {paid ? (
-              <Button className="h-12 rounded-2xl" asChild>
-                <a href="/matches">{ui("viewMatches")}</a>
-              </Button>
-            ) : (
-              <Button className="h-12 rounded-2xl" asChild>
-                <a href="/payment">{t("dashboard.choosePlan")}</a>
-              </Button>
-            )}
+            <Button className="h-12 rounded-2xl" asChild>
+              <a href="/payment">{t("dashboard.choosePlan")}</a>
+            </Button>
             <Button variant="outline" className="h-12 rounded-2xl" asChild>
               <a href="/profile">{ui("myProfile")}</a>
             </Button>

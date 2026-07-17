@@ -456,17 +456,15 @@ export class MatchService {
       return { matched: false };
     }
 
-    // Notification stub (Phase 7+)
-    await this.prisma.profileAuditEvent.create({
-      data: {
-        userId,
-        profileId: access.profile.id,
-        action: "score_recalc_stub",
-        metadata: {
-          event: "like_notification_stub",
-          toUserId: targetUserId,
-        },
-      },
+    await this.createNotificationSafe({
+      userId: targetUserId,
+      convexUserId: targetUser.convexId,
+      type: "like",
+      title: "Someone liked you!",
+      body: `${access.profile.name ?? "Someone"} liked your profile.`,
+      relatedUserId: userId,
+      convexRelatedUserId: meUser.convexId,
+      sourceKey: `like:${userId}:${targetUserId}`,
     });
 
     const reverse = await this.prisma.like.findUnique({
@@ -482,7 +480,75 @@ export class MatchService {
       return { matched: false };
     }
 
-    return this.createOrReactivateMatch(userId, targetUserId, meUser.convexId, targetUser.convexId);
+    const result = await this.createOrReactivateMatch(
+      userId,
+      targetUserId,
+      meUser.convexId,
+      targetUser.convexId
+    );
+
+    if (result.matched && result.matchId) {
+      const myName = access.profile.name ?? "Someone";
+      const targetName = target.name ?? "Someone";
+      await this.createNotificationSafe({
+        userId,
+        convexUserId: meUser.convexId,
+        type: "match",
+        title: "New Match!",
+        body: `You matched with ${targetName}!`,
+        relatedUserId: targetUserId,
+        convexRelatedUserId: targetUser.convexId,
+        sourceKey: `match:${result.matchId}:${userId}`,
+      });
+      await this.createNotificationSafe({
+        userId: targetUserId,
+        convexUserId: targetUser.convexId,
+        type: "match",
+        title: "New Match!",
+        body: `You matched with ${myName}!`,
+        relatedUserId: userId,
+        convexRelatedUserId: meUser.convexId,
+        sourceKey: `match:${result.matchId}:${targetUserId}`,
+      });
+    }
+
+    return result;
+  }
+
+  /** Idempotent notification insert — duplicate sourceKey is a silent no-op. */
+  private async createNotificationSafe(data: {
+    userId: string;
+    convexUserId: string;
+    type: "like" | "match";
+    title: string;
+    body: string;
+    relatedUserId: string;
+    convexRelatedUserId: string;
+    sourceKey: string;
+  }) {
+    try {
+      await this.prisma.notification.create({
+        data: {
+          convexId: `local_notif_${randomUUID()}`,
+          userId: data.userId,
+          convexUserId: data.convexUserId,
+          type: data.type,
+          title: data.title,
+          body: data.body,
+          read: false,
+          relatedUserId: data.relatedUserId,
+          convexRelatedUserId: data.convexRelatedUserId,
+          sourceKey: data.sourceKey,
+          notificationCreatedAt: new Date(),
+        },
+      });
+    } catch (err: unknown) {
+      const code =
+        err && typeof err === "object" && "code" in err
+          ? (err as { code?: string }).code
+          : undefined;
+      if (code !== "P2002") throw err;
+    }
   }
 
   private async createOrReactivateMatch(
