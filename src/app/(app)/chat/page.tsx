@@ -19,7 +19,6 @@ import { toast } from "sonner";
 import {
   Send,
   Image as ImageIcon,
-  Smile,
   Lock,
   MessageCircle,
   Heart,
@@ -28,7 +27,6 @@ import {
   CheckCheck,
   Archive,
 } from "lucide-react";
-import { LazyEmojiPicker, type EmojiClickData } from "@/components/chat/lazy-emoji-picker";
 import { ChatIcebreakers } from "@/components/chat/chat-icebreakers";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
 import { ChatStreakBadge } from "@/components/chat/chat-streak-badge";
@@ -117,7 +115,6 @@ export default function ChatPage() {
   const conversationParam = searchParams.get("c");
   const { isStaff, isLoading: staffLoading } = useStaffRedirect();
   const [message, setMessage] = useState("");
-  const [showEmoji, setShowEmoji] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -212,7 +209,6 @@ export default function ChatPage() {
     try {
       await sendMessage({ conversationId: activeConversation, message: message.trim() });
       setMessage("");
-      setShowEmoji(false);
     } catch (error) {
       if (error instanceof Error && error.message.includes("payment")) {
         toast.error(t("chatPage.paymentRequired", { price: formatMoney(planPricesForGender(profile?.gender).basic) }));
@@ -651,27 +647,7 @@ export default function ChatPage() {
                     </div>
 
                     <div className="shrink-0 p-3 sm:p-4 border-t border-border bg-card pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:pb-4">
-                      {showEmoji && (
-                        <div className="mb-3 overflow-hidden rounded-xl border border-border">
-                          <LazyEmojiPicker
-                            onEmojiClick={(emoji: EmojiClickData) =>
-                              setMessage((prev) => prev + emoji.emoji)
-                            }
-                            width="100%"
-                            height={260}
-                          />
-                        </div>
-                      )}
                       <div className="flex items-center gap-2 rounded-2xl border border-border bg-muted/40 p-1.5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          type="button"
-                          onClick={() => setShowEmoji(!showEmoji)}
-                          className="shrink-0 rounded-xl h-9 w-9 text-muted-foreground"
-                        >
-                          <Smile className="h-5 w-5" />
-                        </Button>
                         <ImageFileHitArea
                           aria-label={t("chatPage.sharedImage")}
                           onChange={(e) => void handleImageUpload(e)}

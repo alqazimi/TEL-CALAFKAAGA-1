@@ -642,10 +642,10 @@ export class ProfileService {
     const waliName = body.waliName?.trim() ?? "";
     const waliPhone = body.waliPhone?.trim() ?? "";
     if (waliName && waliName.length < 2) {
-      throw new BadRequestException("Wali name is too short");
+      throw new BadRequestException("Calaf name is too short");
     }
     if (waliPhone && waliPhone.length < 8) {
-      throw new BadRequestException("Wali phone number is invalid");
+      throw new BadRequestException("Calaf phone number is invalid");
     }
     const updated = await this.prisma.profile.update({
       where: { id: profile.id },
