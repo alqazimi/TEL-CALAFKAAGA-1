@@ -23,7 +23,7 @@ export function Navbar() {
   const isStaff = isStaffRole(role);
   const consoleHref = user
     ? getAuthenticatedHomeRoute(user.profile as Parameters<typeof getAuthenticatedHomeRoute>[0])
-    : "/matches";
+    : "/dashboard";
 
   useEffect(() => {
     setOpen(false);

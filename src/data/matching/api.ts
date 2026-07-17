@@ -71,6 +71,27 @@ export const apiMatching: MatchingAdapter = {
       throw error;
     }
   },
+  async getHomeFeed() {
+    try {
+      return await apiClient.get(`/matches/home-feed`);
+    } catch (error) {
+      if (isPaidGateError(error)) {
+        return {
+          dayKey: new Date().toISOString().slice(0, 10),
+          isPremium: false,
+          dailyMatch: null,
+          likedYouCount: 0,
+          likedYouPreview: [],
+          likedYouLocked: true,
+          newMutualCount: 0,
+          pendingChatCount: 0,
+          discoverCount: 0,
+          recentMutuals: [],
+        };
+      }
+      throw error;
+    }
+  },
   async getCompatibilityBreakdown(userId) {
     try {
       return await apiClient.get(

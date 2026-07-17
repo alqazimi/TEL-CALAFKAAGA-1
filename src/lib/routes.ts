@@ -69,5 +69,5 @@ export function getAuthenticatedHomeRoute(
   if (!hasPaidAccess(profile)) {
     return "/payment";
   }
-  return "/matches";
+  return "/dashboard";
 }

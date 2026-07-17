@@ -108,6 +108,7 @@ export interface MatchResult {
   maritalStatus?: string;
   marriageTimeline?: string;
   wantChildren?: string;
+  highlightKeys?: string[];
 }
 
 export interface Conversation {

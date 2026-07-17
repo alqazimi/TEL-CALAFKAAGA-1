@@ -29,6 +29,8 @@ import {
   Archive,
 } from "lucide-react";
 import { LazyEmojiPicker, type EmojiClickData } from "@/components/chat/lazy-emoji-picker";
+import { ChatIcebreakers } from "@/components/chat/chat-icebreakers";
+import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
@@ -57,7 +59,6 @@ import { useTranslation } from "@/lib/i18n/context";
 import { resetFileInput } from "@/lib/upload-image";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
-import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
 import { TrustBadges } from "@/components/profile/trust-badges";
 
 type MatchList = "active" | "new" | "archived";
@@ -559,6 +560,10 @@ export default function ChatPage() {
                               name: activeConv.profile?.name?.split(" ")[0] ?? "",
                             })}
                           </p>
+                          <ChatIcebreakers
+                            partnerName={activeConv.profile?.name}
+                            onPick={(text) => setMessage(text)}
+                          />
                           <p className="text-xs text-muted-foreground mt-4 max-w-xs leading-relaxed">
                             {t("chatPage.safetyReminder")}
                           </p>

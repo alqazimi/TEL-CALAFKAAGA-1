@@ -35,9 +35,15 @@ export function useAppNavLinks(profileComplete = true) {
   if (profileComplete) {
     return [
       {
+        href: "/dashboard",
+        label: t("app.home"),
+        mobileLabel: t("app.home"),
+        icon: "LayoutDashboard" as const,
+        tab: true,
+      },
+      {
         href: "/matches",
         label: t("app.discover"),
-        mobileLabel: t("app.home"),
         icon: "Heart" as const,
         tab: true,
       },

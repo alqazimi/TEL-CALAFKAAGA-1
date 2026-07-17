@@ -130,10 +130,13 @@ export function AppMobileNav() {
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch justify-around px-1">
-        {appNavLinks.map((link) => {
+        {appNavLinks
+          .filter((link) => link.tab)
+          .map((link) => {
           const Icon = iconMap[link.icon as TabIcon];
           const isActive =
             pathname === link.href ||
+            (link.href === "/dashboard" && pathname === "/dashboard") ||
             (link.href === "/likes" && pathname.startsWith("/likes")) ||
             (!profileComplete &&
               link.href === "/questionnaire" &&

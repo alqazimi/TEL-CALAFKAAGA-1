@@ -76,6 +76,12 @@ export class MatchController {
     });
   }
 
+  /** Personalized social-style home feed (daily match + liked-you + mutuals). */
+  @Get("home-feed")
+  async homeFeed(@CurrentUser() user: RequestUser) {
+    return this.matches.homeFeed(user.id);
+  }
+
   @Get("lists")
   async lists(
     @CurrentUser() user: RequestUser,

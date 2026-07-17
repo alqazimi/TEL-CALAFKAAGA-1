@@ -7,7 +7,7 @@ import {
 import type { LikeAction, MatchStatus, Profile } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
-import { hasPaidAccess, isStaffRole } from "../common/access";
+import { hasPaidAccess, isPremiumMember, isStaffRole } from "../common/access";
 import { isDiscoverable } from "../common/review-status";
 import { canViewerSeePhotos } from "../profile/photo-rules";
 import { MediaAccessService } from "../media/media-access.service";
@@ -22,6 +22,11 @@ import {
   makePairKey,
 } from "./constants";
 import { MatchFilterArgs, profilePassesMatchFilters } from "./filters";
+import {
+  computeHighlightKeys,
+  dailyPickIndex,
+  utcDayKey,
+} from "./highlights";
 import { ScoreService } from "./score.service";
 
 type AccessCtx = { userId: string; profile: Profile };
@@ -137,6 +142,147 @@ export class MatchService {
       nextCursor,
       minScore: MIN_COMPATIBILITY_SCORE,
       limit,
+    };
+  }
+
+  /**
+   * Personalized home feed: daily match, liked-you preview, mutual/new counts.
+   * Additive only — does not change discover/lists behavior.
+   */
+  async homeFeed(userId: string) {
+    const access = await this.requireMatchAccess(userId);
+    const isPremium = isPremiumMember(access.profile);
+    const dayKey = utcDayKey();
+
+    const myLikes = await this.prisma.like.findMany({
+      where: { fromUserId: userId },
+      select: { toUserId: true, action: true },
+    });
+    const interacted = new Set(myLikes.map((l) => l.toUserId));
+    const blocked = await this.getBlockedIds(userId);
+    const activePartners = await this.activePartnerIds(userId);
+
+    const scores = await this.prisma.compatibilityScore.findMany({
+      where: {
+        userAId: userId,
+        score: { gte: MIN_COMPATIBILITY_SCORE },
+      },
+      orderBy: [{ score: "desc" }, { userBId: "asc" }],
+      take: MATCH_DISCOVER_LIMIT * 3,
+    });
+
+    const discoverable = scores.filter(
+      (s) => !interacted.has(s.userBId) && !blocked.has(s.userBId)
+    );
+
+    let dailyMatch: Awaited<ReturnType<typeof this.buildCard>> | null = null;
+    if (discoverable.length > 0) {
+      const start = dailyPickIndex(userId, dayKey, discoverable.length);
+      for (let offset = 0; offset < discoverable.length; offset += 1) {
+        const pick = discoverable[(start + offset) % discoverable.length]!;
+        const card = await this.buildCard(
+          access,
+          pick.userBId,
+          pick.score,
+          null,
+          {},
+          false
+        );
+        if (card) {
+          dailyMatch = card;
+          break;
+        }
+      }
+    }
+
+    const incoming = await this.prisma.like.findMany({
+      where: { toUserId: userId, action: "like" },
+      take: MATCH_LIST_LIMIT,
+      orderBy: { createdAt: "desc" },
+    });
+    const likedYouIds = incoming
+      .filter((l) => !activePartners.has(l.fromUserId) && !blocked.has(l.fromUserId))
+      .map((l) => l.fromUserId);
+    const likedYouCount = likedYouIds.length;
+
+    let likedYouPreview: Awaited<ReturnType<typeof this.buildCard>>[] = [];
+    if (isPremium && likedYouIds.length > 0) {
+      for (const id of likedYouIds.slice(0, 3)) {
+        const card = await this.buildCard(
+          access,
+          id,
+          scores.find((s) => s.userBId === id)?.score ?? 0,
+          null,
+          {},
+          true
+        );
+        if (card) likedYouPreview.push(card);
+      }
+    }
+
+    const activeMatches = await this.prisma.match.findMany({
+      where: {
+        OR: [{ userAId: userId }, { userBId: userId }],
+        status: "active",
+      },
+      include: { conversation: true },
+      take: MATCH_LIST_LIMIT,
+      orderBy: { updatedAt: "desc" },
+    });
+
+    let newMutualCount = 0;
+    let pendingChatCount = 0;
+    const recentMutuals: Array<{
+      matchId: string;
+      conversationId: string | null;
+      score: number;
+      isNew: boolean;
+      name: string;
+      imageUrl: string | null;
+    }> = [];
+
+    for (const m of activeMatches) {
+      const otherId = m.userAId === userId ? m.userBId : m.userAId;
+      if (blocked.has(otherId)) continue;
+      const seenMap = (m.seenAtByUser as Record<string, number> | null) ?? {};
+      const isNew = seenMap[userId] === undefined;
+      if (isNew) newMutualCount += 1;
+
+      const unread =
+        ((m.conversation?.unreadByUser as Record<string, number> | null) ?? {})[
+          userId
+        ] ?? 0;
+      if (unread > 0 || isNew) pendingChatCount += 1;
+
+      if (recentMutuals.length < 3) {
+        const other = await this.prisma.profile.findUnique({
+          where: { userId: otherId },
+        });
+        const photo = other
+          ? await this.photoMeta(userId, other, access.profile.role, true)
+          : { imageUrl: null as string | null };
+        recentMutuals.push({
+          matchId: m.id,
+          conversationId: m.conversation?.id ?? null,
+          score: m.score,
+          isNew,
+          name: other?.name ?? "Member",
+          imageUrl: photo.imageUrl,
+        });
+      }
+    }
+
+    return {
+      dayKey,
+      isPremium,
+      dailyMatch,
+      likedYouCount,
+      likedYouPreview,
+      likedYouLocked: !isPremium,
+      newMutualCount,
+      pendingChatCount,
+      discoverCount: discoverable.length,
+      recentMutuals,
     };
   }
 
@@ -626,6 +772,7 @@ export class MatchService {
       photoHidden: photo.photoHidden,
       photoMediaId: photo.mediaId,
       additionalImageUrls: listPreview ? [] : photo.additionalUrls,
+      highlightKeys: computeHighlightKeys(access.profile, profile),
       reviewStatus: profile.reviewStatus,
       approved: profile.approved,
       hasPaid: profile.hasPaid,

@@ -356,11 +356,12 @@ export type AppNavIcon =
   | "Sparkles"
   | "Bell";
 
-/** App navigation — Muzz-style: Discover, Messages, Likes, Profile (4 tabs when complete). */
+/** App navigation — Home feed first, then Discover / Messages / Likes / Profile. */
 export function getAppNavLinks(profileComplete = true) {
   if (profileComplete) {
     return [
-      { href: "/matches", label: "Discover", mobileLabel: "Home", icon: "Heart" as AppNavIcon, tab: true },
+      { href: "/dashboard", label: "Home", mobileLabel: "Home", icon: "LayoutDashboard" as AppNavIcon, tab: true },
+      { href: "/matches", label: "Discover", icon: "Heart" as AppNavIcon, tab: true },
       { href: "/chat", label: "Messages", icon: "MessageCircle" as AppNavIcon, tab: true },
       { href: "/likes", label: "Likes", icon: "Sparkles" as AppNavIcon, tab: true },
       { href: "/profile", label: "Profile", icon: "User" as AppNavIcon, tab: true },

@@ -75,7 +75,7 @@ describe("access-state routing", () => {
     );
   });
 
-  it("routes paid approved user to matches", () => {
+  it("routes paid approved user to dashboard home feed", () => {
     assert.equal(
       getAuthenticatedHomeRoute({
         role: "user",
@@ -83,7 +83,7 @@ describe("access-state routing", () => {
         questionnaireComplete: true,
         hasPaid: true,
       }),
-      "/matches"
+      "/dashboard"
     );
   });
 

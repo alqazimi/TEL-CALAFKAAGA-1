@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
+import { CompatibilityHighlights } from "@/components/matches/compatibility-highlights";
 import type { MatchResult } from "@/types";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
@@ -116,6 +117,7 @@ export function MatchProfileCard({
 
         <CardContent className="p-5 space-y-4 sm:p-6">
           <TrustBadges profile={match} size="sm" />
+          <CompatibilityHighlights keys={match.highlightKeys} />
 
           <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
             {facts.slice(0, 6).map((fact) => (

@@ -13,6 +13,7 @@ export const ROUTES = {
   questionnaire: "/questionnaire",
   payment: "/payment",
   matches: "/matches",
+  dashboard: "/dashboard",
 } as const;
 
 export type AccessProfileInput = {
@@ -59,7 +60,7 @@ export function getAuthenticatedHomeRoute(
   if (profile?.registrationComplete === false) return ROUTES.registerDetails;
   if (!profile?.questionnaireComplete) return ROUTES.questionnaire;
   if (!hasPaidAccess(profile)) return ROUTES.payment;
-  return ROUTES.matches;
+  return ROUTES.dashboard;
 }
 
 export function computeAccessState(opts: {
