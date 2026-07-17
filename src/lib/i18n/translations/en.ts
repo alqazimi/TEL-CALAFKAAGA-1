@@ -1448,11 +1448,6 @@ export const en = {
     completeProfileDesc: "Finish your profile to start connecting with your matches.",
     safetyReminder:
       "Keep conversations respectful and marriage-focused. Use Report / Block if something feels wrong.",
-    icebreakersTitle: "Try an icebreaker",
-    icebreaker1: "Assalamu alaikum {{name}} — what does a successful marriage mean to you?",
-    icebreaker2: "How involved would you like family to be in your marriage journey?",
-    icebreaker3: "What timeline feels right for you when thinking about marriage?",
-    icebreaker4: "What values matter most to you in a partner?",
     listActive: "Active",
     listNew: "New",
     listArchived: "Archived",

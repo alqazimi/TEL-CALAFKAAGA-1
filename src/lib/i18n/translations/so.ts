@@ -1458,11 +1458,6 @@ export const so: Translations = {
     completeProfileDesc: "Dhammaystir profile-kaaga si aad ula xiriirto isbarbardhigyadaada.",
     safetyReminder:
       "Sheekaysiga ha ahaado mid ixtiraam leh oo guur diiradda saaran. Isticmaal Soo sheeg / Jooji haddii wax khaldan.",
-    icebreakersTitle: "Isku day furitaan",
-    icebreaker1: "Assalamu alaikum {{name}} — guur guul leh maxay kuu tahay?",
-    icebreaker2: "Qoysku intee in le'eg ayay ku jiri karaan safarkaaga guurka?",
-    icebreaker3: "Waqti intee ah ayaad u malaynaysaa guurka?",
-    icebreaker4: "Qiimayaasha ugu muhiimsan ee lammaanaha maxay yihiin?",
     listActive: "Firfircoon",
     listNew: "Cusub",
     listArchived: "Kaydsan",

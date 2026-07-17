@@ -27,7 +27,6 @@ import {
   CheckCheck,
   Archive,
 } from "lucide-react";
-import { ChatIcebreakers } from "@/components/chat/chat-icebreakers";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
 import { ChatStreakBadge } from "@/components/chat/chat-streak-badge";
 import { PrivatePhotoRevealCard } from "@/components/matches/private-photo-reveal-card";
@@ -586,10 +585,6 @@ export default function ChatPage() {
                               name: activeConv.profile?.name?.split(" ")[0] ?? "",
                             })}
                           </p>
-                          <ChatIcebreakers
-                            partnerName={activeConv.profile?.name}
-                            onPick={(text) => setMessage(text)}
-                          />
                           <p className="text-xs text-muted-foreground mt-4 max-w-xs leading-relaxed">
                             {t("chatPage.safetyReminder")}
                           </p>
