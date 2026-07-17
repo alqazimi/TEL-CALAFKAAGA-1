@@ -1,4 +1,5 @@
 import { apiClient } from "../api-client";
+import { prepareImageForUpload } from "@/lib/strip-image-exif";
 import { track } from "../telemetry";
 import type { ChatAdapter } from "./types";
 
@@ -59,6 +60,32 @@ export const apiChat: ChatAdapter = {
       );
     } catch (e) {
       track("message_failure");
+      throw e;
+    }
+  },
+  async uploadChatImage(conversationId, file) {
+    try {
+      const prepared = await prepareImageForUpload(file);
+      const contentType = prepared.type || "image/jpeg";
+      const signed = await apiClient.post<{
+        mediaId: string;
+        uploadUrl: string;
+      }>(
+        `/conversations/${encodeURIComponent(conversationId)}/images/sign-upload`,
+        { contentType, sizeBytes: prepared.size }
+      );
+      const res = await fetch(String(signed.uploadUrl), {
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        body: prepared,
+      });
+      if (!res.ok) {
+        track("upload_failure", { status: res.status });
+        throw new Error("Upload failed. Please try a smaller JPG or PNG.");
+      }
+      return { mediaId: String(signed.mediaId) };
+    } catch (e) {
+      track("upload_failure");
       throw e;
     }
   },

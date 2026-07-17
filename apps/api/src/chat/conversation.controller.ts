@@ -66,6 +66,23 @@ export class ConversationController {
     });
   }
 
+  @Post(":id/images/sign-upload")
+  @HttpCode(200)
+  async signImageUpload(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        contentType: z.string().min(3).max(100),
+        sizeBytes: z.number().int().positive().optional(),
+      }),
+      body
+    );
+    return this.conversations.signImageUpload(user.id, id, parsed);
+  }
+
   @Post(":id/messages")
   @HttpCode(200)
   async send(

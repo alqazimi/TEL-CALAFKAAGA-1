@@ -121,6 +121,15 @@ export function useSendMessage() {
   );
 }
 
+/** Upload a chat attachment via the active adapter (API chat bucket or Convex). */
+export function useUploadChatImage() {
+  return useCallback(
+    async (conversationId: string, file: File) =>
+      getChatAdapter().uploadChatImage(conversationId, file),
+    []
+  );
+}
+
 export function useMarkAsRead() {
   if (isApiProvider()) {
     // eslint-disable-next-line react-hooks/rules-of-hooks

@@ -12,8 +12,8 @@ import {
   useMarkAsRead,
   useSetTyping,
   useTypingStatus,
+  useUploadChatImage,
 } from "@/data/chat/hooks";
-import { useUploadPhoto } from "@/data/photos/hooks";
 import { useMarkMatchSeen, useArchiveMatch } from "@/data/matching/hooks";
 import { toast } from "sonner";
 import {
@@ -158,7 +158,7 @@ export default function ChatPage() {
   const sendMessage = useSendMessage();
   const markAsRead = useMarkAsRead();
   const setTyping = useSetTyping();
-  const uploadPhoto = useUploadPhoto();
+  const uploadChatImage = useUploadChatImage();
   const markMatchSeen = useMarkMatchSeen();
   const archiveMatch = useArchiveMatch();
 
@@ -232,17 +232,12 @@ export default function ChatPage() {
     const file = input.files?.[0];
     if (!file || !activeConversation) return;
     try {
-      const uploaded = await uploadPhoto(file);
-      const storageId = String(
-        (uploaded as { storageId?: string; mediaId?: string }).storageId ??
-          (uploaded as { mediaId?: string }).mediaId ??
-          ""
-      );
-      if (!storageId) throw new Error("upload failed");
+      const uploaded = await uploadChatImage(activeConversation, file);
+      if (!uploaded.mediaId) throw new Error("upload failed");
       await sendMessage({
         conversationId: activeConversation,
         message: t("chatPage.imageMessage"),
-        imageId: storageId,
+        imageId: uploaded.mediaId,
       });
     } catch {
       toast.error(t("chatPage.uploadFailed"));

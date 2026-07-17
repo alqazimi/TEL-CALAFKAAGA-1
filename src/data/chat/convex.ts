@@ -1,5 +1,6 @@
 import { getConvexClient } from "@/lib/convex-client";
 import { api } from "../../../convex/_generated/api";
+import { uploadImageToConvex } from "@/lib/upload-image";
 import { track } from "../telemetry";
 import type { ChatAdapter } from "./types";
 
@@ -28,6 +29,16 @@ export const convexChat: ChatAdapter = {
       track("message_failure");
       throw e;
     }
+  },
+  async uploadChatImage(_conversationId, file) {
+    const client = getConvexClient();
+    const storageId = await uploadImageToConvex(file, () =>
+      client.mutation(api.profiles.generateUploadUrl, {} as never)
+    );
+    await client.mutation(api.profiles.registerUpload, {
+      storageId,
+    } as never);
+    return { mediaId: String(storageId) };
   },
   async markAsRead(conversationId) {
     const client = getConvexClient();

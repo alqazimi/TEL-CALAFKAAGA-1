@@ -120,18 +120,19 @@ export class ProfilePhotosService {
           `You can upload up to ${MAX_PRIVATE_PHOTOS} private photos`
         );
       }
-    } else if (counts.total >= MAX_PROFILE_PHOTOS) {
-      throw new BadRequestException(
-        `You can upload up to ${MAX_PROFILE_PHOTOS} photos`
-      );
-    }
-    if (
-      opts.slot === "additional" &&
-      counts.additional >= MAX_ADDITIONAL_PHOTOS
-    ) {
-      throw new BadRequestException(
-        `You can upload up to ${MAX_ADDITIONAL_PHOTOS} extra photos`
-      );
+    } else if (opts.slot === "additional") {
+      // "main" always replaces the existing photo, so only the additional
+      // slot can push the gallery past its limits.
+      if (counts.total >= MAX_PROFILE_PHOTOS) {
+        throw new BadRequestException(
+          `You can upload up to ${MAX_PROFILE_PHOTOS} photos`
+        );
+      }
+      if (counts.additional >= MAX_ADDITIONAL_PHOTOS) {
+        throw new BadRequestException(
+          `You can upload up to ${MAX_ADDITIONAL_PHOTOS} extra photos`
+        );
+      }
     }
 
     const purpose =

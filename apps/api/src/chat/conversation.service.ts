@@ -7,13 +7,18 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { Conversation, Match, Profile } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { hasPaidAccess, isStaffRole } from "../common/access";
 import { MediaAccessService } from "../media/media-access.service";
 import { resolveProfileMainImageUrl } from "../media/profile-image-url";
 import { PrismaService } from "../prisma/prisma.service";
-import { canViewerSeePhotos } from "../profile/photo-rules";
+import {
+  ALLOWED_IMAGE_CONTENT_TYPES,
+  MAX_UPLOAD_BYTES,
+  canViewerSeePhotos,
+} from "../profile/photo-rules";
 import { RedisService } from "../redis/redis.module";
 import { NotificationQueueService } from "../queue/notification-queue.service";
 import { ChatRealtimeService } from "./chat-realtime.service";
@@ -38,14 +43,19 @@ type ConvWithMatch = Conversation & { match: Match };
 
 @Injectable()
 export class ConversationService {
+  private readonly chatBucket: string;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly media: MediaAccessService,
     private readonly redis: RedisService,
     private readonly typing: TypingService,
     private readonly realtime: ChatRealtimeService,
-    private readonly notificationQueue: NotificationQueueService
-  ) {}
+    private readonly notificationQueue: NotificationQueueService,
+    private readonly config: ConfigService
+  ) {
+    this.chatBucket = this.config.get<string>("S3_BUCKET_CHAT") ?? "hel-chat";
+  }
 
   private async requireProfile(userId: string): Promise<Profile> {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
@@ -363,6 +373,83 @@ export class ConversationService {
     return { items, nextCursor };
   }
 
+  /**
+   * Signed PUT URL for a chat attachment. Creates a `chat_image` media row so
+   * sendMessage accepts the id — profile photo uploads must not be reused here.
+   */
+  async signImageUpload(
+    userId: string,
+    conversationId: string,
+    opts: { contentType: string; sizeBytes?: number }
+  ) {
+    const profile = await this.requireProfile(userId);
+    await this.failClosedRateLimit("chat.image", userId);
+
+    const conv = await this.loadConversation(conversationId);
+    this.assertParticipant(conv, userId);
+
+    if (!hasPaidAccess(profile) && !conv.match.chatUnlocked) {
+      throw new ForbiddenException("Please complete payment to unlock chat.");
+    }
+    const otherId = this.otherUserId(conv, userId);
+    if (otherId && (await this.isEitherBlocked(userId, otherId))) {
+      throw new ForbiddenException("You cannot message this user");
+    }
+
+    const contentType = opts.contentType.toLowerCase().trim();
+    if (!ALLOWED_IMAGE_CONTENT_TYPES.has(contentType)) {
+      throw new BadRequestException(
+        "Only JPG, PNG, or WebP images are allowed"
+      );
+    }
+    if (opts.sizeBytes !== undefined && opts.sizeBytes > MAX_UPLOAD_BYTES) {
+      throw new BadRequestException(
+        "Image is too large. Please choose a photo under 2MB after compression."
+      );
+    }
+
+    const ext = contentType.includes("png")
+      ? "png"
+      : contentType.includes("webp")
+        ? "webp"
+        : "jpg";
+    const localStorageId = `local_chat_${randomUUID()}`;
+    const objectKey = `${conversationId}/${localStorageId}.${ext}`;
+
+    const senderUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { convexId: true },
+    });
+    const mediaRow = await this.prisma.mediaObject.create({
+      data: {
+        convexStorageId: localStorageId,
+        purpose: "chat_image",
+        bucket: this.chatBucket,
+        objectKey,
+        contentType,
+        ownerUserId: userId,
+        convexOwnerUserId: senderUser?.convexId ?? profile.convexUserId,
+        migrationStatus: "pending",
+        sourceTable: "messages",
+      },
+    });
+
+    const { uploadUrl, expiresInSeconds } =
+      await this.media.createSignedUploadUrl({
+        bucket: this.chatBucket,
+        objectKey,
+        contentType,
+      });
+
+    return {
+      mediaId: mediaRow.id,
+      uploadUrl,
+      expiresInSeconds,
+      contentType,
+      maxBytes: MAX_UPLOAD_BYTES,
+    };
+  }
+
   async sendMessage(
     userId: string,
     conversationId: string,
@@ -415,6 +502,34 @@ export class ConversationService {
       }
       if (media.purpose !== "chat_image") {
         throw new BadRequestException("Image must be a chat attachment");
+      }
+      if (media.migrationStatus === "pending") {
+        if (!media.bucket || !media.objectKey) {
+          throw new BadRequestException("Upload not ready");
+        }
+        let head: { sizeBytes: number; contentType: string | null };
+        try {
+          head = await this.media.headObject(media.bucket, media.objectKey);
+        } catch {
+          throw new BadRequestException(
+            "Image upload did not finish. Please try again."
+          );
+        }
+        if (head.sizeBytes <= 0 || head.sizeBytes > MAX_UPLOAD_BYTES) {
+          throw new BadRequestException(
+            "Image is too large. Please choose a photo under 2MB after compression."
+          );
+        }
+        await this.prisma.mediaObject.update({
+          where: { id: media.id },
+          data: {
+            sizeBytes: BigInt(head.sizeBytes),
+            ...(head.contentType ? { contentType: head.contentType } : {}),
+            migrationStatus: "verified",
+            verifiedReadable: true,
+            migratedAt: new Date(),
+          },
+        });
       }
       imageMediaId = media.id;
     }

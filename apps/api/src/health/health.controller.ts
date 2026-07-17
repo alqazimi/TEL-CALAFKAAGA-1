@@ -91,8 +91,9 @@ export class HealthController {
     return {
       status: criticalDown ? "degraded" : "ok",
       service: "hel-api",
-      phase: 20,
+      phase: 21,
       authMe: "member-flags",
+      chatImageUpload: "signed-put",
       photoDelivery: "signed-url",
       viewModal: "minimal-portal",
       adminActivity: "likes-arrays",

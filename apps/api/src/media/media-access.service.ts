@@ -176,6 +176,37 @@ export class MediaAccessService {
     return { url, expiresInSeconds: this.ttlSeconds, purpose };
   }
 
+  /** Signed PUT URL for direct browser uploads (e.g. chat attachments). */
+  async createSignedUploadUrl(opts: {
+    bucket: string;
+    objectKey: string;
+    contentType: string;
+  }): Promise<{ uploadUrl: string; expiresInSeconds: number }> {
+    const command = new PutObjectCommand({
+      Bucket: opts.bucket,
+      Key: opts.objectKey,
+      ContentType: opts.contentType,
+    });
+    const uploadUrl = await getSignedUrl(this.s3, command, {
+      expiresIn: this.ttlSeconds,
+    });
+    return { uploadUrl, expiresInSeconds: this.ttlSeconds };
+  }
+
+  /** HEAD an uploaded object to verify it exists; returns size + content type. */
+  async headObject(
+    bucket: string,
+    objectKey: string
+  ): Promise<{ sizeBytes: number; contentType: string | null }> {
+    const res = await this.s3.send(
+      new HeadObjectCommand({ Bucket: bucket, Key: objectKey })
+    );
+    return {
+      sizeBytes: Number(res.ContentLength ?? 0),
+      contentType: res.ContentType ?? null,
+    };
+  }
+
   async getObjectStream(mediaId: string, ctx: MediaAccessContext) {
     const { bucket, objectKey, purpose, contentType } =
       await this.assertCanAccess(mediaId, ctx);
