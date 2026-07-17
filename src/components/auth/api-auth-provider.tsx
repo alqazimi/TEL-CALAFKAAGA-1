@@ -33,6 +33,35 @@ type ApiAuthContextValue = {
 
 const ApiAuthContext = createContext<ApiAuthContextValue | null>(null);
 
+/**
+ * The app shell reads member flags from `user.profile` (Convex shape).
+ * Older API builds only return role/hasPaid/banned there — backfill the
+ * missing flags from `accessState` so nav/dashboard see completion state.
+ */
+function mergeAccessStateIntoUser(
+  user: SessionUser | null,
+  accessState: AccessStateLike | null
+): SessionUser | null {
+  if (!user || !accessState) return user;
+  const profile = { ...(user.profile ?? {}) } as Record<string, unknown>;
+  const fill = (key: string, value: unknown) => {
+    if (profile[key] === undefined && value !== undefined) {
+      profile[key] = value;
+    }
+  };
+  fill("questionnaireComplete", accessState.questionnaireComplete);
+  fill(
+    "registrationComplete",
+    typeof accessState.genderComplete === "boolean"
+      ? accessState.genderComplete
+      : undefined
+  );
+  fill("approved", accessState.approved);
+  fill("reviewStatus", accessState.reviewStatus);
+  fill("hasPersonalSupport", accessState.hasPersonalSupport);
+  return { ...user, profile };
+}
+
 export function ApiAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [accessState, setAccessState] = useState<AccessStateLike | null>(null);
@@ -41,7 +70,7 @@ export function ApiAuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const res = await apiAuth.bootstrapMe();
-      setUser(res.user);
+      setUser(mergeAccessStateIntoUser(res.user, res.accessState));
       setAccessState(res.accessState);
       if (res.user && res.accessState) {
         const paidProfile = Boolean(

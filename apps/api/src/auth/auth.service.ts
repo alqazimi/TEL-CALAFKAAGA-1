@@ -39,6 +39,19 @@ export type AuthUserView = {
   hasProfile: boolean;
   hasPaid: boolean;
   mustResetPassword: boolean;
+  /** Member flags the app shell needs (nav, dashboard routing, greeting). */
+  profile?: {
+    role: "user" | "admin" | "owner";
+    banned: boolean;
+    hasPaid: boolean;
+    name: string | null;
+    gender: string | null;
+    questionnaireComplete: boolean;
+    registrationComplete: boolean | null;
+    approved: boolean;
+    reviewStatus: string | null;
+    hasPersonalSupport: boolean;
+  } | null;
 };
 
 @Injectable()
@@ -398,7 +411,18 @@ export class AuthService {
       where: { id: userId },
       include: {
         profile: {
-          select: { role: true, banned: true, hasPaid: true },
+          select: {
+            role: true,
+            banned: true,
+            hasPaid: true,
+            name: true,
+            gender: true,
+            questionnaireComplete: true,
+            registrationComplete: true,
+            approved: true,
+            reviewStatus: true,
+            hasPersonalSupport: true,
+          },
         },
       },
     });
@@ -406,7 +430,24 @@ export class AuthService {
     if (user.profile?.banned) {
       throw new ForbiddenException("Unable to access this account");
     }
-    return this.toView(user);
+    const p = user.profile;
+    return {
+      ...this.toView(user),
+      profile: p
+        ? {
+            role: p.role,
+            banned: p.banned,
+            hasPaid: p.hasPaid,
+            name: p.name ?? null,
+            gender: p.gender ?? null,
+            questionnaireComplete: p.questionnaireComplete ?? false,
+            registrationComplete: p.registrationComplete,
+            approved: p.approved,
+            reviewStatus: p.reviewStatus ?? null,
+            hasPersonalSupport: p.hasPersonalSupport ?? false,
+          }
+        : null,
+    };
   }
 
   async accessState(userId: string) {
