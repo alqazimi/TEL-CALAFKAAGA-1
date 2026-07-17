@@ -152,9 +152,10 @@ export default function ChatPage() {
     ? (conversationParam as Id<"conversations">)
     : null;
 
-  const messages = useMessages(
-    activeConversation ?? undefined
-  ) as ChatMessage[] | undefined;
+  const messagesRaw = useMessages(activeConversation ?? undefined);
+  const messages = Array.isArray(messagesRaw)
+    ? (messagesRaw as ChatMessage[])
+    : undefined;
 
   const isTyping = useTypingStatus(activeConversation ?? undefined);
 
