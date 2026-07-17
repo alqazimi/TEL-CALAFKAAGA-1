@@ -32,7 +32,6 @@ import { ADMIN_NAV_TABS, isAdminNavTab } from "@/lib/admin-nav";
 
 const iconMap = {
   LayoutDashboard,
-  User,
   ClipboardList,
   Heart,
   MessageCircle,

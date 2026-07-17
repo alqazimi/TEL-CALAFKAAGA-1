@@ -124,38 +124,6 @@ function useApiMyMatches(enabled: boolean) {
 }
 
 export function useHomeFeed(enabled = true) {
-  if (isApiProvider()) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useApiHomeFeed(enabled);
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  return useConvexHomeFeed(enabled);
-}
-
-function useApiHomeFeed(enabled: boolean) {
-  const [apiData, setApiData] = useState<unknown>(undefined);
-  useEffect(() => {
-    if (!enabled) {
-      setApiData(undefined);
-      return;
-    }
-    let cancelled = false;
-    void getMatchingAdapter()
-      .getHomeFeed()
-      .then((d) => {
-        if (!cancelled) setApiData(d);
-      })
-      .catch(() => {
-        if (!cancelled) setApiData(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled]);
-  return apiData;
-}
-
-function useConvexHomeFeed(enabled: boolean) {
   const [data, setData] = useState<unknown>(undefined);
   useEffect(() => {
     if (!enabled) {

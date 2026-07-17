@@ -10,8 +10,6 @@ const ICEBREAKER_KEYS: TranslationPath[] = [
   "chatPage.icebreaker2",
   "chatPage.icebreaker3",
   "chatPage.icebreaker4",
-  "chatPage.icebreaker5",
-  "chatPage.icebreaker6",
 ];
 
 export function ChatIcebreakers({
@@ -40,7 +38,7 @@ export function ChatIcebreakers({
         {t("chatPage.icebreakersTitle")}
       </p>
       <div className="flex flex-col gap-2">
-        {prompts.slice(0, 4).map((text) => (
+        {prompts.map((text) => (
           <Button
             key={text}
             type="button"

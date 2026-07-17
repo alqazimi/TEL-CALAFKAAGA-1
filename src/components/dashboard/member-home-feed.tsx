@@ -24,8 +24,6 @@ import { CompatibilityHighlights } from "@/components/matches/compatibility-high
 import { cn } from "@/lib/utils";
 
 type HomeFeedData = {
-  dayKey?: string;
-  isPremium?: boolean;
   dailyMatch?: MatchResult | null;
   likedYouCount?: number;
   likedYouPreview?: MatchResult[];
@@ -93,33 +91,40 @@ export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+      <section className="member-hero px-5 py-6 sm:px-7 sm:py-7">
+        <div className="relative z-10 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
+          <Heart className="h-3.5 w-3.5 fill-white/90 text-white/90" />
+          {t("homeFeed.today")}
+        </div>
+        <h1 className="relative z-10 mt-2 font-display text-3xl sm:text-4xl font-semibold leading-tight">
           {t("homeFeed.hello", { name: firstName })}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1.5">
+        <p className="relative z-10 mt-1.5 max-w-md text-sm text-white/85">
           {t("homeFeed.subtitle")}
         </p>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
         <StatChip
           href="/matches"
-          icon={<Compass className="h-4 w-4" />}
+          icon={<Compass className="h-5 w-5" />}
           label={t("homeFeed.discover")}
           value={feed?.discoverCount ?? 0}
+          tone="rose"
         />
         <StatChip
           href="/likes?tab=likedYou"
-          icon={<Sparkles className="h-4 w-4" />}
+          icon={<Sparkles className="h-5 w-5" />}
           label={t("homeFeed.likes")}
           value={likedCount}
+          tone="gold"
         />
         <StatChip
           href="/chat"
-          icon={<MessageCircle className="h-4 w-4" />}
+          icon={<MessageCircle className="h-5 w-5" />}
           label={t("homeFeed.chats")}
           value={feed?.pendingChatCount ?? 0}
+          tone="plum"
         />
       </div>
 
@@ -322,7 +327,13 @@ export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
                 key={m.matchId}
                 type="button"
                 className="w-full flex items-center gap-3 rounded-2xl bg-muted/50 p-2.5 text-left hover:bg-muted transition-colors"
-                onClick={() => router.push("/chat")}
+                onClick={() =>
+                  router.push(
+                    m.conversationId
+                      ? `/chat?c=${encodeURIComponent(m.conversationId)}`
+                      : "/chat"
+                  )
+                }
               >
                 <Avatar className="h-11 w-11 border border-border">
                   <AvatarImage src={m.imageUrl ?? undefined} alt="" />
@@ -353,30 +364,37 @@ export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
   );
 }
 
+const STAT_TONES = {
+  rose: "bg-primary/12 text-primary",
+  gold: "bg-gold/15 text-gold-foreground dark:text-gold",
+  plum: "bg-brand-dark/12 text-brand-dark dark:bg-primary/15 dark:text-primary",
+} as const;
+
 function StatChip({
   href,
   icon,
   label,
   value,
+  tone = "rose",
 }: {
   href: string;
   icon: ReactNode;
   label: string;
   value: number;
+  tone?: keyof typeof STAT_TONES;
 }) {
   return (
-    <Link
-      href={href}
-      className={cn(
-        "rounded-2xl border border-border/80 bg-card p-3 text-center shadow-sm",
-        "hover:bg-muted/40 transition-colors"
-      )}
-    >
-      <div className="mx-auto mb-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+    <Link href={href} className="stat-card flex flex-col items-center gap-1.5 p-3.5">
+      <div
+        className={cn(
+          "flex h-10 w-10 items-center justify-center rounded-2xl",
+          STAT_TONES[tone]
+        )}
+      >
         {icon}
       </div>
-      <p className="text-lg font-semibold tabular-nums leading-none">{value}</p>
-      <p className="text-[11px] text-muted-foreground mt-1">{label}</p>
+      <p className="text-2xl font-bold tabular-nums leading-none">{value}</p>
+      <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
     </Link>
   );
 }

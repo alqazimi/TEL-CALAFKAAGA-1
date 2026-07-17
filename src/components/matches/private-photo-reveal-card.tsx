@@ -18,12 +18,9 @@ type RevealStatus = {
   hasPrivatePhotos?: boolean;
   canReveal?: boolean;
   remainingReveals?: number;
-  maxReveals?: number;
-  usedReveals?: number;
   unreaveledCount?: number;
   privatePhotoCount?: number;
   revealed?: Array<{ mediaId: string; url: string | null; revealedAt?: string }>;
-  isPremium?: boolean;
 };
 
 export function PrivatePhotoRevealCard({

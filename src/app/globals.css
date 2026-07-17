@@ -135,6 +135,59 @@ h3,
     var(--background);
 }
 
+/* Warm welcome banner on the member home feed (Muzz-style hero) */
+.member-hero {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  border-radius: 1.75rem;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.22), transparent 42%),
+    radial-gradient(circle at 88% 6%, rgba(201, 162, 39, 0.55), transparent 45%),
+    linear-gradient(135deg, #7a1520 0%, #a61b2b 46%, #c9324a 100%);
+  box-shadow: 0 18px 40px -18px rgba(122, 21, 32, 0.65);
+}
+
+.member-hero::after {
+  content: "";
+  position: absolute;
+  right: -60px;
+  bottom: -80px;
+  width: 220px;
+  height: 220px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.16), transparent 70%);
+  pointer-events: none;
+}
+
+.dark .member-hero {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.12), transparent 42%),
+    radial-gradient(circle at 88% 6%, rgba(212, 175, 55, 0.4), transparent 45%),
+    linear-gradient(135deg, #4d0d16 0%, #7a1520 50%, #a61b2b 100%);
+}
+
+/* Bold tappable stat card on the home feed */
+.stat-card {
+  position: relative;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--card) 94%, #fff6f6), var(--card));
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+
+.dark .stat-card {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--card) 88%, #2a1519), var(--card));
+}
+
 /* Soft marriage-app card glow used on home feed / match surfaces */
 .romance-card {
   background:

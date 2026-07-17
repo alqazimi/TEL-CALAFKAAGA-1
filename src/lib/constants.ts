@@ -349,42 +349,11 @@ export const FOOTER_MENU_LINKS = [
 
 export type AppNavIcon =
   | "LayoutDashboard"
-  | "User"
   | "ClipboardList"
   | "Heart"
   | "MessageCircle"
   | "Sparkles"
   | "Bell";
-
-/** App navigation — Home feed first, then Discover / Messages / Likes. Profile is in account menu. */
-export function getAppNavLinks(profileComplete = true) {
-  if (profileComplete) {
-    return [
-      { href: "/dashboard", label: "Home", mobileLabel: "Home", icon: "LayoutDashboard" as AppNavIcon, tab: true },
-      { href: "/matches", label: "Discover", icon: "Heart" as AppNavIcon, tab: true },
-      { href: "/chat", label: "Messages", icon: "MessageCircle" as AppNavIcon, tab: true },
-      { href: "/likes", label: "Likes", icon: "Sparkles" as AppNavIcon, tab: true },
-      { href: "/notifications", label: "Notifications", icon: "Bell" as AppNavIcon, tab: false },
-    ] as const;
-  }
-
-  return [
-    { href: "/dashboard", label: "Home", mobileLabel: "Home", icon: "LayoutDashboard" as AppNavIcon, tab: true },
-    { href: "/matches", label: "Matches", icon: "Heart" as AppNavIcon, tab: true, locked: true },
-    { href: "/chat", label: "Messages", icon: "MessageCircle" as AppNavIcon, tab: true, locked: true },
-    {
-      href: "/questionnaire",
-      label: "Complete profile",
-      mobileLabel: "Complete",
-      icon: "ClipboardList" as AppNavIcon,
-      tab: true,
-    },
-    { href: "/notifications", label: "Notifications", icon: "Bell" as AppNavIcon, tab: false },
-  ] as const;
-}
-
-export const APP_NAV_LINKS = getAppNavLinks(true);
-export const APP_MOBILE_TABS = APP_NAV_LINKS.filter((l) => l.tab);
 
 export const FAQ_ITEMS = [
   {

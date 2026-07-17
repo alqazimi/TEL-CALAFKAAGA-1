@@ -25,7 +25,6 @@ const iconMap = {
   MessageCircle,
   Sparkles,
   ClipboardList,
-  User,
 };
 
 type TabIcon = keyof typeof iconMap;
@@ -130,9 +129,7 @@ export function AppMobileNav() {
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch justify-around px-1">
-        {appNavLinks
-          .filter((link) => link.tab)
-          .map((link) => {
+        {appNavLinks.map((link) => {
           const Icon = iconMap[link.icon as TabIcon];
           const isActive =
             pathname === link.href ||
@@ -143,8 +140,7 @@ export function AppMobileNav() {
               pathname.startsWith("/questionnaire"));
           const isLocked = "locked" in link && link.locked && !profileComplete;
           const showProgressBadge =
-            !profileComplete &&
-            (link.href === "/questionnaire" || link.href === "/profile");
+            !profileComplete && link.href === "/questionnaire";
 
           return (
             <Link

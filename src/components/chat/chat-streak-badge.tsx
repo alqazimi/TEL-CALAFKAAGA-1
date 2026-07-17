@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 
 export type ChatStreakInfo = {
   count?: number;
-  longest?: number;
   atRisk?: boolean;
   youSentToday?: boolean;
   partnerSentToday?: boolean;
