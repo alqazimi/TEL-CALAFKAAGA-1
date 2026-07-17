@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { MediaModule } from "../media/media.module";
 import { PrismaModule } from "../prisma/prisma.module";
 import { QueueModule } from "../queue/queue.module";
+import { GeolocationService } from "./geolocation.service";
 import { PreferencesController } from "./preferences.controller";
 import { PreferencesService } from "./preferences.service";
 import { ProfileController } from "./profile.controller";
@@ -16,6 +17,7 @@ import { ScoreRecalcStub } from "./score-recalc.stub";
     ProfileService,
     PreferencesService,
     ProfilePhotosService,
+    GeolocationService,
     ScoreRecalcStub,
   ],
   exports: [

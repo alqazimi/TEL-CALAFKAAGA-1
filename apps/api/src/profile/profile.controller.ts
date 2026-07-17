@@ -19,6 +19,7 @@ import {
 import { CsrfGuard } from "../auth/csrf";
 import { ProfileService } from "./profile.service";
 import { ProfilePhotosService } from "./photos.service";
+import { GeolocationService } from "./geolocation.service";
 
 function parseBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body);
@@ -69,12 +70,19 @@ const reorderSchema = z.object({
   orderedMediaIds: z.array(z.string().uuid()).min(1).max(5),
 });
 
+const geolocationVerifySchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  accuracy: z.number().nonnegative().optional(),
+});
+
 @Controller("profile")
 @UseGuards(CsrfGuard)
 export class ProfileController {
   constructor(
     private readonly profiles: ProfileService,
-    private readonly photos: ProfilePhotosService
+    private readonly photos: ProfilePhotosService,
+    private readonly geolocation: GeolocationService
   ) {}
 
   @Get("me")
@@ -181,6 +189,17 @@ export class ProfileController {
     return {
       profile: await this.profiles.saveProfileEdits(user.id, parsed.data),
     };
+  }
+
+  @Post("geolocation/verify")
+  @HttpCode(200)
+  @RequireProfile()
+  async verifyGeolocation(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(geolocationVerifySchema, body);
+    return this.geolocation.verifyAndSaveLocation(user.id, parsed);
   }
 
   @Get("wali")

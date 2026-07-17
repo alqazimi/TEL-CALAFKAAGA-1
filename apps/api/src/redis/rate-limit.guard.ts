@@ -35,6 +35,9 @@ const LIMITS: Record<string, { ip?: LimitSpec; email?: LimitSpec; user?: LimitSp
   "profile.write": {
     user: { windowSec: 60, max: 60 },
   },
+  "profile.geocode": {
+    user: { windowSec: 60 * 60, max: 30 },
+  },
   "matches.action": {
     user: { windowSec: 60, max: 120 },
   },
@@ -156,6 +159,9 @@ export class RateLimitGuard implements CanActivate {
     if (path.includes("/auth/register")) return "auth.register";
     if (path.includes("/auth/forgot-password")) return "auth.forgot";
     if (path.includes("/auth/reset-password")) return "auth.reset";
+    if (method === "POST" && path.includes("/profile/geolocation/verify")) {
+      return "profile.geocode";
+    }
     if (
       method !== "GET" &&
       (path.startsWith("/profile") || path.startsWith("/preferences"))
