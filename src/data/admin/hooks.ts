@@ -45,6 +45,12 @@ export function useAdminBootstrapStatus(enabled: boolean) {
 
 export function useAdminStats(enabled: boolean) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const reload = useCallback(() => {
+    void apiAdmin
+      .stats()
+      .then((d) => setApiData(d))
+      .catch(() => setApiData(null));
+  }, []);
   useEffect(() => {
     if (!enabled) {
       setApiData(undefined);
@@ -63,7 +69,7 @@ export function useAdminStats(enabled: boolean) {
       c = true;
     };
   }, [enabled]);
-  return apiData;
+  return { stats: apiData, reload };
 }
 
 export function useAdminUsers(

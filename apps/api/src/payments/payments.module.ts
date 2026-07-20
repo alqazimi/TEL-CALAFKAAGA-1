@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { AuthModule } from "../auth/auth.module";
 import { ChatModule } from "../chat/chat.module";
@@ -8,6 +8,7 @@ import { ProfileModule } from "../profile/profile.module";
 import { QueueModule } from "../queue/queue.module";
 import { RedisModule } from "../redis/redis.module";
 import { RateLimitGuard } from "../redis/rate-limit.guard";
+import { AdminModule } from "../admin/admin.module";
 import { PaymentMailService } from "../mail/payment-mail.service";
 import {
   PaymentEmailQueueService,
@@ -33,6 +34,7 @@ import {
     QueueModule,
     ProfileModule,
     AuthModule,
+    forwardRef(() => AdminModule),
   ],
   controllers: [PaymentsController],
   providers: [

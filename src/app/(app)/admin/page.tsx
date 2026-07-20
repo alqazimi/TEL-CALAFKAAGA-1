@@ -151,10 +151,9 @@ export default function AdminPage() {
     | { hasAdmins?: boolean; canClaim?: boolean; reason?: string }
     | null
     | undefined;
-  const stats = useAdminStats(currentUser !== undefined && !!isStaff) as
-    | AdminStats
-    | null
-    | undefined;
+  const adminStatsQuery = useAdminStats(currentUser !== undefined && !!isStaff);
+  const stats = adminStatsQuery.stats as AdminStats | null | undefined;
+  const reloadStats = adminStatsQuery.reload;
   const {
     users,
     loadMore: loadMoreUsers,
@@ -682,7 +681,10 @@ export default function AdminPage() {
           <div className="space-y-8">
             <AdminEvcPaymentsPanel
               enabled={activeTab === "payments"}
-              onActionComplete={reloadUsers}
+              onActionComplete={() => {
+                reloadUsers();
+                reloadStats();
+              }}
             />
             <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{t("adminPage.paymentsShowingCompleted")}</p>

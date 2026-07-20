@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
 import { MediaModule } from "../media/media.module";
 import { PaymentsModule } from "../payments/payments.module";
@@ -34,7 +34,7 @@ import { AdminMiscController } from "./admin-misc.controller";
     RedisModule,
     AuthModule,
     QueueModule,
-    PaymentsModule,
+    forwardRef(() => PaymentsModule),
     MediaModule,
   ],
   controllers: [

@@ -192,12 +192,9 @@ export function AdminMembersPanel({
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
   const canApproveMember = (user: AdminUser) => {
-    if (isStaffRole(user.role) || !requiresAdminProfileApproval(user)) return false;
+    if (isStaffRole(user.role) || user.banned) return false;
     const review = resolveReviewStatus(user);
-    if (review === "approved" || review === "suspended") return false;
-    // Rejected members can always be re-approved after they fix their photo.
-    if (review === "rejected") return true;
-    return !!user.profileImageId && !!user.phone?.trim();
+    return review !== "approved" && review !== "suspended";
   };
 
   const canRejectMember = (user: AdminUser) => {
@@ -514,19 +511,14 @@ export function AdminMembersPanel({
                       </Button>
                     )}
 
-                    {requiresAdminProfileApproval(user) &&
-                      resolveReviewStatus(user) !== "approved" &&
-                      !isStaffRole(user.role) && (
+                    {!isStaffRole(user.role) &&
+                      resolveReviewStatus(user) !== "approved" && (
                       <Button
                         size="sm"
                         variant="outline"
                         className="h-9 rounded-lg"
                         disabled={busy || !canApproveMember(user)}
-                        title={
-                          canApproveMember(user)
-                            ? t("adminPage.approveUser")
-                            : t("adminPage.approveIncomplete")
-                        }
+                        title={t("adminPage.approveUser")}
                         onClick={() =>
                           void runAction(
                             user._id,

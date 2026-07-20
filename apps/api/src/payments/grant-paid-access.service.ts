@@ -55,6 +55,8 @@ export class GrantPaidAccessService {
       notify?: boolean;
       sourceKey: string;
       paymentId: string;
+      /** When true (admin EVC approve), member is fully approved immediately. */
+      forceProfileApproval?: boolean;
     }
   ): Promise<{ notified: boolean }> {
     const profile = await tx.profile.findUnique({
@@ -62,13 +64,18 @@ export class GrantPaidAccessService {
     });
     if (!profile) return { notified: false };
 
+    const fullyApproved =
+      args.forceProfileApproval === true ||
+      args.isPremium ||
+      profile.gender === "male";
+
     await tx.profile.update({
       where: { id: profile.id },
       data: {
         hasPaid: true,
         genderLocked: true,
         ...(args.isPremium ? { hasPersonalSupport: true } : {}),
-        ...(args.isPremium || profile.gender === "male"
+        ...(fullyApproved
           ? {
               approved: true,
               reviewStatus: "approved" as const,
@@ -101,9 +108,9 @@ export class GrantPaidAccessService {
       ? args.isUpgrade
         ? "Your premium plan is active. WhatsApp support and match-search help are ready."
         : "Your registration and personal support plan are active. Browse matches from your dashboard."
-      : profile.gender === "female"
-        ? "Payment received. An admin will review your profile shortly — you will be notified when matches unlock."
-        : "Your registration is complete. Browse matches from your dashboard.";
+      : fullyApproved
+        ? "Your registration is complete. Browse matches from your dashboard."
+        : "Payment received. An admin will review your profile shortly — you will be notified when matches unlock.";
 
     const notifSource = `payment:${args.sourceKey}`;
     let notification = null;
@@ -155,6 +162,7 @@ export class GrantPaidAccessService {
     fulfillmentKey: string;
     matchId?: string | null;
     notify?: boolean;
+    forceProfileApproval?: boolean;
   }): Promise<{ alreadyCompleted: boolean; payment: Payment }> {
     const result = await this.prisma.$transaction(async (tx) => {
       const payment = await tx.payment.findUnique({
@@ -201,6 +209,7 @@ export class GrantPaidAccessService {
         notify: shouldNotify,
         sourceKey: args.fulfillmentKey,
         paymentId: payment.id,
+        forceProfileApproval: args.forceProfileApproval,
       });
 
       const planType =

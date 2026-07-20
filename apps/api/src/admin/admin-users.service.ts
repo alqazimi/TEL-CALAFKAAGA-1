@@ -14,7 +14,6 @@ import {
   isStaffRole,
 } from "../common/access";
 import { requiresAdminProfileApproval } from "../common/review-status";
-import { assertProfileFullyComplete } from "../profile/profile-completeness";
 import { ScoreQueueService } from "../queue/score-queue.service";
 import { NotificationQueueService } from "../queue/notification-queue.service";
 import { MAIL_ADAPTER } from "../auth/auth.service";
@@ -362,19 +361,16 @@ export class AdminUsersService {
     });
     if (!profile) throw new NotFoundException("Profile not found");
 
-    if (!requiresAdminProfileApproval(profile)) {
-      throw new BadRequestException(
-        profile.gender === "male"
-          ? "Men are approved automatically when they pay. Admin approval is only for women on Basic."
-          : profile.hasPaid !== true
-            ? "This member must pay Basic before you can approve their profile."
-            : "This member does not need admin approval."
-      );
+    if (isStaffRole(profile.role)) {
+      throw new BadRequestException("Staff accounts cannot be approved here.");
+    }
+    if (profile.banned) {
+      throw new BadRequestException("Unban the member before approving.");
     }
 
     if (
       profile.reviewStatus === "approved" ||
-      (profile.approved && !profile.reviewStatus)
+      (profile.approved && profile.reviewStatus !== "rejected")
     ) {
       if (profile.reviewStatus !== "approved") {
         await this.prisma.profile.update({
@@ -385,39 +381,12 @@ export class AdminUsersService {
       return { ok: true, alreadyApproved: true };
     }
 
-    const preferences = await this.prisma.preference.findUnique({
-      where: { userId: profile.userId },
-    });
-
-    if (profile.reviewStatus === "rejected") {
-      if (!profile.profileImageMediaId && !profile.profileImageConvexId) {
-        throw new BadRequestException(
-          "Member must upload a profile photo before you can approve."
-        );
-      }
-      if (!profile.questionnaireComplete) {
-        throw new BadRequestException(
-          "Member must finish the questionnaire before you can approve."
-        );
-      }
-    } else {
-      try {
-        assertProfileFullyComplete(profile, preferences);
-      } catch (e) {
-        throw new BadRequestException(
-          e instanceof Error ? e.message : "Profile incomplete"
-        );
-      }
-    }
-
     await this.prisma.profile.update({
       where: { id: profileId },
       data: {
         approved: true,
         verified: false,
         reviewStatus: "approved",
-        questionnaireComplete: true,
-        questionnaireStep: 11,
       },
     });
 

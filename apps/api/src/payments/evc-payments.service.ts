@@ -1,9 +1,11 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
+  forwardRef,
 } from "@nestjs/common";
 import {
   HeadObjectCommand,
@@ -20,6 +22,7 @@ import { MediaAccessService } from "../media/media-access.service";
 import { ChatRealtimeService } from "../chat/chat-realtime.service";
 import { PaymentMailService } from "../mail/payment-mail.service";
 import { GrantPaidAccessService } from "./grant-paid-access.service";
+import { MetricsService } from "../admin/metrics.service";
 import {
   amountForEvcTier,
   PREMIUM_UPGRADE_AMOUNT_CENTS,
@@ -42,7 +45,9 @@ export class EvcPaymentsService {
     private readonly media: MediaAccessService,
     private readonly grant: GrantPaidAccessService,
     private readonly mail: PaymentMailService,
-    private readonly realtime: ChatRealtimeService
+    private readonly realtime: ChatRealtimeService,
+    @Inject(forwardRef(() => MetricsService))
+    private readonly metrics: MetricsService
   ) {
     const endpoint =
       this.config.get<string>("S3_ENDPOINT") ?? "http://127.0.0.1:9000";
@@ -375,6 +380,7 @@ export class EvcPaymentsService {
       paymentId: payment.id,
       source: "evc",
       fulfillmentKey: `evc:${proof.id}`,
+      forceProfileApproval: true,
     });
 
     await this.prisma.evcPaymentProof.update({
@@ -404,6 +410,8 @@ export class EvcPaymentsService {
         }),
       },
     });
+
+    await this.metrics.scheduleRebuild();
 
     return { ok: true as const };
   }

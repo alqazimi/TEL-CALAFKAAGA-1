@@ -149,7 +149,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser, onActionC
   const canApproveDetail =
     !!detail?.profile &&
     canModerate &&
-    requiresAdminProfileApproval(detail.profile) &&
+    !detail.profile.banned &&
     review !== "approved" &&
     review !== "suspended";
 
