@@ -101,8 +101,9 @@ export function isLifestyleComplete(profile: Profile): boolean {
   return substanceOk && !!profile.exercise;
 }
 
-export function isPhotoComplete(profile: Profile): boolean {
-  return !!profile.profileImageId;
+export function isPhotoComplete(_profile: Profile): boolean {
+  // Photo is optional — never blocks profile readiness.
+  return true;
 }
 
 export function isContactComplete(profile: Profile): boolean {

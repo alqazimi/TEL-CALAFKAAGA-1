@@ -630,8 +630,8 @@ const UI_TEXT = {
   // Photo step
   photoTitle: { en: "Profile Photo", so: "Sawirka Profile-ka" },
   photoStepDesc: {
-    en: "A photo is required. Other members will see it when browsing matches.",
-    so: "Sawir waa lagama maarmaan. Xubnaha kale ayaa arki doona markay eegayaan kuwa ku habboon.",
+    en: "A photo is optional, but recommended. Other members will see it when browsing matches.",
+    so: "Sawirku waa ikhtiyaari, laakiin waa la soo jeedinayaa. Xubnaha kale ayaa arki doona markay eegayaan kuwa ku habboon.",
   },
   chooseImageError: {
     en: "Please choose an image file.",
@@ -649,13 +649,17 @@ const UI_TEXT = {
     en: "Please upload a profile photo before continuing.",
     so: "Fadlan soo geli sawir profile ah ka hor intaadan sii wadin.",
   },
+  continueWithoutPhoto: {
+    en: "Continue without photo",
+    so: "Sii wad sawir la'aan",
+  },
   uploadYourPhoto: {
-    en: "Upload your profile picture",
-    so: "Soo geli sawirkaaga profile-ka",
+    en: "Add a profile picture (optional)",
+    so: "Ku dar sawir profile (ikhtiyaari)",
   },
   photoHelp: {
-    en: "Use a clear, recent photo of yourself. This helps serious matches recognize you.",
-    so: "Isticmaal sawir cad oo dhow oo adiga ah. Tani waxay ka caawinaysaa kuwa dhab ah inay ku aqoonsadaan.",
+    en: "A clear, recent photo of yourself helps serious matches recognize you. You can skip and add one later.",
+    so: "Sawir cad oo dhow oo adiga ah wuxuu ka caawiyaa kuwa dhab ah inay ku aqoonsadaan. Waad ka boodi kartaa oo aad ku dari kartaa hadhow.",
   },
   uploading: { en: "Uploading...", so: "Waa la soo gelinayaa..." },
   changePhoto: { en: "Change Photo", so: "Beddel Sawirka" },

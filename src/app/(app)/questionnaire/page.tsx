@@ -320,11 +320,6 @@ export default function QuestionnairePage() {
   };
 
   const handlePhotoContinue = async () => {
-    if (!profile?.profileImageId) {
-      toast.error(ui("photoRequiredContinue"));
-      return;
-    }
-
     try {
       if (!isEditMode) {
         await updateQuestionnaire({ step: STEPS.length, data: {} });

@@ -119,16 +119,6 @@ export function QuestionnaireReview({
       }
     }
 
-    const hasPhoto = !!(
-      latestProfile.profileImageId ||
-      (latestProfile as Profile & { imageUrl?: string | null }).imageUrl
-    );
-    if (!hasPhoto) {
-      toast.error(ui("photoRequired"));
-      onEditStep(PHOTO_STEP_INDEX);
-      return;
-    }
-
     const incompleteStep = firstIncompleteStep(
       latestProfile,
       latestPreferences

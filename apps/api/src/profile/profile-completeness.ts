@@ -122,14 +122,6 @@ function isContactComplete(profile: ProfileLike): boolean {
   );
 }
 
-function isPhotoComplete(profile: ProfileLike): boolean {
-  return !!(
-    profile.profileImageId ||
-    profile.profileImageMediaId ||
-    profile.profileImageConvexId
-  );
-}
-
 function isPreferencesComplete(profile: ProfileLike, prefs: PrefsLike): boolean {
   if (!prefs) return false;
   const childrenOk =
@@ -181,9 +173,7 @@ export function getProfileIncompleteReason(
   if (!isContactComplete(profile)) {
     return "Profile is incomplete: full name and valid phone number are required.";
   }
-  if (!isPhotoComplete(profile)) {
-    return "Profile is incomplete: a profile photo is required.";
-  }
+  // Profile photo is optional — members can complete without one.
   return null;
 }
 

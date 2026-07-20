@@ -230,6 +230,26 @@ describe("questionnaire completion validation", () => {
     );
   });
 
+  it("allows completing without a profile photo", () => {
+    const withoutPhoto = {
+      ...completeFemale,
+      profileImageMediaId: null,
+      profileImageConvexId: null,
+      profileImageId: null,
+    };
+    assert.equal(
+      getProfileIncompleteReason(withoutPhoto, {
+        minAge: 25,
+        maxAge: 40,
+        minHeight: 160,
+        maxHeight: 190,
+        educationLevel: "Bachelor",
+        acceptChildren: "No",
+      }),
+      null
+    );
+  });
+
   it("requires partnerHijabLevel for male preferences", () => {
     const male = {
       ...completeFemale,

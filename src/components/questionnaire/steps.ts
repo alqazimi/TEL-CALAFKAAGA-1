@@ -326,7 +326,7 @@ const CONTACT_STEP: StepConfig = {
 const PROFILE_PHOTO_STEP: StepConfig = {
   id: 10,
   title: "Profile Photo",
-  description: "Upload a clear photo — matches will see this on your profile",
+  description: "Optional — a clear photo helps matches recognize you",
   phase: "photo",
   fields: [],
 };

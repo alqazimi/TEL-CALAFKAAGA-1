@@ -144,10 +144,6 @@ export class ScoreService {
         approved: true,
         reviewStatus: "approved",
         userId: { not: userId },
-        OR: [
-          { profileImageMediaId: { not: null } },
-          { profileImageConvexId: { not: null } },
-        ],
       },
       orderBy: { id: "asc" },
       skip: cursor,

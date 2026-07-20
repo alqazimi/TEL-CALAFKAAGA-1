@@ -55,10 +55,6 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
   };
 
   const handleContinue = () => {
-    if (!hasPhoto) {
-      toast.error(ui("photoRequiredContinue"));
-      return;
-    }
     onSubmit();
   };
 
@@ -141,50 +137,44 @@ export function QuestionnairePhotoStep({ profile, onSubmit }: QuestionnairePhoto
       */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/80 bg-background/95 backdrop-blur-md px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-xl space-y-3">
-          {!hasPhoto ? (
-            <ImageFileHitArea
-              disabled={uploading}
-              aria-label={ui("uploadPhotoAria")}
-              onChange={(e) => void handleImageUpload(e)}
-              className="w-full rounded-2xl bg-primary text-primary-foreground shadow-md"
+          <Button
+            onClick={handleContinue}
+            className="w-full h-14 min-h-14 rounded-2xl text-lg font-semibold"
+            size="lg"
+            disabled={uploading}
+          >
+            {hasPhoto ? ui("submitAndReview") : ui("continueWithoutPhoto")}
+          </Button>
+          <ImageFileHitArea
+            disabled={uploading}
+            aria-label={ui("uploadPhotoAria")}
+            onChange={(e) => void handleImageUpload(e)}
+            className={
+              hasPhoto
+                ? "w-full rounded-2xl border border-input bg-background"
+                : "w-full rounded-2xl bg-primary text-primary-foreground shadow-md"
+            }
+          >
+            <span
+              className={
+                hasPhoto
+                  ? "flex h-12 w-full items-center justify-center gap-2 px-6 text-sm font-medium"
+                  : "flex h-14 w-full items-center justify-center gap-2 px-6 text-lg font-semibold"
+              }
             >
-              <span className="flex h-14 w-full items-center justify-center gap-2 px-6 text-lg font-semibold">
-                {uploading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    {ui("uploading")}
-                  </>
-                ) : (
-                  <>
-                    <Camera className="h-5 w-5" />
-                    {ui("choosePhoto")}
-                  </>
-                )}
-              </span>
-            </ImageFileHitArea>
-          ) : (
-            <>
-              <Button
-                onClick={handleContinue}
-                className="w-full h-14 min-h-14 rounded-2xl text-lg font-semibold"
-                size="lg"
-                disabled={uploading}
-              >
-                {ui("submitAndReview")}
-              </Button>
-              <ImageFileHitArea
-                disabled={uploading}
-                aria-label={ui("uploadPhotoAria")}
-                onChange={(e) => void handleImageUpload(e)}
-                className="w-full rounded-2xl border border-input bg-background"
-              >
-                <span className="flex h-12 w-full items-center justify-center gap-2 px-6 text-sm font-medium">
-                  <Camera className="h-4 w-4" />
-                  {ui("changePhoto")}
-                </span>
-              </ImageFileHitArea>
-            </>
-          )}
+              {uploading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  {ui("uploading")}
+                </>
+              ) : (
+                <>
+                  <Camera className={hasPhoto ? "h-4 w-4" : "h-5 w-5"} />
+                  {hasPhoto ? ui("changePhoto") : ui("choosePhoto")}
+                </>
+              )}
+            </span>
+          </ImageFileHitArea>
         </div>
       </div>
     </div>
