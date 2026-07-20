@@ -14,63 +14,69 @@ function getCanonicalSiteUrl() {
 }
 
 /**
- * Google site name + Organization — render once on the homepage.
- * Prefer a short, stable brand name (not domain, not slogan).
+ * Google Search "site name" preference (the brand line above the URL).
+ * Goal: show "Hel Calafkaaga", NOT "helcalafkaaga.com".
+ *
+ * Google treats this as a suggestion — if confidence is low it falls back
+ * to the domain. Follow official order: preferred name first, domain last.
  * @see https://developers.google.com/search/docs/appearance/site-names
- * Logo: dynamically generated at /logo (512×512).
  */
 export function SiteJsonLd() {
   const siteUrl = getCanonicalSiteUrl();
   const siteOrigin = siteUrl.replace(/\/$/, "");
   const logoUrl = `${siteOrigin}/logo`;
+  const domainFallback = "helcalafkaaga.com";
 
-  const structuredData = {
+  // WebSite block matches Google's site-name example closely (not only @graph).
+  const websiteLd = {
     "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebSite",
-        "@id": `${siteOrigin}/#website`,
-        name: SITE_BRAND_NAME,
-        alternateName: [
-          "Hel Calafkaaga",
-          "HelCalafkaaga",
-          "helcalafkaaga",
-          "hel calafkaaga",
-        ],
-        url: siteUrl,
-        description: HOME_OG_DESCRIPTION,
-        inLanguage: ["so", "en"],
-        publisher: { "@id": `${siteOrigin}/#organization` },
-      },
-      {
-        "@type": "Organization",
-        "@id": `${siteOrigin}/#organization`,
-        name: SITE_BRAND_NAME,
-        alternateName: ["HelCalafkaaga", "helcalafkaaga"],
-        url: siteUrl,
-        logo: {
-          "@type": "ImageObject",
-          url: logoUrl,
-          width: 512,
-          height: 512,
-        },
-        image: logoUrl,
-        email: SUPPORT_EMAIL,
-        description: HOME_OG_DESCRIPTION,
-        contactPoint: {
-          "@type": "ContactPoint",
-          contactType: "customer support",
-          telephone: WHATSAPP_DISPLAY,
-          availableLanguage: ["Somali", "English"],
-        },
-      },
-    ],
+    "@type": "WebSite",
+    name: SITE_BRAND_NAME,
+    alternateName: ["HelCalafkaaga", domainFallback],
+    url: siteUrl,
+    description: HOME_OG_DESCRIPTION,
+    inLanguage: ["so", "en"],
+    publisher: {
+      "@type": "Organization",
+      name: SITE_BRAND_NAME,
+      url: siteUrl,
+      logo: logoUrl,
+    },
+  };
+
+  const organizationLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: SITE_BRAND_NAME,
+    alternateName: ["HelCalafkaaga", domainFallback],
+    url: siteUrl,
+    logo: {
+      "@type": "ImageObject",
+      url: logoUrl,
+      width: 512,
+      height: 512,
+    },
+    image: logoUrl,
+    email: SUPPORT_EMAIL,
+    description: HOME_OG_DESCRIPTION,
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      telephone: WHATSAPP_DISPLAY,
+      availableLanguage: ["Somali", "English"],
+    },
   };
 
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationLd) }}
+      />
+    </>
   );
 }
