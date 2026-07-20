@@ -44,6 +44,8 @@
     "staging:validate-counts": "tsx scripts/staging/validate-counts.ts",
     "staging:load-smoke": "node scripts/staging/load-smoke.mjs",
     "staging:seed-users": "tsx scripts/staging/seed-staging-test-users.ts",
+    "staging:purge-synthetic": "tsx scripts/staging/purge-synthetic-test-users.ts",
+    "staging:purge-production": "bash scripts/staging/run-purge-production.sh",
     "staging:local-smoke": "bash scripts/staging/run-local-staging-smoke.sh",
     "staging:prepare-snapshot": "tsx scripts/staging/prepare-staging-snapshot.ts",
     "staging:clone-db": "bash scripts/staging/clone-local-to-staging-db.sh",

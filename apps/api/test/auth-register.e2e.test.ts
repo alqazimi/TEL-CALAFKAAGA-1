@@ -14,6 +14,7 @@ import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { PrismaClient } from "@prisma/client";
 import cookieParser from "cookie-parser";
+import { assertSafeSyntheticTestDatabase } from "./safe-test-database";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -30,6 +31,7 @@ describe("Phase 11 auth register HTTP e2e", () => {
   let userId = "";
 
   before(async () => {
+    assertSafeSyntheticTestDatabase(DATABASE_URL);
     process.env.DATABASE_URL = DATABASE_URL;
     process.env.SESSION_SECRET ??= "hel_dev_session_secret_change_me_32";
     process.env.MAIL_DRIVER = "console";

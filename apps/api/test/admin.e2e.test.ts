@@ -14,6 +14,7 @@ import { Test } from "@nestjs/testing";
 import { PrismaClient } from "@prisma/client";
 import cookieParser from "cookie-parser";
 import { hashPasswordPreferred } from "../src/auth/password";
+import { assertSafeSyntheticTestDatabase } from "./safe-test-database";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -121,6 +122,7 @@ describe("Phase 9 admin e2e", () => {
   const cleanupIds: string[] = [];
 
   before(async () => {
+    assertSafeSyntheticTestDatabase(DATABASE_URL);
     process.env.DATABASE_URL = DATABASE_URL;
     process.env.REDIS_URL ??= "redis://127.0.0.1:6379";
     process.env.SESSION_SECRET ??= "hel_dev_session_secret_change_me_32";

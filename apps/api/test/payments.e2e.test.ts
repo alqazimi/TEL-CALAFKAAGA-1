@@ -18,6 +18,7 @@ import {
   FakeStripeGateway,
   STRIPE_GATEWAY,
 } from "../src/payments/stripe.gateway";
+import { assertSafeSyntheticTestDatabase } from "./safe-test-database";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -112,6 +113,7 @@ describe("Phase 8 payments e2e", () => {
   const quarantinedBefore = { count: 0 };
 
   before(async () => {
+    assertSafeSyntheticTestDatabase(DATABASE_URL);
     process.env.DATABASE_URL = DATABASE_URL;
     process.env.REDIS_URL ??= "redis://127.0.0.1:6379";
     process.env.SESSION_SECRET ??= "hel_dev_session_secret_change_me_32";

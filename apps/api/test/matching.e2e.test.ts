@@ -16,6 +16,7 @@ import { PrismaClient } from "@prisma/client";
 import cookieParser from "cookie-parser";
 import { hashPasswordPreferred } from "../src/auth/password";
 import { makePairKey } from "../src/matching/constants";
+import { assertSafeSyntheticTestDatabase } from "./safe-test-database";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -142,6 +143,7 @@ describe("Phase 6 matching HTTP e2e", () => {
   let matchId = "";
 
   before(async () => {
+    assertSafeSyntheticTestDatabase(DATABASE_URL);
     process.env.DATABASE_URL = DATABASE_URL;
     process.env.SESSION_SECRET ??= "hel_dev_session_secret_change_me_32";
     process.env.REDIS_URL ??= "redis://127.0.0.1:6379";

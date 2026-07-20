@@ -20,6 +20,7 @@ import { AdminUsersService } from "./admin-users.service";
 import { ConsoleMailAdapter } from "../auth/mail.adapter";
 import { isStaffRole } from "../common/access";
 import { requiresAdminProfileApproval } from "../common/review-status";
+import { assertSafeSyntheticTestDatabase } from "../../test/safe-test-database";
 
 const DATABASE_URL =
   process.env.DATABASE_URL ??
@@ -155,6 +156,7 @@ describe("Phase 9 admin unit tests", () => {
   let announcements: AnnouncementsService;
 
   before(async () => {
+    assertSafeSyntheticTestDatabase(DATABASE_URL);
     process.env.DATABASE_URL = DATABASE_URL;
     prisma = new PrismaClient();
     audit = new AuditLogService(prisma as never);

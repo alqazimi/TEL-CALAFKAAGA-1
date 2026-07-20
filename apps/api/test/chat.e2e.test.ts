@@ -17,6 +17,7 @@ import cookieParser from "cookie-parser";
 import { io as ioClient, type Socket } from "socket.io-client";
 import { hashPasswordPreferred } from "../src/auth/password";
 import { RedisIoAdapter } from "../src/chat/redis-io.adapter";
+import { assertSafeSyntheticTestDatabase } from "./safe-test-database";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -130,6 +131,7 @@ describe("Phase 7 chat e2e", () => {
   const emailOut = `phase7.o.${randomUUID().slice(0, 8)}@hel.local`;
 
   before(async () => {
+    assertSafeSyntheticTestDatabase(DATABASE_URL);
     process.env.DATABASE_URL = DATABASE_URL;
     process.env.REDIS_URL = REDIS_URL;
     process.env.SESSION_SECRET ??= "hel_dev_session_secret_change_me_32";
