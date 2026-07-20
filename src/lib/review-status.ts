@@ -39,12 +39,24 @@ export function resolveReviewStatus(profile: ReviewProfile | null | undefined): 
   if (profile.banned) return "suspended";
   if (isStaffRole(profile.role)) return "approved";
 
-  // Unpaid members stay incomplete until Stripe payment (no free trial).
+  // Honor explicit admin approval before payment / completeness heuristics.
+  if (profile.reviewStatus === "approved" || profile.approved === true) {
+    return "approved";
+  }
+
+  if (
+    profile.reviewStatus === "rejected" ||
+    profile.reviewStatus === "suspended"
+  ) {
+    return profile.reviewStatus;
+  }
+
+  // Unpaid members stay incomplete until payment (unless admin approved above).
   if (profile.questionnaireComplete && profile.hasPaid !== true) {
     return "incomplete";
   }
 
-  // Men are not in the admin review queue — approved only after Stripe payment.
+  // Men awaiting payment show incomplete until paid (unless admin approved above).
   if (
     profile.gender === "male" &&
     profile.questionnaireComplete &&
@@ -60,13 +72,11 @@ export function resolveReviewStatus(profile: ReviewProfile | null | undefined): 
 
   if (
     profile.reviewStatus === "incomplete" ||
-    profile.reviewStatus === "pending_review" ||
-    profile.reviewStatus === "approved" ||
-    profile.reviewStatus === "rejected" ||
-    profile.reviewStatus === "suspended"
+    profile.reviewStatus === "pending_review"
   ) {
     return profile.reviewStatus;
   }
+
   if (profile.approved && profile.questionnaireComplete) return "approved";
   if (profile.questionnaireComplete) return "pending_review";
   return "incomplete";

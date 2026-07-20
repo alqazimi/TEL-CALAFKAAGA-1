@@ -394,6 +394,13 @@ export function useAdminRejectEvc() {
 
 export function useAdminUserDetail(profileId: string | null, enabled: boolean) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const reload = useCallback(() => {
+    if (!profileId) return;
+    void apiAdmin.users
+      .detail(profileId)
+      .then((d) => setApiData(d))
+      .catch(() => setApiData(null));
+  }, [profileId]);
   useEffect(() => {
     if (!enabled || !profileId) {
       setApiData(undefined);
@@ -412,7 +419,7 @@ export function useAdminUserDetail(profileId: string | null, enabled: boolean) {
       c = true;
     };
   }, [enabled, profileId]);
-  return apiData;
+  return { detail: apiData, reload };
 }
 
 export function useAdminUserActivity(

@@ -94,7 +94,11 @@ function DetailGrid({
 
 export function AdminUserDetailPanel({ profileId, onClose, onOpenUser, onActionComplete }: AdminUserDetailPanelProps) {
   const { t } = useTranslation();
-  const detail = useAdminUserDetail(profileId, true) as any;
+  const { detail: detailRaw, reload: reloadDetail } = useAdminUserDetail(
+    profileId,
+    true
+  );
+  const detail = detailRaw as any;
   const activityRaw = useAdminUserActivity(profileId, true);
   const activity = (() => {
     if (!activityRaw || typeof activityRaw !== "object") return activityRaw as any;
@@ -150,6 +154,8 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser, onActionC
     !!detail?.profile &&
     canModerate &&
     !detail.profile.banned &&
+    detail.profile.approved !== true &&
+    detail.profile.reviewStatus !== "approved" &&
     review !== "approved" &&
     review !== "suspended";
 
@@ -158,6 +164,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser, onActionC
     try {
       await approveUser(profileId);
       toast.success(t("adminPage.approveSuccess"));
+      reloadDetail();
       onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));

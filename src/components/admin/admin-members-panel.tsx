@@ -69,6 +69,14 @@ type PendingConfirm = {
   user: AdminUser;
 };
 
+function isMemberApproved(user: AdminUser): boolean {
+  return (
+    user.approved === true ||
+    user.reviewStatus === "approved" ||
+    resolveReviewStatus(user) === "approved"
+  );
+}
+
 function isPremiumUser(user: AdminUser) {
   return user.hasPersonalSupport === true || (user.paidCents ?? 0) >= 2000;
 }
@@ -192,9 +200,10 @@ export function AdminMembersPanel({
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
   const canApproveMember = (user: AdminUser) => {
-    if (isStaffRole(user.role) || user.banned) return false;
-    const review = resolveReviewStatus(user);
-    return review !== "approved" && review !== "suspended";
+    if (isStaffRole(user.role) || user.banned || isMemberApproved(user)) {
+      return false;
+    }
+    return true;
   };
 
   const canRejectMember = (user: AdminUser) => {
@@ -511,8 +520,7 @@ export function AdminMembersPanel({
                       </Button>
                     )}
 
-                    {!isStaffRole(user.role) &&
-                      resolveReviewStatus(user) !== "approved" && (
+                    {!isStaffRole(user.role) && !isMemberApproved(user) && (
                       <Button
                         size="sm"
                         variant="outline"

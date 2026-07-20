@@ -43,6 +43,17 @@ export function resolveReviewStatus(profile: ReviewProfile): ReviewStatus {
   if (profile.banned) return "suspended";
   if (isStaffRole(profile.role)) return "approved";
 
+  if (profile.reviewStatus === "approved" || profile.approved === true) {
+    return "approved";
+  }
+
+  if (
+    profile.reviewStatus === "rejected" ||
+    profile.reviewStatus === "suspended"
+  ) {
+    return profile.reviewStatus;
+  }
+
   if (
     profile.questionnaireComplete &&
     profile.hasPaid !== true &&
@@ -65,10 +76,7 @@ export function resolveReviewStatus(profile: ReviewProfile): ReviewStatus {
 
   if (
     profile.reviewStatus === "incomplete" ||
-    profile.reviewStatus === "pending_review" ||
-    profile.reviewStatus === "approved" ||
-    profile.reviewStatus === "rejected" ||
-    profile.reviewStatus === "suspended"
+    profile.reviewStatus === "pending_review"
   ) {
     return profile.reviewStatus;
   }
