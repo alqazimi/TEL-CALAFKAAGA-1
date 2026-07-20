@@ -31,11 +31,6 @@ import {
   encodeMessageCursor,
   sanitizeMessageBody,
 } from "./chat.constants";
-import {
-  applyPhotoStreakContribution,
-  normalizePhotoStreak,
-  viewPhotoStreak,
-} from "./photo-streak";
 import { TypingService } from "./typing.service";
 import { bumpUnread, readUnreadCount, zeroUnread } from "./unread";
 
@@ -217,11 +212,6 @@ export class ConversationService {
         }
       }
 
-      const streakState = conversation
-        ? normalizePhotoStreak(conversation)
-        : normalizePhotoStreak({});
-      const streak = viewPhotoStreak(streakState, userId, otherId);
-
       items.push({
         matchId: m.id,
         conversationId: conversation?.id ?? null,
@@ -244,7 +234,6 @@ export class ConversationService {
         lastMessageAt: conversation?.lastMessageAt?.toISOString() ?? null,
         unreadCount,
         score: m.score,
-        streak,
       });
     }
 
@@ -603,30 +592,11 @@ export class ConversationService {
           1
         );
 
-        const streakPatch = imageMediaId
-          ? (() => {
-              const next = applyPhotoStreakContribution(
-                normalizePhotoStreak(conv),
-                userId,
-                otherId,
-                now
-              );
-              return {
-                streakCount: next.streakCount,
-                longestStreak: next.longestStreak,
-                streakLastDay: next.streakLastDay,
-                streakPendingDay: next.streakPendingDay,
-                streakPendingUserIds: next.streakPendingUserIds,
-              };
-            })()
-          : {};
-
         await tx.conversation.update({
           where: { id: conversationId },
           data: {
             lastMessageAt: now,
             unreadByUser,
-            ...streakPatch,
           },
         });
 

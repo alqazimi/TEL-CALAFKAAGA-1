@@ -29,7 +29,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
-import { ChatStreakBadge } from "@/components/chat/chat-streak-badge";
 import { PrivatePhotoRevealCard } from "@/components/matches/private-photo-reveal-card";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
@@ -435,7 +434,6 @@ export default function ChatPage() {
                             )}
                           </p>
                           <div className="flex items-center gap-1 shrink-0">
-                            <ChatStreakBadge streak={conv.streak} compact />
                             {conv.unreadCount > 0 && (
                               <Badge className="text-[10px] h-5 min-w-5 px-1.5">
                                 {conv.unreadCount}
@@ -486,9 +484,6 @@ export default function ChatPage() {
                       <p className="font-bold text-sm truncate">
                         {activeConv.profile?.name}
                       </p>
-                      {activeConv.chatUnlocked && (
-                        <ChatStreakBadge streak={activeConv.streak} />
-                      )}
                     </div>
                     {activeConv.profile && (
                       <TrustBadges profile={activeConv.profile} size="sm" className="mt-1" />
@@ -497,14 +492,6 @@ export default function ChatPage() {
                       <p className="text-xs text-muted-foreground mt-1">{t("chatPage.locked")}</p>
                     ) : isTyping ? (
                       <p className="text-xs text-primary mt-1">{t("chatPage.typing")}</p>
-                    ) : activeConv.streak?.atRisk ||
-                      (activeConv.streak &&
-                        !activeConv.streak.youSentToday &&
-                        (activeConv.streak.count > 0 ||
-                          activeConv.streak.partnerSentToday)) ? (
-                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                        {t("chatPage.streakSendPhoto")}
-                      </p>
                     ) : null}
                   </div>
                   {activeConv.profile?.userId && (

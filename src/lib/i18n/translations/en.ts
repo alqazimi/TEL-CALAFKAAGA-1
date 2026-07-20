@@ -1459,11 +1459,6 @@ export const en = {
     unarchive: "Restore",
     archivedEmpty: "No archived matches",
     newEmpty: "No new matches",
-    streakDays: "{{count}}-day streak",
-    streakStart: "Start streak",
-    streakHint: "Send a photo every day together to keep your streak.",
-    streakSendPhoto: "Send a photo today to keep your streak alive",
-    streakSafeToday: "You both sent photos today — streak is safe",
   },
   safety: {
     reportOrBlock: "Report / Block",

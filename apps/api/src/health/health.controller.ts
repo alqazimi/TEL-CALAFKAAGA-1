@@ -99,7 +99,6 @@ export class HealthController {
       adminActivity: "likes-arrays",
       homeFeed: "daily-match-liked-you",
       privateReveal: "one-time-match",
-      photoStreak: "daily-mutual-chat-photo",
       corsOrigins: resolveCorsOrigins(),
       database,
       redis,

@@ -1469,12 +1469,6 @@ export const so: Translations = {
     unarchive: "Soo celi",
     archivedEmpty: "Ma jiraan isbarbardhigyo kaydsan",
     newEmpty: "Ma jiraan isbarbardhigyo cusub",
-    streakDays: "{{count}} maalmood oo isku xigta",
-    streakStart: "Bilow streak",
-    streakHint:
-      "Maalin walba labadiinaba sawir u soo dira si aad u ilaalyaan streak-ka.",
-    streakSendPhoto: "Maanta sawir u dir si aad u ilaaliso streak-ka",
-    streakSafeToday: "Labadiinuba maanta sawir ayaad dirtay — streak-ku waa ammaan",
   },
   safety: {
     reportOrBlock: "Soo sheeg / Jooji",

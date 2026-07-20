@@ -109,15 +109,6 @@ export interface MatchResult {
   highlightKeys?: string[];
 }
 
-export interface ConversationStreak {
-  count: number;
-  longest: number;
-  atRisk: boolean;
-  youSentToday: boolean;
-  partnerSentToday: boolean;
-  bothSentToday: boolean;
-}
-
 export interface Conversation {
   matchId: string;
   conversationId?: string;
@@ -138,7 +129,6 @@ export interface Conversation {
   lastMessage: string | null;
   lastMessageAt: number;
   unreadCount: number;
-  streak?: ConversationStreak;
 }
 
 export interface ChatMessage {
