@@ -1,5 +1,8 @@
 export type MatchingAdapter = {
-  getMatches(filters?: Record<string, unknown>): Promise<unknown>;
+  getMatches(
+    filters?: Record<string, unknown>,
+    signal?: AbortSignal
+  ): Promise<unknown>;
   getMyMatches(list?: string): Promise<unknown>;
   getMatchLists(filters?: Record<string, unknown>): Promise<unknown>;
   getHomeFeed(): Promise<unknown>;

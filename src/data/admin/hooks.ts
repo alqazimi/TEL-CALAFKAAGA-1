@@ -79,6 +79,7 @@ export function useAdminUsers(
   const [apiData, setApiData] = useState<unknown[] | undefined>(undefined);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const key = JSON.stringify(opts ?? {});
 
@@ -97,53 +98,53 @@ export function useAdminUsers(
     []
   );
 
+  const fetchList = useCallback(
+    (append: boolean, resetCursor: boolean) => {
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+      setIsRefreshing(true);
+      if (resetCursor) setNextCursor(null);
+      void apiAdmin.users
+        .list({ ...(opts ?? {}), signal: ac.signal })
+        .then((d) => {
+          if (ac.signal.aborted) return;
+          applyListResponse(d, append);
+        })
+        .catch((err: unknown) => {
+          if (ac.signal.aborted) return;
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          if (err instanceof Error && err.name === "AbortError") return;
+          if (!append) {
+            setApiData([]);
+            setNextCursor(null);
+          }
+        })
+        .finally(() => {
+          if (!ac.signal.aborted) setIsRefreshing(false);
+        });
+      return ac;
+    },
+    [applyListResponse, key]
+  );
+
   const reload = useCallback(() => {
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-    void apiAdmin.users
-      .list({ ...(opts ?? {}), signal: ac.signal })
-      .then((d) => {
-        if (ac.signal.aborted) return;
-        applyListResponse(d, false);
-      })
-      .catch((err: unknown) => {
-        if (ac.signal.aborted) return;
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        if (err instanceof Error && err.name === "AbortError") return;
-        setApiData([]);
-        setNextCursor(null);
-      });
-  }, [applyListResponse, key]);
+    fetchList(false, true);
+  }, [fetchList]);
+
   useEffect(() => {
     if (!enabled) {
       abortRef.current?.abort();
       setApiData(undefined);
       setNextCursor(null);
+      setIsRefreshing(false);
       return;
     }
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-    setApiData(undefined);
-    setNextCursor(null);
-    void apiAdmin.users
-      .list({ ...(opts ?? {}), signal: ac.signal })
-      .then((d) => {
-        if (ac.signal.aborted) return;
-        applyListResponse(d, false);
-      })
-      .catch((err: unknown) => {
-        if (ac.signal.aborted) return;
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        if (err instanceof Error && err.name === "AbortError") return;
-        setApiData([]);
-        setNextCursor(null);
-      });
+    fetchList(false, true);
     return () => {
-      ac.abort();
+      abortRef.current?.abort();
     };
-  }, [enabled, key, applyListResponse]);
+  }, [enabled, key, fetchList]);
 
   const loadMore = useCallback(async () => {
     if (!enabled || !nextCursor || loadingMore) return;
@@ -161,12 +162,46 @@ export function useAdminUsers(
     }
   }, [enabled, loadingMore, nextCursor, key, applyListResponse]);
 
+  const patchUser = useCallback(
+    (profileId: string, patch: Record<string, unknown>) => {
+      setApiData((prev) => {
+        if (!prev) return prev;
+        return prev.map((row) => {
+          const item = row as Record<string, unknown>;
+          const id =
+            (typeof item._id === "string" && item._id) ||
+            (typeof item.id === "string" && item.id) ||
+            "";
+          return id === profileId ? { ...item, ...patch } : row;
+        });
+      });
+    },
+    []
+  );
+
+  const removeUser = useCallback((profileId: string) => {
+    setApiData((prev) => {
+      if (!prev) return prev;
+      return prev.filter((row) => {
+        const item = row as Record<string, unknown>;
+        const id =
+          (typeof item._id === "string" && item._id) ||
+          (typeof item.id === "string" && item.id) ||
+          "";
+        return id !== profileId;
+      });
+    });
+  }, []);
+
   return {
     users: apiData,
+    isRefreshing,
     loadMore,
     hasMore: Boolean(nextCursor),
     loadingMore,
     reload,
+    patchUser,
+    removeUser,
   };
 }
 
@@ -212,22 +247,57 @@ export function useAdminPayments(enabled: boolean) {
 
 export function useAdminReports(enabled: boolean) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const reload = useCallback(() => {
+    if (!enabled) return;
+    setIsRefreshing(true);
+    void apiAdmin.reports
+      .list()
+      .then((d) => {
+        setApiData(withEntityIds(unwrapItems(d)));
+      })
+      .catch(() => setApiData([]))
+      .finally(() => setIsRefreshing(false));
+  }, [enabled]);
   useEffect(() => {
     if (!enabled) {
       setApiData(undefined);
       return;
     }
     let c = false;
-    void apiAdmin.reports.list().then((d) => {
-      if (!c) {
-        setApiData(withEntityIds(unwrapItems(d)));
-      }
-    });
+    setIsRefreshing(true);
+    void apiAdmin.reports
+      .list()
+      .then((d) => {
+        if (!c) setApiData(withEntityIds(unwrapItems(d)));
+      })
+      .catch(() => {
+        if (!c) setApiData([]);
+      })
+      .finally(() => {
+        if (!c) setIsRefreshing(false);
+      });
     return () => {
       c = true;
     };
   }, [enabled]);
-  return apiData;
+  const patchReport = useCallback(
+    (reportId: string, patch: Record<string, unknown>) => {
+      setApiData((prev: unknown) => {
+        if (!Array.isArray(prev)) return prev;
+        return prev.map((row) => {
+          const item = row as Record<string, unknown>;
+          const id =
+            (typeof item._id === "string" && item._id) ||
+            (typeof item.id === "string" && item.id) ||
+            "";
+          return id === reportId ? { ...item, ...patch } : row;
+        });
+      });
+    },
+    []
+  );
+  return { reports: apiData, reload, isRefreshing, patchReport };
 }
 
 export function useAdminSupportContacts(
@@ -359,12 +429,16 @@ export function useAdminUpdateReportStatus() {
 
 export function useAdminEvcPending(enabled = true) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const reload = useCallback(() => {
     if (!enabled) return;
-    setApiData(undefined);
-    void apiAdmin.evc.pending().then((d) => {
-      setApiData(withEntityIds(unwrapItems(d)));
-    });
+    setIsRefreshing(true);
+    void apiAdmin.evc
+      .pending()
+      .then((d) => {
+        setApiData(withEntityIds(unwrapItems(d)));
+      })
+      .finally(() => setIsRefreshing(false));
   }, [enabled]);
   useEffect(() => {
     if (!enabled) {
@@ -379,7 +453,21 @@ export function useAdminEvcPending(enabled = true) {
       c = true;
     };
   }, [enabled]);
-  return { pending: apiData, reload };
+  const removeProof = useCallback((proofId: string) => {
+    setApiData((prev: unknown) => {
+      if (!Array.isArray(prev)) return prev;
+      return prev.filter((row) => {
+        const item = row as Record<string, unknown>;
+        const id =
+          (typeof item._id === "string" && item._id) ||
+          (typeof item.id === "string" && item.id) ||
+          "";
+        return id !== proofId;
+      });
+    });
+  }, []);
+
+  return { pending: apiData, reload, isRefreshing, removeProof };
 }
 
 export function useAdminApproveEvc() {
@@ -476,46 +564,42 @@ export function useClaimFirstAdmin() {
 
 export function useStaffInvitesList(enabled = true) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const reload = useCallback(() => {
+    if (!enabled) return;
+    void apiAdmin.staffInvites
+      .list()
+      .then((d) => {
+        const raw = Array.isArray(d)
+          ? d
+          : ((d as { items?: unknown[] })?.items ?? d);
+        const items = Array.isArray(raw)
+          ? raw.map((row) => {
+              const invite = row as Record<string, unknown>;
+              const id =
+                (typeof invite._id === "string" && invite._id) ||
+                (typeof invite.id === "string" && invite.id) ||
+                "";
+              const expiresAt =
+                typeof invite.expiresAt === "number"
+                  ? invite.expiresAt
+                  : typeof invite.expiresAt === "string"
+                    ? Date.parse(invite.expiresAt) || 0
+                    : 0;
+              return { ...invite, _id: id, id, expiresAt };
+            })
+          : [];
+        setApiData(items);
+      })
+      .catch(() => setApiData([]));
+  }, [enabled]);
   useEffect(() => {
     if (!enabled) {
       setApiData(undefined);
       return;
     }
-    let c = false;
-    void apiAdmin.staffInvites
-      .list()
-      .then((d) => {
-        if (!c) {
-          const raw = Array.isArray(d)
-            ? d
-            : ((d as { items?: unknown[] })?.items ?? d);
-          const items = Array.isArray(raw)
-            ? raw.map((row) => {
-                const invite = row as Record<string, unknown>;
-                const id =
-                  (typeof invite._id === "string" && invite._id) ||
-                  (typeof invite.id === "string" && invite.id) ||
-                  "";
-                const expiresAt =
-                  typeof invite.expiresAt === "number"
-                    ? invite.expiresAt
-                    : typeof invite.expiresAt === "string"
-                      ? Date.parse(invite.expiresAt) || 0
-                      : 0;
-                return { ...invite, _id: id, id, expiresAt };
-              })
-            : [];
-          setApiData(items);
-        }
-      })
-      .catch(() => {
-        if (!c) setApiData([]);
-      });
-    return () => {
-      c = true;
-    };
-  }, [enabled]);
-  return apiData;
+    reload();
+  }, [enabled, reload]);
+  return { invites: apiData, reload };
 }
 
 export function useCreateStaffInvite() {

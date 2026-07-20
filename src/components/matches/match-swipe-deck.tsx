@@ -35,6 +35,7 @@ const SWIPE_THRESHOLD = 96;
 interface MatchSwipeDeckProps {
   matches: MatchResult[];
   startUserId?: string;
+  actionBusyId?: string | null;
   onView: (match: MatchResult) => void;
   onAction: (
     userId: string,
@@ -47,11 +48,13 @@ function SwipeCard({
   onView,
   onAction,
   onDismiss,
+  externalBusy,
 }: {
   match: MatchResult;
   onView: () => void;
   onAction: (action: "like" | "pass" | "shortlist") => Promise<void>;
   onDismiss: (direction: "left" | "right") => void;
+  externalBusy?: boolean;
 }) {
   const { t } = useTranslation();
   const x = useMotionValue(0);
@@ -82,7 +85,7 @@ function SwipeCard({
     action: "like" | "pass" | "shortlist",
     direction?: "left" | "right"
   ) => {
-    if (busy || (action === "like" && match.liked)) return;
+    if (busy || externalBusy || (action === "like" && match.liked)) return;
     setBusy(true);
     try {
       await onAction(action);
@@ -267,7 +270,7 @@ function SwipeCard({
             variant="outline"
             size="icon"
             className="h-12 w-12 rounded-full border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/30"
-            disabled={busy}
+            disabled={busy || !!externalBusy}
             onClick={() => void runAction("pass", "left")}
             aria-label={t("matchesPage.pass")}
           >
@@ -278,7 +281,7 @@ function SwipeCard({
             variant="outline"
             size="icon"
             className="h-11 w-11 rounded-full"
-            disabled={busy || match.shortlisted}
+            disabled={busy || !!externalBusy || match.shortlisted}
             onClick={() => void runAction("shortlist")}
             aria-label={t("matchesPage.shortlist")}
           >
@@ -289,7 +292,7 @@ function SwipeCard({
             variant="outline"
             size="icon"
             className="h-11 w-11 rounded-full"
-            disabled={busy}
+            disabled={busy || !!externalBusy}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -306,7 +309,7 @@ function SwipeCard({
               "h-12 w-12 rounded-full",
               match.liked && "opacity-60"
             )}
-            disabled={busy || match.liked}
+            disabled={busy || !!externalBusy || match.liked}
             onClick={() => void runAction("like", "right")}
             aria-label={t("matchesPage.like")}
           >
@@ -329,6 +332,7 @@ function SwipeCard({
 export function MatchSwipeDeck({
   matches,
   startUserId,
+  actionBusyId,
   onView,
   onAction,
 }: MatchSwipeDeckProps) {
@@ -407,6 +411,7 @@ export function MatchSwipeDeck({
           onView={() => onView(current)}
           onAction={(action) => onAction(current.userId, action)}
           onDismiss={handleDismiss}
+          externalBusy={actionBusyId === current.userId}
         />
       </motion.div>
       <p className="text-center text-xs text-muted-foreground mt-4">

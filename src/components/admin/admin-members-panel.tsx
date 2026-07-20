@@ -165,6 +165,9 @@ interface AdminMembersPanelProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
+  isRefreshing?: boolean;
+  onPatchUser?: (profileId: string, patch: Record<string, unknown>) => void;
+  onRemoveUser?: (profileId: string) => void;
   onActionComplete?: () => void;
 }
 
@@ -187,6 +190,9 @@ export function AdminMembersPanel({
   onLoadMore,
   hasMore,
   loadingMore,
+  isRefreshing,
+  onPatchUser,
+  onRemoveUser,
   onActionComplete,
 }: AdminMembersPanelProps) {
   const { t } = useTranslation();
@@ -218,13 +224,15 @@ export function AdminMembersPanel({
   const runAction = async (
     profileId: string,
     action: () => Promise<unknown>,
-    successMessage: string
+    successMessage: string,
+    afterSuccess?: () => void
   ) => {
     setBusyId(profileId);
     try {
       await action();
       toast.success(successMessage);
       setPendingConfirm(null);
+      afterSuccess?.();
       onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
@@ -274,7 +282,8 @@ export function AdminMembersPanel({
       void runAction(
         user._id,
         () => rejectUser(user._id),
-        t("adminPage.rejectSuccess")
+        t("adminPage.rejectSuccess"),
+        () => onPatchUser?.(user._id, { approved: false, reviewStatus: "rejected" })
       );
       return;
     }
@@ -282,14 +291,20 @@ export function AdminMembersPanel({
       void runAction(
         user._id,
         () => deleteUser(user._id),
-        t("adminPage.deleteSuccess")
+        t("adminPage.deleteSuccess"),
+        () => onRemoveUser?.(user._id)
       );
       return;
     }
     void runAction(
       user._id,
       () => banUser(user._id, type === "ban"),
-      type === "ban" ? t("adminPage.banSuccess") : t("adminPage.unbanSuccess")
+      type === "ban" ? t("adminPage.banSuccess") : t("adminPage.unbanSuccess"),
+      () =>
+        onPatchUser?.(user._id, {
+          banned: type === "ban",
+          reviewStatus: type === "ban" ? "suspended" : "approved",
+        })
     );
   };
 
@@ -400,7 +415,7 @@ export function AdminMembersPanel({
         <p className="text-xs text-muted-foreground">{t("adminPage.clickHint")}</p>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+      <div className={cn("overflow-hidden rounded-2xl border border-border bg-card", isRefreshing && "opacity-80")}>
         <div className="hidden grid-cols-[minmax(0,1.4fr)_110px_100px_minmax(0,1fr)] gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
           <span>{t("adminPage.colMember")}</span>
           <span>{t("adminPage.colStatus")}</span>
@@ -531,7 +546,12 @@ export function AdminMembersPanel({
                           void runAction(
                             user._id,
                             () => approveUser(user._id),
-                            t("adminPage.approveSuccess")
+                            t("adminPage.approveSuccess"),
+                            () =>
+                              onPatchUser?.(user._id, {
+                                approved: true,
+                                reviewStatus: "approved",
+                              })
                           )
                         }
                       >
@@ -583,7 +603,8 @@ export function AdminMembersPanel({
                           void runAction(
                             user._id,
                             () => setUserRole(user._id, "user"),
-                            t("adminPage.demoted")
+                            t("adminPage.demoted"),
+                            () => onPatchUser?.(user._id, { role: "user" })
                           )
                         }
                       >

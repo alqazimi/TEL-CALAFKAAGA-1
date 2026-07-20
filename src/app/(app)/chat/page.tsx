@@ -26,6 +26,7 @@ import {
   Check,
   CheckCheck,
   Archive,
+  Loader2,
 } from "lucide-react";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
 import { ChatStreakBadge } from "@/components/chat/chat-streak-badge";
@@ -113,8 +114,13 @@ export default function ChatPage() {
   const conversationParam = searchParams.get("c");
   const { isStaff, isLoading: staffLoading } = useStaffRedirect();
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingStartRef = useRef<NodeJS.Timeout | null>(null);
+  const markedReadRef = useRef<string | null>(null);
 
   const { user: currentUser } = useUnifiedAuth();
   const { profile: profileRaw } = useProfile();
@@ -147,7 +153,7 @@ export default function ChatPage() {
     ? (conversationParam as string)
     : null;
 
-  const messagesRaw = useMessages(activeConversation ?? undefined);
+  const { messages: messagesRaw } = useMessages(activeConversation ?? undefined);
   const messages = Array.isArray(messagesRaw)
     ? (messagesRaw as ChatMessage[])
     : undefined;
@@ -193,43 +199,53 @@ export default function ChatPage() {
   );
 
   useEffect(() => {
-    if (activeConversation) {
-      markAsRead({ conversationId: activeConversation });
-    }
-  }, [activeConversation, messages?.length, markAsRead]);
+    if (!activeConversation) return;
+    if (markedReadRef.current === activeConversation) return;
+    markAsRead({ conversationId: activeConversation });
+    markedReadRef.current = activeConversation;
+  }, [activeConversation, markAsRead]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSend = async () => {
-    if (!message.trim() || !activeConversation) return;
+    if (!message.trim() || !activeConversation || sending) return;
+    setSending(true);
     try {
       await sendMessage({ conversationId: activeConversation, message: message.trim() });
       setMessage("");
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      void setTyping({ conversationId: activeConversation, isTyping: false });
     } catch (error) {
       if (error instanceof Error && error.message.includes("payment")) {
         toast.error(t("chatPage.paymentRequired", { price: formatMoney(planPricesForGender(profile?.gender).basic) }));
       } else {
         toast.error(t("chatPage.sendFailed"));
       }
+    } finally {
+      setSending(false);
     }
   };
 
   const handleTyping = (value: string) => {
     setMessage(value);
     if (!activeConversation) return;
-    setTyping({ conversationId: activeConversation, isTyping: true });
+    clearTimeout(typingStartRef.current ?? undefined);
+    typingStartRef.current = setTimeout(() => {
+      void setTyping({ conversationId: activeConversation, isTyping: true });
+    }, 300);
     clearTimeout(typingTimeoutRef.current ?? undefined);
     typingTimeoutRef.current = setTimeout(() => {
-      setTyping({ conversationId: activeConversation, isTyping: false });
+      void setTyping({ conversationId: activeConversation, isTyping: false });
     }, 2000);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target;
     const file = input.files?.[0];
-    if (!file || !activeConversation) return;
+    if (!file || !activeConversation || uploading) return;
+    setUploading(true);
     try {
       const uploaded = await uploadChatImage(activeConversation, file);
       if (!uploaded.mediaId) throw new Error("upload failed");
@@ -242,6 +258,7 @@ export default function ChatPage() {
       toast.error(t("chatPage.uploadFailed"));
     } finally {
       resetFileInput(input);
+      setUploading(false);
     }
   };
 
@@ -502,7 +519,10 @@ export default function ChatPage() {
                             ? t("chatPage.unarchive")
                             : t("chatPage.archive")
                         }
+                        disabled={archiving}
                         onClick={async () => {
+                          if (archiving) return;
+                          setArchiving(true);
                           try {
                             await archiveMatch({
                               matchId: activeConv.matchId,
@@ -516,10 +536,16 @@ export default function ChatPage() {
                             );
                           } catch {
                             toast.error(t("chatPage.sendFailed"));
+                          } finally {
+                            setArchiving(false);
                           }
                         }}
                       >
-                        <Archive className="h-4 w-4" />
+                        {archiving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Archive className="h-4 w-4" />
+                        )}
                       </Button>
                       <ReportBlockMenu
                         compact
@@ -641,6 +667,7 @@ export default function ChatPage() {
                           aria-label={t("chatPage.sharedImage")}
                           onChange={(e) => void handleImageUpload(e)}
                           className="shrink-0 h-9 w-9 rounded-xl"
+                          disabled={uploading || sending}
                         >
                           <span className="flex h-full w-full items-center justify-center text-muted-foreground">
                             <ImageIcon className="h-5 w-5" />
@@ -649,18 +676,23 @@ export default function ChatPage() {
                         <Input
                           value={message}
                           onChange={(e) => handleTyping(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+                          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && void handleSend()}
                           placeholder={t("chatPage.typeMessage")}
+                          disabled={sending || uploading}
                           className="flex-1 h-10 border-0 bg-transparent shadow-none focus-visible:ring-0 px-2"
                         />
                         <Button
                           size="icon"
                           type="button"
-                          onClick={handleSend}
-                          disabled={!message.trim()}
+                          onClick={() => void handleSend()}
+                          disabled={!message.trim() || sending || uploading}
                           className="shrink-0 rounded-xl h-9 w-9"
                         >
-                          <Send className="h-4 w-4" />
+                          {sending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </div>

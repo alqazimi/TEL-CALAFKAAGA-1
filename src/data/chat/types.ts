@@ -2,7 +2,7 @@ export type ChatAdapter = {
   getConversations(opts?: { list?: string }): Promise<unknown>;
   getMessages(
     conversationId: string,
-    opts?: { cursor?: string; limit?: number }
+    opts?: { cursor?: string; limit?: number; signal?: AbortSignal }
   ): Promise<unknown>;
   sendMessage(
     conversationId: string,

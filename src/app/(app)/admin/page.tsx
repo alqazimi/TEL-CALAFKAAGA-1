@@ -138,6 +138,8 @@ export default function AdminPage() {
     scheduledForLocal: "",
   });
   const [reportNotes, setReportNotes] = useState<Record<string, string>>({});
+  const [reportBusyId, setReportBusyId] = useState<string | null>(null);
+  const [announcementSending, setAnnouncementSending] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -162,10 +164,13 @@ export default function AdminPage() {
   const reloadStats = adminStatsQuery.reload;
   const {
     users,
+    isRefreshing: usersRefreshing,
     loadMore: loadMoreUsers,
     hasMore: hasMoreUsers,
     loadingMore: loadingMoreUsers,
     reload: reloadUsers,
+    patchUser,
+    removeUser,
   } = useAdminUsers(!!isStaff && activeTab === "users", {
     search: debouncedSearch || undefined,
     role: roleFilter,
@@ -180,9 +185,11 @@ export default function AdminPage() {
   const payments = useAdminPayments(!!isStaff && activeTab === "payments") as
     | AdminPayment[]
     | undefined;
-  const reports = useAdminReports(
+  const reportsQuery = useAdminReports(
     !!isStaff && (activeTab === "reports" || activeTab === "dashboard")
-  ) as Array<Record<string, any>> | undefined;
+  );
+  const reports = reportsQuery.reports as Array<Record<string, any>> | undefined;
+  const patchReport = reportsQuery.patchReport;
   const supportContacts = useAdminSupportContacts(
     !!isStaff && (activeTab === "contacts" || activeTab === "dashboard"),
     { status: "open" }
@@ -223,7 +230,8 @@ export default function AdminPage() {
   };
 
   const handleAnnouncement = async () => {
-    if (!announcement.title || !announcement.body) return;
+    if (!announcement.title || !announcement.body || announcementSending) return;
+    setAnnouncementSending(true);
     try {
       const scheduledFor = announcement.scheduledForLocal
         ? new Date(announcement.scheduledForLocal).getTime()
@@ -254,6 +262,8 @@ export default function AdminPage() {
       });
     } catch {
       toast.error(t("adminPage.announcementFailed"));
+    } finally {
+      setAnnouncementSending(false);
     }
   };
 
@@ -678,7 +688,12 @@ export default function AdminPage() {
               onLoadMore={() => void loadMoreUsers()}
               hasMore={hasMoreUsers}
               loadingMore={loadingMoreUsers}
-              onActionComplete={reloadUsers}
+              isRefreshing={usersRefreshing}
+              onPatchUser={patchUser}
+              onRemoveUser={removeUser}
+              onActionComplete={() => {
+                void reloadStats();
+              }}
             />
           </div>
         )}
@@ -688,8 +703,7 @@ export default function AdminPage() {
             <AdminEvcPaymentsPanel
               enabled={activeTab === "payments"}
               onActionComplete={() => {
-                reloadUsers();
-                reloadStats();
+                void reloadStats();
               }}
             />
             <div className="space-y-3">
@@ -1000,10 +1014,16 @@ export default function AdminPage() {
                   {t("adminPage.announcementScheduleHint")}
                 </p>
               </div>
-              <Button className="rounded-xl" onClick={() => void handleAnnouncement()}>
-                {announcement.scheduledForLocal
-                  ? t("adminPage.scheduleSend")
-                  : t("adminPage.sendToAll")}
+              <Button
+                className="rounded-xl"
+                disabled={announcementSending}
+                onClick={() => void handleAnnouncement()}
+              >
+                {announcementSending
+                  ? t("common.loading")
+                  : announcement.scheduledForLocal
+                    ? t("adminPage.scheduleSend")
+                    : t("adminPage.sendToAll")}
               </Button>
             </CardContent>
           </Card>
@@ -1089,15 +1109,25 @@ export default function AdminPage() {
                           size="sm"
                           variant="outline"
                           className="rounded-lg"
-                          onClick={() =>
+                          disabled={reportBusyId === report._id}
+                          onClick={() => {
+                            setReportBusyId(report._id);
                             void updateReportStatus({
                               reportId: report._id,
                               status: "reviewed",
                               priority: "high",
                               adminNotes: reportNotes[report._id],
                               resolution: "reviewed",
-                            }).then(() => toast.success(t("adminPage.reportUpdated")))
-                          }
+                            })
+                              .then(() => {
+                                patchReport(report._id, {
+                                  status: "reviewed",
+                                  adminNotes: reportNotes[report._id],
+                                });
+                                toast.success(t("adminPage.reportUpdated"));
+                              })
+                              .finally(() => setReportBusyId(null));
+                          }}
                         >
                           {t("adminPage.markReviewed")}
                         </Button>
@@ -1105,15 +1135,25 @@ export default function AdminPage() {
                           size="sm"
                           variant="ghost"
                           className="rounded-lg"
-                          onClick={() =>
+                          disabled={reportBusyId === report._id}
+                          onClick={() => {
+                            setReportBusyId(report._id);
                             void updateReportStatus({
                               reportId: report._id,
                               status: "dismissed",
                               priority: "low",
                               adminNotes: reportNotes[report._id],
                               resolution: "dismissed",
-                            }).then(() => toast.success(t("adminPage.reportUpdated")))
-                          }
+                            })
+                              .then(() => {
+                                patchReport(report._id, {
+                                  status: "dismissed",
+                                  adminNotes: reportNotes[report._id],
+                                });
+                                toast.success(t("adminPage.reportUpdated"));
+                              })
+                              .finally(() => setReportBusyId(null));
+                          }}
                         >
                           {t("adminPage.dismiss")}
                         </Button>
@@ -1122,12 +1162,20 @@ export default function AdminPage() {
                             size="sm"
                             variant="destructive"
                             className="rounded-lg"
-                            onClick={() =>
-                              void banUser(
-                                report.reportedProfileId!,
-                                true
-                              ).then(() => toast.success(t("adminPage.userBanned")))
-                            }
+                            disabled={reportBusyId === report._id}
+                            onClick={() => {
+                              setReportBusyId(report._id);
+                              void banUser(report.reportedProfileId!, true)
+                                .then(() => {
+                                  patchReport(report._id, { reportedBanned: true });
+                                  patchUser(report.reportedProfileId!, {
+                                    banned: true,
+                                    reviewStatus: "suspended",
+                                  });
+                                  toast.success(t("adminPage.userBanned"));
+                                })
+                                .finally(() => setReportBusyId(null));
+                            }}
                           >
                             {t("adminPage.banUser")}
                           </Button>
@@ -1241,7 +1289,10 @@ export default function AdminPage() {
             profileId={selectedProfileId}
             onClose={closeUserProfile}
             onOpenUser={openUserProfile}
-            onActionComplete={reloadUsers}
+            onPatchUser={patchUser}
+            onActionComplete={() => {
+              void reloadStats();
+            }}
           />
         )}
       </div>

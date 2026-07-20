@@ -39,7 +39,7 @@ export function AdminEvcPaymentsPanel({
   onActionComplete,
 }: AdminEvcPaymentsPanelProps) {
   const { t } = useTranslation();
-  const { pending: pendingRaw, reload } = useAdminEvcPending(enabled);
+  const { pending: pendingRaw, removeProof } = useAdminEvcPending(enabled);
   const pending = pendingRaw as EvcProofRow[] | undefined;
   const approve = useAdminApproveEvc();
   const reject = useAdminRejectEvc();
@@ -51,7 +51,7 @@ export function AdminEvcPaymentsPanel({
     try {
       await approve(proofId);
       toast.success(t("adminPage.evcApproved"));
-      reload();
+      removeProof(proofId);
       onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
@@ -68,7 +68,7 @@ export function AdminEvcPaymentsPanel({
         rejectReason[proofId]?.trim() || undefined
       );
       toast.success(t("adminPage.evcRejected"));
-      reload();
+      removeProof(proofId);
       onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));

@@ -25,7 +25,8 @@ export const apiChat: ChatAdapter = {
     if (opts?.limit) params.set("limit", String(opts.limit));
     const q = params.toString();
     const res = await apiClient.get<{ items?: unknown } | unknown>(
-      `/conversations/${encodeURIComponent(conversationId)}/messages${q ? `?${q}` : ""}`
+      `/conversations/${encodeURIComponent(conversationId)}/messages${q ? `?${q}` : ""}`,
+      { signal: opts?.signal }
     );
     // Nest returns { items, nextCursor } with string ids/ISO dates;
     // the UI expects a Convex-style array of { _id, createdAt: number }.

@@ -22,10 +22,11 @@ function isPaidGateError(error: unknown): boolean {
 }
 
 export const apiMatching: MatchingAdapter = {
-  async getMatches(filters) {
+  async getMatches(filters, signal?: AbortSignal) {
     try {
       const res = await apiClient.get<{ items?: unknown } | unknown>(
-        `/matches/discover${toQuery(filters)}`
+        `/matches/discover${toQuery(filters)}`,
+        { signal }
       );
       // Nest returns { items }; Convex returns array — normalize for UI.
       if (

@@ -43,6 +43,7 @@ type MatchLike = {
 interface MatchProfileModalProps {
   match: MatchLike;
   isPremium: boolean;
+  busy?: boolean;
   onClose: () => void;
   onLike: (action: "like" | "pass" | "shortlist") => void;
 }
@@ -62,6 +63,7 @@ export function MatchProfileModal({
   match,
   onClose,
   onLike,
+  busy = false,
 }: MatchProfileModalProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -70,7 +72,7 @@ export function MatchProfileModal({
 
   return createPortal(
     <MatchViewErrorBoundary onClose={onClose} title="Could not open this profile">
-      <MatchProfileModalBody match={match} onClose={onClose} onLike={onLike} />
+      <MatchProfileModalBody match={match} onClose={onClose} onLike={onLike} busy={busy} />
     </MatchViewErrorBoundary>,
     document.body
   );
@@ -80,6 +82,7 @@ function MatchProfileModalBody({
   match,
   onClose,
   onLike,
+  busy = false,
 }: Omit<MatchProfileModalProps, "isPremium">) {
   const { t } = useTranslation();
   const name = text(match.name, "Member");
@@ -218,7 +221,7 @@ function MatchProfileModalBody({
               variant="outline"
               className="font-semibold"
               onClick={() => onLike("shortlist")}
-              disabled={!!match.shortlisted}
+              disabled={busy || !!match.shortlisted}
             >
               <Bookmark className="h-4 w-4 mr-2" />
               {match.shortlisted
@@ -229,7 +232,7 @@ function MatchProfileModalBody({
               type="button"
               className="flex-1 font-semibold"
               onClick={() => onLike("like")}
-              disabled={!!match.liked}
+              disabled={busy || !!match.liked}
             >
               <Heart className="h-4 w-4 mr-2" />
               {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
@@ -239,6 +242,7 @@ function MatchProfileModalBody({
               variant="outline"
               className="flex-1 font-semibold"
               onClick={() => onLike("pass")}
+              disabled={busy}
             >
               {t("matchesPage.pass")}
             </Button>

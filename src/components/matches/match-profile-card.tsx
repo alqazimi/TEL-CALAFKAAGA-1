@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 interface MatchProfileCardProps {
   match: MatchResult;
   index?: number;
+  busy?: boolean;
   onView: () => void;
   onAction: (action: "like" | "pass" | "shortlist") => void;
 }
@@ -41,6 +42,7 @@ function scoreTone(score: number) {
 export function MatchProfileCard({
   match,
   index = 0,
+  busy = false,
   onView,
   onAction,
 }: MatchProfileCardProps) {
@@ -142,6 +144,7 @@ export function MatchProfileCard({
               size="icon"
               className="h-11 w-11 rounded-full shrink-0 border-rose-200 text-rose-600"
               onClick={() => onAction("pass")}
+              disabled={busy}
               aria-label={t("matchesPage.pass")}
             >
               <X className="h-4 w-4" />
@@ -151,7 +154,7 @@ export function MatchProfileCard({
               variant={match.shortlisted ? "secondary" : "outline"}
               className="h-11 rounded-full"
               onClick={() => onAction("shortlist")}
-              disabled={match.shortlisted}
+              disabled={busy || match.shortlisted}
               aria-label={t("matchesPage.shortlist")}
             >
               <Bookmark className="h-4 w-4" />
@@ -174,7 +177,7 @@ export function MatchProfileCard({
               size="sm"
               className="h-11 flex-1 rounded-full"
               onClick={() => onAction("like")}
-              disabled={match.liked}
+              disabled={busy || match.liked}
             >
               <Heart className="h-4 w-4 mr-1" />
               {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}

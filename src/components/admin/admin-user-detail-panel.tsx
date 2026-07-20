@@ -42,6 +42,7 @@ interface AdminUserDetailPanelProps {
   profileId: string;
   onClose: () => void;
   onOpenUser?: (profileId: string) => void;
+  onPatchUser?: (profileId: string, patch: Record<string, unknown>) => void;
   onActionComplete?: () => void;
 }
 
@@ -92,7 +93,13 @@ function DetailGrid({
   );
 }
 
-export function AdminUserDetailPanel({ profileId, onClose, onOpenUser, onActionComplete }: AdminUserDetailPanelProps) {
+export function AdminUserDetailPanel({
+  profileId,
+  onClose,
+  onOpenUser,
+  onPatchUser,
+  onActionComplete,
+}: AdminUserDetailPanelProps) {
   const { t } = useTranslation();
   const { detail: detailRaw, reload: reloadDetail } = useAdminUserDetail(
     profileId,
@@ -164,6 +171,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser, onActionC
     try {
       await approveUser(profileId);
       toast.success(t("adminPage.approveSuccess"));
+      onPatchUser?.(profileId, { approved: true, reviewStatus: "approved" });
       reloadDetail();
       onActionComplete?.();
     } catch (error) {
@@ -180,11 +188,17 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser, onActionC
       if (type === "reject") {
         await rejectUser(profileId);
         toast.success(t("adminPage.rejectSuccess"));
+        onPatchUser?.(profileId, { approved: false, reviewStatus: "rejected" });
       } else {
         await banUser(profileId, type === "ban");
         toast.success(type === "ban" ? t("adminPage.banSuccess") : t("adminPage.unbanSuccess"));
+        onPatchUser?.(profileId, {
+          banned: type === "ban",
+          reviewStatus: type === "ban" ? "suspended" : "approved",
+        });
       }
       setConfirm(null);
+      reloadDetail();
       onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));

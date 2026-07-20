@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   connectRealtime,
   joinConversation,
@@ -47,16 +47,42 @@ export function useMessages(conversationId: string | undefined) {
 
 function useApiMessages(conversationId: string | undefined) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const requestSeq = useRef(0);
+
   const refresh = useCallback(async () => {
     if (!conversationId) return;
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    const seq = ++requestSeq.current;
+    setIsRefreshing(true);
     try {
-      setApiData(await apiChat.getMessages(conversationId));
-    } catch {
-      setApiData(null);
+      const data = await apiChat.getMessages(conversationId, { signal: ac.signal });
+      if (seq === requestSeq.current && !ac.signal.aborted) {
+        setApiData(data);
+      }
+    } catch (err: unknown) {
+      if (ac.signal.aborted) return;
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      if (err instanceof Error && err.name === "AbortError") return;
+      if (seq === requestSeq.current) setApiData(null);
+    } finally {
+      if (seq === requestSeq.current && !ac.signal.aborted) {
+        setIsRefreshing(false);
+      }
     }
   }, [conversationId]);
+
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) {
+      abortRef.current?.abort();
+      setApiData(undefined);
+      setIsRefreshing(false);
+      return;
+    }
+    setApiData(undefined);
     void refresh();
     connectRealtime();
     joinConversation(conversationId);
@@ -66,9 +92,11 @@ function useApiMessages(conversationId: string | undefined) {
     return () => {
       unsub();
       leaveConversation(conversationId);
+      abortRef.current?.abort();
     };
   }, [conversationId, refresh]);
-  return apiData;
+
+  return { messages: apiData, isRefreshing, refresh };
 }
 
 export function useSendMessage() {

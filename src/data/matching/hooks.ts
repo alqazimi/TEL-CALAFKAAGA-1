@@ -1,40 +1,65 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiMatching } from "./api";
-
-export function useMatches(
-  filters?: Record<string, unknown>,
-  enabled = true
-) {
-  return useApiMatches(enabled ? filters : undefined, enabled);
-}
 
 function useApiMatches(
   filters: Record<string, unknown> | undefined,
   enabled: boolean
 ) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const filterKey = JSON.stringify(filters ?? {});
+
   useEffect(() => {
     if (!enabled) {
+      abortRef.current?.abort();
       setApiData(undefined);
+      setIsRefreshing(false);
       return;
     }
-    let cancelled = false;
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+    setIsRefreshing(true);
     void apiMatching
-      .getMatches(filters)
+      .getMatches(filters, ac.signal)
       .then((d) => {
-        if (!cancelled) setApiData(d);
+        if (!ac.signal.aborted) setApiData(d);
       })
-      .catch(() => {
-        if (!cancelled) setApiData(null);
+      .catch((err: unknown) => {
+        if (ac.signal.aborted) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (err instanceof Error && err.name === "AbortError") return;
+        setApiData(null);
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setIsRefreshing(false);
       });
     return () => {
-      cancelled = true;
+      ac.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(filters ?? {}), enabled]);
-  return apiData;
+  }, [filterKey, enabled]);
+
+  const removeUser = useCallback((userId: string) => {
+    setApiData((prev: unknown) => {
+      if (!Array.isArray(prev)) return prev;
+      return prev.filter((row) => {
+        const item = row as { userId?: string };
+        return item.userId !== userId;
+      });
+    });
+  }, []);
+
+  return { matches: apiData, isRefreshing, removeUser };
+}
+
+export function useMatches(
+  filters?: Record<string, unknown>,
+  enabled = true
+) {
+  return useApiMatches(enabled ? filters : undefined, enabled);
 }
 
 export function useMatchLists(

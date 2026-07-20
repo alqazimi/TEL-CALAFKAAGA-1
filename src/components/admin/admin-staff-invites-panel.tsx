@@ -50,7 +50,8 @@ type StaffInvite = {
 
 export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
-  const invites = useStaffInvitesList(true) as StaffInvite[] | null | undefined;
+  const { invites: invitesRaw, reload: reloadInvites } = useStaffInvitesList(true);
+  const invites = invitesRaw as StaffInvite[] | null | undefined;
   const createInvite = useCreateStaffInvite();
   const revokeInvite = useRevokeStaffInvite();
   const resendInvite = useResendStaffInvite();
@@ -79,6 +80,7 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
       const result = await createInvite({ email: trimmed });
       setEmail("");
       toast.success(t("adminInvites.sentTo", { email: result.email }));
+      reloadInvites();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminInvites.sendFailed"))
       );
@@ -92,6 +94,7 @@ export function AdminStaffInvitesPanel({ embedded = false }: { embedded?: boolea
     try {
       await revokeInvite({ inviteId });
       toast.success(t("adminInvites.revoked"));
+      reloadInvites();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminInvites.revokeFailed"))
       );

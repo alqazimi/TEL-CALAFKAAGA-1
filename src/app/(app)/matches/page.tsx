@@ -58,9 +58,16 @@ export default function MatchesPage() {
   const focusUserId = searchParams.get("user") ?? undefined;
   const openedFocusRef = useRef<string | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"swipe" | "browse">("swipe");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
+  const [actionBusyId, setActionBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedFilters(filters), 350);
+    return () => clearTimeout(timer);
+  }, [filters]);
 
   const { profile: profileRaw } = useProfile();
   const profile = (
@@ -83,12 +90,16 @@ export default function MatchesPage() {
 
   useMarkNotificationsRead(["match", "approval"], canQuery);
 
-  const filterArgs = useMemo(() => buildFilterArgs(filters), [filters]);
+  const filterArgs = useMemo(() => buildFilterArgs(debouncedFilters), [debouncedFilters]);
 
-  const discoverMatchesRaw = useMatches(filterArgs, canQuery);
+  const {
+    matches: discoverMatchesRaw,
+    isRefreshing: matchesRefreshing,
+  } = useMatches(filterArgs, canQuery);
   const discoverMatches = (
     canQuery ? discoverMatchesRaw : undefined
   ) as MatchResult[] | undefined;
+  const [hiddenUserIds, setHiddenUserIds] = useState<Set<string>>(() => new Set());
 
   const likeUser = useLikeUser();
 
@@ -107,6 +118,12 @@ export default function MatchesPage() {
     userId: string,
     action: "like" | "pass" | "shortlist"
   ) => {
+    if (actionBusyId === userId) return;
+    setActionBusyId(userId);
+    const hideCard = action === "pass" || action === "like";
+    if (hideCard) {
+      setHiddenUserIds((prev) => new Set(prev).add(userId));
+    }
     try {
       const result = (await likeUser({ toUserId: userId, action })) as {
         matched?: boolean;
@@ -121,7 +138,16 @@ export default function MatchesPage() {
         toast.message(t("matchesPage.passedToast"));
       }
     } catch {
+      if (hideCard) {
+        setHiddenUserIds((prev) => {
+          const next = new Set(prev);
+          next.delete(userId);
+          return next;
+        });
+      }
       toast.error(t("matchesPage.errorToast"));
+    } finally {
+      setActionBusyId(null);
     }
   };
 
@@ -185,7 +211,7 @@ export default function MatchesPage() {
     );
   }
 
-  if (discoverMatches === undefined) {
+  if (discoverMatches === undefined && !matchesRefreshing) {
     return (
       <DashboardLayout>
         <Skeleton className="h-[36rem] w-full max-w-2xl mx-auto rounded-2xl" />
@@ -193,7 +219,9 @@ export default function MatchesPage() {
     );
   }
 
-  const matchList = discoverMatches;
+  const matchList = (discoverMatches ?? []).filter(
+    (m) => !hiddenUserIds.has(m.userId)
+  );
   const matchLabel = matchList.length === 1 ? t("matchesPage.match") : t("matchesPage.matches");
 
   return (
@@ -252,6 +280,7 @@ export default function MatchesPage() {
                 key={match.userId}
                 match={match}
                 index={i}
+                busy={actionBusyId === match.userId}
                 onView={() => setSelectedMatch(match)}
                 onAction={(action) => void handleAction(match.userId, action)}
               />
@@ -262,6 +291,7 @@ export default function MatchesPage() {
             <MatchSwipeDeck
               matches={matchList}
               startUserId={focusUserId}
+              actionBusyId={actionBusyId}
               onView={setSelectedMatch}
               onAction={handleAction}
             />
@@ -273,6 +303,7 @@ export default function MatchesPage() {
         <MatchProfileModal
           match={selectedMatch}
           isPremium={isPremium}
+          busy={actionBusyId === selectedMatch.userId}
           onClose={() => {
             setSelectedMatch(null);
             if (focusUserId) {
