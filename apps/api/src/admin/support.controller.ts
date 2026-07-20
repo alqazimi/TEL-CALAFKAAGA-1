@@ -11,6 +11,7 @@ import {
 import { z } from "zod";
 import {
   CurrentUser,
+  Public,
   RequireProfile,
   Roles,
   type RequestUser,
@@ -91,6 +92,23 @@ export class SupportController {
   @RequireProfile()
   getMine(@CurrentUser() user: RequestUser, @Param("contactId") contactId: string) {
     return this.support.getMine(user.id, contactId);
+  }
+
+  @Post("support/public")
+  @Public()
+  @UseGuards(RateLimitGuard)
+  createPublic(@Body() body: unknown) {
+    const parsed = parseBody(
+      z.object({
+        name: z.string().min(2).max(120),
+        email: z.string().email().max(200),
+        subject: z.string().min(3).max(200),
+        message: z.string().min(10).max(2000),
+        companyWebsite: z.string().max(500).optional(),
+      }),
+      body
+    );
+    return this.support.sendPublicContact(parsed);
   }
 
   @Post("support")

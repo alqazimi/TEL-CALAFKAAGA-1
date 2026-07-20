@@ -27,6 +27,19 @@ interface ContactAdminCardProps {
   compact?: boolean;
 }
 
+type SupportRow = {
+  _id: string;
+  topic?: string;
+  subject?: string;
+  status?: string;
+  thread?: Array<{
+    id?: string;
+    body?: string;
+    authorRole?: string;
+    createdAt?: number;
+  }>;
+};
+
 export function ContactAdminCard({
   source,
   defaultTopic = "photo_upload",
@@ -36,24 +49,10 @@ export function ContactAdminCard({
   const { t } = useTranslation();
   const sendSupport = useSendSupportMessage();
   const replyAsMember = useReplyAsMember();
-  const myMessages = useMySupportMessages() as
-    | Array<{
-        _id: string;
-        topic?: string;
-        subject?: string;
-        message?: string;
-        status?: string;
-        adminReply?: string | null;
-        createdAt?: number;
-        thread?: Array<{
-          id?: string;
-          body?: string;
-          from?: string;
-          authorRole?: string;
-          createdAt?: number;
-        }>;
-      }>
-    | undefined;
+  const { messages: myMessagesRaw, reload } = useMySupportMessages();
+  const myMessages = Array.isArray(myMessagesRaw)
+    ? (myMessagesRaw as SupportRow[])
+    : undefined;
   const [topic, setTopic] = useState<Topic>(defaultTopic);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -79,6 +78,7 @@ export function ContactAdminCard({
       await sendSupport({ topic, message: trimmed, source });
       toast.success(t("support.sent"));
       setMessage("");
+      reload();
       if (compact) setOpen(false);
     } catch (error) {
       toast.error(getSafeUserError(error, t("support.sendFailed")));
@@ -98,6 +98,7 @@ export function ContactAdminCard({
       await replyAsMember({ contactId, message: body });
       toast.success(t("support.replySent"));
       setFollowUps((prev) => ({ ...prev, [contactId]: "" }));
+      reload();
     } catch (error) {
       toast.error(getSafeUserError(error, t("support.replyFailed")));
     } finally {
@@ -105,10 +106,12 @@ export function ContactAdminCard({
     }
   };
 
+  const recent = (myMessages ?? []).slice(0, 5);
+
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border bg-muted/30 p-4 text-left",
+        "rounded-2xl border border-border bg-card p-4 text-left shadow-sm",
         className
       )}
     >
@@ -117,8 +120,8 @@ export function ContactAdminCard({
           <Headphones className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-sm">{t("support.title")}</p>
-          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+          <p className="text-sm font-semibold">{t("support.title")}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {t("support.desc")}
           </p>
           {compact && !open && (
@@ -144,10 +147,10 @@ export function ContactAdminCard({
                 type="button"
                 onClick={() => setTopic(item.value)}
                 className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
                   topic === item.value
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:bg-muted"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 {item.label}
@@ -189,15 +192,14 @@ export function ContactAdminCard({
         </div>
       )}
 
-      {myMessages && myMessages.length > 0 && (
+      {recent.length > 0 && (
         <div className="mt-4 space-y-3 border-t border-border/70 pt-3">
-          <p className="text-xs font-medium text-muted-foreground">
-            {t("support.recent")}
-          </p>
-          {myMessages.slice(0, 5).map((row) => (
+          <p className="text-xs font-medium text-muted-foreground">{t("support.recent")}</p>
+          <p className="text-[11px] text-muted-foreground">{t("support.retentionHint")}</p>
+          {recent.map((row) => (
             <div
               key={row._id}
-              className="space-y-2 rounded-xl bg-background/80 px-3 py-2"
+              className="space-y-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5"
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="truncate text-xs font-medium">{row.subject}</p>
@@ -220,8 +222,8 @@ export function ContactAdminCard({
                     className={cn(
                       "rounded-lg px-2.5 py-1.5 text-[11px] leading-relaxed",
                       msg.authorRole === "admin"
-                        ? "bg-primary/10"
-                        : "bg-muted/60"
+                        ? "border border-primary/10 bg-primary/5"
+                        : "bg-background"
                     )}
                   >
                     <span className="font-semibold">
@@ -235,7 +237,7 @@ export function ContactAdminCard({
                 ))}
               </div>
 
-              {row.status !== "closed" && (
+              {row.status === "open" && (
                 <div className="space-y-2 pt-1">
                   <Textarea
                     rows={2}
@@ -253,14 +255,12 @@ export function ContactAdminCard({
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="rounded-xl h-8 text-xs"
+                    className="h-8 rounded-xl text-xs"
                     disabled={replyingId === row._id}
                     onClick={() => void onFollowUp(row._id)}
                   >
                     <Send className="mr-1.5 h-3 w-3" />
-                    {replyingId === row._id
-                      ? t("support.sending")
-                      : t("support.reply")}
+                    {replyingId === row._id ? t("support.sending") : t("support.reply")}
                   </Button>
                 </div>
               )}

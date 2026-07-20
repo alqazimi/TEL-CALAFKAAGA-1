@@ -305,6 +305,15 @@ export function useAdminSupportContacts(
   opts?: { status?: string }
 ) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const reload = useCallback(() => {
+    if (!enabled) return;
+    void apiSupport.admin
+      .list(opts)
+      .then((d) => {
+        setApiData(withEntityIds(unwrapItems(d)));
+      })
+      .catch(() => setApiData([]));
+  }, [enabled, opts?.status]);
   useEffect(() => {
     if (!enabled) {
       setApiData(undefined);
@@ -325,7 +334,39 @@ export function useAdminSupportContacts(
       c = true;
     };
   }, [enabled, opts?.status]);
-  return apiData;
+
+  const removeContact = useCallback((contactId: string) => {
+    setApiData((prev: unknown) => {
+      if (!Array.isArray(prev)) return prev;
+      return prev.filter((row) => {
+        const item = row as Record<string, unknown>;
+        const id =
+          (typeof item._id === "string" && item._id) ||
+          (typeof item.id === "string" && item.id) ||
+          "";
+        return id !== contactId;
+      });
+    });
+  }, []);
+
+  const patchContact = useCallback(
+    (contactId: string, patch: Record<string, unknown>) => {
+      setApiData((prev: unknown) => {
+        if (!Array.isArray(prev)) return prev;
+        return prev.map((row) => {
+          const item = row as Record<string, unknown>;
+          const id =
+            (typeof item._id === "string" && item._id) ||
+            (typeof item.id === "string" && item.id) ||
+            "";
+          return id === contactId ? { ...item, ...patch } : row;
+        });
+      });
+    },
+    []
+  );
+
+  return { contacts: apiData, reload, removeContact, patchContact };
 }
 
 export function useAdminAuditLogs(enabled: boolean, limit = 80) {

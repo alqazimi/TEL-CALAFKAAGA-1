@@ -190,10 +190,13 @@ export default function AdminPage() {
   );
   const reports = reportsQuery.reports as Array<Record<string, any>> | undefined;
   const patchReport = reportsQuery.patchReport;
-  const supportContacts = useAdminSupportContacts(
+  const supportContactsQuery = useAdminSupportContacts(
     !!isStaff && (activeTab === "contacts" || activeTab === "dashboard"),
     { status: "open" }
-  ) as Array<Record<string, any>> | undefined;
+  );
+  const supportContacts = supportContactsQuery.contacts as
+    | Array<Record<string, any>>
+    | undefined;
   const auditLogs = useAdminAuditLogs(
     !!isStaff && activeTab === "audit",
     80

@@ -3,14 +3,37 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiSupport } from "./api";
 
+function normalizeMine(d: unknown): unknown[] {
+  const rows = Array.isArray(d)
+    ? d
+    : d && typeof d === "object" && Array.isArray((d as { items?: unknown[] }).items)
+      ? (d as { items: unknown[] }).items
+      : [];
+  return rows.map((row) => {
+    const item = row as Record<string, unknown>;
+    const id =
+      (typeof item._id === "string" && item._id) ||
+      (typeof item.id === "string" && item.id) ||
+      "";
+    const thread = Array.isArray(item.thread)
+      ? item.thread
+      : Array.isArray(item.messages)
+        ? item.messages
+        : [];
+    return { ...item, _id: id, id, thread };
+  });
+}
+
 export function useMySupportMessages() {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const [tick, setTick] = useState(0);
+  const reload = useCallback(() => setTick((n) => n + 1), []);
   useEffect(() => {
     let cancelled = false;
     void apiSupport
       .listMine()
       .then((d) => {
-        if (!cancelled) setApiData(d);
+        if (!cancelled) setApiData(normalizeMine(d));
       })
       .catch(() => {
         if (!cancelled) setApiData(null);
@@ -18,8 +41,8 @@ export function useMySupportMessages() {
     return () => {
       cancelled = true;
     };
-  }, []);
-  return apiData;
+  }, [tick]);
+  return { messages: apiData, reload };
 }
 
 export function useSendSupportMessage() {

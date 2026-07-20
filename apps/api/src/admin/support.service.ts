@@ -2,7 +2,10 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
@@ -22,14 +25,67 @@ const TOPIC_SUBJECTS: Record<string, string> = {
   contact_form: "Website contact form",
 };
 
+/** Answered / closed contacts are removed after this window. */
+const CONTACT_RETENTION_MS = 30 * 60 * 1000;
+const PURGE_INTERVAL_MS = 60_000;
+
 @Injectable()
-export class SupportService {
+export class SupportService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(SupportService.name);
+  private purgeTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly audit: AuditLogService,
     @Inject(MAIL_ADAPTER) private readonly mail: MailAdapter
   ) {}
+
+  onModuleInit() {
+    void this.purgeExpiredContacts();
+    this.purgeTimer = setInterval(() => {
+      void this.purgeExpiredContacts();
+    }, PURGE_INTERVAL_MS);
+    this.purgeTimer.unref?.();
+  }
+
+  onModuleDestroy() {
+    if (this.purgeTimer) {
+      clearInterval(this.purgeTimer);
+      this.purgeTimer = null;
+    }
+  }
+
+  /** Delete reviewed/closed contacts older than 30 minutes (messages first). */
+  async purgeExpiredContacts(): Promise<number> {
+    const cutoff = new Date(Date.now() - CONTACT_RETENTION_MS);
+    const expired = await this.prisma.supportContact.findMany({
+      where: {
+        status: { in: ["reviewed", "closed"] },
+        OR: [
+          { reviewedAt: { lte: cutoff } },
+          {
+            reviewedAt: null,
+            contactCreatedAt: { lte: cutoff },
+          },
+        ],
+      },
+      select: { id: true },
+      take: 200,
+    });
+    if (!expired.length) return 0;
+    const ids = expired.map((c) => c.id);
+    await this.prisma.supportMessage.deleteMany({
+      where: { contactId: { in: ids } },
+    });
+    const result = await this.prisma.supportContact.deleteMany({
+      where: { id: { in: ids } },
+    });
+    if (result.count > 0) {
+      this.logger.log(`Purged ${result.count} expired support contacts`);
+    }
+    return result.count;
+  }
 
   private async rateLimitMember(userId: string) {
     const online = await this.redis.connect();
@@ -134,6 +190,64 @@ export class SupportService {
     return { contactId: contact.id };
   }
 
+  async sendPublicContact(opts: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    companyWebsite?: string;
+  }) {
+    // Honeypot — bots that fill hidden fields are silently accepted.
+    if (opts.companyWebsite?.trim()) {
+      return { ok: true, contactId: null as string | null };
+    }
+    const name = opts.name.trim();
+    const email = opts.email.trim().toLowerCase();
+    const subject = opts.subject.trim();
+    const message = opts.message.trim();
+    if (name.length < 2) throw new BadRequestException("Please enter your name.");
+    if (!email.includes("@")) throw new BadRequestException("Please enter a valid email.");
+    if (subject.length < 3) throw new BadRequestException("Please enter a subject.");
+    if (message.length < 10) {
+      throw new BadRequestException(
+        "Please write a bit more detail (at least 10 characters)."
+      );
+    }
+    if (message.length > 2000) throw new BadRequestException("Message is too long.");
+
+    const now = new Date();
+    const convexId = `local_support_public_${randomUUID()}`;
+    const contact = await this.prisma.supportContact.create({
+      data: {
+        convexId,
+        userId: null,
+        convexUserId: null,
+        name,
+        email,
+        phone: null,
+        topic: "contact_form",
+        subject,
+        message,
+        source: "contact_page",
+        status: "open",
+        contactCreatedAt: now,
+      },
+    });
+    await this.prisma.supportMessage.create({
+      data: {
+        convexId: `local_sm_${randomUUID()}`,
+        contactId: contact.id,
+        convexContactId: convexId,
+        authorUserId: null,
+        convexAuthorUserId: null,
+        authorRole: "visitor",
+        body: message,
+        messageCreatedAt: now,
+      },
+    });
+    return { ok: true, contactId: contact.id };
+  }
+
   async replyAsMember(userId: string, contactId: string, messageRaw: string) {
     await this.rateLimitMember(userId);
     const contact = await this.prisma.supportContact.findUnique({
@@ -202,10 +316,15 @@ export class SupportService {
     });
 
     const nextStatus =
-      contact.status === "closed" ? ("reviewed" as const) : contact.status;
+      contact.status === "closed" ? ("closed" as const) : ("reviewed" as const);
     await this.prisma.supportContact.update({
       where: { id: contactId },
-      data: { status: nextStatus, message },
+      data: {
+        status: nextStatus,
+        message,
+        reviewedAt: new Date(),
+        reviewedById: adminId,
+      },
     });
 
     const member = await this.prisma.user.findUniqueOrThrow({
@@ -226,34 +345,40 @@ export class SupportService {
     if (member.email) {
       await this.mail.send({
         to: member.email,
-        subject: "Support reply",
-        text: `${message}\n\nOpen: /profile`,
+        subject: "Support reply from Hel Calafkaaga",
+        text: `${message}\n\nThis conversation will be removed automatically after 30 minutes.\nOpen the app: /profile`,
       });
     }
     await this.audit.write({
       actorUserId: adminId,
       action: "support_contact_reply",
       targetUserId: contact.userId,
-      metadata: { contactId },
+      metadata: { contactId, autoReviewed: true },
     });
-    return { ok: true };
+    return { ok: true, status: nextStatus, purgeInMinutes: 30 };
   }
 
   async listMine(userId: string) {
+    await this.purgeExpiredContacts();
     const contacts = await this.prisma.supportContact.findMany({
       where: { userId },
       orderBy: { contactCreatedAt: "desc" },
       take: 10,
     });
     return Promise.all(
-      contacts.map(async (c) => ({
-        id: c.id,
-        topic: c.topic,
-        subject: c.subject,
-        status: c.status,
-        createdAt: c.contactCreatedAt.toISOString(),
-        messages: await this.loadThread(c.id, c),
-      }))
+      contacts.map(async (c) => {
+        const thread = await this.loadThread(c.id, c);
+        return {
+          id: c.id,
+          _id: c.id,
+          topic: c.topic,
+          subject: c.subject,
+          status: c.status,
+          createdAt: c.contactCreatedAt.toISOString(),
+          thread,
+          messages: thread,
+        };
+      })
     );
   }
 
@@ -276,6 +401,7 @@ export class SupportService {
     cursor?: string;
     limit?: number;
   }) {
+    await this.purgeExpiredContacts();
     const limit = parseLimit(String(opts.limit ?? 50), 50, 100);
     const rows = await this.prisma.supportContact.findMany({
       where: {
@@ -350,8 +476,10 @@ export class SupportService {
       where: { id: contactId },
       data: {
         status,
-        reviewedAt: new Date(),
-        reviewedById: adminId,
+        reviewedAt:
+          status === "open" ? null : contact.reviewedAt ?? new Date(),
+        reviewedById: status === "open" ? null : adminId,
+        adminNotes: null,
       },
     });
     await this.audit.write({
@@ -360,6 +488,6 @@ export class SupportService {
       targetUserId: contact.userId,
       metadata: { contactId },
     });
-    return { ok: true };
+    return { ok: true, purgeInMinutes: status === "open" ? null : 30 };
   }
 }

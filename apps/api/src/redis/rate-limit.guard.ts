@@ -86,6 +86,10 @@ const LIMITS: Record<string, { ip?: LimitSpec; email?: LimitSpec; user?: LimitSp
   "admin.support": {
     user: { windowSec: 60, max: 40 },
   },
+  "support.public": {
+    ip: { windowSec: 15 * 60, max: 10 },
+    email: { windowSec: 60 * 60, max: 5 },
+  },
   "admin.announce": {
     user: { windowSec: 60, max: 20 },
   },
@@ -122,7 +126,8 @@ export class RateLimitGuard implements CanActivate {
       bucket === "profile.write" ||
       bucket.startsWith("chat.") ||
       bucket.startsWith("payments.") ||
-      bucket.startsWith("admin.");
+      bucket.startsWith("admin.") ||
+      bucket.startsWith("support.");
 
     const online = await this.redis.connect();
     if (!online || !this.redis.client) {
@@ -211,6 +216,9 @@ export class RateLimitGuard implements CanActivate {
     }
     if (method === "POST" && path.includes("/webhooks/stripe")) {
       return "payments.webhook";
+    }
+    if (method === "POST" && path.includes("/support/public")) {
+      return "support.public";
     }
     if (path.startsWith("/admin") || path.startsWith("/staff-invites") || path.startsWith("/support") || path.startsWith("/moderation")) {
       if (method === "DELETE" || path.includes("/delete") || /\/admin\/users\/[^/]+$/.test(path) && method === "DELETE") {

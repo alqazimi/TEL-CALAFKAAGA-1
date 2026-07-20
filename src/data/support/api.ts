@@ -44,7 +44,6 @@ export const apiSupport: SupportAdapter = {
     },
   },
   async sendPublicContact(body) {
-    // No Nest public contact endpoint yet — post as unauthenticated support if allowed
-    return apiClient.post("/support", body);
+    return apiClient.post("/support/public", body);
   },
 };
