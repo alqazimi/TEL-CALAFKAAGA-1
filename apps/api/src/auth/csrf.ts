@@ -30,6 +30,14 @@ export class CsrfGuard implements CanActivate {
       return true;
     }
 
+    // Cross-site SPA auth (Vercel → Render) uses X-Session-Token; custom headers
+    // are CORS-protected so CSRF is not needed for that auth path.
+    const headerSession =
+      typeof req.headers["x-session-token"] === "string"
+        ? req.headers["x-session-token"]
+        : undefined;
+    if (headerSession) return true;
+
     // Only enforce when a session cookie is present
     const session = req.cookies?.[SESSION_COOKIE];
     if (!session) return true;

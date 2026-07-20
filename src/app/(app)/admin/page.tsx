@@ -160,6 +160,7 @@ export default function AdminPage() {
     loadMore: loadMoreUsers,
     hasMore: hasMoreUsers,
     loadingMore: loadingMoreUsers,
+    reload: reloadUsers,
   } = useAdminUsers(!!isStaff && activeTab === "users", {
     search: search || undefined,
     role: roleFilter,
@@ -672,13 +673,17 @@ export default function AdminPage() {
               onLoadMore={() => void loadMoreUsers()}
               hasMore={hasMoreUsers}
               loadingMore={loadingMoreUsers}
+              onActionComplete={reloadUsers}
             />
           </div>
         )}
 
         {activeTab === "payments" && (
           <div className="space-y-8">
-            <AdminEvcPaymentsPanel />
+            <AdminEvcPaymentsPanel
+              enabled={activeTab === "payments"}
+              onActionComplete={reloadUsers}
+            />
             <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{t("adminPage.paymentsShowingCompleted")}</p>
             <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -1228,6 +1233,7 @@ export default function AdminPage() {
             profileId={selectedProfileId}
             onClose={closeUserProfile}
             onOpenUser={openUserProfile}
+            onActionComplete={reloadUsers}
           />
         )}
       </div>

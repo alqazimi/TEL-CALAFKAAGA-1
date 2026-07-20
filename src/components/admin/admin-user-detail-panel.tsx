@@ -42,6 +42,7 @@ interface AdminUserDetailPanelProps {
   profileId: string;
   onClose: () => void;
   onOpenUser?: (profileId: string) => void;
+  onActionComplete?: () => void;
 }
 
 function DetailSection({
@@ -91,7 +92,7 @@ function DetailGrid({
   );
 }
 
-export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUserDetailPanelProps) {
+export function AdminUserDetailPanel({ profileId, onClose, onOpenUser, onActionComplete }: AdminUserDetailPanelProps) {
   const { t } = useTranslation();
   const detail = useAdminUserDetail(profileId, true) as any;
   const activityRaw = useAdminUserActivity(profileId, true);
@@ -157,6 +158,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
     try {
       await approveUser(profileId);
       toast.success(t("adminPage.approveSuccess"));
+      onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {
@@ -176,6 +178,7 @@ export function AdminUserDetailPanel({ profileId, onClose, onOpenUser }: AdminUs
         toast.success(type === "ban" ? t("adminPage.banSuccess") : t("adminPage.unbanSuccess"));
       }
       setConfirm(null);
+      onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {

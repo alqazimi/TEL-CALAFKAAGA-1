@@ -157,6 +157,7 @@ interface AdminMembersPanelProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   loadingMore?: boolean;
+  onActionComplete?: () => void;
 }
 
 export function AdminMembersPanel({
@@ -178,6 +179,7 @@ export function AdminMembersPanel({
   onLoadMore,
   hasMore,
   loadingMore,
+  onActionComplete,
 }: AdminMembersPanelProps) {
   const { t } = useTranslation();
   const approveUser = useAdminApproveUser();
@@ -217,6 +219,7 @@ export function AdminMembersPanel({
       await action();
       toast.success(successMessage);
       setPendingConfirm(null);
+      onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {
@@ -511,7 +514,8 @@ export function AdminMembersPanel({
                       </Button>
                     )}
 
-                    {resolveReviewStatus(user) !== "approved" &&
+                    {requiresAdminProfileApproval(user) &&
+                      resolveReviewStatus(user) !== "approved" &&
                       !isStaffRole(user.role) && (
                       <Button
                         size="sm"

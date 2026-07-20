@@ -14,9 +14,33 @@ import { Input } from "@/components/ui/input";
 import { getSafeUserError } from "@/lib/safe-error";
 import { useTranslation } from "@/lib/i18n/context";
 
-export function AdminEvcPaymentsPanel() {
+type EvcProofRow = {
+  _id?: string;
+  id?: string;
+  screenshotUrl?: string | null;
+  payerFullName?: string;
+  lastFourDigits?: string;
+  tier?: string;
+  amountCents?: number;
+  profileName?: string;
+  gender?: string;
+  userEmail?: string;
+  userPhone?: string;
+  createdAt?: string | number;
+};
+
+interface AdminEvcPaymentsPanelProps {
+  enabled?: boolean;
+  onActionComplete?: () => void;
+}
+
+export function AdminEvcPaymentsPanel({
+  enabled = true,
+  onActionComplete,
+}: AdminEvcPaymentsPanelProps) {
   const { t } = useTranslation();
-  const pending = useAdminEvcPending() as any[] | undefined;
+  const { pending: pendingRaw, reload } = useAdminEvcPending(enabled);
+  const pending = pendingRaw as EvcProofRow[] | undefined;
   const approve = useAdminApproveEvc();
   const reject = useAdminRejectEvc();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -27,6 +51,8 @@ export function AdminEvcPaymentsPanel() {
     try {
       await approve(proofId);
       toast.success(t("adminPage.evcApproved"));
+      reload();
+      onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {
@@ -42,6 +68,8 @@ export function AdminEvcPaymentsPanel() {
         rejectReason[proofId]?.trim() || undefined
       );
       toast.success(t("adminPage.evcRejected"));
+      reload();
+      onActionComplete?.();
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {
@@ -79,7 +107,6 @@ export function AdminEvcPaymentsPanel() {
                     rel="noreferrer"
                     className="shrink-0"
                   >
-                    {/* Convex storage URLs are dynamic; next/image needs a configured host. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={proof.screenshotUrl}
@@ -105,7 +132,7 @@ export function AdminEvcPaymentsPanel() {
                         : t("payment.basicPlan")}
                     </Badge>{" "}
                     <span className="font-semibold tabular-nums">
-                      ${(proof.amountCents / 100).toFixed(proof.amountCents % 100 === 0 ? 0 : 2)}
+                      ${((proof.amountCents ?? 0) / 100).toFixed((proof.amountCents ?? 0) % 100 === 0 ? 0 : 2)}
                     </span>
                   </p>
                   {proof.profileName && (
@@ -120,9 +147,11 @@ export function AdminEvcPaymentsPanel() {
                   {proof.userPhone && (
                     <p className="text-muted-foreground">{proof.userPhone}</p>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(proof.createdAt).toLocaleString()}
-                  </p>
+                  {proof.createdAt && (
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(proof.createdAt).toLocaleString()}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -131,7 +160,7 @@ export function AdminEvcPaymentsPanel() {
                   size="sm"
                   className="rounded-xl"
                   disabled={!proofId || busyId === proofId}
-                  onClick={() => void onApprove(proofId as string)}
+                  onClick={() => void onApprove(proofId)}
                 >
                   <Check className="mr-1.5 h-4 w-4" />
                   {t("adminPage.evcApprove")}
@@ -152,7 +181,7 @@ export function AdminEvcPaymentsPanel() {
                   variant="outline"
                   className="rounded-xl text-destructive"
                   disabled={!proofId || busyId === proofId}
-                  onClick={() => void onReject(proofId as string)}
+                  onClick={() => void onReject(proofId)}
                 >
                   <X className="mr-1.5 h-4 w-4" />
                   {t("adminPage.evcReject")}

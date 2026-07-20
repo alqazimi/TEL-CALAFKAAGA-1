@@ -187,6 +187,7 @@ export class AdminUsersService {
           profileImageId: p.profileImageMediaId ?? p.profileImageConvexId,
           profileImageMediaId: p.profileImageMediaId,
           imageUrl,
+          phone: p.phone,
           paidCents: paidAgg._sum.amount ?? 0,
           country: p.country,
           city: p.city,

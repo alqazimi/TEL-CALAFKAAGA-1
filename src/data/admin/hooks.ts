@@ -74,6 +74,24 @@ export function useAdminUsers(
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const key = JSON.stringify(opts ?? {});
+  const reload = useCallback(() => {
+    void apiAdmin.users
+      .list(opts)
+      .then((d) => {
+        const payload = d as { items?: unknown[]; nextCursor?: string | null };
+        const raw = Array.isArray(d) ? d : (payload?.items ?? []);
+        setApiData(withEntityIds(raw));
+        setNextCursor(
+          !Array.isArray(d) && typeof payload.nextCursor === "string"
+            ? payload.nextCursor
+            : null
+        );
+      })
+      .catch(() => {
+        setApiData([]);
+        setNextCursor(null);
+      });
+  }, [key]);
   useEffect(() => {
     if (!enabled) {
       setApiData(undefined);
@@ -137,6 +155,7 @@ export function useAdminUsers(
     loadMore,
     hasMore: Boolean(nextCursor),
     loadingMore,
+    reload,
   };
 }
 
@@ -327,9 +346,20 @@ export function useAdminUpdateReportStatus() {
   );
 }
 
-export function useAdminEvcPending() {
+export function useAdminEvcPending(enabled = true) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const reload = useCallback(() => {
+    if (!enabled) return;
+    setApiData(undefined);
+    void apiAdmin.evc.pending().then((d) => {
+      setApiData(withEntityIds(unwrapItems(d)));
+    });
+  }, [enabled]);
   useEffect(() => {
+    if (!enabled) {
+      setApiData(undefined);
+      return;
+    }
     let c = false;
     void apiAdmin.evc.pending().then((d) => {
       if (!c) setApiData(withEntityIds(unwrapItems(d)));
@@ -337,8 +367,8 @@ export function useAdminEvcPending() {
     return () => {
       c = true;
     };
-  }, []);
-  return apiData;
+  }, [enabled]);
+  return { pending: apiData, reload };
 }
 
 export function useAdminApproveEvc() {
