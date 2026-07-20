@@ -34,9 +34,9 @@ interface MatchProfileCardProps {
 }
 
 function scoreTone(score: number) {
-  if (score >= 85) return "bg-primary text-primary-foreground";
-  if (score >= 75) return "bg-primary/90 text-primary-foreground";
-  return "bg-card text-foreground border border-border";
+  if (score >= 75) return "bg-primary text-primary-foreground";
+  if (score >= 55) return "bg-primary/90 text-primary-foreground";
+  return "bg-card text-foreground border border-border shadow-md";
 }
 
 export function MatchProfileCard({
@@ -100,11 +100,11 @@ export function MatchProfileCard({
           <div className="absolute top-3 right-3">
             <Badge
               className={cn(
-                "text-sm font-bold border-0 shadow-lg",
+                "px-3 py-1.5 text-base font-bold border-0 shadow-lg sm:text-lg",
                 scoreTone(match.score)
               )}
             >
-              {match.score}%
+              {t("matchesPage.matchPercent", { score: match.score })}
             </Badge>
           </div>
           <div className="absolute top-3 left-3">

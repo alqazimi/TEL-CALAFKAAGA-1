@@ -1,6 +1,7 @@
 /** Port of convex/lib/constants.ts matching values. */
 
-export const MIN_COMPATIBILITY_SCORE = 70;
+/** Soft floor so sparse communities still see people; sorted by score descending. */
+export const MIN_COMPATIBILITY_SCORE = 40;
 export const MATCH_DISCOVER_LIMIT = 50;
 export const MATCH_LIST_LIMIT = 100;
 export const SCORE_PAGE_SIZE = 20;

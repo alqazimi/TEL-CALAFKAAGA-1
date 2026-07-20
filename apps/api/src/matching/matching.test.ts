@@ -92,8 +92,8 @@ describe("compatibility score parity", () => {
     assert.ok(avg >= 0 && avg <= 100);
   });
 
-  it("minimum discover score constant is 70", () => {
-    assert.equal(MIN_COMPATIBILITY_SCORE, 70);
+  it("minimum discover score constant is 40", () => {
+    assert.equal(MIN_COMPATIBILITY_SCORE, 40);
   });
 
   it("country is soft preference not hard exclusion", () => {

@@ -60,7 +60,7 @@ export default function MatchesPage() {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"swipe" | "browse">("swipe");
+  const [viewMode, setViewMode] = useState<"swipe" | "browse">("browse");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
   const [actionBusyId, setActionBusyId] = useState<string | null>(null);
 
@@ -234,25 +234,34 @@ export default function MatchesPage() {
             <p className="text-sm text-muted-foreground mt-1 sm:text-base">
               {t("matchesPage.compatible", { count: matchList.length, label: matchLabel })}
             </p>
+            {matchList.length > 0 ? (
+              <p className="text-xs text-muted-foreground mt-1.5 sm:text-sm">
+                {viewMode === "browse"
+                  ? t("matchesPage.browseHint")
+                  : t("matchesPage.swipeModeHint")}
+              </p>
+            ) : null}
           </div>
           <div className="flex gap-2 shrink-0">
             <Button
-              variant={viewMode === "swipe" ? "default" : "outline"}
-              size="icon"
-              className="rounded-full shrink-0"
-              onClick={() => setViewMode("swipe")}
-              aria-label={t("matchesPage.viewSwipe")}
-            >
-              <Layers className="h-4 w-4" />
-            </Button>
-            <Button
               variant={viewMode === "browse" ? "default" : "outline"}
-              size="icon"
-              className="rounded-full shrink-0"
+              size="sm"
+              className="rounded-full shrink-0 gap-1.5 px-3"
               onClick={() => setViewMode("browse")}
               aria-label={t("matchesPage.viewBrowse")}
             >
               <LayoutGrid className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("matchesPage.viewBrowseShort")}</span>
+            </Button>
+            <Button
+              variant={viewMode === "swipe" ? "default" : "outline"}
+              size="sm"
+              className="rounded-full shrink-0 gap-1.5 px-3"
+              onClick={() => setViewMode("swipe")}
+              aria-label={t("matchesPage.viewSwipe")}
+            >
+              <Layers className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("matchesPage.viewSwipeShort")}</span>
             </Button>
             <Button
               variant="outline"

@@ -51,7 +51,7 @@ export function planPricesForGender(gender?: string | null) {
 export const MAX_PROFILE_PHOTOS = 5;
 /** @deprecated Use PERSONAL_SUPPORT_PRICE */
 export const WHATSAPP_CALL_PRICE = PERSONAL_SUPPORT_PRICE;
-export const MIN_COMPATIBILITY_SCORE = 70;
+export const MIN_COMPATIBILITY_SCORE = 40;
 /** Max profiles loaded on Discover (performance at scale). */
 export const MATCH_DISCOVER_LIMIT = 50;
 /** Max profiles per Likes list tab. */
@@ -364,7 +364,7 @@ export const FAQ_ITEMS = [
   {
     question: "How does matching work?",
     answer:
-      "Our compatibility algorithm analyzes religion, age, location, education, lifestyle, and personality traits to find your best matches above 70% compatibility.",
+      "Our compatibility algorithm analyzes religion, age, location, education, lifestyle, and personality traits to find your best matches.",
   },
   {
     question: "How much does Hel Calafkaaga cost?",

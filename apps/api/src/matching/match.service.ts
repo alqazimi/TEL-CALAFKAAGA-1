@@ -84,10 +84,6 @@ export class MatchService {
     return !!row;
   }
 
-  private hasPhoto(p: Profile): boolean {
-    return !!(p.profileImageMediaId || p.profileImageConvexId);
-  }
-
   async discover(
     userId: string,
     filters: MatchFilterArgs,
@@ -112,12 +108,55 @@ export class MatchService {
         score: { gte: MIN_COMPATIBILITY_SCORE },
       },
       orderBy: [{ score: "desc" }, { userBId: "asc" }],
-      take: MATCH_DISCOVER_LIMIT * 3,
+      take: MATCH_DISCOVER_LIMIT * 4,
     });
 
     let candidates = scores
       .filter((s) => !interacted.has(s.userBId) && !blocked.has(s.userBId))
       .map((s) => ({ userId: s.userBId, score: s.score }));
+
+    // Sparse community backfill: include other discoverable opposite-gender
+    // members even when a stored score is missing or below the soft floor.
+    if (candidates.length < limit) {
+      const oppositeGender =
+        access.profile.gender === "male" ? "female" : "male";
+      const already = new Set(candidates.map((c) => c.userId));
+      const extras = await this.prisma.profile.findMany({
+        where: {
+          gender: oppositeGender,
+          banned: false,
+          questionnaireComplete: true,
+          hasPaid: true,
+          OR: [{ approved: true }, { reviewStatus: "approved" }],
+          userId: {
+            notIn: [userId, ...already, ...interacted, ...blocked],
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: MATCH_DISCOVER_LIMIT * 2,
+        select: { userId: true },
+      });
+      // Prefer profiles that have any score row; otherwise assign a mid score.
+      const extraIds = extras.map((e) => e.userId);
+      const extraScores =
+        extraIds.length > 0
+          ? await this.prisma.compatibilityScore.findMany({
+              where: { userAId: userId, userBId: { in: extraIds } },
+              select: { userBId: true, score: true },
+            })
+          : [];
+      const scoreMap = new Map(extraScores.map((s) => [s.userBId, s.score]));
+      for (const extra of extras) {
+        if (already.has(extra.userId)) continue;
+        candidates.push({
+          userId: extra.userId,
+          score: scoreMap.get(extra.userId) ?? 55,
+        });
+        already.add(extra.userId);
+        if (candidates.length >= MATCH_DISCOVER_LIMIT * 3) break;
+      }
+      candidates.sort((a, b) => b.score - a.score || a.userId.localeCompare(b.userId));
+    }
 
     if (opts?.cursor) {
       const idx = candidates.findIndex((c) => c.userId === opts.cursor);
@@ -994,7 +1033,7 @@ export class MatchService {
       where: { userId: targetUserId },
     });
     if (!profile || profile.banned || !isDiscoverable(profile)) return null;
-    if (!this.hasPhoto(profile)) return null;
+    // Prefer photos, but still show members without one when the pool is small.
     if (!profilePassesMatchFilters(profile, filters)) return null;
 
     const activePartners = await this.activePartnerIds(access.userId);

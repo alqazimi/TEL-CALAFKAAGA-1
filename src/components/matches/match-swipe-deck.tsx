@@ -172,8 +172,10 @@ function SwipeCard({
                   </p>
                 </div>
                 <div className="absolute top-3 right-3">
-                  <Badge className="text-sm font-bold bg-primary text-primary-foreground border-0 shadow-lg">
-                    {typeof match.score === "number" ? match.score : 0}%
+                  <Badge className="px-3 py-1.5 text-base font-bold bg-primary text-primary-foreground border-0 shadow-lg sm:text-lg">
+                    {t("matchesPage.matchPercent", {
+                      score: typeof match.score === "number" ? match.score : 0,
+                    })}
                   </Badge>
                 </div>
                 {photos.length > 1 && (
@@ -262,59 +264,62 @@ function SwipeCard({
 
         {/* Actions outside the drag layer so View/Like clicks always fire. */}
         <div
-          className="flex items-center justify-center gap-3 pt-4"
+          className="flex flex-col items-center gap-2 pt-4"
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-12 w-12 rounded-full border-rose-200 text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/30"
-            disabled={busy || !!externalBusy}
-            onClick={() => void runAction("pass", "left")}
-            aria-label={t("matchesPage.pass")}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-11 w-11 rounded-full"
-            disabled={busy || !!externalBusy || match.shortlisted}
-            onClick={() => void runAction("shortlist")}
-            aria-label={t("matchesPage.shortlist")}
-          >
-            <Bookmark className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-11 w-11 rounded-full"
-            disabled={busy || !!externalBusy}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onView();
-            }}
-            aria-label={t("matchesPage.view")}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            size="icon"
-            className={cn(
-              "h-12 w-12 rounded-full",
-              match.liked && "opacity-60"
-            )}
-            disabled={busy || !!externalBusy || match.liked}
-            onClick={() => void runAction("like", "right")}
-            aria-label={t("matchesPage.like")}
-          >
-            <Heart className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center justify-center gap-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-full border-rose-200 px-4 text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/30"
+              disabled={busy || !!externalBusy}
+              onClick={() => void runAction("pass", "left")}
+            >
+              <X className="h-5 w-5 mr-1.5" />
+              {t("matchesPage.pass")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 rounded-full"
+              disabled={busy || !!externalBusy || match.shortlisted}
+              onClick={() => void runAction("shortlist")}
+              aria-label={t("matchesPage.shortlist")}
+            >
+              <Bookmark className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-11 w-11 rounded-full"
+              disabled={busy || !!externalBusy}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onView();
+              }}
+              aria-label={t("matchesPage.view")}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              className={cn(
+                "h-12 rounded-full px-4",
+                match.liked && "opacity-60"
+              )}
+              disabled={busy || !!externalBusy || match.liked}
+              onClick={() => void runAction("like", "right")}
+            >
+              <Heart className="h-5 w-5 mr-1.5" />
+              {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground text-center px-4">
+            {t("matchesPage.swipeNextHint")}
+          </p>
         </div>
       </div>
 
