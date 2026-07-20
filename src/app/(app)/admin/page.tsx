@@ -127,6 +127,7 @@ export default function AdminPage() {
       : null;
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
@@ -137,6 +138,11 @@ export default function AdminPage() {
     scheduledForLocal: "",
   });
   const [reportNotes, setReportNotes] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const { user: authUser } = useUnifiedAuth();
   const currentUser = authUser as CurrentUser | null | undefined;
@@ -161,7 +167,7 @@ export default function AdminPage() {
     loadingMore: loadingMoreUsers,
     reload: reloadUsers,
   } = useAdminUsers(!!isStaff && activeTab === "users", {
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     role: roleFilter,
     payment: paymentFilter,
     review: reviewFilter,

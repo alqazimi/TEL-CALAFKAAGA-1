@@ -29,7 +29,9 @@ function nestUserListQuery(opts?: Record<string, unknown>): string {
   }
 
   const payment = opts.payment;
-  if (payment === "paid" || payment === "basic" || payment === "premium") {
+  if (payment === "basic" || payment === "premium") {
+    params.paymentTier = payment;
+  } else if (payment === "paid") {
     params.hasPaid = true;
   } else if (payment === "unpaid") {
     params.hasPaid = false;
@@ -56,7 +58,15 @@ export const apiAdmin: AdminAdapter = {
   },
   users: {
     async list(opts) {
-      return apiClient.get(`/admin/users${nestUserListQuery(opts)}`);
+      const queryOpts = { ...(opts ?? {}) };
+      const signal =
+        queryOpts.signal instanceof AbortSignal
+          ? queryOpts.signal
+          : undefined;
+      delete queryOpts.signal;
+      return apiClient.get(`/admin/users${nestUserListQuery(queryOpts)}`, {
+        signal,
+      });
     },
     async detail(id) {
       return apiClient.get(`/admin/users/${encodeURIComponent(id)}`);

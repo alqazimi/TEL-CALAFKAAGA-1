@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiAdmin } from "./api";
 import { apiSupport } from "../support/api";
 import { apiModeration } from "../moderation/api";
@@ -79,58 +79,71 @@ export function useAdminUsers(
   const [apiData, setApiData] = useState<unknown[] | undefined>(undefined);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
   const key = JSON.stringify(opts ?? {});
+
+  const applyListResponse = useCallback(
+    (d: unknown, append: boolean) => {
+      const payload = d as { items?: unknown[]; nextCursor?: string | null };
+      const raw = Array.isArray(d) ? d : (payload?.items ?? []);
+      const items = withEntityIds(raw);
+      setApiData((prev) => (append ? [...(prev ?? []), ...items] : items));
+      setNextCursor(
+        !Array.isArray(d) && typeof payload.nextCursor === "string"
+          ? payload.nextCursor
+          : null
+      );
+    },
+    []
+  );
+
   const reload = useCallback(() => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     void apiAdmin.users
-      .list(opts)
+      .list({ ...(opts ?? {}), signal: ac.signal })
       .then((d) => {
-        const payload = d as { items?: unknown[]; nextCursor?: string | null };
-        const raw = Array.isArray(d) ? d : (payload?.items ?? []);
-        setApiData(withEntityIds(raw));
-        setNextCursor(
-          !Array.isArray(d) && typeof payload.nextCursor === "string"
-            ? payload.nextCursor
-            : null
-        );
+        if (ac.signal.aborted) return;
+        applyListResponse(d, false);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (ac.signal.aborted) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (err instanceof Error && err.name === "AbortError") return;
         setApiData([]);
         setNextCursor(null);
       });
-  }, [key]);
+  }, [applyListResponse, key]);
   useEffect(() => {
     if (!enabled) {
+      abortRef.current?.abort();
       setApiData(undefined);
       setNextCursor(null);
       return;
     }
-    let c = false;
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setApiData(undefined);
     setNextCursor(null);
     void apiAdmin.users
-      .list(opts)
+      .list({ ...(opts ?? {}), signal: ac.signal })
       .then((d) => {
-        if (c) return;
-        const payload = d as { items?: unknown[]; nextCursor?: string | null };
-        const raw = Array.isArray(d) ? d : (payload?.items ?? []);
-        const items = withEntityIds(raw);
-        setApiData(items);
-        setNextCursor(
-          !Array.isArray(d) && typeof payload.nextCursor === "string"
-            ? payload.nextCursor
-            : null
-        );
+        if (ac.signal.aborted) return;
+        applyListResponse(d, false);
       })
-      .catch(() => {
-        if (!c) {
-          setApiData([]);
-          setNextCursor(null);
-        }
+      .catch((err: unknown) => {
+        if (ac.signal.aborted) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        if (err instanceof Error && err.name === "AbortError") return;
+        setApiData([]);
+        setNextCursor(null);
       });
     return () => {
-      c = true;
+      ac.abort();
     };
-  }, [enabled, key]);
+  }, [enabled, key, applyListResponse]);
 
   const loadMore = useCallback(async () => {
     if (!enabled || !nextCursor || loadingMore) return;
@@ -140,21 +153,13 @@ export function useAdminUsers(
         ...(opts ?? {}),
         cursor: nextCursor,
       });
-      const payload = d as { items?: unknown[]; nextCursor?: string | null };
-      const raw = Array.isArray(d) ? d : (payload?.items ?? []);
-      const items = withEntityIds(raw);
-      setApiData((prev) => [...(prev ?? []), ...items]);
-      setNextCursor(
-        !Array.isArray(d) && typeof payload.nextCursor === "string"
-          ? payload.nextCursor
-          : null
-      );
+      applyListResponse(d, true);
     } catch {
       // keep existing page
     } finally {
       setLoadingMore(false);
     }
-  }, [enabled, loadingMore, nextCursor, opts]);
+  }, [enabled, loadingMore, nextCursor, key, applyListResponse]);
 
   return {
     users: apiData,

@@ -33,6 +33,32 @@ import {
 const SOMALI_PHOTO_MSG =
   "Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.";
 
+/** Matches frontend isPremiumMember (hasPersonalSupport or legacy $20+ payments). */
+function premiumProfileWhere(): Prisma.ProfileWhereInput {
+  return {
+    OR: [
+      { hasPersonalSupport: true },
+      {
+        user: {
+          payments: {
+            some: {
+              status: "completed",
+              OR: [
+                {
+                  paymentType: {
+                    in: ["registration_premium", "premium_upgrade"],
+                  },
+                },
+                { amount: { gte: 2000 } },
+              ],
+            },
+          },
+        },
+      },
+    ],
+  };
+}
+
 function profileRestoredReviewStatus(target: {
   questionnaireComplete: boolean;
   approved: boolean;
@@ -98,6 +124,7 @@ export class AdminUsersService {
     role?: string;
     reviewStatus?: string;
     hasPaid?: boolean;
+    paymentTier?: "basic" | "premium";
     cursor?: string;
     limit?: number;
   }) {
@@ -119,14 +146,32 @@ export class AdminUsersService {
       }
     }
 
-    if (opts.hasPaid !== undefined) where.hasPaid = opts.hasPaid;
+    const andClauses: Prisma.ProfileWhereInput[] = [];
+
+    if (opts.paymentTier === "premium") {
+      andClauses.push(premiumProfileWhere());
+    } else if (opts.paymentTier === "basic") {
+      where.hasPaid = true;
+      andClauses.push({ NOT: premiumProfileWhere() });
+    } else if (opts.hasPaid !== undefined) {
+      where.hasPaid = opts.hasPaid;
+    }
+
     if (opts.search?.trim()) {
       const q = opts.search.trim();
-      where.OR = [
-        { name: { contains: q, mode: "insensitive" } },
-        { phone: { contains: q } },
-        { user: { emailNormalized: { contains: q.toLowerCase() } } },
-      ];
+      andClauses.push({
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { phone: { contains: q } },
+          { city: { contains: q, mode: "insensitive" } },
+          { country: { contains: q, mode: "insensitive" } },
+          { user: { emailNormalized: { contains: q.toLowerCase() } } },
+        ],
+      });
+    }
+
+    if (andClauses.length > 0) {
+      where.AND = andClauses;
     }
     if (opts.cursor) {
       where.id = { lt: opts.cursor };

@@ -44,9 +44,14 @@ export class AdminUsersController {
     @Query("role") role?: string,
     @Query("reviewStatus") reviewStatus?: string,
     @Query("hasPaid") hasPaid?: string,
+    @Query("paymentTier") paymentTier?: string,
     @Query("cursor") cursor?: string,
     @Query("limit") limit?: string
   ) {
+    const tier =
+      paymentTier === "basic" || paymentTier === "premium"
+        ? paymentTier
+        : undefined;
     return this.users.listUsers({
       actorUserId: user.id,
       actorRole: user.role === "owner" ? "owner" : "admin",
@@ -54,7 +59,14 @@ export class AdminUsersController {
       role,
       reviewStatus,
       hasPaid:
-        hasPaid === "true" ? true : hasPaid === "false" ? false : undefined,
+        tier !== undefined
+          ? undefined
+          : hasPaid === "true"
+            ? true
+            : hasPaid === "false"
+              ? false
+              : undefined,
+      paymentTier: tier,
       cursor,
       limit: limit ? Number(limit) : undefined,
     });
