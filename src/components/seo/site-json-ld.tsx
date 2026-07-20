@@ -15,6 +15,7 @@ function getCanonicalSiteUrl() {
 
 /**
  * Google site name + Organization — render once on the homepage.
+ * Prefer a short, stable brand name (not domain, not slogan).
  * @see https://developers.google.com/search/docs/appearance/site-names
  * Logo: dynamically generated at /logo (512×512).
  */
@@ -30,7 +31,12 @@ export function SiteJsonLd() {
         "@type": "WebSite",
         "@id": `${siteOrigin}/#website`,
         name: SITE_BRAND_NAME,
-        alternateName: "HelCalafkaaga",
+        alternateName: [
+          "Hel Calafkaaga",
+          "HelCalafkaaga",
+          "helcalafkaaga",
+          "hel calafkaaga",
+        ],
         url: siteUrl,
         description: HOME_OG_DESCRIPTION,
         inLanguage: ["so", "en"],
@@ -40,8 +46,14 @@ export function SiteJsonLd() {
         "@type": "Organization",
         "@id": `${siteOrigin}/#organization`,
         name: SITE_BRAND_NAME,
+        alternateName: ["HelCalafkaaga", "helcalafkaaga"],
         url: siteUrl,
-        logo: logoUrl,
+        logo: {
+          "@type": "ImageObject",
+          url: logoUrl,
+          width: 512,
+          height: 512,
+        },
         image: logoUrl,
         email: SUPPORT_EMAIL,
         description: HOME_OG_DESCRIPTION,

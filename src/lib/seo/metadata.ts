@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import { PRODUCTION_SITE_URL, SITE_BRAND_NAME } from "@/lib/constants";
 
-/** Homepage title shown in Google / browser tabs. */
-export const HOME_SEO_TITLE = "Hel Calafkaaga | Hel Lammaanaha Noloshaada";
+/**
+ * Homepage / Google blue-link title — short brand only.
+ * Slogan stays in the meta description (not the title).
+ * @see https://developers.google.com/search/docs/appearance/title-link
+ */
+export const HOME_SEO_TITLE = SITE_BRAND_NAME;
 
-/** Full meta description (search snippets). */
+/** Full meta description (search snippets) — slogan + pricing. */
 export const HOME_SEO_DESCRIPTION =
-  "Hel lammaanaha noloshaada adigoo ku salaynaya diinta, iswaafajinta, iyo ixtiraamka. Ragga cusub: Basic $5 ama Premium $20. Kor u qaadis Premium $15. Haweenka: Basic bilaash.";
+  "Hel Lammaanaha Noloshaada — hel lammaane ku salaysan diinta, iswaafajinta, iyo ixtiraamka. Ragga cusub: Basic $5 ama Premium $20. Kor u qaadis Premium $15. Haweenka: Basic $2.50 ama Premium $15.";
 
 /** Shorter social / OG description (no pricing line). */
 export const HOME_OG_DESCRIPTION =
-  "Hel lammaanaha noloshaada adigoo ku salaynaya diinta, iswaafajinta, iyo ixtiraamka.";
+  "Hel Lammaanaha Noloshaada — hel lammaane ku salaysan diinta, iswaafajinta, iyo ixtiraamka.";
 
 /** Primary SEO copy — Somali first (default site language). */
 export const SEO_SO = {
@@ -25,8 +29,11 @@ export const SEO_SO = {
     "islaam",
     "hel calafkaaga",
     "Hel Calafkaaga",
+    "helcalafkaaga",
+    "HelCalafkaaga",
     "lammaane",
     "lamaanahaaga",
+    "Hel Lammaanaha Noloshaada",
     "soomaali",
   ],
   pages: {
@@ -48,7 +55,7 @@ export const SEO_SO = {
     pricing: {
       title: "Qiimaha",
       description:
-        "Diiwaangelinta Hel Calafkaaga: ragga cusub Basic $5 ama Premium $20. Kor u qaadis Premium $15. Haweenka Basic bilaash.",
+        "Diiwaangelinta Hel Calafkaaga: ragga cusub Basic $5 ama Premium $20. Kor u qaadis Premium $15. Haweenka Basic $2.50 ama Premium $15.",
     },
     faq: {
       title: "Su'aalaha Inta Badan La Isweydiiyo",
