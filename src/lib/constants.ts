@@ -20,10 +20,6 @@ export const EVC_PAYEE_PHONE_DISPLAY = "+252 617 975 403";
 export const MPESA_PAYEE_NAME = "Abdulkadir Mohamed Farah";
 export const MPESA_PAYEE_PHONE = "+254793692710";
 export const MPESA_PAYEE_PHONE_DISPLAY = "+254 793 692 710";
-/** Manual Telebirr / mobile-money payee (Ethiopia). */
-export const ETHIOPIA_PAYEE_NAME = "Hel Calafkaaga";
-export const ETHIOPIA_PAYEE_PHONE = "+251939380123";
-export const ETHIOPIA_PAYEE_PHONE_DISPLAY = "+251 93 938 0123";
 /** Homepage demo — how to create an account and use the site. */
 export const HOW_TO_USE_YOUTUBE_ID = "ID4GXE8UFBo";
 export const HOW_TO_USE_YOUTUBE_EMBED_URL = `https://www.youtube-nocookie.com/embed/${HOW_TO_USE_YOUTUBE_ID}`;

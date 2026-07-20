@@ -8,9 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  ETHIOPIA_PAYEE_NAME,
-  ETHIOPIA_PAYEE_PHONE,
-  ETHIOPIA_PAYEE_PHONE_DISPLAY,
   EVC_PAYEE_NAME,
   EVC_PAYEE_PHONE,
   EVC_PAYEE_PHONE_DISPLAY,
@@ -218,26 +215,6 @@ export function EvcPaymentSection({
                 variant="outline"
                 className="h-8"
                 onClick={() => void copyPhone(MPESA_PAYEE_PHONE)}
-              >
-                <Copy className="mr-1.5 h-3.5 w-3.5" />
-                {t("payment.evcCopy")}
-              </Button>
-            </div>
-          </div>
-          <div className="rounded-2xl bg-muted/50 border border-border px-4 py-4 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">{t("payment.ethiopiaLabel")}</p>
-            <p className="text-lg font-semibold">{ETHIOPIA_PAYEE_NAME}</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Phone className="h-4 w-4 text-primary" />
-              <span className="font-mono text-base font-semibold tracking-wide">
-                {ETHIOPIA_PAYEE_PHONE_DISPLAY}
-              </span>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-8"
-                onClick={() => void copyPhone(ETHIOPIA_PAYEE_PHONE)}
               >
                 <Copy className="mr-1.5 h-3.5 w-3.5" />
                 {t("payment.evcCopy")}
