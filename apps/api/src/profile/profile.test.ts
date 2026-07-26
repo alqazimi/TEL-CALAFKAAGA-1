@@ -21,6 +21,7 @@ import {
   STAFF_ONLY_PROFILE_FIELDS,
 } from "./questionnaire";
 import {
+  isDiscoverable,
   needsApprovalGate,
   resolveReviewStatus,
   requiresAdminProfileApproval,
@@ -127,6 +128,33 @@ describe("approval / premium rules", () => {
     assert.equal(
       resolveReviewStatus({ banned: true, questionnaireComplete: true }),
       "suspended"
+    );
+  });
+
+  it("admins and owners are never discoverable to members", () => {
+    for (const role of ["admin", "owner"] as const) {
+      assert.equal(
+        isDiscoverable({
+          role,
+          banned: false,
+          questionnaireComplete: true,
+          hasPaid: true,
+          approved: true,
+          reviewStatus: "approved",
+        }),
+        false
+      );
+    }
+    assert.equal(
+      isDiscoverable({
+        role: "user",
+        banned: false,
+        questionnaireComplete: true,
+        hasPaid: true,
+        approved: true,
+        reviewStatus: "approved",
+      }),
+      true
     );
   });
 });

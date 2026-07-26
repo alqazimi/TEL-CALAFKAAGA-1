@@ -88,8 +88,10 @@ export function resolveReviewStatus(profile: ReviewProfile): ReviewStatus {
 
 export function isDiscoverable(profile: ReviewProfile): boolean {
   if (profile.banned) return false;
-  if (!profile.questionnaireComplete && !isStaffRole(profile.role)) return false;
-  if (profile.hasPaid !== true && !isStaffRole(profile.role)) return false;
+  // Staff accounts are never shown to members in Discover / matching.
+  if (isStaffRole(profile.role)) return false;
+  if (!profile.questionnaireComplete) return false;
+  if (profile.hasPaid !== true) return false;
   return resolveReviewStatus(profile) === "approved";
 }
 

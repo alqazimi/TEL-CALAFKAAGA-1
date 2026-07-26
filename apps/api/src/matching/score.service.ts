@@ -138,6 +138,7 @@ export class ScoreService {
     const candidates = await this.prisma.profile.findMany({
       where: {
         gender: oppositeGender,
+        role: "user",
         banned: false,
         questionnaireComplete: true,
         hasPaid: true,
