@@ -216,7 +216,7 @@ describe("questionnaire field mapping", () => {
 describe("questionnaire completion validation", () => {
   const completeFemale = {
     name: "Amina Hassan",
-    phone: "+252612345678",
+    phone: "+252617975403",
     age: 25,
     height: 165,
     weight: 60,
