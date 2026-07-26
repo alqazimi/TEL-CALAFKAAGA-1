@@ -175,6 +175,27 @@ describe("auth failure message", () => {
 });
 
 describe("AuthService behaviour (mocked prisma)", () => {
+  /** Login now uses findMany; keep findFirst for register/check-email mocks. */
+  function withFindMany(
+    user: Record<string, unknown> | null | (() => Promise<unknown>)
+  ) {
+    const resolve = async () =>
+      typeof user === "function" ? await user() : user;
+    return {
+      findFirst: async () => {
+        const row = await resolve();
+        return row;
+      },
+      findMany: async () => {
+        const row = await resolve();
+        if (!row) return [];
+        return [{ createdAt: new Date("2024-01-01"), ...(row as object) }];
+      },
+      update: async () => ({}),
+      findUnique: async () => null,
+    };
+  }
+
   it("login succeeds for valid lucia hash and does not create profiles", async () => {
     const { AuthService } = await import("./auth.service");
     const password = "Migrated-User-Pass-42";
@@ -338,7 +359,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
     const { AuthService } = await import("./auth.service");
     const auth = new AuthService(
       {
-        user: { findFirst: async () => null },
+        user: withFindMany(null),
         authAuditEvent: { create: async () => ({}) },
       } as never,
       {} as never,
@@ -478,7 +499,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
     const mail = { send: async () => {}, sent: [] as unknown[] };
     const authMissing = new AuthService(
       {
-        user: { findFirst: async () => null },
+        user: withFindMany(null),
         authAuditEvent: { create: async () => ({}) },
       } as never,
       {} as never,
@@ -487,12 +508,13 @@ describe("AuthService behaviour (mocked prisma)", () => {
     );
     const authPresent = new AuthService(
       {
-        user: {
-          findFirst: async () => ({
-            id: "11111111-1111-1111-1111-111111111111",
-            email: "a@example.com",
-          }),
-        },
+        user: withFindMany({
+          id: "11111111-1111-1111-1111-111111111111",
+          email: "a@example.com",
+          emailNormalized: "a@example.com",
+          profile: null,
+          authAccounts: [],
+        }),
         passwordResetToken: { create: async () => ({}) },
         authAuditEvent: { create: async () => ({}) },
       } as never,
@@ -678,7 +700,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
     const { AuthService } = await import("./auth.service");
     const auth = new AuthService(
       {
-        user: { findFirst: async () => null },
+        user: withFindMany(null),
         authAccount: { findFirst: async () => null },
       } as never,
       {} as never,
@@ -707,7 +729,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
 
     const takenByAccount = new AuthService(
       {
-        user: { findFirst: async () => null },
+        user: withFindMany(null),
         authAccount: { findFirst: async () => ({ id: "a1" }) },
       } as never,
       {} as never,
@@ -859,7 +881,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
     const { AuthService } = await import("./auth.service");
     const auth = new AuthService(
       {
-        user: { findFirst: async () => null },
+        user: withFindMany(null),
         authAccount: { findFirst: async () => null },
         authAuditEvent: { create: async () => ({}) },
       } as never,

@@ -18,6 +18,12 @@ import {
   hmacSha256Hex,
   normalizeEmail,
 } from "./crypto-util";
+import {
+  emailIdentityScore,
+  emailMatchWhere,
+  pickCanonicalEmailUser,
+  type EmailIdentityCandidate,
+} from "./email-identity";
 import type { MailAdapter } from "./mail.adapter";
 import {
   hashPasswordPreferred,
@@ -122,12 +128,7 @@ export class AuthService {
 
   private async isEmailTaken(emailNormalized: string): Promise<boolean> {
     const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { emailNormalized },
-          { email: { equals: emailNormalized, mode: "insensitive" } },
-        ],
-      },
+      where: emailMatchWhere(emailNormalized),
       select: { id: true },
     });
     if (existingUser) return true;
@@ -135,11 +136,71 @@ export class AuthService {
     const existingAccount = await this.prisma.authAccount.findFirst({
       where: {
         provider: "password",
-        providerAccountId: emailNormalized,
+        providerAccountId: {
+          equals: emailNormalized,
+          mode: "insensitive",
+        },
       },
       select: { id: true },
     });
     return existingAccount !== null;
+  }
+
+  /** All users that claim this email (case-insensitive / normalized). */
+  private async findUsersMatchingEmail(emailNormalized: string) {
+    const where = emailMatchWhere(emailNormalized);
+    const include = {
+      profile: {
+        select: {
+          id: true,
+          role: true,
+          banned: true,
+          hasPaid: true,
+          questionnaireComplete: true,
+          registrationComplete: true,
+        },
+      },
+      authAccounts: {
+        where: { provider: "password" as const },
+      },
+    };
+
+    // Production always has findMany; unit mocks may only stub findFirst.
+    if (typeof this.prisma.user.findMany === "function") {
+      return this.prisma.user.findMany({
+        where,
+        include,
+        orderBy: { createdAt: "asc" },
+      });
+    }
+
+    const one = await this.prisma.user.findFirst({ where, include });
+    return one ? [one] : [];
+  }
+
+  private toIdentityCandidate(
+    user: Awaited<ReturnType<AuthService["findUsersMatchingEmail"]>>[number]
+  ): EmailIdentityCandidate {
+    return {
+      id: user.id,
+      createdAt: user.createdAt ?? new Date(0),
+      email: user.email,
+      emailNormalized: user.emailNormalized,
+      profile: user.profile,
+      authAccountCount: user.authAccounts?.length ?? 0,
+    };
+  }
+
+  /** Ensure survivor rows always store a single normalized email. */
+  private async normalizeStoredEmail(userId: string, emailNormalized: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { email: emailNormalized, emailNormalized },
+    });
+    await this.prisma.authAccount.updateMany({
+      where: { userId, provider: "password" },
+      data: { providerAccountId: emailNormalized },
+    });
   }
 
   /**
@@ -314,52 +375,67 @@ export class AuthService {
     userAgent?: string;
   }): Promise<{ user: AuthUserView; rawToken: string; expiresAt: Date }> {
     const emailNormalized = normalizeEmail(opts.email);
+    const matches = emailNormalized
+      ? await this.findUsersMatchingEmail(emailNormalized)
+      : [];
 
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { emailNormalized },
-          { email: { equals: emailNormalized, mode: "insensitive" } },
-        ],
-      },
-      include: {
-        profile: {
-          select: { id: true, role: true, banned: true, hasPaid: true },
-        },
-        authAccounts: {
-          where: { provider: "password" },
-          take: 1,
-        },
-      },
-    });
-
-    const fail = async (reason: string) => {
+    const fail = async (reason: string, userId?: string) => {
       await this.audit("login_failure", {
-        userId: user?.id,
-        metadata: { reason },
+        userId,
+        metadata: { reason, duplicateCount: matches.length },
         ip: opts.ip,
       });
       throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
     };
 
-    if (!user) await fail("unknown_email");
-    if (user!.profile?.banned) await fail("banned");
+    if (matches.length === 0) await fail("unknown_email");
 
-    const account = user!.authAccounts[0];
-    if (!account?.passwordHash) await fail("missing_account");
-
-    const verified = await verifyPassword(
-      opts.password,
-      account.passwordHash!,
-      account.passwordAlgo
-    );
-    if (!verified.ok) {
-      await fail(
-        verified.classification && verified.classification !== "standard_salt_key"
-          ? `hash_${verified.classification}`
-          : "bad_password"
+    // Prefer the canonical account; if its password fails, try other duplicates
+    // so the member can still sign in, then we normalize onto that survivor.
+    const canonicalId = pickCanonicalEmailUser(
+      matches.map((u) => this.toIdentityCandidate(u))
+    )?.id;
+    const ordered = [...matches].sort((a, b) => {
+      if (a.id === canonicalId) return -1;
+      if (b.id === canonicalId) return 1;
+      return (
+        emailIdentityScore(this.toIdentityCandidate(b)) -
+        emailIdentityScore(this.toIdentityCandidate(a))
       );
+    });
+
+    let user = ordered[0]!;
+    let account = user.authAccounts[0];
+    let verifiedOk = false;
+
+    for (const candidate of ordered) {
+      if (candidate.profile?.banned) continue;
+      for (const acc of candidate.authAccounts) {
+        if (!acc.passwordHash) continue;
+        const verified = await verifyPassword(
+          opts.password,
+          acc.passwordHash,
+          acc.passwordAlgo
+        );
+        if (verified.ok) {
+          user = candidate;
+          account = acc;
+          verifiedOk = true;
+          break;
+        }
+      }
+      if (verifiedOk) break;
     }
+
+    if (!verifiedOk) {
+      if (ordered.every((u) => u.profile?.banned)) {
+        await fail("banned", ordered[0]?.id);
+      }
+      await fail("bad_password", ordered[0]?.id);
+    }
+
+    if (user.profile?.banned) await fail("banned", user.id);
+    if (!account?.passwordHash) await fail("missing_account", user.id);
 
     // Rehash-on-login (Argon2id) only after successful verification
     if (shouldRehashOnLogin(account.passwordAlgo)) {
@@ -373,13 +449,13 @@ export class AuthService {
           },
         });
         await this.audit("rehash_success", {
-          userId: user!.id,
+          userId: user.id,
           metadata: { from: account.passwordAlgo, to: preferred.algo },
           ip: opts.ip,
         });
       } catch {
         await this.audit("rehash_failure", {
-          userId: user!.id,
+          userId: user.id,
           metadata: { from: account.passwordAlgo },
           ip: opts.ip,
         });
@@ -387,20 +463,38 @@ export class AuthService {
       }
     }
 
+    // Collapse identity onto one normalized email for this survivor.
+    if (
+      emailNormalized &&
+      (user.email !== emailNormalized ||
+        user.emailNormalized !== emailNormalized)
+    ) {
+      try {
+        await this.normalizeStoredEmail(user.id, emailNormalized);
+      } catch {
+        // Unique conflict with a duplicate row — login still OK; purge script cleans.
+      }
+    }
+
     const session = await this.sessions.createSession({
-      userId: user!.id,
+      userId: user.id,
       ip: opts.ip,
       userAgent: opts.userAgent,
     });
 
     await this.audit("login_success", {
-      userId: user!.id,
-      metadata: { sessionId: session.sessionId },
+      userId: user.id,
+      metadata: {
+        sessionId: session.sessionId,
+        ...(matches.length > 1
+          ? { duplicateEmailAccounts: matches.length }
+          : {}),
+      },
       ip: opts.ip,
     });
 
     return {
-      user: this.toView(user!),
+      user: this.toView(user),
       rawToken: session.rawToken,
       expiresAt: session.expiresAt,
     };
@@ -472,28 +566,29 @@ export class AuthService {
 
   async forgotPassword(email: string, ip?: string): Promise<{ message: string }> {
     const emailNormalized = normalizeEmail(email);
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { emailNormalized },
-          { email: { equals: emailNormalized, mode: "insensitive" } },
-        ],
-      },
-    });
+    const matches = emailNormalized
+      ? await this.findUsersMatchingEmail(emailNormalized)
+      : [];
+    const user = pickCanonicalEmailUser(
+      matches.map((u) => this.toIdentityCandidate(u))
+    );
+    const fullUser = user
+      ? matches.find((m) => m.id === user.id) ?? null
+      : null;
 
     await this.audit("password_reset_request", {
-      userId: user?.id,
-      metadata: { requested: true },
+      userId: fullUser?.id,
+      metadata: { requested: true, duplicateCount: matches.length },
       ip,
     });
 
-    if (user) {
+    if (fullUser) {
       const raw = generateToken(32);
       const tokenHash = hashToken(raw);
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
       await this.prisma.passwordResetToken.create({
         data: {
-          userId: user.id,
+          userId: fullUser.id,
           tokenHash,
           expiresAt,
           ipHash: this.ipHash(ip),
@@ -504,7 +599,7 @@ export class AuthService {
         this.config.get<string>("APP_URL") ?? "http://127.0.0.1:3001";
       const resetUrl = `${appUrl}/reset-password?token=${raw}`;
       await this.mail.send({
-        to: user.email ?? emailNormalized,
+        to: fullUser.email ?? emailNormalized,
         subject: "Reset your Hel Calafkaaga password",
         text: `Use this link within 15 minutes to reset your password:\n${resetUrl}\n\nIf you did not request this, ignore this email.`,
       });
