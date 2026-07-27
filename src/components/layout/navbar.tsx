@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { LanguageToggle } from "@/components/layout/language-toggle";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { AndroidDownloadLink } from "@/components/marketing/android-download-link";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -133,6 +134,10 @@ export function Navbar() {
             ))}
             <div className="flex flex-col gap-2 pt-3">
               <LanguageToggle className="w-full justify-center" />
+              <AndroidDownloadLink
+                variant="ghost"
+                onClick={() => setOpen(false)}
+              />
               {isAuthenticated && !isLoading ? (
                 <>
                   {isStaff && (

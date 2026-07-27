@@ -39,6 +39,8 @@ export const so: Translations = {
   },
   common: {
     joinNow: "Is Diiwaangeli Hadda",
+    downloadAndroidApp: "Soo deg App-ka Android",
+    downloadAndroidHint: "Telefoonada Android — taabo si aad u rakibto",
     goToDashboard: "Tag dashboard-ka",
     loading: "Fadlan sug...",
     loadingData: "Macluumaadka waa la soo rarayaa...",

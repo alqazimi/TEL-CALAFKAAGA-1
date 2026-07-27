@@ -37,6 +37,8 @@ export const en = {
   },
   common: {
     joinNow: "Register Now",
+    downloadAndroidApp: "Download Android App",
+    downloadAndroidHint: "For Android phones — tap to install",
     goToDashboard: "Go to Dashboard",
     loading: "Loading...",
     loadingData: "Loading your data...",
