@@ -1478,6 +1478,12 @@ export const so: Translations = {
     unarchive: "Soo celi",
     archivedEmpty: "Ma jiraan isbarbardhigyo kaydsan",
     newEmpty: "Ma jiraan isbarbardhigyo cusub",
+    tapForProfile: "Taabo si aad u aragto profile-ka",
+    viewProfile: "Eeg profile-ka {{name}}",
+    viewPhotos: "Eeg sawirrada",
+    languages: "Luuqadaha",
+    profilePrivacyNote:
+      "Macluumaadka xiriirka wuu qarsoonaa. Email iyo telefoon halkan laguma wadaago.",
   },
   safety: {
     reportOrBlock: "Soo sheeg / Jooji",

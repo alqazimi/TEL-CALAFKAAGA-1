@@ -109,6 +109,36 @@ export interface MatchResult {
   highlightKeys?: string[];
 }
 
+export interface ConversationPartnerProfile {
+  userId: string;
+  name: string;
+  age?: number | null;
+  gender?: "male" | "female" | string | null;
+  country?: string | null;
+  city?: string | null;
+  height?: number | null;
+  education?: string | null;
+  occupation?: string | null;
+  religiousLevel?: string | null;
+  prayerFrequency?: string | null;
+  bio?: string | null;
+  maritalStatus?: string | null;
+  marriageTimeline?: string | null;
+  wantChildren?: string | null;
+  languagesSpoken?: string[];
+  qualities?: string[];
+  hobbies?: string[];
+  imageUrl: string | null;
+  additionalImageUrls?: string[];
+  photoMediaId?: string | null;
+  photoHidden?: boolean;
+  verified?: boolean;
+  hasPaid?: boolean;
+  hasPersonalSupport?: boolean;
+  questionnaireComplete?: boolean;
+  photoVisibility?: string | null;
+}
+
 export interface Conversation {
   matchId: string;
   conversationId?: string;
@@ -116,16 +146,7 @@ export interface Conversation {
   status?: "active" | "archived" | "unmatched";
   isNew?: boolean;
   score?: number;
-  profile: {
-    name: string;
-    imageUrl: string | null;
-    photoMediaId?: string | null;
-    photoHidden?: boolean;
-    userId: string;
-    verified?: boolean;
-    hasPaid?: boolean;
-    questionnaireComplete?: boolean;
-  } | null;
+  profile: ConversationPartnerProfile | null;
   lastMessage: string | null;
   lastMessageAt: number;
   unreadCount: number;

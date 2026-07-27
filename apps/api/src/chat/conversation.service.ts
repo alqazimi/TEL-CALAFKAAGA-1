@@ -12,7 +12,7 @@ import type { Conversation, Match, Profile } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { hasPaidAccess, isStaffRole } from "../common/access";
 import { MediaAccessService } from "../media/media-access.service";
-import { resolveProfileMainImageUrl } from "../media/profile-image-url";
+import { resolveProfileMainImageUrl, resolveAdditionalImageUrls } from "../media/profile-image-url";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   ALLOWED_IMAGE_CONTENT_TYPES,
@@ -188,6 +188,7 @@ export class ConversationService {
 
       let imageUrl: string | null = null;
       let photoHidden = false;
+      let additionalImageUrls: string[] = [];
       if (other) {
         const hasPhoto = !!(
           other.profileImageMediaId || other.profileImageConvexId
@@ -209,6 +210,12 @@ export class ConversationService {
             { userId, roles: [profile.role] }
           );
           if (!imageUrl) photoHidden = true;
+          additionalImageUrls = await resolveAdditionalImageUrls(
+            this.prisma,
+            this.media,
+            other,
+            { userId, roles: [profile.role] }
+          );
         }
       }
 
@@ -221,13 +228,33 @@ export class ConversationService {
         isNew,
         profile: other
           ? {
-              name: other.name,
-              imageUrl,
-              photoHidden,
+              // Public member card — never include email or phone.
               userId: otherId,
+              name: other.name,
+              age: other.age,
+              gender: other.gender,
+              country: other.country,
+              city: other.city,
+              height: other.height,
+              education: other.education,
+              occupation: other.occupation,
+              religiousLevel: other.religiousLevel,
+              prayerFrequency: other.prayerFrequency,
+              bio: other.bio || null,
+              maritalStatus: other.maritalStatus,
+              marriageTimeline: other.marriageTimeline,
+              wantChildren: other.wantChildren,
+              languagesSpoken: other.languagesSpoken ?? [],
+              qualities: other.qualities ?? [],
+              hobbies: other.hobbies ?? [],
+              imageUrl,
+              additionalImageUrls,
+              photoHidden,
               verified: other.verified,
               hasPaid: other.hasPaid,
+              hasPersonalSupport: !!other.hasPersonalSupport,
               questionnaireComplete: other.questionnaireComplete,
+              photoVisibility: other.photoVisibility,
             }
           : null,
         lastMessage,

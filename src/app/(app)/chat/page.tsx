@@ -29,6 +29,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { ChatSafetyBanner } from "@/components/chat/chat-safety-banner";
+import { ChatPartnerProfileModal } from "@/components/chat/chat-partner-profile-modal";
 import { PrivatePhotoRevealCard } from "@/components/matches/private-photo-reveal-card";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
@@ -116,6 +117,7 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [partnerProfileOpen, setPartnerProfileOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typingStartRef = useRef<NodeJS.Timeout | null>(null);
@@ -196,6 +198,10 @@ export default function ChatPage() {
     profileReady,
     activeConv?.profile?.userId
   );
+
+  useEffect(() => {
+    setPartnerProfileOpen(false);
+  }, [activeConversation]);
 
   useEffect(() => {
     if (!activeConversation) return;
@@ -473,27 +479,51 @@ export default function ChatPage() {
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                  <Avatar className="h-10 w-10 shrink-0">
-                    <AvatarImage src={activeConv.profile?.imageUrl ?? undefined} />
-                    <AvatarFallback className="bg-muted font-medium">
-                      {activeConv.profile?.name?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <p className="font-bold text-sm truncate">
-                        {activeConv.profile?.name}
-                      </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (activeConv.profile?.userId) setPartnerProfileOpen(true);
+                    }}
+                    disabled={!activeConv.profile?.userId}
+                    className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:hover:bg-transparent -m-1 p-1"
+                    aria-label={t("chatPage.viewProfile", {
+                      name: activeConv.profile?.name ?? t("chatPage.match"),
+                    })}
+                  >
+                    <Avatar className="h-10 w-10 shrink-0 ring-2 ring-border/60">
+                      <AvatarImage src={activeConv.profile?.imageUrl ?? undefined} />
+                      <AvatarFallback className="bg-muted font-medium">
+                        {activeConv.profile?.name?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="font-bold text-sm truncate underline-offset-2 group-hover:underline">
+                          {activeConv.profile?.name}
+                        </p>
+                        {typeof activeConv.score === "number" ? (
+                          <Badge
+                            variant="secondary"
+                            className="shrink-0 text-[10px] font-semibold px-1.5 py-0"
+                          >
+                            {Math.round(activeConv.score)}%
+                          </Badge>
+                        ) : null}
+                      </div>
+                      {activeConv.profile && (
+                        <TrustBadges profile={activeConv.profile} size="sm" className="mt-1" />
+                      )}
+                      {!activeConv.chatUnlocked ? (
+                        <p className="text-xs text-muted-foreground mt-1">{t("chatPage.locked")}</p>
+                      ) : isTyping ? (
+                        <p className="text-xs text-primary mt-1">{t("chatPage.typing")}</p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          {t("chatPage.tapForProfile")}
+                        </p>
+                      )}
                     </div>
-                    {activeConv.profile && (
-                      <TrustBadges profile={activeConv.profile} size="sm" className="mt-1" />
-                    )}
-                    {!activeConv.chatUnlocked ? (
-                      <p className="text-xs text-muted-foreground mt-1">{t("chatPage.locked")}</p>
-                    ) : isTyping ? (
-                      <p className="text-xs text-primary mt-1">{t("chatPage.typing")}</p>
-                    ) : null}
-                  </div>
+                  </button>
                   {activeConv.profile?.userId && (
                     <div className="flex items-center gap-1 shrink-0">
                       <Button
@@ -546,6 +576,15 @@ export default function ChatPage() {
                     </div>
                   )}
                 </div>
+
+                {activeConv.profile ? (
+                  <ChatPartnerProfileModal
+                    open={partnerProfileOpen}
+                    onClose={() => setPartnerProfileOpen(false)}
+                    profile={activeConv.profile}
+                    score={activeConv.score}
+                  />
+                ) : null}
 
                 {!activeConv.chatUnlocked ? (
                   <div className="flex-1 flex items-center justify-center p-8">

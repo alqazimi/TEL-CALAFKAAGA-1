@@ -1468,6 +1468,12 @@ export const en = {
     unarchive: "Restore",
     archivedEmpty: "No archived matches",
     newEmpty: "No new matches",
+    tapForProfile: "Tap to view profile",
+    viewProfile: "View {{name}}'s profile",
+    viewPhotos: "View photos",
+    languages: "Languages",
+    profilePrivacyNote:
+      "Contact details stay private. Email and phone are never shared here.",
   },
   safety: {
     reportOrBlock: "Report / Block",
