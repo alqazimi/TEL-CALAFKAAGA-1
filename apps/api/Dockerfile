@@ -28,5 +28,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/prisma ./prisma
+# Android install page + APK (served by DownloadController)
+COPY public ./public
 EXPOSE 4000
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
