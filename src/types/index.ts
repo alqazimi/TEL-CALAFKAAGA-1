@@ -138,7 +138,7 @@ export interface ConversationPartnerProfile {
   questionnaireComplete?: boolean;
   photoVisibility?: string | null;
   approved?: boolean;
-  reviewStatus?: string | null;
+  reviewStatus?: string;
 }
 
 export interface Conversation {
