@@ -13,6 +13,7 @@ import {
   Ruler,
   Sparkles,
   Languages,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +21,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
+import { apiChat } from "@/data/chat/api";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import type { ConversationPartnerProfile } from "@/types";
 
 type ChatPartnerProfileModalProps = {
   profile: ConversationPartnerProfile;
+  conversationId?: string | null;
   score?: number | null;
   open: boolean;
   onClose: () => void;
@@ -37,18 +40,62 @@ function text(value: unknown, fallback = ""): string {
   return String(value);
 }
 
+function isPartnerProfile(value: unknown): value is ConversationPartnerProfile {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof (value as ConversationPartnerProfile).userId === "string" &&
+    typeof (value as ConversationPartnerProfile).name === "string"
+  );
+}
+
 export function ChatPartnerProfileModal({
-  profile,
-  score,
+  profile: seedProfile,
+  conversationId,
+  score: seedScore,
   open,
   onClose,
 }: ChatPartnerProfileModalProps) {
   const [mounted, setMounted] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [profile, setProfile] = useState(seedProfile);
+  const [score, setScore] = useState(seedScore);
+  const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!open) return;
+    setProfile(seedProfile);
+    setScore(seedScore);
+  }, [open, seedProfile, seedScore]);
+
+  useEffect(() => {
+    if (!open || !conversationId) return;
+    let cancelled = false;
+    setLoading(true);
+    void (async () => {
+      try {
+        const res = await apiChat.getPartnerProfile(conversationId);
+        if (cancelled) return;
+        if (isPartnerProfile(res?.profile)) {
+          setProfile(res.profile);
+        }
+        if (typeof res?.score === "number") {
+          setScore(res.score);
+        }
+      } catch {
+        // Keep seed profile from the conversation list.
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, conversationId]);
 
   useEffect(() => {
     if (!open) return;
@@ -62,7 +109,7 @@ export function ChatPartnerProfileModal({
   if (!mounted || !open) return null;
 
   const name = text(profile.name, t("chatPage.match"));
-  const age = typeof profile.age === "number" ? profile.age : null;
+  const age = typeof profile.age === "number" && profile.age > 0 ? profile.age : null;
   const location = [text(profile.city), text(profile.country)]
     .filter(Boolean)
     .join(", ");
@@ -144,6 +191,14 @@ export function ChatPartnerProfileModal({
   const languages = (profile.languagesSpoken ?? []).filter(Boolean);
   const qualities = (profile.qualities ?? []).filter(Boolean);
   const hobbies = (profile.hobbies ?? []).filter(Boolean);
+  const hasDetails =
+    !!location ||
+    !!text(profile.bio) ||
+    facts.length > 0 ||
+    languages.length > 0 ||
+    qualities.length > 0 ||
+    hobbies.length > 0 ||
+    age != null;
 
   return createPortal(
     <div
@@ -237,7 +292,14 @@ export function ChatPartnerProfileModal({
             <TrustBadges profile={profile} size="sm" className="mt-3" />
           </div>
 
-          {extras.length > 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t("chatPage.profileLoading")}
+            </div>
+          ) : null}
+
+          {!loading && extras.length > 0 ? (
             <div className="flex gap-2 overflow-x-auto pb-1">
               {gallery.map((url, i) => (
                 <button
@@ -262,7 +324,7 @@ export function ChatPartnerProfileModal({
             </div>
           ) : null}
 
-          {text(profile.bio) ? (
+          {!loading && text(profile.bio) ? (
             <section className="rounded-2xl border border-border/80 bg-muted/40 p-4">
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 {t("matchesPage.about")}
@@ -273,7 +335,7 @@ export function ChatPartnerProfileModal({
             </section>
           ) : null}
 
-          {facts.length > 0 ? (
+          {!loading && facts.length > 0 ? (
             <section className="grid grid-cols-2 gap-2.5">
               {facts.map((fact) => (
                 <div
@@ -292,21 +354,27 @@ export function ChatPartnerProfileModal({
             </section>
           ) : null}
 
-          {languages.length > 0 ? (
+          {!loading && languages.length > 0 ? (
             <ChipSection
               title={t("chatPage.languages")}
               icon={<Languages className="h-3.5 w-3.5" />}
               items={languages}
             />
           ) : null}
-          {qualities.length > 0 ? (
+          {!loading && qualities.length > 0 ? (
             <ChipSection
               title={t("profilePage.qualities")}
               items={qualities}
             />
           ) : null}
-          {hobbies.length > 0 ? (
+          {!loading && hobbies.length > 0 ? (
             <ChipSection title={t("profilePage.hobbies")} items={hobbies} />
+          ) : null}
+
+          {!loading && !hasDetails ? (
+            <p className="rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-5 text-center text-sm text-muted-foreground">
+              {t("chatPage.profileDetailsLimited")}
+            </p>
           ) : null}
 
           <p className="text-center text-[11px] text-muted-foreground">

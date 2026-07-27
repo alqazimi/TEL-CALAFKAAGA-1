@@ -1474,6 +1474,9 @@ export const en = {
     languages: "Languages",
     profilePrivacyNote:
       "Contact details stay private. Email and phone are never shared here.",
+    profileLoading: "Loading profile…",
+    profileDetailsLimited:
+      "This member has shared limited profile details so far.",
   },
   safety: {
     reportOrBlock: "Report / Block",

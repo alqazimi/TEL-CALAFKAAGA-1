@@ -1,5 +1,11 @@
 export type ChatAdapter = {
   getConversations(opts?: { list?: string }): Promise<unknown>;
+  getPartnerProfile(conversationId: string): Promise<{
+    profile: unknown;
+    score?: number | null;
+    matchId?: string;
+    conversationId?: string;
+  }>;
   getMessages(
     conversationId: string,
     opts?: { cursor?: string; limit?: number; signal?: AbortSignal }
@@ -24,6 +30,7 @@ export type ChatAdapter = {
 
 export const CHAT_METHOD_NAMES = [
   "getConversations",
+  "getPartnerProfile",
   "getMessages",
   "sendMessage",
   "uploadChatImage",

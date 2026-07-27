@@ -1484,6 +1484,9 @@ export const so: Translations = {
     languages: "Luuqadaha",
     profilePrivacyNote:
       "Macluumaadka xiriirka wuu qarsoonaa. Email iyo telefoon halkan laguma wadaago.",
+    profileLoading: "Profile-ka ayaa soo degaya…",
+    profileDetailsLimited:
+      "Xubintan wali ma aysan wadaagin faahfaahin badan oo profile ah.",
   },
   safety: {
     reportOrBlock: "Soo sheeg / Jooji",

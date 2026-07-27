@@ -111,6 +111,76 @@ export class ConversationService {
     return set;
   }
 
+  /** Public member card for chat — never includes email or phone. */
+  private async buildPublicPartnerCard(
+    viewer: Profile,
+    other: Profile,
+    otherUserId: string,
+    hasActiveMatch: boolean
+  ) {
+    let imageUrl: string | null = null;
+    let additionalImageUrls: string[] = [];
+    let photoHidden = false;
+    const hasPhoto = !!(
+      other.profileImageMediaId || other.profileImageConvexId
+    );
+    const allowed = canViewerSeePhotos({
+      viewerUserId: viewer.userId,
+      profileOwnerUserId: otherUserId,
+      photoVisibility: other.photoVisibility,
+      isStaff: isStaffRole(viewer.role),
+      hasActiveMatch,
+    });
+    if (!allowed) {
+      photoHidden = hasPhoto;
+    } else if (hasPhoto) {
+      imageUrl = await resolveProfileMainImageUrl(
+        this.prisma,
+        this.media,
+        other,
+        { userId: viewer.userId, roles: [viewer.role] }
+      );
+      if (!imageUrl) photoHidden = true;
+      additionalImageUrls = await resolveAdditionalImageUrls(
+        this.prisma,
+        this.media,
+        other,
+        { userId: viewer.userId, roles: [viewer.role] }
+      );
+    }
+
+    return {
+      userId: otherUserId,
+      name: other.name,
+      age: other.age,
+      gender: other.gender,
+      country: other.country,
+      city: other.city,
+      height: other.height,
+      education: other.education,
+      occupation: other.occupation,
+      religiousLevel: other.religiousLevel,
+      prayerFrequency: other.prayerFrequency,
+      bio: other.bio || null,
+      maritalStatus: other.maritalStatus,
+      marriageTimeline: other.marriageTimeline,
+      wantChildren: other.wantChildren,
+      languagesSpoken: other.languagesSpoken ?? [],
+      qualities: other.qualities ?? [],
+      hobbies: other.hobbies ?? [],
+      imageUrl,
+      additionalImageUrls,
+      photoHidden,
+      verified: other.verified,
+      hasPaid: other.hasPaid,
+      hasPersonalSupport: !!other.hasPersonalSupport,
+      questionnaireComplete: other.questionnaireComplete,
+      photoVisibility: other.photoVisibility,
+      approved: other.approved,
+      reviewStatus: other.reviewStatus,
+    };
+  }
+
   private async failClosedRateLimit(bucket: string, userId: string) {
     const online = await this.redis.connect();
     if (!online || !this.redis.client) {
@@ -186,37 +256,14 @@ export class ConversationService {
           )
         : 0;
 
-      let imageUrl: string | null = null;
-      let photoHidden = false;
-      let additionalImageUrls: string[] = [];
+      let profileCard = null;
       if (other) {
-        const hasPhoto = !!(
-          other.profileImageMediaId || other.profileImageConvexId
+        profileCard = await this.buildPublicPartnerCard(
+          profile,
+          other,
+          otherId,
+          m.status === "active"
         );
-        const allowed = canViewerSeePhotos({
-          viewerUserId: userId,
-          profileOwnerUserId: otherId,
-          photoVisibility: other.photoVisibility,
-          isStaff: isStaffRole(profile.role),
-          hasActiveMatch: m.status === "active",
-        });
-        if (!allowed) {
-          photoHidden = hasPhoto;
-        } else if (hasPhoto) {
-          imageUrl = await resolveProfileMainImageUrl(
-            this.prisma,
-            this.media,
-            other,
-            { userId, roles: [profile.role] }
-          );
-          if (!imageUrl) photoHidden = true;
-          additionalImageUrls = await resolveAdditionalImageUrls(
-            this.prisma,
-            this.media,
-            other,
-            { userId, roles: [profile.role] }
-          );
-        }
       }
 
       items.push({
@@ -226,37 +273,7 @@ export class ConversationService {
         chatUnlocked: paid || m.chatUnlocked,
         status: m.status,
         isNew,
-        profile: other
-          ? {
-              // Public member card — never include email or phone.
-              userId: otherId,
-              name: other.name,
-              age: other.age,
-              gender: other.gender,
-              country: other.country,
-              city: other.city,
-              height: other.height,
-              education: other.education,
-              occupation: other.occupation,
-              religiousLevel: other.religiousLevel,
-              prayerFrequency: other.prayerFrequency,
-              bio: other.bio || null,
-              maritalStatus: other.maritalStatus,
-              marriageTimeline: other.marriageTimeline,
-              wantChildren: other.wantChildren,
-              languagesSpoken: other.languagesSpoken ?? [],
-              qualities: other.qualities ?? [],
-              hobbies: other.hobbies ?? [],
-              imageUrl,
-              additionalImageUrls,
-              photoHidden,
-              verified: other.verified,
-              hasPaid: other.hasPaid,
-              hasPersonalSupport: !!other.hasPersonalSupport,
-              questionnaireComplete: other.questionnaireComplete,
-              photoVisibility: other.photoVisibility,
-            }
-          : null,
+        profile: profileCard,
         lastMessage,
         lastMessageAt: conversation?.lastMessageAt?.toISOString() ?? null,
         unreadCount,
@@ -302,6 +319,32 @@ export class ConversationService {
       };
     }
     return item;
+  }
+
+  async getPartnerProfile(userId: string, conversationId: string) {
+    const viewer = await this.requireProfile(userId);
+    const conv = await this.loadConversation(conversationId);
+    this.assertParticipant(conv, userId);
+    const otherId = this.otherUserId(conv, userId);
+    if (!otherId) throw new NotFoundException("Partner not found");
+    if (await this.isEitherBlocked(userId, otherId)) {
+      throw new ForbiddenException("Not authorized");
+    }
+    const other = await this.prisma.profile.findUnique({
+      where: { userId: otherId },
+    });
+    if (!other) throw new NotFoundException("Partner not found");
+    return {
+      profile: await this.buildPublicPartnerCard(
+        viewer,
+        other,
+        otherId,
+        conv.match.status === "active"
+      ),
+      score: conv.match.score,
+      matchId: conv.match.id,
+      conversationId: conv.id,
+    };
   }
 
   async listMessages(

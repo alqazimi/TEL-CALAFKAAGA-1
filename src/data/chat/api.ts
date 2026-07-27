@@ -19,6 +19,11 @@ export const apiChat: ChatAdapter = {
     }
     return res;
   },
+  async getPartnerProfile(conversationId) {
+    return apiClient.get(
+      `/conversations/${encodeURIComponent(conversationId)}/partner`
+    );
+  },
   async getMessages(conversationId, opts) {
     const params = new URLSearchParams();
     if (opts?.cursor) params.set("cursor", opts.cursor);

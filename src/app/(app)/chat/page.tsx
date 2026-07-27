@@ -582,6 +582,7 @@ export default function ChatPage() {
                     open={partnerProfileOpen}
                     onClose={() => setPartnerProfileOpen(false)}
                     profile={activeConv.profile}
+                    conversationId={activeConv.conversationId}
                     score={activeConv.score}
                   />
                 ) : null}

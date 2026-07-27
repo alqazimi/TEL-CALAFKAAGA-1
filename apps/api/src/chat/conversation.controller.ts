@@ -52,6 +52,11 @@ export class ConversationController {
     return this.conversations.getConversation(user.id, id);
   }
 
+  @Get(":id/partner")
+  async partner(@CurrentUser() user: RequestUser, @Param("id") id: string) {
+    return this.conversations.getPartnerProfile(user.id, id);
+  }
+
   @Get(":id/messages")
   async messages(
     @CurrentUser() user: RequestUser,
