@@ -18,25 +18,12 @@ export function DownloadPageContent() {
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Smartphone className="h-7 w-7" />
         </div>
-        <p className="mt-3 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-          {t("downloadPage.latestBuild")}
-        </p>
         <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
           {t("downloadPage.intro")}
         </p>
 
-        <div className="mt-5 rounded-2xl border border-border bg-muted/40 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {t("downloadPage.whatsNew")}
-          </p>
-          <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-foreground/90">
-            <li>{t("downloadPage.newMessageDiscover")}</li>
-            <li>{t("downloadPage.newNoMutualLike")}</li>
-          </ul>
-        </div>
-
         <Button asChild size="lg" className="mt-6 h-12 w-full rounded-full text-base">
-          <a href={`${ANDROID_APK_URL}?v=message-discover`} rel="noopener noreferrer">
+          <a href={ANDROID_APK_URL} rel="noopener noreferrer">
             {t("downloadPage.downloadApk")}
           </a>
         </Button>
@@ -50,13 +37,6 @@ export function DownloadPageContent() {
           <li>{t("downloadPage.step3")}</li>
           <li>{t("downloadPage.step4")}</li>
         </ol>
-
-        <p className="mt-5 text-xs text-muted-foreground">
-          {t("downloadPage.packageLabel")}:{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-[11px]">
-            com.telcalafkaaga.app
-          </code>
-        </p>
       </div>
     </MarketingPage>
   );

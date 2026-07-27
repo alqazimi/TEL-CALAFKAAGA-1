@@ -470,18 +470,14 @@ export const so: Translations = {
   downloadPage: {
     title: "Rakib App-ka Android",
     subtitle: "Soo deg Hel Calafkaaga telefoonkaaga Android.",
-    latestBuild: "Kan ugu dambeeyay · Fariin Discover",
     intro:
       "Taabo soo-dejinta, ka dib fur faylka APK si aad u rakibto. Waxaa laga yaabaa in lagu weydiiyo inaad oggolaato rakibaadda browser-ka.",
-    whatsNew: "Waxa cusub",
-    newMessageDiscover: "Badhanka Fariin ee Discover — bilow sheekaysi card kasta",
-    newNoMutualLike: "Sheekayso adigoon sugayn in labadiinuba is jeclaataan",
     downloadApk: "Soo deg APK",
     stepsTitle: "Telefoonkaaga:",
     step1: "Fur boggan Chrome ama Samsung Internet",
     step2: "Taabo Soo deg APK",
     step3: "Oggolow rakibaadda browser-kan haddii la weydiiyo",
-    step4: "Fur faylka la soo dejiyey → Rakib (beddel app-kii hore haddii la weydiiyo)",
+    step4: "Fur faylka la soo dejiyey oo rakib",
     packageLabel: "Xirmada",
   },
   payment: {
