@@ -5,6 +5,7 @@ import { AdminModule } from "./admin/admin.module";
 import { AuthModule } from "./auth/auth.module";
 import { ChatModule } from "./chat/chat.module";
 import { validateEnv } from "./config/env.validation";
+import { DownloadModule } from "./download/download.module";
 import { HealthModule } from "./health/health.module";
 import { MediaModule } from "./media/media.module";
 import { MatchingModule } from "./matching/matching.module";
@@ -65,6 +66,7 @@ import { RedisModule } from "./redis/redis.module";
     NotificationsModule,
     PaymentsModule,
     AdminModule,
+    DownloadModule,
   ],
 })
 export class AppModule {}
