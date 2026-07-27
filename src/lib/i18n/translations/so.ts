@@ -467,6 +467,19 @@ export const so: Translations = {
     errorMessage: "Fariintaadu waa inay ugu yaraan tahay 10 xaraf.",
     errorNotConfigured: "Emailka xiriirka weli lama dejin. Fadlan isticmaal WhatsApp.",
   },
+  downloadPage: {
+    title: "Rakib App-ka Android",
+    subtitle: "Soo deg Hel Calafkaaga telefoonkaaga Android.",
+    intro:
+      "Taabo soo-dejinta, ka dib fur faylka APK si aad u rakibto. Waxaa laga yaabaa in lagu weydiiyo inaad oggolaato rakibaadda browser-ka.",
+    downloadApk: "Soo deg APK",
+    stepsTitle: "Telefoonkaaga:",
+    step1: "Fur boggan Chrome ama Samsung Internet",
+    step2: "Taabo Soo deg APK",
+    step3: "Oggolow rakibaadda browser-kan haddii la weydiiyo",
+    step4: "Fur faylka la soo dejiyey → Rakib",
+    packageLabel: "Xirmada",
+  },
   payment: {
     completeRegistration: "Dhammaystir Diiwaangelintaada",
     welcome: "Ku soo dhawoow Hel Calafkaaga!",

@@ -77,6 +77,11 @@ export const SEO_SO = {
       description:
         "Shuruudaha isticmaalka Hel Calafkaaga — diiwaangelinta, dhaqanka xubnaha, iyo mabaadi'da guurka xalaal ah.",
     },
+    download: {
+      title: "Soo Deg App-ka Android",
+      description:
+        "Soo deg oo rakib Hel Calafkaaga Android APK — guur xalaal, isbarbardhig, iyo sheekaysi ammaan ah telefoonkaaga.",
+    },
   },
 } as const;
 

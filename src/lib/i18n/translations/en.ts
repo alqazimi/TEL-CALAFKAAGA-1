@@ -461,6 +461,19 @@ export const en = {
     errorMessage: "Your message must be at least 10 characters.",
     errorNotConfigured: "Contact email is not configured yet. Please use WhatsApp.",
   },
+  downloadPage: {
+    title: "Install Android App",
+    subtitle: "Download Hel Calafkaaga for your Android phone.",
+    intro:
+      "Tap download, then open the APK file to install. You may need to allow installs from your browser.",
+    downloadApk: "Download APK",
+    stepsTitle: "On your phone:",
+    step1: "Open this page in Chrome or Samsung Internet",
+    step2: "Tap Download APK",
+    step3: "Allow install from this browser if asked",
+    step4: "Open the downloaded file → Install",
+    packageLabel: "Package",
+  },
   payment: {
     completeRegistration: "Complete Your Registration",
     welcome: "Welcome to Hel Calafkaaga!",

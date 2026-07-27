@@ -28,6 +28,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/download/hel-calafkaaga.apk",
+        destination:
+          "https://tel-calafkaaga-1.onrender.com/download/hel-calafkaaga.apk",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

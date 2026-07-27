@@ -11,9 +11,9 @@ export const WHATSAPP_GREEN = "#25D366";
 export const WHATSAPP_NUMBER = "254793692710";
 export const WHATSAPP_DISPLAY = "+254 793 692710";
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
-/** Public Android install page (Nest / Render). Direct APK: …/download/hel-calafkaaga.apk */
-export const ANDROID_INSTALL_URL =
-  "https://tel-calafkaaga-1.onrender.com/download";
+/** Brand-domain install page (Vercel). APK file is served from Nest / Render. */
+export const ANDROID_INSTALL_PATH = "/download";
+export const ANDROID_INSTALL_URL = `${PRODUCTION_SITE_URL}${ANDROID_INSTALL_PATH}`;
 export const ANDROID_APK_URL =
   "https://tel-calafkaaga-1.onrender.com/download/hel-calafkaaga.apk";
 export const SUPPORT_EMAIL = "hello@helcalafkaaga.com";

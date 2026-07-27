@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { Smartphone } from "lucide-react";
-import { ANDROID_INSTALL_URL } from "@/lib/constants";
+import { ANDROID_INSTALL_PATH } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -19,10 +20,8 @@ export function AndroidDownloadLink({
   const { t } = useTranslation();
 
   return (
-    <a
-      href={ANDROID_INSTALL_URL}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      href={ANDROID_INSTALL_PATH}
       onClick={onClick}
       className={cn(
         "inline-flex items-center justify-center gap-2 font-semibold transition-colors",
@@ -37,6 +36,6 @@ export function AndroidDownloadLink({
     >
       <Smartphone className="h-4 w-4 shrink-0" />
       <span>{t("common.downloadAndroidApp")}</span>
-    </a>
+    </Link>
   );
 }
