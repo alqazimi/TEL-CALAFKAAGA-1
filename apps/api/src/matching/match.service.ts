@@ -7,7 +7,7 @@ import {
 import type { LikeAction, MatchStatus, Profile } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
-import { hasPaidAccess, isPremiumMember, isStaffRole } from "../common/access";
+import { hasPaidAccess, isPremiumMember, isStaffRole, shouldHideProfileFromViewer } from "../common/access";
 import { isDiscoverable } from "../common/review-status";
 import { canViewerSeePhotos } from "../profile/photo-rules";
 import {
@@ -101,7 +101,6 @@ export class MatchService {
     });
     const interacted = new Set(myLikes.map((l) => l.toUserId));
     const blocked = await this.getBlockedIds(userId);
-    const activePartners = await this.activePartnerIds(userId);
 
     const scores = await this.prisma.compatibilityScore.findMany({
       where: {
@@ -113,17 +112,14 @@ export class MatchService {
     });
 
     let candidates = scores
-      .filter(
-        (s) =>
-          !interacted.has(s.userBId) &&
-          !blocked.has(s.userBId) &&
-          !activePartners.has(s.userBId)
-      )
+      .filter((s) => !interacted.has(s.userBId) && !blocked.has(s.userBId))
       .map((s) => ({ userId: s.userBId, score: s.score }));
 
     // Sparse community backfill: include other discoverable opposite-gender
     // members even when a stored score is missing or below the soft floor.
-    if (candidates.length < limit) {
+    // Build a large pool up front — scored rows often fail buildCard later.
+    const poolTarget = MATCH_DISCOVER_LIMIT * 3;
+    if (candidates.length < poolTarget) {
       const oppositeGender =
         access.profile.gender === "male" ? "female" : "male";
       const already = new Set(candidates.map((c) => c.userId));
@@ -136,17 +132,11 @@ export class MatchService {
           hasPaid: true,
           OR: [{ approved: true }, { reviewStatus: "approved" }],
           userId: {
-            notIn: [
-              userId,
-              ...already,
-              ...interacted,
-              ...blocked,
-              ...activePartners,
-            ],
+            notIn: [userId, ...already, ...interacted, ...blocked],
           },
         },
         orderBy: { createdAt: "desc" },
-        take: MATCH_DISCOVER_LIMIT * 2,
+        take: MATCH_DISCOVER_LIMIT * 4,
         select: { userId: true },
       });
       // Prefer profiles that have any score row; otherwise assign a mid score.
@@ -166,7 +156,7 @@ export class MatchService {
           score: scoreMap.get(extra.userId) ?? 55,
         });
         already.add(extra.userId);
-        if (candidates.length >= MATCH_DISCOVER_LIMIT * 3) break;
+        if (candidates.length >= poolTarget) break;
       }
       candidates.sort((a, b) => b.score - a.score || a.userId.localeCompare(b.userId));
     }
@@ -176,9 +166,12 @@ export class MatchService {
       if (idx >= 0) candidates = candidates.slice(idx + 1);
     }
 
-    const page = candidates.slice(0, limit);
+    // Walk past non-discoverable / filtered cards until the page is full.
     const results = [];
-    for (const c of page) {
+    let walkIndex = 0;
+    while (results.length < limit && walkIndex < candidates.length) {
+      const c = candidates[walkIndex]!;
+      walkIndex += 1;
       const card = await this.buildCard(
         access,
         c.userId,
@@ -191,7 +184,9 @@ export class MatchService {
     }
 
     const nextCursor =
-      page.length === limit ? page[page.length - 1]?.userId ?? null : null;
+      results.length === limit && walkIndex < candidates.length
+        ? results[results.length - 1]?.userId ?? null
+        : null;
 
     return {
       items: results,
@@ -300,6 +295,15 @@ export class MatchService {
     for (const m of activeMatches) {
       const otherId = m.userAId === userId ? m.userBId : m.userAId;
       if (blocked.has(otherId)) continue;
+      const other = await this.prisma.profile.findUnique({
+        where: { userId: otherId },
+      });
+      if (
+        other &&
+        shouldHideProfileFromViewer(access.profile.role, other.role)
+      ) {
+        continue;
+      }
       const seenMap = (m.seenAtByUser as Record<string, number> | null) ?? {};
       const isNew = seenMap[userId] === undefined;
       if (isNew) newMutualCount += 1;
@@ -311,9 +315,6 @@ export class MatchService {
       if (unread > 0 || isNew) pendingChatCount += 1;
 
       if (recentMutuals.length < 3) {
-        const other = await this.prisma.profile.findUnique({
-          where: { userId: otherId },
-        });
         const photo = other
           ? await this.photoMeta(userId, other, access.profile.role, true)
           : { imageUrl: null as string | null };
@@ -428,9 +429,25 @@ export class MatchService {
       const other = await this.prisma.profile.findUnique({
         where: { userId: otherId },
       });
+      if (
+        other &&
+        shouldHideProfileFromViewer(profile.role, other.role)
+      ) {
+        continue;
+      }
       const photo = other
         ? await this.photoMeta(userId, other, profile.role, true)
         : { imageUrl: null, photoHidden: false, mediaId: null };
+
+      let lastMessage: string | null = null;
+      if (m.conversation) {
+        const last = await this.prisma.message.findFirst({
+          where: { conversationId: m.conversation.id },
+          orderBy: [{ messageCreatedAt: "desc" }, { id: "desc" }],
+          select: { body: true },
+        });
+        lastMessage = last?.body ?? null;
+      }
 
       items.push({
         matchId: m.id,
@@ -440,9 +457,12 @@ export class MatchService {
         status: m.status,
         isNew,
         pairKey: m.pairKey,
-        lastMessageAt:
-          m.conversation?.lastMessageAt?.toISOString() ??
-          m.createdAt.toISOString(),
+        hasMessages: !!lastMessage,
+        lastMessage,
+        lastMessageAt: lastMessage
+          ? m.conversation?.lastMessageAt?.toISOString() ?? null
+          : null,
+        matchedAt: m.createdAt.toISOString(),
         profile: other
           ? {
               userId: otherId,
@@ -462,37 +482,93 @@ export class MatchService {
     return { items };
   }
 
+  /**
+   * Open (or reuse) a conversation without requiring a like.
+   * Paid + profile access still required; blocked pairs are rejected.
+   */
+  async startChat(
+    userId: string,
+    targetUserId: string
+  ): Promise<{
+    matched: true;
+    matchId: string;
+    conversationId: string;
+    mutual: boolean;
+    reactivated?: boolean;
+  }> {
+    const access = await this.requireMatchAccess(userId);
+    const { target, meUser, targetUser } = await this.requirePeerForChat(
+      access,
+      targetUserId
+    );
+
+    const [mine, reverse] = await Promise.all([
+      this.prisma.like.findUnique({
+        where: {
+          fromUserId_toUserId: {
+            fromUserId: userId,
+            toUserId: targetUserId,
+          },
+        },
+      }),
+      this.prisma.like.findUnique({
+        where: {
+          fromUserId_toUserId: {
+            fromUserId: targetUserId,
+            toUserId: userId,
+          },
+        },
+      }),
+    ]);
+    const mutual = mine?.action === "like" && reverse?.action === "like";
+
+    const result = await this.createOrReactivateMatch(
+      userId,
+      targetUserId,
+      meUser.convexId,
+      targetUser.convexId
+    );
+
+    if (!result.conversationId || !result.matchId) {
+      throw new BadRequestException("Could not open chat");
+    }
+
+    if (mutual) {
+      await this.notifyMutualMatch(
+        access,
+        target,
+        meUser.convexId,
+        targetUser.convexId,
+        targetUserId,
+        result.matchId
+      );
+    }
+
+    return {
+      matched: true,
+      matchId: result.matchId,
+      conversationId: result.conversationId,
+      mutual,
+      reactivated: result.reactivated,
+    };
+  }
+
   async act(
     userId: string,
     targetUserId: string,
     action: LikeAction
   ): Promise<{
     matched: boolean;
-    mutual?: boolean;
+    mutual: boolean;
     matchId?: string;
     conversationId?: string;
     reactivated?: boolean;
   }> {
     const access = await this.requireMatchAccess(userId);
-    if (targetUserId === userId) {
-      throw new BadRequestException("You cannot interact with your own profile");
-    }
-    if (await this.isEitherBlocked(userId, targetUserId)) {
-      throw new ForbiddenException("You cannot interact with this user");
-    }
-    const target = await this.prisma.profile.findUnique({
-      where: { userId: targetUserId },
-    });
-    if (!target || !isDiscoverable(target)) {
-      throw new NotFoundException("This profile is not available");
-    }
-
-    const targetUser = await this.prisma.user.findUniqueOrThrow({
-      where: { id: targetUserId },
-    });
-    const meUser = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-    });
+    const { target, meUser, targetUser } = await this.requirePeerForChat(
+      access,
+      targetUserId
+    );
 
     await this.prisma.like.upsert({
       where: {
@@ -510,7 +586,7 @@ export class MatchService {
     });
 
     if (action === "pass" || action === "shortlist") {
-      return { matched: false };
+      return { matched: false, mutual: false };
     }
 
     await this.createNotificationSafe({
@@ -532,9 +608,9 @@ export class MatchService {
         },
       },
     });
-    const isMutual = reverse?.action === "like";
+    const mutual = reverse?.action === "like";
 
-    // One like is enough to open chat — mutual like is no longer required.
+    // One like is enough to open chat; mutual is only when both liked.
     const result = await this.createOrReactivateMatch(
       userId,
       targetUserId,
@@ -542,41 +618,25 @@ export class MatchService {
       targetUser.convexId
     );
 
-    if (result.matched && result.matchId && isMutual) {
-      const myName = access.profile.name ?? "Someone";
-      const targetName = target.name ?? "Someone";
-      await this.createNotificationSafe({
-        userId,
-        convexUserId: meUser.convexId,
-        type: "match",
-        title: "New Match!",
-        body: `You matched with ${targetName}!`,
-        relatedUserId: targetUserId,
-        convexRelatedUserId: targetUser.convexId,
-        sourceKey: `match:${result.matchId}:${userId}`,
-      });
-      await this.createNotificationSafe({
-        userId: targetUserId,
-        convexUserId: targetUser.convexId,
-        type: "match",
-        title: "New Match!",
-        body: `You matched with ${myName}!`,
-        relatedUserId: userId,
-        convexRelatedUserId: meUser.convexId,
-        sourceKey: `match:${result.matchId}:${targetUserId}`,
-      });
+    if (mutual && result.matched && result.matchId) {
+      await this.notifyMutualMatch(
+        access,
+        target,
+        meUser.convexId,
+        targetUser.convexId,
+        targetUserId,
+        result.matchId
+      );
     }
 
-    return { ...result, mutual: isMutual };
+    return { ...result, mutual };
   }
 
-  /** Open a conversation without requiring a like from either side. */
-  async startChat(userId: string, targetUserId: string) {
-    const access = await this.requireMatchAccess(userId);
-    if (targetUserId === userId) {
-      throw new BadRequestException("You cannot message yourself");
+  private async requirePeerForChat(access: AccessCtx, targetUserId: string) {
+    if (targetUserId === access.userId) {
+      throw new BadRequestException("You cannot interact with your own profile");
     }
-    if (await this.isEitherBlocked(userId, targetUserId)) {
+    if (await this.isEitherBlocked(access.userId, targetUserId)) {
       throw new ForbiddenException("You cannot interact with this user");
     }
     const target = await this.prisma.profile.findUnique({
@@ -585,26 +645,54 @@ export class MatchService {
     if (!target || !isDiscoverable(target)) {
       throw new NotFoundException("This profile is not available");
     }
+    // Staff never enter the member dating graph (either direction).
+    if (
+      isStaffRole(access.profile.role) ||
+      isStaffRole(target.role) ||
+      shouldHideProfileFromViewer(access.profile.role, target.role)
+    ) {
+      throw new NotFoundException("This profile is not available");
+    }
 
     const targetUser = await this.prisma.user.findUniqueOrThrow({
       where: { id: targetUserId },
     });
     const meUser = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
+      where: { id: access.userId },
     });
+    return { target, meUser, targetUser };
+  }
 
-    const result = await this.createOrReactivateMatch(
-      userId,
-      targetUserId,
-      meUser.convexId,
-      targetUser.convexId
-    );
-
-    return {
-      ...result,
-      mutual: false,
-      openedBy: access.profile.name ?? "Member",
-    };
+  private async notifyMutualMatch(
+    access: AccessCtx,
+    target: Profile,
+    meConvexId: string,
+    targetConvexId: string,
+    targetUserId: string,
+    matchId: string
+  ) {
+    const myName = access.profile.name ?? "Someone";
+    const targetName = target.name ?? "Someone";
+    await this.createNotificationSafe({
+      userId: access.userId,
+      convexUserId: meConvexId,
+      type: "match",
+      title: "New Match!",
+      body: `You matched with ${targetName}!`,
+      relatedUserId: targetUserId,
+      convexRelatedUserId: targetConvexId,
+      sourceKey: `match:${matchId}:${access.userId}`,
+    });
+    await this.createNotificationSafe({
+      userId: targetUserId,
+      convexUserId: targetConvexId,
+      type: "match",
+      title: "New Match!",
+      body: `You matched with ${myName}!`,
+      relatedUserId: access.userId,
+      convexRelatedUserId: meConvexId,
+      sourceKey: `match:${matchId}:${targetUserId}`,
+    });
   }
 
   /** Idempotent notification insert — duplicate sourceKey is a silent no-op. */
@@ -830,6 +918,105 @@ export class MatchService {
       storedScore: stored?.score ?? null,
       scoreVersion: stored?.scoreVersion ?? null,
       lastCalculatedAt: stored?.lastCalculatedAt?.toISOString() ?? null,
+    };
+  }
+
+  /**
+   * Full dating card for a peer (match or discoverable) — never includes email/phone.
+   * Used when opening a member from chat / matches.
+   */
+  async getPeerCard(viewerId: string, targetUserId: string) {
+    const access = await this.requireMatchAccess(viewerId);
+    if (targetUserId === viewerId) {
+      throw new BadRequestException("You cannot view your own profile this way");
+    }
+    if (await this.isEitherBlocked(viewerId, targetUserId)) {
+      throw new ForbiddenException("You cannot interact with this user");
+    }
+
+    const partners = await this.activePartnerIds(viewerId);
+    const isMatch = partners.has(targetUserId);
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId: targetUserId },
+    });
+    if (!profile || profile.banned) {
+      throw new NotFoundException("Profile not found");
+    }
+    if (shouldHideProfileFromViewer(access.profile.role, profile.role)) {
+      throw new NotFoundException("Profile not found");
+    }
+    if (!isMatch && !isDiscoverable(profile)) {
+      throw new ForbiddenException("Profile is not available");
+    }
+
+    const scores = await this.scoreMap(viewerId);
+    let score = scores.get(targetUserId) ?? 0;
+    let matchId: string | null = null;
+    if (isMatch) {
+      const match = await this.prisma.match.findFirst({
+        where: {
+          status: "active",
+          OR: [
+            { userAId: viewerId, userBId: targetUserId },
+            { userAId: targetUserId, userBId: viewerId },
+          ],
+        },
+        select: { id: true, score: true },
+      });
+      matchId = match?.id ?? null;
+      if (match?.score != null) score = match.score;
+    }
+
+    const like = await this.prisma.like.findUnique({
+      where: {
+        fromUserId_toUserId: { fromUserId: viewerId, toUserId: targetUserId },
+      },
+      select: { action: true },
+    });
+    const action = (like?.action as LikeAction | undefined) ?? null;
+    const photo = await this.photoMeta(
+      viewerId,
+      profile,
+      access.profile.role,
+      isMatch
+    );
+
+    return {
+      userId: targetUserId,
+      matchId,
+      mutualMatch: isMatch,
+      name: profile.name ?? "Member",
+      age: profile.age,
+      country: profile.country ?? "",
+      city: profile.city ?? undefined,
+      height: profile.height ?? undefined,
+      education: profile.education ?? "",
+      occupation: profile.occupation ?? "",
+      religiousLevel: profile.religiousLevel ?? "",
+      prayerFrequency: profile.prayerFrequency ?? undefined,
+      bio: profile.bio || undefined,
+      maritalStatus: profile.maritalStatus ?? undefined,
+      marriageTimeline: profile.marriageTimeline ?? undefined,
+      wantChildren: profile.wantChildren ?? undefined,
+      languagesSpoken: profile.languagesSpoken ?? [],
+      hobbies: profile.hobbies ?? [],
+      score,
+      action,
+      liked: action === "like",
+      shortlisted: action === "shortlist",
+      imageUrl: photo.imageUrl,
+      photoHidden: photo.photoHidden,
+      photoMediaId: photo.mediaId,
+      additionalImageUrls: photo.additionalUrls ?? [],
+      highlightKeys: computeHighlightKeys(access.profile, profile),
+      reviewStatus: profile.reviewStatus,
+      approved: profile.approved,
+      hasPaid: profile.hasPaid,
+      hasPersonalSupport: !!profile.hasPersonalSupport,
+      questionnaireComplete: profile.questionnaireComplete,
+      verified: profile.verified,
+      contactPrivacyNote:
+        "Contact details stay private. Email and phone are never shared here.",
     };
   }
 
@@ -1082,6 +1269,9 @@ export class MatchService {
       where: { userId: targetUserId },
     });
     if (!profile || profile.banned || !isDiscoverable(profile)) return null;
+    if (shouldHideProfileFromViewer(access.profile.role, profile.role)) {
+      return null;
+    }
     // Prefer photos, but still show members without one when the pool is small.
     if (!profilePassesMatchFilters(profile, filters)) return null;
 
@@ -1098,6 +1288,7 @@ export class MatchService {
       userId: targetUserId,
       name: profile.name ?? "Member",
       age: profile.age,
+      gender: profile.gender ?? undefined,
       country: profile.country ?? "",
       city: profile.city ?? undefined,
       height: profile.height ?? undefined,
@@ -1109,6 +1300,9 @@ export class MatchService {
       maritalStatus: profile.maritalStatus ?? undefined,
       marriageTimeline: profile.marriageTimeline ?? undefined,
       wantChildren: profile.wantChildren ?? undefined,
+      languagesSpoken: profile.languagesSpoken ?? [],
+      qualities: profile.qualities ?? [],
+      hobbies: profile.hobbies ?? [],
       score,
       action,
       liked: action === "like",
@@ -1124,6 +1318,7 @@ export class MatchService {
       hasPaid: profile.hasPaid,
       hasPersonalSupport: !!profile.hasPersonalSupport,
       questionnaireComplete: profile.questionnaireComplete,
+      verified: profile.verified,
     };
   }
 

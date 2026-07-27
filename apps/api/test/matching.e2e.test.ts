@@ -297,7 +297,12 @@ describe("Phase 6 matching HTTP e2e", () => {
       .set("X-CSRF-Token", csrfA)
       .send({ action: "like" })
       .expect(200);
-    assert.equal(likeA.body.matched, false);
+    // One like opens chat immediately (no reciprocal required).
+    assert.equal(likeA.body.matched, true);
+    assert.equal(likeA.body.mutual, false);
+    assert.ok(likeA.body.conversationId);
+    assert.ok(likeA.body.matchId);
+    matchId = likeA.body.matchId as string;
 
     const likeB = await agentB
       .post(`/matches/${userA}/action`)
@@ -305,8 +310,9 @@ describe("Phase 6 matching HTTP e2e", () => {
       .send({ action: "like" })
       .expect(200);
     assert.equal(likeB.body.matched, true);
-    assert.ok(likeB.body.matchId);
-    matchId = likeB.body.matchId as string;
+    assert.equal(likeB.body.mutual, true);
+    assert.equal(likeB.body.matchId, matchId);
+    assert.ok(likeB.body.conversationId);
 
     // Race-safe: second mutual path returns same pairKey match
     const again = await agentB
@@ -376,8 +382,27 @@ describe("Phase 6 matching HTTP e2e", () => {
       .set("X-CSRF-Token", csrfA)
       .send({ action: "like" })
       .expect(403);
+    await agentA
+      .post("/matches/start-chat")
+      .set("X-CSRF-Token", csrfA)
+      .send({ targetUserId: userB })
+      .expect(403);
     await prisma.block.deleteMany({
       where: { blockerId: userA, blockedId: userB },
     });
+  });
+
+  it("start-chat opens conversation without likes", async () => {
+    // Fresh pair C would be better; reuse A→someone not yet matched if available.
+    // After prior tests A/B already have a match — start-chat should still return it.
+    const res = await agentA
+      .post("/matches/start-chat")
+      .set("X-CSRF-Token", csrfA)
+      .send({ targetUserId: userB })
+      .expect(200);
+    assert.equal(res.body.matched, true);
+    assert.ok(res.body.conversationId);
+    assert.ok(res.body.matchId);
+    assert.equal(typeof res.body.mutual, "boolean");
   });
 });

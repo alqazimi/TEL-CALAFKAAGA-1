@@ -52,6 +52,10 @@ const actionSchema = z.object({
   action: z.enum(["like", "pass", "shortlist"]),
 });
 
+const startChatSchema = z.object({
+  targetUserId: z.string().uuid(),
+});
+
 const archiveSchema = z.object({
   archived: z.boolean(),
 });
@@ -104,14 +108,14 @@ export class MatchController {
     return this.matches.mutual(user.id, allowed);
   }
 
-  /** Start a chat without requiring a mutual (or any) like. */
+  /**
+   * Open chat without requiring a reciprocal like.
+   * Declared before :userId routes so "start-chat" is not captured as an id.
+   */
   @Post("start-chat")
   @HttpCode(200)
   async startChat(@CurrentUser() user: RequestUser, @Body() body: unknown) {
-    const parsed = parseBody(
-      z.object({ targetUserId: z.string().uuid() }),
-      body
-    );
+    const parsed = parseBody(startChatSchema, body);
     return this.matches.startChat(user.id, parsed.targetUserId);
   }
 
@@ -121,6 +125,15 @@ export class MatchController {
     @Param("userId") targetUserId: string
   ) {
     return this.matches.breakdown(user.id, targetUserId);
+  }
+
+  /** Full dating card for a match/discover peer (no email/phone). */
+  @Get(":userId/card")
+  async peerCard(
+    @CurrentUser() user: RequestUser,
+    @Param("userId") targetUserId: string
+  ) {
+    return this.matches.getPeerCard(user.id, targetUserId);
   }
 
   @Post(":userId/action")
