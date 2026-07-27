@@ -65,6 +65,11 @@ const changeSchema = z.object({
   newPassword: z.string().min(8).max(256),
 });
 
+const deleteAccountSchema = z.object({
+  password: z.string().min(1).max(256),
+  confirm: z.literal(true),
+});
+
 @Controller("auth")
 @UseGuards(RateLimitGuard, CsrfGuard)
 export class AuthController {
@@ -246,5 +251,24 @@ export class AuthController {
     });
     clearAuthCookies(res, this.cookieOpts());
     return result;
+  }
+
+  /**
+   * Mobile self-delete (Capacitor). Website also has DELETE /profile/account.
+   * Both require password and permanently remove the member via DeletionService.
+   */
+  @Post("delete-account")
+  @HttpCode(200)
+  @RequireProfile()
+  async deleteAccount(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const parsed = parseBody(deleteAccountSchema, body);
+    await this.profiles.deleteMyAccount(user.id, parsed.password, req.ip);
+    clearAuthCookies(res, this.cookieOpts());
+    return { ok: true };
   }
 }

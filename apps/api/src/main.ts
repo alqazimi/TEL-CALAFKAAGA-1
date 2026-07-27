@@ -4,15 +4,19 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { randomUUID } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module";
 import { RedisIoAdapter } from "./chat/redis-io.adapter";
 import { resolveCorsOrigins } from "./config/cors-origins";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     rawBody: true,
   });
+  // EVC mobile base64 uploads can be several MB (report allows ~12mb JSON).
+  app.useBodyParser("json", { limit: "12mb" });
+  app.useBodyParser("urlencoded", { limit: "12mb", extended: true });
   const logger = app.get(Logger);
   app.useLogger(logger);
   app.enableShutdownHooks();

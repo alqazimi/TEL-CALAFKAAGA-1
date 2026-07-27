@@ -1,4 +1,4 @@
-/** Exact Convex pricing from convex/payments.ts + stripeActions.ts */
+/** Current registration / premium pricing (cents). */
 
 export const REGISTRATION_AMOUNT_CENTS = 500;
 export const WOMEN_BASIC_AMOUNT_CENTS = 250;

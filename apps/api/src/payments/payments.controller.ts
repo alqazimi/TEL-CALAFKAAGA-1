@@ -114,6 +114,22 @@ export class PaymentsController {
     return this.evc.signUpload(user.id, parsed);
   }
 
+  @Post("payments/evc/proof/upload")
+  @HttpCode(200)
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  @RequireProfile()
+  async evcUpload(@CurrentUser() user: RequestUser, @Body() body: unknown) {
+    const parsed = parseBody(
+      z.object({
+        contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+        dataBase64: z.string().min(8).max(16_000_000),
+        sizeBytes: z.number().int().positive().optional(),
+      }),
+      body
+    );
+    return this.evc.uploadProofImage(user.id, parsed);
+  }
+
   @Post("payments/evc/proof/submit")
   @HttpCode(200)
   @UseGuards(CsrfGuard, RateLimitGuard)

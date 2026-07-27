@@ -16,6 +16,11 @@ export function resolveCorsOrigins(
     "http://localhost:3001",
     "http://127.0.0.1:3000",
     "http://localhost:3000",
+    // Capacitor / Ionic WebView origins (mobile client)
+    "capacitor://localhost",
+    "ionic://localhost",
+    "http://localhost",
+    "https://localhost",
   ];
 
   const productionFrontends = [

@@ -169,7 +169,10 @@ export class RateLimitGuard implements CanActivate {
     if (path.includes("/auth/register")) return "auth.register";
     if (path.includes("/auth/forgot-password")) return "auth.forgot";
     if (path.includes("/auth/reset-password")) return "auth.reset";
-    if (method === "DELETE" && path === "/profile/account") {
+    if (
+      (method === "DELETE" && path === "/profile/account") ||
+      (method === "POST" && path === "/auth/delete-account")
+    ) {
       return "profile.delete_account";
     }
     if (method === "POST" && path.includes("/profile/geolocation/verify")) {

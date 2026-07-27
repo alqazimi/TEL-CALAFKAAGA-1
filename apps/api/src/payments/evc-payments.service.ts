@@ -135,6 +135,117 @@ export class EvcPaymentsService {
     };
   }
 
+  /**
+   * Mobile-friendly EVC screenshot upload: base64 (or data-URL) in JSON.
+   * Avoids cross-origin PUT to S3 from Capacitor WebViews.
+   */
+  async uploadProofImage(
+    userId: string,
+    opts: {
+      contentType: string;
+      dataBase64: string;
+      sizeBytes?: number;
+    }
+  ) {
+    await this.failClosed(userId);
+    const profile = await this.prisma.profile.findUnique({ where: { userId } });
+    if (!profile) throw new ForbiddenException("Profile required");
+    if (profile.banned) throw new ForbiddenException("Account suspended");
+    if (!ALLOWED.has(opts.contentType)) {
+      throw new BadRequestException("Unsupported image type");
+    }
+
+    let raw = opts.dataBase64.trim();
+    const dataUrl = /^data:([^;]+);base64,(.+)$/i.exec(raw);
+    if (dataUrl) {
+      const declared = dataUrl[1].toLowerCase();
+      if (!ALLOWED.has(declared)) {
+        throw new BadRequestException("Unsupported image type");
+      }
+      if (declared !== opts.contentType) {
+        throw new BadRequestException("contentType does not match data URL");
+      }
+      raw = dataUrl[2];
+    }
+
+    let buffer: Buffer;
+    try {
+      buffer = Buffer.from(raw, "base64");
+    } catch {
+      throw new BadRequestException("Invalid base64 image data");
+    }
+    if (!buffer.length) {
+      throw new BadRequestException("Empty image data");
+    }
+    if (buffer.length > MAX_BYTES) {
+      throw new BadRequestException("File too large");
+    }
+    if (opts.sizeBytes && Math.abs(opts.sizeBytes - buffer.length) > 1024) {
+      throw new BadRequestException("sizeBytes does not match payload");
+    }
+
+    const mediaId = randomUUID();
+    const ext =
+      opts.contentType === "image/png"
+        ? "png"
+        : opts.contentType === "image/webp"
+          ? "webp"
+          : "jpg";
+    const objectKey = `${userId}/${mediaId}.${ext}`;
+
+    await this.prisma.mediaObject.create({
+      data: {
+        id: mediaId,
+        convexStorageId: `local_evc_${mediaId}`,
+        purpose: "evc_screenshot",
+        bucket: this.bucket,
+        objectKey,
+        contentType: opts.contentType,
+        sizeBytes: BigInt(buffer.length),
+        ownerUserId: userId,
+        migrationStatus: "pending",
+      },
+    });
+
+    try {
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: objectKey,
+          Body: buffer,
+          ContentType: opts.contentType,
+        })
+      );
+      await this.prisma.mediaObject.update({
+        where: { id: mediaId },
+        data: {
+          migrationStatus: "uploaded",
+          verifiedReadable: true,
+        },
+      });
+    } catch (err) {
+      await this.prisma.mediaObject
+        .update({
+          where: { id: mediaId },
+          data: {
+            migrationStatus: "failed",
+            failureReason:
+              err instanceof Error ? err.message.slice(0, 200) : "upload_failed",
+          },
+        })
+        .catch(() => undefined);
+      throw new ServiceUnavailableException(
+        "Could not store payment screenshot. Try again."
+      );
+    }
+
+    return {
+      mediaId,
+      sizeBytes: buffer.length,
+      contentType: opts.contentType,
+    };
+  }
+
   async submitProof(
     userId: string,
     opts: {

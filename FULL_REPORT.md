@@ -1,539 +1,443 @@
-# Hel Calafkaaga — Full Product & Technical Report
+# Hel Calafkaaga — Full Product & Technical Report (Website)
 
-**How the website works from registration to payments and every major feature.**
+**Audience:** Backend / platform / frontend engineers  
+**Product:** Halal Muslim marriage matchmaking (**website**)  
+**Last updated:** 27 July 2026  
+**Live website:** `https://helcalafkaaga.com` / `https://www.helcalafkaaga.com`  
+**Production API:** NestJS on Render (e.g. `https://tel-calafkaaga-1.onrender.com`)
 
-Last updated: 11 July 2026  
-Product: Halal Muslim marriage matchmaking platform  
-Live site: `https://www.helcalafkaaga.com`
+> This document describes the **website monorepo** (Next.js + NestJS API + PostgreSQL).  
+> It replaces the old Convex product report. Do **not** use Convex URLs, `$10/$20` flat pricing, 7-day free trial unlock, or ≥70% discover thresholds as current truth.
 
-### Redesign status (July 2026)
+**There is no Convex backend in this repo.** Legacy `convexId` / `convex_user_id` columns exist only for migration parity. Import tooling lives under `packages/migration/`.
 
-Shipped module-by-module while preserving auth, Stripe, Convex data, and production flows:
+**Mobile companion report:** [`FULL_REPORT_MOBILE.md`](./FULL_REPORT_MOBILE.md) (Capacitor). Both clients share the same Nest API.
 
-| Area | Status |
-|------|--------|
-| Safety (likes, rate limits) | Done |
-| Trust (`reviewStatus`, no auto-approve) | Done — run backfill migration |
-| Brand (crimson/gold, typography) | Done |
-| Landing + questionnaire UX | Done |
-| Member surfaces (discover, matches, chat, profile, notifications) | Done |
-| Admin (dashboard, reports notes, audit log, audience + schedule) | Done |
-| Photo EXIF strip on upload | Done |
-| Analytics (gender, review, monthly bars) | Done |
-| Branded HTML emails (Resend) | Done |
+For a deeper backend/database handoff, also see: `docs/DEVELOPER_BACKEND_DATABASE_GUIDE.md`
 
 ---
 
 ## 1. What this product is
 
-Hel Calafkaaga connects Muslim men and women who want marriage (not casual dating). Members:
+Hel Calafkaaga connects Muslim men and women seeking **marriage** (not casual dating).
 
-1. Create an account  
-2. Choose gender and complete a detailed questionnaire  
-3. Get a **7-day free trial**, then pay **$10** (basic) or **$20** (personal support)  
-4. Discover compatible matches, like/pass, and chat when there is a mutual like  
+### Member journey (server-enforced)
 
-Staff (admin / owner) manage members, payments, reports, and announcements.
+```
+Register (email + password)
+  → Choose gender
+  → Complete questionnaire (+ optional photo)
+  → Pay (Stripe card OR EVC / M-PESA proof)
+  → (Women on Basic: may wait for admin profile approval)
+  → Dashboard / Discover / Matches / Chat
+```
+
+### Staff
+
+`admin` / `owner` manage members, payments (Stripe + EVC), reports, support inbox, announcements, and invites. Staff profiles are **hidden** from member Discover / matching.
 
 ---
 
-## 2. Technology stack
+## 2. Technology stack (current)
 
 | Layer | Technology |
 |--------|------------|
-| Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion |
-| Backend | Convex (database, auth, file storage, scheduled jobs, HTTP webhooks) |
-| Auth | `@convex-dev/auth` — email + password; password reset via Resend OTP |
-| Payments | Stripe Checkout |
-| Email | Resend |
-| Languages | Somali (default on marketing) + English; signed-in app shell is English |
-| Hosting | Vercel (website) + Convex Cloud (API / data) |
+| Website | **Next.js 16** (App Router) + React 19 + TypeScript + Tailwind + shadcn/ui |
+| Frontend data | `src/data/**` adapters → Nest REST (+ Socket.IO client) |
+| Backend | **NestJS** (`apps/api`) |
+| Database | **PostgreSQL** via **Prisma** |
+| Cache / queues / rate limits | **Redis** (+ BullMQ) |
+| Object storage | S3-compatible (local MinIO; production R2/S3) |
+| Realtime chat | **Socket.IO** |
+| Payments | **Stripe Checkout** + **manual EVC / M-PESA** proof review |
+| Email | Resend when `MAIL_DRIVER=resend` (else console) |
+| Auth | Nest sessions + CSRF; cross-site uses `X-Session-Token` |
+| Local infra | Docker Compose: Postgres + Redis + MinIO (`infra/`) |
+| Languages | Somali + English |
+| Hosting | **Vercel** (website) + **Render** (API) |
 
-**Main folders**
-
-- `src/app/` — pages and routes  
-- `src/components/` — UI (marketing, auth, questionnaire, matches, admin, etc.)  
-- `convex/` — backend schema, queries, mutations, Stripe, matching, crons  
-- `src/lib/` — routes, access rules, i18n, constants  
-
-There is **no Next.js middleware**. Access is enforced by:
-
-- Client routing helpers (`src/lib/routes.ts`)  
-- Convex server checks (`requireAuth`, `requireActiveProfile`, staff helpers)
-
----
-
-## 3. End-to-end member journey
+### Repo layout
 
 ```
-Marketing site
-    → Register (email + password)
-    → Choose gender (/register/details)
-    → Questionnaire (10 steps + review)
-    → 7-day trial starts (if unpaid)
-    → Pay $10 or $20 (or use trial)
-    → Discover matches (≥ 70% score)
-    → Like / Pass / Shortlist
-    → Mutual like → Match + conversation
-    → Chat, likes, profile, notifications
+apps/
+  api/                 NestJS API + Prisma
+packages/
+  migration/           Convex → Postgres import tooling (legacy only)
+infra/
+  docker-compose.yml   Local Postgres / Redis / MinIO
+src/
+  app/                 Next.js App Router pages
+  components/          UI
+  data/                API client + hooks (Nest only)
+docs/                  Runbooks + developer guides
 ```
 
-**Where the app sends you after login** (`getAuthenticatedHomeRoute`):
-
-1. Staff (admin/owner) → `/admin`  
-2. Gender not finished → `/register/details`  
-3. Questionnaire not finished → `/questionnaire`  
-4. Not paid and trial expired → `/payment`  
-5. Otherwise → `/matches`
+**No `convex/` folder. No Capacitor mobile app in this repo.**
 
 ---
 
-## 4. Public / marketing website
+## 3. Access & routing (source of truth)
 
-These pages are open to everyone (navbar + footer on every page).
+Server builds `accessState` (`apps/api/src/common/access-state.ts`).  
+Website uses `nextRoute` for redirects after login / onboarding.
 
-| URL | Purpose |
-|-----|---------|
-| `/` | Landing page (brand, plans, how it works, stories, FAQ teaser) |
-| `/about` | About Hel Calafkaaga |
-| `/how-it-works` | Step-by-step explanation |
-| `/pricing` | $10 / $20 plans |
-| `/faq` | Frequently asked questions |
-| `/contact` | Contact form + WhatsApp |
-| `/privacy` | Privacy policy |
-| `/terms` | Terms of service |
+| Condition | API `nextRoute` | Website page |
+|-----------|-----------------|--------------|
+| Staff (`admin` / `owner`) | `/admin` | `/admin` |
+| Gender / registration incomplete | `/register/details` | `/register/details` |
+| Questionnaire incomplete | `/questionnaire` | `/questionnaire` |
+| No paid access | `/payment` | `/payment` |
+| Ready | `/dashboard` | `/dashboard` |
+| Banned | `/login` | `/login` |
 
-SEO: sitemap, robots, Open Graph image, JSON-LD site name **Hel Calafkaaga**.
+### Paid access (`hasPaidAccess`)
 
----
+From `apps/api/src/common/access.ts`:
 
-## 5. Registration & login
+- Staff → always access  
+- `hasPaid === true` → access  
+- **`trialEndsAt` / free trial does NOT grant access** (legacy field only)
 
-### 5.1 Register — `/register`
+Matching controllers use `@RequirePaid()` so Discover / likes require server paid access.
 
-- Email + password (Convex Auth Password provider)  
-- On first account creation, Convex creates empty `profiles` + `preferences` rows  
-- Then user goes to gender step  
+### Discoverability
 
-**File:** `src/app/(app)/register/page.tsx`
+From `apps/api/src/common/review-status.ts`:
 
-### 5.2 Gender / registration details — `/register/details`
-
-- User selects **male** or **female**  
-- Sets `registrationComplete: true`  
-- Preferred partner gender is set to the opposite  
-- Redirects to `/questionnaire?welcome=true`  
-
-**File:** `src/app/(app)/register/details/page.tsx`  
-**Backend:** `convex/profiles.ts` (`completeRegistrationGender`)
-
-### 5.3 Login — `/login`
-
-- Email + password  
-- After success, redirected by `getAuthenticatedHomeRoute` (admin / questionnaire / payment / matches)
-
-**File:** `src/app/(app)/login/page.tsx`
-
-### 5.4 Forgot password — `/forgot-password`
-
-1. Enter email → receive OTP code (Resend)  
-2. Enter code + new password together  
-3. Sign in and go to the correct home route  
-
-**File:** `src/app/(app)/forgot-password/page.tsx`
-
-### 5.5 Staff invite — `/admin/invite?token=…`
-
-- Owner invites an admin by email  
-- Invitee opens link, signs in/up with that email, accepts  
-- Role becomes `admin` with full staff access  
-
-**Files:** `src/app/(app)/admin/invite/page.tsx`, `convex/staffInvites.ts`
-
-### 5.6 Sign out
-
-Sign out clears the session and navigates to `/login` (hard redirect so the user does not stay on a protected page).
+- Not banned, not staff, questionnaire complete  
+- Paid / approval rules for discovery  
+- **Staff (`admin` / `owner`) never appear** in member Discover  
 
 ---
 
-## 6. Questionnaire (profile completion)
+## 4. Pricing (current)
 
-**URL:** `/questionnaire`  
-**UI:** `src/app/(app)/questionnaire/page.tsx`  
-**Steps definition:** `src/components/questionnaire/steps.ts`  
-**Backend:** `convex/profiles.ts`
+Constants: `apps/api/src/payments/pricing.ts` and `src/lib/constants.ts`.
 
-### 6.1 The 10 steps
+| Plan | Amount | Notes |
+|------|--------|--------|
+| Men — Basic registration | **$5** one-time | Full platform after grant |
+| Women — Basic registration | **$2.50** one-time | May need admin approval after pay |
+| Men — Premium (personal support) | **$20** one-time | Sets `hasPersonalSupport` |
+| Women — Premium / upgrade | **$15** | Premium signup or Basic → Premium |
+| Basic → Premium upgrade | **$15** | Existing basic members |
 
-1. **Basic information** — age, country, city, height, weight, languages  
-2. **Religious practice** — prayer frequency; hijab (women)  
-3. **Education**  
-4. **Employment / financial readiness**  
-5. **Marriage & family** — marital status, children, polygyny-related questions  
-6. **Lifestyle** — smoking, exercise, etc.  
-7. **About you** — marriage timeline, love language, qualities, hobbies  
-8. **Partner preferences** — age/height range, countries, education, children, hijab preference (for men), etc.  
-9. **Contact** — full name + phone  
-10. **Profile photo** — required to finish  
+**Deprecated:** 7-day free trial unlocking the app (`TRIAL_DAYS` / `trialEndsAt` are legacy only).
 
-Then a **review** screen, then submit.
+### Payment methods
 
-### 6.2 Autosave
+1. **Stripe Checkout** — card; webhook + verify-session grant access  
+2. **EVC Plus (Somalia) / M-PESA (Kenya)** — member uploads proof; staff approve/reject in Admin  
 
-Progress is saved as the user moves (`questionnaireStep`, `lastSavedAt`). Users can leave and continue later.
+Access is granted only via server grant logic (idempotency keys like `stripe:{sessionId}` / `evc:{proofId}`). Client claims never unlock features.
 
-### 6.3 What `questionnaireComplete` means
+Webhook URL: `https://<API_HOST>/webhooks/stripe` (Nest — not Convex).
 
-When the user finishes and passes validation:
+---
 
-- `questionnaireComplete = true`  
-- `reviewStatus = "pending_review"` (staff must **Approve** before Discover)  
-- `approved` / `verified` are **not** auto-set on complete  
-- If unpaid: `trialEndsAt = now + 7 days`  
-- Matching scores are recalculated  
+## 5. End-to-end member journey (website)
 
-**Important:** Completing the questionnaire is different from Stripe payment. Complete = form done. Paid = money (or active trial / staff). Discoverable = staff-approved (`reviewStatus: "approved"`).
-
-Backfill existing members after deploy:
-
-```bash
-npx convex run migrations:backfillReviewStatus
-# production:
-npx convex run migrations:backfillReviewStatus --prod
+```
+Marketing (/)
+  → /register or /login
+  → /register/details          (gender)
+  → /questionnaire
+  → /payment                   (Stripe and/or EVC)
+  → /dashboard
+      /matches                 (Discover grid / swipe)
+      /chat (conversations)
+      /profile                 (edit, privacy, delete account)
+      /admin                   (staff only)
 ```
 
-### 6.4 Past bug (fixed)
-
-A strict completeness check was incorrectly **clearing** `questionnaireComplete` on every profile save if any field failed (photo, phone, preferences, etc.). Finished members looked “incomplete / pending” in admin.
-
-**Fix:** stop auto-clearing that flag; restore migration available:
-
-```bash
-npx convex run migrations:restoreClearedQuestionnaireComplete --prod
-```
+Forgot password: `/forgot-password` → API password-reset tokens (email when Resend configured).
 
 ---
 
-## 7. Trial & payments (Stripe)
+## 6. Auth API (Nest)
 
-### 7.1 Plans
+Base path: `/auth`  
+Guards: rate limit + CSRF.
 
-| Plan | Price | What you get |
-|------|-------|----------------|
-| Basic registration | **$10** one-time | Full platform access (matches, likes, chat after unlock rules) |
-| Registration + personal support | **$20** one-time | Everything in basic + personal support / premium features |
-| Upgrade basic → premium | **$10** | Adds personal support |
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/auth/register` | Create account |
+| POST | `/auth/register/check-email` | Email availability |
+| POST | `/auth/login` | Login |
+| POST | `/auth/logout` | Logout |
+| POST | `/auth/logout-all` | Revoke all sessions |
+| GET | `/auth/me` | Current user + accessState + CSRF |
+| POST | `/auth/register/complete` | Set gender |
+| POST | `/auth/forgot-password` | Request reset |
+| POST | `/auth/reset-password` | Apply token + new password |
+| POST | `/auth/change-password` | Authenticated change |
 
-Constants live in `src/lib/constants.ts` / Convex payment helpers.
+Health: `GET /health`, `GET /health/live`, `GET /health/ready`
 
-### 7.2 7-day trial
-
-After questionnaire completion, unpaid members get **7 days** of access (`trialEndsAt`). During trial they can use the app like a paid member. Checkout is blocked while trial is still active.
-
-### 7.3 Checkout flow
-
-1. User opens `/payment`  
-2. Chooses $10 or $20  
-3. Convex action creates a **Stripe Checkout Session**  
-4. User pays on Stripe  
-5. Returns to `/payment/success?session_id=…`  
-6. App verifies the session and updates the profile  
-
-**Also:** Stripe webhook `POST /stripe/webhook` on Convex site URL marks payment completed if the browser return fails.
-
-Webhook URL pattern:
-
-```text
-https://YOUR-DEPLOYMENT.convex.site/stripe/webhook
-```
-
-**Key files**
-
-- `convex/stripeActions.ts` — create checkout  
-- `convex/stripeWebhook.ts` — webhook handler  
-- `convex/http.ts` — HTTP routes  
-- `src/app/(app)/payment/page.tsx`  
-- `src/app/(app)/payment/success/page.tsx`  
-
-Legacy Next route `/api/stripe/checkout` is deprecated (410).
-
-### 7.4 After payment
-
-- `hasPaid = true`  
-- For $20 / upgrade: `hasPersonalSupport = true`  
-- Match chats can unlock; notifications may fire  
-- Pending abandoned checkouts are cleaned by a cron (every 6 hours)
+**One email = one account** (normalized email uniqueness enforced in auth).
 
 ---
 
-## 8. Matching, likes, and discover
+## 7. Profile & questionnaire
 
-### 8.1 Compatibility engine
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/profile/me` | Own profile |
+| PATCH | `/profile/me` | Update allowed fields |
+| GET | `/profile/access-state` | Access flags |
+| POST | `/profile/questionnaire/*` | Autosave / complete / edits |
+| GET/PATCH | `/profile/wali` | Guardian contact |
+| Preferences | `/preferences/me` | Partner filters |
+| Photos | `/profile/photos/*` | Sign upload, confirm, delete, reorder |
+| DELETE | `/profile/account` | **Self-delete** `{ password }` |
 
-**Files:** `convex/matching.ts`, `convex/matchingEngine.ts`
+Profile photo is **optional** for questionnaire completion.
 
-Scores consider religion/prayer, age, country, height, education, children, marital status, qualities, hobbies, timeline, and more. Scores are stored in `compatibilityScores`.
+When questionnaire completes:
 
-### 8.2 Discover — `/matches`
-
-Shows opposite-gender candidates who:
-
-- Completed questionnaire  
-- Are not banned  
-- Have a profile photo  
-- Score **≥ 70%**  
-- Have not already been liked/passed by you  
-
-Actions: **Like**, **Pass**, **Shortlist**.
-
-### 8.3 Likes — `/likes`
-
-- Likes you sent  
-- Shortlist  
-- Passed  
-- **“Liked you”** is a premium/trial feature  
-
-### 8.4 Mutual like → match
-
-When both like each other:
-
-- A row is created in `matches`  
-- A `conversations` row is created  
-- Chat unlock follows payment/trial rules (`chatUnlocked` / `hasPaidAccess`)
+- `questionnaireComplete = true`
+- Review status follows `resolveReviewStatus`
+- Compatibility scores recalculated (queue)
+- Completing the form ≠ paid ≠ always discoverable
 
 ---
 
-## 9. Chat & messaging
+## 8. Payments API
 
-**URL:** `/chat`  
-**Backend:** `convex/messages.ts`
+### Stripe
 
-- List conversations from matches  
-- Send text (and optional images via Convex storage)  
-- Typing indicators, mark as read  
-- Blocked users cannot message each other  
-- New message can create an in-app notification (+ optional email)
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/payments/stripe/registration-checkout` | `{ tier: "basic" \| "premium" }` |
+| POST | `/payments/stripe/premium-upgrade-checkout` | Upgrade |
+| POST | `/payments/stripe/verify-session` | After return |
+| POST | `/webhooks/stripe` | Public webhook (signature required) |
+| GET | `/payments/status` | Current status |
 
-Access requires being a participant and having paid access (paid, trial, or staff).
+### EVC / M-PESA
+
+Proof sign-upload + submit; staff approve/reject under `/admin/evc`.  
+Payee display: Somalia EVC + Kenya M-PESA in `src/lib/constants.ts`.
 
 ---
 
-## 10. Profile, photos, preferences
+## 9. Matching, likes, discover
 
-**URL:** `/profile`  
-**UI:** `src/components/profile/profile-edit-screen.tsx`  
-**Backend:** `convex/profiles.ts`
+**Min discover score:** `MIN_COMPATIBILITY_SCORE = 40`  
+Engine: `apps/api/src/matching/` · Scores in `CompatibilityScore`
 
-Members can edit questionnaire answers, contact info, preferences, and photos.
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/matches/discover` | Opposite-gender cards |
+| GET | `/matches/home-feed` | Dashboard feed |
+| GET | `/matches/lists` | Shortlist / liked-you / etc. |
+| POST | `/matches/:userId/action` | `like` \| `pass` \| `shortlist` |
+| GET | `/matches/:userId/breakdown` | Score breakdown |
+| Mutual like | Creates `Match` + `Conversation` | Chat unlocked per rules |
 
-- Main photo: `profileImageId`  
-- Extra photos: `additionalImageIds` (limit enforced in code)  
-- Optional **wali** (guardian) contact for serious conversations  
-- Owner can invite admins from their profile (not from the admin Users tab)
+Staff profiles are filtered out of member dating surfaces.
 
-**Dashboard** `/dashboard` shows next steps (finish profile, pay, etc.).
+---
+
+## 10. Chat & messaging
+
+HTTP: `/conversations` (+ messages, typing, read, image upload).  
+Realtime: Socket.IO gateway.
+
+- Text + optional images  
+- Blocks prevent messaging both ways  
+- **Not end-to-end encrypted** — do not claim E2EE  
 
 ---
 
 ## 11. Notifications
 
-**URL:** `/notifications`  
-**Backend:** `convex/notifications.ts`
-
-Types include: like, match, message, announcement, approval, payment.
-
-Unread counts appear in the app header / nav. Opening the notifications page can mark items read.
-
-Soft reminders also nudge incomplete or unpaid members.
+API: `/notifications`  
+In-app notification rows for like / match / message / announcement / payment / approval.  
+Website surfaces reminders; device push (FCM/APNs) is **not** the primary product path in this repo.
 
 ---
 
-## 12. Roles & access
+## 12. Roles & safety
 
-| Role | Who | Access |
-|------|-----|--------|
-| `user` | Normal member | Onboarding → paywall → matches/chat |
-| `admin` | Staff | Admin panel; skips member paywall / questionnaire |
-| `owner` | Super admin | Everything admin has + invite admins + change roles + bootstrap |
+| Role | Access |
+|------|--------|
+| `user` | Onboarding → paywall → member app |
+| `admin` | Admin console |
+| `owner` | Admin + staff invites + elevated ops |
 
-**Paid access** = `hasPaid` **OR** active trial **OR** staff.
-
-Banned accounts (`banned: true`) cannot use the app (`Account suspended`).
-
----
-
-## 13. Admin / owner panel
-
-**URL:** `/admin`  
-**File:** `src/app/(app)/admin/page.tsx`
-
-### Tabs
-
-| Tab | What it does |
-|-----|----------------|
-| **Dashboard** | Overview cards, review queue, quick actions |
-| **Users** | Search/filter members, open detail, approve/reject, ban, delete, set role (owner) |
-| **Reports** | Case notes, review / dismiss / ban |
-| **Payments** | Stripe payment history |
-| **Announcements** | Broadcast now or schedule; audience all/paid/trial/unpaid |
-| **Analytics** | Completion %, conversion, gender, review status, monthly signups, countries |
-| **Audit** | Staff action log |
-| **Settings** | Pricing / support snapshot |
-
-### Other admin capabilities
-
-- First owner claim via `ADMIN_BOOTSTRAP_EMAIL` + `ADMIN_BOOTSTRAP_SECRET`  
-- Staff invites (owner profile)  
-- Advisor reviewed flag for premium support cases  
-- Profile backfill tools  
-- Cron delivers scheduled announcements every 5 minutes  
-
-**Search** on the Users tab filters the member list (name/email/etc.) — it does not change member data.
+| Feature | Behavior |
+|---------|----------|
+| Block | Hide for likes/chat/discover |
+| Report | Admin → Reports |
+| Ban | `banned: true` — cannot use app |
+| Account deletion | `DELETE /profile/account` → `DeletionService` (password required). Staff cannot self-delete here. |
 
 ---
 
-## 14. Safety: block & report
+## 13. Admin (website)
 
-**Backend:** `convex/moderation.ts`
+Staff UI: `/admin` (Next.js). Backend: `/admin/*`.
 
-- **Block** — hides profiles both ways; blocks likes and chat  
-- **Report** — creates a report for staff review  
-- Staff update report status from Admin → Reports  
-
----
-
-## 15. Premium / personal support
-
-Paying **$20** (or upgrading) sets `hasPersonalSupport: true`.
-
-Premium / trial extras include:
-
-- Seeing who liked you  
-- Richer compatibility UI  
-- WhatsApp path to personal advisors (`WHATSAPP_*` constants)  
+| Area | Backend |
+|------|---------|
+| Members | List / approve / reject / ban / delete |
+| Payments | Stripe list + EVC approve/reject |
+| Reports | Moderation |
+| Support | Inbox |
+| Announcements | Create / send / schedule |
+| Invites (owner) | Staff invites |
+| Stats / metrics / audit | Dashboard + logs |
 
 ---
 
-## 16. Database (Convex tables) — overview
+## 14. Database (PostgreSQL / Prisma)
 
-| Table | Purpose |
+Schema: `apps/api/prisma/schema.prisma`
+
+| Model | Purpose |
 |-------|---------|
-| `users` | Auth identity (email, optional name/phone/gender) |
-| `profiles` | Full member profile, role, payment, trial, questionnaire flags, photos, ban/approve |
-| `preferences` | Partner preference filters |
-| `compatibilityScores` | Pair match scores |
-| `likes` | like / pass / shortlist |
-| `matches` | Mutual matches + chat unlock flag |
-| `conversations` / `messages` / `typingIndicators` | Chat |
-| `notifications` | In-app alerts |
-| `payments` | Stripe checkout sessions |
-| `announcements` | Admin broadcasts (`audience`, `scheduledFor`, `sentAt`) |
-| `staffInvites` | Admin invite tokens |
-| `blocks` / `reports` | Safety (reports may include `priority`, `adminNotes`, `resolution`) |
-| `auditLogs` | Staff action accountability |
-| `rateLimitBuckets` | Contact / geolocation rate limits |
-| `userUploads` | File ownership |
-| `memberEmailLog` | Email reminder dedupe |
-| Auth tables | Sessions / accounts (from Convex Auth) |
+| `User` / `AuthAccount` / `Session` | Identity + sessions |
+| `PasswordResetToken` / `AuthAuditEvent` | Auth flows |
+| `Profile` | Questionnaire, role, payment flags, review, photos |
+| `Preference` | Partner filters |
+| `CompatibilityScore` | Pair scores |
+| `Like` / `Match` / `PhotoReveal` | Dating actions |
+| `Conversation` / `Message` | Chat |
+| `Notification` | In-app alerts |
+| `Payment` / `StripeWebhookEvent` | Stripe + grant metadata |
+| `EvcPaymentProof` | Mobile-money proofs |
+| `MediaObject` / `UserUpload` / `OrphanedMediaObject` | Files |
+| `Announcement` / `StaffInvite` | Broadcasts / invites |
+| `Block` / `Report` | Safety |
+| `SupportContact` / `SupportMessage` | Support |
+| `AuditLog` / `DeletionJob` | Accountability / deletion |
+| `SiteMetrics` / `MigrationRun` | Ops / migration |
 
-Schema file: `convex/schema.ts`
+Many models retain `convexId` for **legacy import only**.
+
+Migrations: `apps/api/prisma/migrations/` · deploy via `prisma migrate deploy` (also on API `start:prod`).
 
 ---
 
-## 17. Important environment variables
+## 15. Object storage
 
-### On Vercel (Next.js)
+| Purpose | Typical bucket |
+|---------|----------------|
+| Profile | `hel-profile` |
+| Profile private | `hel-profile-private` |
+| Chat | `hel-chat` |
+| Support | `hel-support` |
+| EVC proofs | `hel-evc` |
+
+Access: signed URLs via media policy (`apps/api/src/media/access-policy.ts`).
+
+---
+
+## 16. Environment variables
+
+### Website (`.env.local`)
 
 | Variable | Purpose |
 |----------|---------|
-| `NEXT_PUBLIC_CONVEX_URL` | Production Convex URL |
-| `NEXT_PUBLIC_APP_URL` | Prefer `https://www.helcalafkaaga.com` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
+| `NEXT_PUBLIC_API_URL` | Nest HTTPS base |
+| `NEXT_PUBLIC_SOCKET_URL` | Socket.IO base |
+| `NEXT_PUBLIC_APP_URL` | Public site URL |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe.js |
 
-### On Convex (secrets)
+### API (`apps/api/.env`)
 
 | Variable | Purpose |
 |----------|---------|
-| `SITE_URL` | App URL for emails / redirects (use www) |
-| `JWT_PRIVATE_KEY` / `JWKS` | Auth tokens |
-| `AUTH_RESEND_KEY` / `AUTH_EMAIL_FROM` | Emails |
-| `SUPPORT_EMAIL` | Contact inbox |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Payments |
-| `ADMIN_BOOTSTRAP_EMAIL` / `ADMIN_BOOTSTRAP_SECRET` | Optional first-owner claim |
+| `DATABASE_URL` | Postgres |
+| `REDIS_URL` | Rate limits + queues + sockets |
+| `SESSION_SECRET` | Sessions (strong in prod) |
+| `COOKIE_*` / `CORS_ORIGINS` / `TRUST_PROXY` | HTTP / cookies |
+| `APP_URL` | Redirects / emails |
+| `MAIL_DRIVER` / `RESEND_*` | Email |
+| `STRIPE_*` | Payments (`fake` for local tests only) |
+| `S3_*` + bucket names | Media |
 
-Convex does **not** need a custom domain DNS record. The website domain stays on Vercel/Cloudflare; Convex stays on `*.convex.cloud` / `*.convex.site`.
-
----
-
-## 18. Full route map
-
-### Marketing
-
-- `/` `/about` `/how-it-works` `/pricing` `/faq` `/contact` `/privacy` `/terms`
-
-### Auth & onboarding
-
-- `/login` `/register` `/register/details` `/forgot-password`  
-- `/questionnaire` `/payment` `/payment/success`
-
-### Member app
-
-- `/dashboard` `/matches` `/likes` `/chat` `/profile` `/notifications`
-
-### Staff
-
-- `/admin` `/admin/invite`
-
-### Other
-
-- `/robots.txt` `/sitemap.xml`  
-- `/api/stripe/checkout` (deprecated)
+See `apps/api/.env.example` and `.env.example`.
 
 ---
 
-## 19. Sessions & security notes
+## 17. Security (must stay aligned)
 
-- Idle logout: **3 hours** without activity  
-- Absolute session window: **7 days** (Convex Auth config)  
-- JWT lifetime: **1 hour**  
-- Banned users blocked on server  
-- Blocks prevent interaction both ways  
-- PWA / service worker install was **removed** (normal website only). A small cleanup script still unregisters old Chrome workers that caused Google → site hangs.
-
----
-
-## 20. Recent important fixes (context)
-
-| Issue | What was wrong | Fix |
-|-------|----------------|-----|
-| Chrome hang from Google | Old PWA service worker broke navigations | Kill/unregister SW; remove PWA |
-| Login looked stuck | GuestGate hid forms behind auth loading | Show login/register immediately |
-| All profiles “incomplete” | Auto-clear of `questionnaireComplete` on save | Stop demotion; restore migration |
-| Sign out | Session cleared but UI stayed on app pages | Hard redirect to `/login` |
+| Claim | Status |
+|-------|--------|
+| Data on servers (Postgres + object storage) | Yes |
+| Sell personal data | No |
+| End-to-end encrypted chat | **No** |
+| Account self-deletion | Yes — Profile → Account |
+| One email → one account | Yes |
+| CSRF on mutating routes | Yes |
+| Rate limits (Redis) | Yes |
 
 ---
 
-## 21. How to run locally (short)
+## 18. Local run (short)
 
 ```bash
 npm install
-npx convex dev
-npm run setup:auth
-cp .env.example .env.local   # fill keys
+cp infra/.env.example infra/.env   # set passwords
+docker compose -f infra/docker-compose.yml up -d postgres redis minio minio-init
+
+cp apps/api/.env.example apps/api/.env
+npm run prisma:generate -w @hel/api
+npm run prisma:migrate:dev -w @hel/api
+
+# Terminal 1
+npm run dev:api
+
+# Terminal 2
+cp .env.example .env.local
+# NEXT_PUBLIC_API_URL=http://127.0.0.1:4000
+# NEXT_PUBLIC_SOCKET_URL=http://127.0.0.1:4000
 npm run dev
 ```
 
-Production:
-
-- Push to GitHub → Vercel builds the site  
-- `npx convex deploy` pushes backend functions  
+Optional: `npm run bootstrap:admin`
 
 ---
 
-## 22. One-page summary
+## 19. One-page summary
 
-Hel Calafkaaga is a **halal marriage matchmaking website**: public marketing pages, email/password accounts, a long questionnaire, a short free trial, then Stripe payment ($10 or $20). Paid (or trial) members discover high-compatibility matches, like each other, and chat. Admins and the owner moderate users, payments, and reports. Everything sensitive (auth, profiles, matches, chat, Stripe) runs through **Convex**; the UI is **Next.js on Vercel**.
+Hel Calafkaaga website is **Next.js** talking to a **NestJS API** on **Postgres + Redis + S3 + Socket.IO**. Members register, finish a questionnaire, then pay via **Stripe or EVC/M-PESA**. Access is **server-gated** (`hasPaid` / staff). Discover uses **≥40%** compatibility and **hides staff**. Admins moderate users, payments, reports, and support. Free trial does **not** unlock the app. Pricing is **$5 / $2.50 / $15 / $20** by gender and tier. Members can **delete their account** from profile settings.
 
 ---
 
-*This report describes how the codebase is designed to work. For live production data (member counts, Stripe dashboard, Convex logs), use the Vercel, Convex, and Stripe dashboards.*
+## 20. Key source files
+
+| Concern | Path |
+|---------|------|
+| Paid / staff access | `apps/api/src/common/access.ts` |
+| Review / discoverable | `apps/api/src/common/review-status.ts` |
+| Access routing | `apps/api/src/common/access-state.ts` |
+| Pricing | `apps/api/src/payments/pricing.ts` |
+| Matching | `apps/api/src/matching/match.service.ts` |
+| Chat realtime | `apps/api/src/chat/chat.gateway.ts` |
+| Account deletion | `apps/api/src/admin/deletion.service.ts` + `DELETE /profile/account` |
+| Prisma schema | `apps/api/prisma/schema.prisma` |
+| Frontend API client | `src/data/api-client.ts` |
+| Deeper backend guide | `docs/DEVELOPER_BACKEND_DATABASE_GUIDE.md` |
+| Mobile companion report | `FULL_REPORT_MOBILE.md` |
+
+---
+
+## 21. How this relates to the mobile report
+
+| Topic | This website repo | Mobile repo (`FULL_REPORT_MOBILE.md`) |
+|-------|-------------------|--------------------------------------|
+| UI | Next.js on Vercel | Capacitor Android / iOS |
+| API | Same NestJS | Same NestJS |
+| Env (client) | `NEXT_PUBLIC_*` | `VITE_*` |
+| Home after paywall | `/dashboard` | `/home` |
+| Payment page | `/payment` | `/plans` |
+| Account delete | `DELETE /profile/account` **and** `POST /auth/delete-account` | `POST /auth/delete-account` |
+
+Backend engineers can treat **one Nest deployment** as source of truth for both clients.
+
+---
+
+*This report describes how the current website codebase is designed to work. For live member counts, Stripe, Render logs, and Redis/Postgres health, use production dashboards — not this file.*
