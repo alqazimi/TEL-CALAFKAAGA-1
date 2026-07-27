@@ -33,3 +33,4 @@ COPY public ./public
 # APK_BUNDLE_REV=2026-07-27-message-chat
 EXPOSE 4000
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+
