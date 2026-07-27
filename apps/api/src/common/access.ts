@@ -11,6 +11,17 @@ export function isOwnerRole(role?: string | null): role is "owner" {
 }
 
 /**
+ * Dating surfaces: members must never see admin/owner profiles.
+ * Staff viewers can still see members (and each other) for support.
+ */
+export function shouldHideProfileFromViewer(
+  viewerRole?: string | null,
+  profileRole?: string | null
+): boolean {
+  return !isStaffRole(viewerRole) && isStaffRole(profileRole);
+}
+
+/**
  * Trial fields are legacy and do NOT grant access.
  * hasPaid or staff determines paid access.
  */

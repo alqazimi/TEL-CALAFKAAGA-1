@@ -28,9 +28,12 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/prisma ./prisma
-# Android install page + APK (served by DownloadController)
+# Android install page + APK (served by DownloadController; APK may redirect to website)
 COPY public ./public
-# APK_BUNDLE_REV=2026-07-27-message-chat
+# Bust image cache when the APK binary changes (size alone is not enough).
+COPY public/download/hel-calafkaaga.apk ./public/download/hel-calafkaaga.apk
+ARG APK_BUNDLE_REV=2026-07-27-message-chat-v2
+LABEL apk.bundle.rev="${APK_BUNDLE_REV}"
 EXPOSE 4000
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
 
