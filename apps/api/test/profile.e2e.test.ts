@@ -252,4 +252,15 @@ describe("Phase 5 profile HTTP e2e", () => {
       .send({ contentType: "application/pdf", slot: "main" })
       .expect(400);
   });
+
+  it("DELETE /profile/account removes the signed-in user", async () => {
+    const res = await agent
+      .delete("/profile/account")
+      .set("X-CSRF-Token", csrf)
+      .send({ password })
+      .expect(200);
+    assert.equal(res.body.ok, true);
+    userId = "";
+    await agent.get("/auth/me").expect(401);
+  });
 });

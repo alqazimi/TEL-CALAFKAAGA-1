@@ -99,6 +99,10 @@ const LIMITS: Record<string, { ip?: LimitSpec; email?: LimitSpec; user?: LimitSp
   "admin.delete": {
     user: { windowSec: 60, max: 10 },
   },
+  "profile.delete_account": {
+    user: { windowSec: 60 * 60, max: 3 },
+    ip: { windowSec: 60 * 60, max: 10 },
+  },
 };
 
 /**
@@ -127,7 +131,8 @@ export class RateLimitGuard implements CanActivate {
       bucket.startsWith("chat.") ||
       bucket.startsWith("payments.") ||
       bucket.startsWith("admin.") ||
-      bucket.startsWith("support.");
+      bucket.startsWith("support.") ||
+      bucket === "profile.delete_account";
 
     const online = await this.redis.connect();
     if (!online || !this.redis.client) {
@@ -164,6 +169,9 @@ export class RateLimitGuard implements CanActivate {
     if (path.includes("/auth/register")) return "auth.register";
     if (path.includes("/auth/forgot-password")) return "auth.forgot";
     if (path.includes("/auth/reset-password")) return "auth.reset";
+    if (method === "DELETE" && path === "/profile/account") {
+      return "profile.delete_account";
+    }
     if (method === "POST" && path.includes("/profile/geolocation/verify")) {
       return "profile.geocode";
     }

@@ -36,6 +36,9 @@ import {
   resolveProfileMainImageUrl,
   resolveProfileMainMediaId,
 } from "../media/profile-image-url";
+import { AuthService } from "../auth/auth.service";
+import { DeletionService } from "../admin/deletion.service";
+import { MetricsService } from "../admin/metrics.service";
 
 const MEMBER_PATCH_ALLOW = new Set([
   "name",
@@ -84,7 +87,10 @@ export class ProfileService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly scoreStub: ScoreRecalcStub,
-    private readonly mediaAccess: MediaAccessService
+    private readonly mediaAccess: MediaAccessService,
+    private readonly auth: AuthService,
+    private readonly deletion: DeletionService,
+    private readonly metrics: MetricsService
   ) {}
 
   private async audit(
@@ -830,6 +836,13 @@ export class ProfileService {
   /** Test helper — generate local convex-style ids without colliding. */
   static localId(prefix: string): string {
     return `${prefix}_${randomUUID()}`;
+  }
+
+  async deleteMyAccount(userId: string, password: string, ip?: string) {
+    await this.auth.verifyCurrentPassword(userId, password);
+    const result = await this.deletion.executeSelfDelete(userId, { requestId: ip });
+    await this.metrics.scheduleRebuild();
+    return result;
   }
 }
 

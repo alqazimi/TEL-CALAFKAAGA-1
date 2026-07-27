@@ -710,4 +710,21 @@ export class AuthService {
     });
     return { message: "Password changed" };
   }
+
+  async verifyCurrentPassword(userId: string, password: string) {
+    const account = await this.prisma.authAccount.findFirst({
+      where: { userId, provider: "password" },
+    });
+    if (!account?.passwordHash) {
+      throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+    }
+    const verified = await verifyPassword(
+      password,
+      account.passwordHash,
+      account.passwordAlgo
+    );
+    if (!verified.ok) {
+      throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+    }
+  }
 }

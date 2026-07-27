@@ -4,6 +4,7 @@ export type ProfileAdapter = {
   ensureProfile(): Promise<unknown>;
   completeRegistrationGender(gender: "male" | "female"): Promise<unknown>;
   getAccessState(): Promise<unknown>;
+  deleteAccount(password: string): Promise<unknown>;
 };
 
 export const PROFILE_METHOD_NAMES = [
@@ -12,4 +13,5 @@ export const PROFILE_METHOD_NAMES = [
   "ensureProfile",
   "completeRegistrationGender",
   "getAccessState",
+  "deleteAccount",
 ] as const;

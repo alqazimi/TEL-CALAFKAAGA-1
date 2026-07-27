@@ -30,6 +30,13 @@ export function useUpdateWaliContact() {
   );
 }
 
+export function useDeleteAccount() {
+  return useCallback(
+    async (password: string) => apiProfile.deleteAccount(password),
+    []
+  );
+}
+
 // Re-export query hooks from the fuller hooks file sections
 export {
   useProfile,

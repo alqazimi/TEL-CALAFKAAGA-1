@@ -8,15 +8,20 @@ import {
   Param,
   Patch,
   Post,
+  Req,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import type { Request, Response } from "express";
 import { z } from "zod";
 import {
   CurrentUser,
   RequireProfile,
   type RequestUser,
 } from "../auth/auth.guards";
-import { CsrfGuard } from "../auth/csrf";
+import { CsrfGuard, clearAuthCookies } from "../auth/csrf";
+import { RateLimitGuard } from "../redis/rate-limit.guard";
 import { ProfileService } from "./profile.service";
 import { ProfilePhotosService } from "./photos.service";
 import { GeolocationService } from "./geolocation.service";
@@ -76,14 +81,27 @@ const geolocationVerifySchema = z.object({
   accuracy: z.number().nonnegative().optional(),
 });
 
+const deleteAccountSchema = z.object({
+  password: z.string().min(1).max(256),
+});
+
 @Controller("profile")
 @UseGuards(CsrfGuard)
 export class ProfileController {
   constructor(
     private readonly profiles: ProfileService,
     private readonly photos: ProfilePhotosService,
-    private readonly geolocation: GeolocationService
+    private readonly geolocation: GeolocationService,
+    private readonly config: ConfigService
   ) {}
+
+  private cookieOpts() {
+    const secure =
+      this.config.get<string>("COOKIE_SECURE") === "true" ||
+      this.config.get<string>("NODE_ENV") === "production";
+    const domain = this.config.get<string>("COOKIE_DOMAIN") || undefined;
+    return { secure, domain };
+  }
 
   @Get("me")
   async me(@CurrentUser() user: RequestUser) {
@@ -257,6 +275,22 @@ export class ProfileController {
     @Param("id") id: string
   ) {
     return this.photos.deletePhoto(user.id, id);
+  }
+
+  @Delete("account")
+  @HttpCode(200)
+  @RequireProfile()
+  @UseGuards(RateLimitGuard)
+  async deleteAccount(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const parsed = parseBody(deleteAccountSchema, body);
+    await this.profiles.deleteMyAccount(user.id, parsed.password, req.ip);
+    clearAuthCookies(res, this.cookieOpts());
+    return { ok: true };
   }
 
   @Patch("photos/order")

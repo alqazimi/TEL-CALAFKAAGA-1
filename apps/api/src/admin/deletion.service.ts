@@ -181,10 +181,28 @@ export class DeletionService {
     return { jobId: job.id, plan, mode: "dry_run" as const };
   }
 
+  async executeSelfDelete(
+    userId: string,
+    opts?: { correlationId?: string; requestId?: string }
+  ) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId },
+    });
+    if (!profile) {
+      return { success: true, alreadyGone: true as const };
+    }
+    if (isStaffRole(profile.role)) {
+      throw new ForbiddenException(
+        "Staff accounts cannot be deleted here. Contact support."
+      );
+    }
+    return this.execute(userId, profile.id, { ...opts, self: true });
+  }
+
   async execute(
     actorUserId: string,
     profileId: string,
-    opts?: { correlationId?: string; requestId?: string }
+    opts?: { correlationId?: string; requestId?: string; self?: boolean }
   ) {
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },
@@ -197,7 +215,13 @@ export class DeletionService {
         "Cannot delete an admin or owner account. Remove their role first."
       );
     }
-    assertCanDeleteTarget(actorUserId, profile);
+    if (opts?.self) {
+      if (profile.userId !== actorUserId) {
+        throw new ForbiddenException("You can only delete your own account.");
+      }
+    } else {
+      assertCanDeleteTarget(actorUserId, profile);
+    }
 
     const plan = await this.buildPlan(profile.userId);
     const job = await this.prisma.deletionJob.create({
@@ -214,10 +238,10 @@ export class DeletionService {
 
     await this.audit.write({
       actorUserId,
-      action: "delete_user",
+      action: opts?.self ? "delete_user_self" : "delete_user",
       targetUserId: profile.userId,
       targetProfileId: profile.id,
-      metadata: { name: profile.name },
+      metadata: { name: profile.name, self: opts?.self ?? false },
       correlationId: opts?.correlationId,
       requestId: opts?.requestId,
     });

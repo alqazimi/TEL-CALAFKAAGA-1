@@ -955,6 +955,16 @@ export const en = {
     changePhoto: "Change photo",
     uploadPhoto: "Upload photo",
     uploading: "Uploading…",
+    deleteAccount: "Delete account",
+    deleteAccountDesc:
+      "Permanently remove your profile, photos, messages, and account data. This cannot be undone.",
+    deleteAccountConfirmTitle: "Delete your account?",
+    deleteAccountConfirmDesc:
+      "All your data will be permanently removed. You will be signed out immediately.",
+    deleteAccountConfirm: "Yes, delete my account",
+    deleteAccountSuccess: "Your account has been deleted.",
+    deleteAccountFailed: "Could not delete your account. Check your password and try again.",
+    deleteAccountPasswordRequired: "Enter your password to confirm deletion.",
   },
   support: {
     title: "Message support",

@@ -20,4 +20,7 @@ export const apiProfile: ProfileAdapter = {
   async getAccessState() {
     return apiClient.get("/profile/access-state");
   },
+  async deleteAccount(password: string) {
+    return apiClient.delete("/profile/account", { password });
+  },
 };

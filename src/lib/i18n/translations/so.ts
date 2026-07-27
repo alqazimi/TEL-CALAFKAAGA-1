@@ -964,6 +964,16 @@ export const so: Translations = {
     changePhoto: "Beddel sawirka",
     uploadPhoto: "Soo geli sawir",
     uploading: "Waa la soo gelinayaa…",
+    deleteAccount: "Tirtir akoonka",
+    deleteAccountDesc:
+      "Si joogto ah uga saar profile-kaaga, sawirrada, fariimaha, iyo xogta akoonka. Tani dib looma celin karo.",
+    deleteAccountConfirmTitle: "Ma tirtirtaa akoonkaaga?",
+    deleteAccountConfirmDesc:
+      "Dhammaan xogtaada waa la tirtiri doonaa. Isla markiiba waa lagaa saari doonaa.",
+    deleteAccountConfirm: "Haa, tirtir akoonkayga",
+    deleteAccountSuccess: "Akoonkaaga waa la tirtiray.",
+    deleteAccountFailed: "Akoonka lama tirtiri karo. Hubi furaha oo isku day mar kale.",
+    deleteAccountPasswordRequired: "Geli furaha si aad u xaqiijiso tirtiridda.",
   },
   support: {
     title: "La xiriir taageerada",

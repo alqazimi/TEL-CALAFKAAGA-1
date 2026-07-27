@@ -313,6 +313,9 @@ export const apiClient = {
     body?: unknown,
     opts?: Omit<ApiRequestOptions, "method" | "body">
   ) => apiFetch<T>(path, { ...opts, method: "PATCH", body }),
-  delete: <T>(path: string, opts?: Omit<ApiRequestOptions, "method" | "body">) =>
-    apiFetch<T>(path, { ...opts, method: "DELETE" }),
+  delete: <T>(
+    path: string,
+    body?: unknown,
+    opts?: Omit<ApiRequestOptions, "method" | "body">
+  ) => apiFetch<T>(path, { ...opts, method: "DELETE", body }),
 };
