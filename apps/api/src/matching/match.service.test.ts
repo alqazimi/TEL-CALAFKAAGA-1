@@ -126,6 +126,93 @@ describe("MatchService race-safe match creation", () => {
     assert.equal(pairKey.includes(":"), true);
   });
 
+  it("one-sided like opens chat without reciprocal like", async () => {
+    const a = "11111111-1111-1111-1111-111111111111";
+    const b = "22222222-2222-2222-2222-222222222222";
+    let creates = 0;
+    let existing: { id: string; status: string; pairKey: string } | null = null;
+
+    const tx = {
+      match: {
+        findUnique: async () => existing,
+        create: async ({ data }: { data: { pairKey: string } }) => {
+          creates += 1;
+          existing = {
+            id: "match-one-side",
+            status: "active",
+            pairKey: data.pairKey,
+          };
+          return {
+            ...existing,
+            convexId: "c",
+            userAId: a,
+            userBId: b,
+          };
+        },
+        update: async () => existing,
+      },
+      conversation: {
+        findUnique: async () => null,
+        create: async () => ({
+          id: "conv-one-side",
+          participantUserIds: [a, b],
+        }),
+        update: async () => ({
+          id: "conv-one-side",
+          participantUserIds: [a, b],
+        }),
+      },
+    };
+
+    const prisma = {
+      profile: {
+        findUnique: async ({ where }: { where: { userId: string } }) => ({
+          id: "p",
+          userId: where.userId,
+          banned: false,
+          questionnaireComplete: true,
+          hasPaid: true,
+          approved: true,
+          reviewStatus: "approved",
+          role: "user",
+          gender: where.userId === a ? "male" : "female",
+          name: "T",
+          profileImageMediaId: "m",
+          convexUserId: "cx",
+        }),
+      },
+      block: { findFirst: async () => null, findMany: async () => [] },
+      user: {
+        findUniqueOrThrow: async ({ where }: { where: { id: string } }) => ({
+          id: where.id,
+          convexId: `cx_${where.id}`,
+        }),
+      },
+      like: {
+        upsert: async () => ({}),
+        findUnique: async () => null, // no reciprocal like
+      },
+      compatibilityScore: {
+        findUnique: async () => ({ score: 70 }),
+      },
+      profileAuditEvent: { create: async () => ({}) },
+      notification: { create: async () => ({}) },
+      $transaction: async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx),
+    };
+
+    const scores = {
+      calculateBreakdown: () => ({ total: 70, categories: [] }),
+    };
+    const media = { createSignedDownloadUrl: async () => ({ url: "x" }) };
+    const svc = new MatchService(prisma as never, scores as never, media as never);
+
+    const r = await svc.act(a, b, "like");
+    assert.equal(r.matched, true);
+    assert.equal(r.mutual, false);
+    assert.equal(r.conversationId, "conv-one-side");
+    assert.equal(creates, 1);
+  });
+
   it("rejects self-like", async () => {
     const uid = "11111111-1111-1111-1111-111111111111";
     const prisma = {

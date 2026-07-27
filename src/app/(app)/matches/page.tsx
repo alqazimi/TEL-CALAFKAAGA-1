@@ -28,7 +28,7 @@ import { formatMoney, planPricesForGender } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 import { useProfile, usePreferencesQuery } from "@/data/profile/hooks";
-import { useMatches, useLikeUser } from "@/data/matching/hooks";
+import { useMatches, useLikeUser, useStartChat } from "@/data/matching/hooks";
 
 function buildFilterArgs(filters: Record<string, string>) {
   return {
@@ -102,6 +102,7 @@ export default function MatchesPage() {
   const [hiddenUserIds, setHiddenUserIds] = useState<Set<string>>(() => new Set());
 
   const likeUser = useLikeUser();
+  const startChat = useStartChat();
 
   // Open the profile the user tapped on the dashboard (?user=).
   useEffect(() => {
@@ -113,6 +114,23 @@ export default function MatchesPage() {
       openedFocusRef.current = focusUserId;
     }
   }, [focusUserId, discoverMatches]);
+
+  const openChatFromResult = (result: {
+    matched?: boolean;
+    mutual?: boolean;
+    conversationId?: string | null;
+  }) => {
+    const conversationId =
+      typeof result.conversationId === "string" ? result.conversationId : null;
+    if (result.mutual) {
+      toast.success(t("matchesPage.matchedToast"));
+    } else if (result.matched || conversationId) {
+      toast.success(t("matchesPage.chatReadyToast"));
+    }
+    if (conversationId) {
+      router.push(`/chat?c=${encodeURIComponent(conversationId)}`);
+    }
+  };
 
   const handleAction = async (
     userId: string,
@@ -127,11 +145,11 @@ export default function MatchesPage() {
     try {
       const result = (await likeUser({ toUserId: userId, action })) as {
         matched?: boolean;
+        mutual?: boolean;
+        conversationId?: string | null;
       };
-      if (result.matched) {
-        toast.success(t("matchesPage.matchedToast"));
-      } else if (action === "like") {
-        toast.success(t("matchesPage.likedToast"));
+      if (action === "like" && (result.matched || result.conversationId)) {
+        openChatFromResult(result);
       } else if (action === "shortlist") {
         toast.success(t("matchesPage.shortlistedToast"));
       } else if (action === "pass") {
@@ -145,6 +163,27 @@ export default function MatchesPage() {
           return next;
         });
       }
+      toast.error(t("matchesPage.errorToast"));
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const handleMessage = async (userId: string) => {
+    if (actionBusyId === userId) return;
+    setActionBusyId(userId);
+    try {
+      const result = (await startChat(userId)) as {
+        matched?: boolean;
+        mutual?: boolean;
+        conversationId?: string | null;
+      };
+      openChatFromResult(result);
+      setSelectedMatch(null);
+      if (focusUserId) {
+        router.replace("/matches", { scroll: false });
+      }
+    } catch {
       toast.error(t("matchesPage.errorToast"));
     } finally {
       setActionBusyId(null);
@@ -325,6 +364,9 @@ export default function MatchesPage() {
             if (focusUserId) {
               router.replace("/matches", { scroll: false });
             }
+          }}
+          onMessage={() => {
+            void handleMessage(selectedMatch.userId);
           }}
         />
       )}

@@ -200,7 +200,7 @@ export const en = {
     step3Title: "Discover Matches",
     step3Desc: "Browse compatible profiles and like the ones that interest you.",
     step4Title: "Connect & Build",
-    step4Desc: "When you both like each other, start chatting and build a connection.",
+    step4Desc: "Message members directly — you do not need to wait for a mutual like.",
     stat1Value: "40%+",
     stat1: "Compatibility matches",
     stat2Value: "Halal",
@@ -631,7 +631,7 @@ export const en = {
     step3: "Discover Matches",
     step3Desc: "Our compatibility algorithm finds your best matches. View scores and like profiles that interest you.",
     step4: "Connect & Chat",
-    step4Desc: "When you both like each other, it's a match! Message your matches directly on the platform.",
+    step4Desc: "Message members directly — you do not need to wait for a mutual like.",
     step5: "Meet with Confidence",
     step5Desc: "Take your time getting to know each other through our secure platform, with family involvement when you're ready.",
     stepLabel: "Step {{num}}",
@@ -820,6 +820,7 @@ export const en = {
     noPassedDesc:
       "Profiles you pass are saved here. You can like them again if you change your mind.",
     view: "View",
+    message: "Message",
     like: "Like",
     liked: "Liked",
     pass: "Pass",
@@ -829,6 +830,7 @@ export const en = {
     passedToast: "Profile passed. Find them in Lists → Passed.",
     matchedToast: "It's a match! You can now chat.",
     likedToast: "Profile liked!",
+    chatReadyToast: "Chat opened — you can message them now.",
     errorToast: "Something went wrong",
     religion: "Religion",
     education: "Education",
@@ -1446,7 +1448,7 @@ export const en = {
   chatPage: {
     noMessages: "No messages yet",
     noMessagesDesc:
-      "When you and someone like each other, your conversation will appear here.",
+      "Start a conversation from Discover, or wait for someone to message you.",
     browseMatches: "Browse Matches",
     messages: "Messages",
     conversation: "conversation",

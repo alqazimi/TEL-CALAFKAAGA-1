@@ -131,6 +131,9 @@ export const apiMatching: MatchingAdapter = {
       action,
     });
   },
+  async startChat(targetUserId) {
+    return apiClient.post(`/matches/start-chat`, { targetUserId });
+  },
   async markMatchSeen(matchId) {
     return apiClient.post(`/matches/${encodeURIComponent(matchId)}/seen`, {});
   },

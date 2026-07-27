@@ -104,6 +104,17 @@ export class MatchController {
     return this.matches.mutual(user.id, allowed);
   }
 
+  /** Start a chat without requiring a mutual (or any) like. */
+  @Post("start-chat")
+  @HttpCode(200)
+  async startChat(@CurrentUser() user: RequestUser, @Body() body: unknown) {
+    const parsed = parseBody(
+      z.object({ targetUserId: z.string().uuid() }),
+      body
+    );
+    return this.matches.startChat(user.id, parsed.targetUserId);
+  }
+
   @Get(":userId/breakdown")
   async breakdown(
     @CurrentUser() user: RequestUser,

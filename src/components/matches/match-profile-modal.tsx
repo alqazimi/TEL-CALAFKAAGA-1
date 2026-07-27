@@ -11,6 +11,7 @@ import {
   Bookmark,
   CalendarHeart,
   Baby,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +47,7 @@ interface MatchProfileModalProps {
   busy?: boolean;
   onClose: () => void;
   onLike: (action: "like" | "pass" | "shortlist") => void;
+  onMessage?: () => void;
 }
 
 function text(value: unknown, fallback = ""): string {
@@ -63,6 +65,7 @@ export function MatchProfileModal({
   match,
   onClose,
   onLike,
+  onMessage,
   busy = false,
 }: MatchProfileModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -72,7 +75,13 @@ export function MatchProfileModal({
 
   return createPortal(
     <MatchViewErrorBoundary onClose={onClose} title="Could not open this profile">
-      <MatchProfileModalBody match={match} onClose={onClose} onLike={onLike} busy={busy} />
+      <MatchProfileModalBody
+        match={match}
+        onClose={onClose}
+        onLike={onLike}
+        onMessage={onMessage}
+        busy={busy}
+      />
     </MatchViewErrorBoundary>,
     document.body
   );
@@ -82,6 +91,7 @@ function MatchProfileModalBody({
   match,
   onClose,
   onLike,
+  onMessage,
   busy = false,
 }: Omit<MatchProfileModalProps, "isPremium">) {
   const { t } = useTranslation();
@@ -215,37 +225,51 @@ function MatchProfileModalBody({
             ) : null}
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="font-semibold"
-              onClick={() => onLike("shortlist")}
-              disabled={busy || !!match.shortlisted}
-            >
-              <Bookmark className="h-4 w-4 mr-2" />
-              {match.shortlisted
-                ? t("matchesPage.shortlisted")
-                : t("matchesPage.shortlist")}
-            </Button>
-            <Button
-              type="button"
-              className="flex-1 font-semibold"
-              onClick={() => onLike("like")}
-              disabled={busy || !!match.liked}
-            >
-              <Heart className="h-4 w-4 mr-2" />
-              {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 font-semibold"
-              onClick={() => onLike("pass")}
-              disabled={busy}
-            >
-              {t("matchesPage.pass")}
-            </Button>
+          <div className="flex flex-col gap-3 pt-2">
+            {onMessage ? (
+              <Button
+                type="button"
+                className="w-full font-semibold"
+                onClick={onMessage}
+                disabled={busy}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                {t("matchesPage.message")}
+              </Button>
+            ) : null}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="font-semibold"
+                onClick={() => onLike("shortlist")}
+                disabled={busy || !!match.shortlisted}
+              >
+                <Bookmark className="h-4 w-4 mr-2" />
+                {match.shortlisted
+                  ? t("matchesPage.shortlisted")
+                  : t("matchesPage.shortlist")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 font-semibold"
+                onClick={() => onLike("like")}
+                disabled={busy || !!match.liked}
+              >
+                <Heart className="h-4 w-4 mr-2" />
+                {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 font-semibold"
+                onClick={() => onLike("pass")}
+                disabled={busy}
+              >
+                {t("matchesPage.pass")}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

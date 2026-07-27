@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { MatchResult } from "@/types";
-import { useHomeFeed, useLikeUser } from "@/data/matching/hooks";
+import { useHomeFeed, useLikeUser, useStartChat } from "@/data/matching/hooks";
 import { useTranslation } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +52,7 @@ export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
   const feedRaw = useHomeFeed(canQuery);
   const feed = (canQuery ? feedRaw : undefined) as HomeFeedData | null | undefined;
   const likeUser = useLikeUser();
+  const startChat = useStartChat();
 
   if (feed === undefined) {
     return (
@@ -71,19 +72,54 @@ export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
     ? feed!.likedYouPreview!
     : [];
 
+  const openChatFromResult = (result: {
+    matched?: boolean;
+    mutual?: boolean;
+    conversationId?: string | null;
+  }) => {
+    const conversationId =
+      typeof result.conversationId === "string" ? result.conversationId : null;
+    if (result.mutual) toast.success(t("matchesPage.matchedToast"));
+    else if (result.matched || conversationId)
+      toast.success(t("matchesPage.chatReadyToast"));
+    if (conversationId) {
+      router.push(`/chat?c=${encodeURIComponent(conversationId)}`);
+    } else {
+      router.refresh();
+    }
+  };
+
   const onDailyAction = async (action: "like" | "pass" | "shortlist") => {
     if (!daily?.userId) return;
     try {
       const result = (await likeUser({
         toUserId: String(daily.userId),
         action,
-      })) as { matched?: boolean };
-      if (result.matched) toast.success(t("matchesPage.matchedToast"));
-      else if (action === "like") toast.success(t("matchesPage.likedToast"));
-      else if (action === "shortlist")
+      })) as {
+        matched?: boolean;
+        mutual?: boolean;
+        conversationId?: string | null;
+      };
+      if (action === "like" && (result.matched || result.conversationId)) {
+        openChatFromResult(result);
+      } else if (action === "shortlist")
         toast.success(t("matchesPage.shortlistedToast"));
       else toast.message(t("matchesPage.passedToast"));
-      router.refresh();
+      if (action !== "like") router.refresh();
+    } catch {
+      toast.error(t("matchesPage.errorToast"));
+    }
+  };
+
+  const onDailyMessage = async () => {
+    if (!daily?.userId) return;
+    try {
+      const result = (await startChat(String(daily.userId))) as {
+        matched?: boolean;
+        mutual?: boolean;
+        conversationId?: string | null;
+      };
+      openChatFromResult(result);
     } catch {
       toast.error(t("matchesPage.errorToast"));
     }
@@ -180,6 +216,14 @@ export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
               </div>
             </div>
             <CompatibilityHighlights keys={daily.highlightKeys} />
+            <Button
+              type="button"
+              className="w-full rounded-full"
+              onClick={() => void onDailyMessage()}
+            >
+              <MessageCircle className="h-4 w-4 mr-1.5" />
+              {t("matchesPage.message")}
+            </Button>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -199,6 +243,7 @@ export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
               </Button>
               <Button
                 type="button"
+                variant="outline"
                 className="flex-1 rounded-full"
                 onClick={() => void onDailyAction("like")}
               >

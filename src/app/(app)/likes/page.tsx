@@ -26,7 +26,7 @@ import { formatMoney, planPricesForGender } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 import { useProfile, usePreferencesQuery } from "@/data/profile/hooks";
-import { useMatchLists, useLikeUser } from "@/data/matching/hooks";
+import { useMatchLists, useLikeUser, useStartChat } from "@/data/matching/hooks";
 
 export default function LikesPage() {
   const { t } = useTranslation();
@@ -86,6 +86,24 @@ export default function LikesPage() {
   );
 
   const likeUser = useLikeUser();
+  const startChat = useStartChat();
+
+  const openChatFromResult = (result: {
+    matched?: boolean;
+    mutual?: boolean;
+    conversationId?: string | null;
+  }) => {
+    const conversationId =
+      typeof result.conversationId === "string" ? result.conversationId : null;
+    if (result.mutual) {
+      toast.success(t("matchesPage.matchedToast"));
+    } else if (result.matched || conversationId) {
+      toast.success(t("matchesPage.chatReadyToast"));
+    }
+    if (conversationId) {
+      router.push(`/chat?c=${encodeURIComponent(conversationId)}`);
+    }
+  };
 
   const handleAction = async (
     userId: string,
@@ -94,16 +112,30 @@ export default function LikesPage() {
     try {
       const result = (await likeUser({ toUserId: userId, action })) as {
         matched?: boolean;
+        mutual?: boolean;
+        conversationId?: string | null;
       };
-      if (result.matched) {
-        toast.success(t("matchesPage.matchedToast"));
-      } else if (action === "like") {
-        toast.success(t("matchesPage.likedToast"));
+      if (action === "like" && (result.matched || result.conversationId)) {
+        openChatFromResult(result);
       } else if (action === "shortlist") {
         toast.success(t("matchesPage.shortlistedToast"));
       } else if (action === "pass") {
         toast.message(t("matchesPage.passedToast"));
       }
+    } catch {
+      toast.error(t("matchesPage.errorToast"));
+    }
+  };
+
+  const handleMessage = async (userId: string) => {
+    try {
+      const result = (await startChat(userId)) as {
+        matched?: boolean;
+        mutual?: boolean;
+        conversationId?: string | null;
+      };
+      openChatFromResult(result);
+      setSelectedMatch(null);
     } catch {
       toast.error(t("matchesPage.errorToast"));
     }
@@ -219,6 +251,9 @@ export default function LikesPage() {
           onLike={(action) => {
             void handleAction(selectedMatch.userId, action);
             setSelectedMatch(null);
+          }}
+          onMessage={() => {
+            void handleMessage(selectedMatch.userId);
           }}
         />
       )}

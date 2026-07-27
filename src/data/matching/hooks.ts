@@ -168,6 +168,13 @@ export function useLikeUser() {
   );
 }
 
+export function useStartChat() {
+  return useCallback(async (targetUserId: string) => {
+    if (!targetUserId) throw new Error("targetUserId required");
+    return apiMatching.startChat(targetUserId);
+  }, []);
+}
+
 export function useMarkMatchSeen() {
   return useCallback(async (args: { matchId: string } | string) => {
     const matchId = typeof args === "string" ? args : args.matchId;

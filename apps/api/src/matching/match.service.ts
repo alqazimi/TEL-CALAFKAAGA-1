@@ -101,6 +101,7 @@ export class MatchService {
     });
     const interacted = new Set(myLikes.map((l) => l.toUserId));
     const blocked = await this.getBlockedIds(userId);
+    const activePartners = await this.activePartnerIds(userId);
 
     const scores = await this.prisma.compatibilityScore.findMany({
       where: {
@@ -112,7 +113,12 @@ export class MatchService {
     });
 
     let candidates = scores
-      .filter((s) => !interacted.has(s.userBId) && !blocked.has(s.userBId))
+      .filter(
+        (s) =>
+          !interacted.has(s.userBId) &&
+          !blocked.has(s.userBId) &&
+          !activePartners.has(s.userBId)
+      )
       .map((s) => ({ userId: s.userBId, score: s.score }));
 
     // Sparse community backfill: include other discoverable opposite-gender
@@ -130,7 +136,13 @@ export class MatchService {
           hasPaid: true,
           OR: [{ approved: true }, { reviewStatus: "approved" }],
           userId: {
-            notIn: [userId, ...already, ...interacted, ...blocked],
+            notIn: [
+              userId,
+              ...already,
+              ...interacted,
+              ...blocked,
+              ...activePartners,
+            ],
           },
         },
         orderBy: { createdAt: "desc" },
@@ -456,6 +468,7 @@ export class MatchService {
     action: LikeAction
   ): Promise<{
     matched: boolean;
+    mutual?: boolean;
     matchId?: string;
     conversationId?: string;
     reactivated?: boolean;
@@ -519,11 +532,9 @@ export class MatchService {
         },
       },
     });
+    const isMutual = reverse?.action === "like";
 
-    if (reverse?.action !== "like") {
-      return { matched: false };
-    }
-
+    // One like is enough to open chat — mutual like is no longer required.
     const result = await this.createOrReactivateMatch(
       userId,
       targetUserId,
@@ -531,7 +542,7 @@ export class MatchService {
       targetUser.convexId
     );
 
-    if (result.matched && result.matchId) {
+    if (result.matched && result.matchId && isMutual) {
       const myName = access.profile.name ?? "Someone";
       const targetName = target.name ?? "Someone";
       await this.createNotificationSafe({
@@ -556,7 +567,44 @@ export class MatchService {
       });
     }
 
-    return result;
+    return { ...result, mutual: isMutual };
+  }
+
+  /** Open a conversation without requiring a like from either side. */
+  async startChat(userId: string, targetUserId: string) {
+    const access = await this.requireMatchAccess(userId);
+    if (targetUserId === userId) {
+      throw new BadRequestException("You cannot message yourself");
+    }
+    if (await this.isEitherBlocked(userId, targetUserId)) {
+      throw new ForbiddenException("You cannot interact with this user");
+    }
+    const target = await this.prisma.profile.findUnique({
+      where: { userId: targetUserId },
+    });
+    if (!target || !isDiscoverable(target)) {
+      throw new NotFoundException("This profile is not available");
+    }
+
+    const targetUser = await this.prisma.user.findUniqueOrThrow({
+      where: { id: targetUserId },
+    });
+    const meUser = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+
+    const result = await this.createOrReactivateMatch(
+      userId,
+      targetUserId,
+      meUser.convexId,
+      targetUser.convexId
+    );
+
+    return {
+      ...result,
+      mutual: false,
+      openedBy: access.profile.name ?? "Member",
+    };
   }
 
   /** Idempotent notification insert — duplicate sourceKey is a silent no-op. */

@@ -202,7 +202,7 @@ export const so: Translations = {
     step3Title: "Baadh Isbarbardhigyo",
     step3Desc: "Eeg profile-yada iswaafajinta leh oo jeclow kuwa xiisaha leh.",
     step4Title: "Isku Xir & Dhis",
-    step4Desc: "Markaad labadiinuba is jecelaan, bilow sheekaysiga oo dhis xiriir.",
+    step4Desc: "Si toos ah ula hadal xubnaha — uma baahnid inaad sugto in labadiinuba is jeclaadaan.",
     stat1Value: "40%+",
     stat1: "Isbarbardhig iswaafajin leh",
     stat2Value: "Xalaal",
@@ -637,7 +637,7 @@ export const so: Translations = {
     step3: "Hel Isbarbardhigyo",
     step3Desc: "Algorithm-kayagu wuxuu helaa isbarbardhigyada ugu fiican. Eeg dhibcaha oo jecel profile-yada xiisaha leh.",
     step4: "Isku Xir & Sheekayso",
-    step4Desc: "Markaad labadiinuba is jecelaan, waa isbarbardhig! Si toos ah ugu fariin lammaanayaashaada platform-ka.",
+    step4Desc: "Si toos ah ula hadal xubnaha — uma baahnid inaad sugto in labadiinuba is jeclaadaan.",
     step5: "La Kulmo Kalsooni",
     step5Desc: "Waqti u qaado inaad is barataan platform-kayaga ammaan ah, iyadoo qoyskaagu ku lug yeelan karo markaad diyaar tahay.",
     stepLabel: "Tallaabada {{num}}",
@@ -829,6 +829,7 @@ export const so: Translations = {
     noPassedDesc:
       "Profile-yada aad diiddo halkan ayaa lagu kaydiyaa. Haddii aad beddesho fikirkaaga, mar kale waad jeclayn kartaa.",
     view: "Eeg",
+    message: "Fariin",
     like: "Jeclow",
     liked: "La jeclay",
     pass: "Ka gudub",
@@ -838,6 +839,7 @@ export const so: Translations = {
     passedToast: "Profile-ka waa la diiday. Ka hel Liisaska → La diiday.",
     matchedToast: "Waa isbarbardhig! Hadda waad sheekaysan kartaa.",
     likedToast: "Profile-ka waa la jeclay!",
+    chatReadyToast: "Sheekaysiga waa furmay — hadda waad la hadli kartaa.",
     errorToast: "Waxbaa qaldamay",
     religion: "Diinta",
     education: "Waxbarasho",
@@ -1456,7 +1458,7 @@ export const so: Translations = {
   chatPage: {
     noMessages: "Weli fariin ma jirto",
     noMessagesDesc:
-      "Markaad adiga iyo qof kale is jeclaataan, sheekaysigaagu halkan ayuu ka muuqan doonaa.",
+      "Ka bilow sheekaysi Discover, ama sug qof kula hadlaayo.",
     browseMatches: "Eeg Isbarbardhigyada",
     messages: "Fariimaha",
     conversation: "sheekaysi",
