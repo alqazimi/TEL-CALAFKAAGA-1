@@ -24,6 +24,7 @@ interface MatchListsSheetProps {
   isPremium: boolean;
   onView: (match: MatchResult) => void;
   onAction: (userId: string, action: "like" | "pass" | "shortlist") => void;
+  onMessage?: (userId: string) => void;
 }
 
 export function MatchListsSheet({
@@ -38,6 +39,7 @@ export function MatchListsSheet({
   isPremium,
   onView,
   onAction,
+  onMessage,
 }: MatchListsSheetProps) {
   const { t } = useTranslation();
 
@@ -82,6 +84,14 @@ export function MatchListsSheet({
                   onClose();
                 }}
                 onAction={onAction}
+                onMessage={
+                  onMessage
+                    ? (userId) => {
+                        onMessage(userId);
+                        onClose();
+                      }
+                    : undefined
+                }
               />
             </div>
           </motion.div>

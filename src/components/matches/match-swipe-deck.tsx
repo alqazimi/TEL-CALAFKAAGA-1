@@ -16,6 +16,7 @@ import {
   CalendarHeart,
   Ruler,
   X,
+  MessageCircle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,18 +42,21 @@ interface MatchSwipeDeckProps {
     userId: string,
     action: "like" | "pass" | "shortlist"
   ) => Promise<void>;
+  onMessage?: (userId: string) => void | Promise<void>;
 }
 
 function SwipeCard({
   match,
   onView,
   onAction,
+  onMessage,
   onDismiss,
   externalBusy,
 }: {
   match: MatchResult;
   onView: () => void;
   onAction: (action: "like" | "pass" | "shortlist") => Promise<void>;
+  onMessage?: () => void | Promise<void>;
   onDismiss: (direction: "left" | "right") => void;
   externalBusy?: boolean;
 }) {
@@ -267,55 +271,69 @@ function SwipeCard({
           className="flex flex-col items-center gap-2 pt-4"
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-center gap-2 sm:gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12 rounded-full border-rose-200 px-4 text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/30"
-              disabled={busy || !!externalBusy}
-              onClick={() => void runAction("pass", "left")}
-            >
-              <X className="h-5 w-5 mr-1.5" />
-              {t("matchesPage.pass")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-11 w-11 rounded-full"
-              disabled={busy || !!externalBusy || match.shortlisted}
-              onClick={() => void runAction("shortlist")}
-              aria-label={t("matchesPage.shortlist")}
-            >
-              <Bookmark className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-11 w-11 rounded-full"
-              disabled={busy || !!externalBusy}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onView();
-              }}
-              aria-label={t("matchesPage.view")}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              className={cn(
-                "h-12 rounded-full px-4",
-                match.liked && "opacity-60"
-              )}
-              disabled={busy || !!externalBusy || match.liked}
-              onClick={() => void runAction("like", "right")}
-            >
-              <Heart className="h-5 w-5 mr-1.5" />
-              {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
-            </Button>
+          <div className="flex flex-col items-stretch gap-2 sm:gap-3">
+            {onMessage ? (
+              <Button
+                type="button"
+                className="h-12 w-full rounded-full"
+                disabled={busy || !!externalBusy}
+                onClick={() => void onMessage()}
+              >
+                <MessageCircle className="h-5 w-5 mr-1.5" />
+                {t("matchesPage.message")}
+              </Button>
+            ) : null}
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-12 rounded-full border-rose-200 px-4 text-rose-600 hover:bg-rose-50 dark:border-rose-900 dark:hover:bg-rose-950/30"
+                disabled={busy || !!externalBusy}
+                onClick={() => void runAction("pass", "left")}
+              >
+                <X className="h-5 w-5 mr-1.5" />
+                {t("matchesPage.pass")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-11 w-11 rounded-full"
+                disabled={busy || !!externalBusy || match.shortlisted}
+                onClick={() => void runAction("shortlist")}
+                aria-label={t("matchesPage.shortlist")}
+              >
+                <Bookmark className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-11 w-11 rounded-full"
+                disabled={busy || !!externalBusy}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onView();
+                }}
+                aria-label={t("matchesPage.view")}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className={cn(
+                  "h-12 rounded-full px-4",
+                  match.liked && "opacity-60"
+                )}
+                disabled={busy || !!externalBusy || match.liked}
+                onClick={() => void runAction("like", "right")}
+              >
+                <Heart className="h-5 w-5 mr-1.5" />
+                {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
+              </Button>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground text-center px-4">
             {t("matchesPage.swipeNextHint")}
@@ -340,6 +358,7 @@ export function MatchSwipeDeck({
   actionBusyId,
   onView,
   onAction,
+  onMessage,
 }: MatchSwipeDeckProps) {
   const { t } = useTranslation();
   const [index, setIndex] = useState(0);
@@ -415,6 +434,11 @@ export function MatchSwipeDeck({
           match={current}
           onView={() => onView(current)}
           onAction={(action) => onAction(current.userId, action)}
+          onMessage={
+            onMessage
+              ? () => onMessage(current.userId)
+              : undefined
+          }
           onDismiss={handleDismiss}
           externalBusy={actionBusyId === current.userId}
         />

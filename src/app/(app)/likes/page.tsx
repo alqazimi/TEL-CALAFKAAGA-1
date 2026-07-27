@@ -240,6 +240,7 @@ export default function LikesPage() {
           isPremium={isPremium}
           onView={setSelectedMatch}
           onAction={handleAction}
+          onMessage={(userId) => void handleMessage(userId)}
         />
       </div>
 

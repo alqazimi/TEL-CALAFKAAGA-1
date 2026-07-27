@@ -12,6 +12,7 @@ import {
   CalendarHeart,
   Moon,
   Ruler,
+  MessageCircle,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ interface MatchProfileCardProps {
   busy?: boolean;
   onView: () => void;
   onAction: (action: "like" | "pass" | "shortlist") => void;
+  onMessage?: () => void;
 }
 
 function scoreTone(score: number) {
@@ -45,6 +47,7 @@ export function MatchProfileCard({
   busy = false,
   onView,
   onAction,
+  onMessage,
 }: MatchProfileCardProps) {
   const { t } = useTranslation();
   const location = [match.city, match.country].filter(Boolean).join(", ");
@@ -138,50 +141,68 @@ export function MatchProfileCard({
             </p>
           )}
 
-          <div className="flex gap-2 pt-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-11 w-11 rounded-full shrink-0 border-rose-200 text-rose-600"
-              onClick={() => onAction("pass")}
-              disabled={busy}
-              aria-label={t("matchesPage.pass")}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant={match.shortlisted ? "secondary" : "outline"}
-              className="h-11 rounded-full"
-              onClick={() => onAction("shortlist")}
-              disabled={busy || match.shortlisted}
-              aria-label={t("matchesPage.shortlist")}
-            >
-              <Bookmark className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-11 flex-1 rounded-full relative z-20"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onView();
-              }}
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              {t("matchesPage.view")}
-            </Button>
-            <Button
-              size="sm"
-              className="h-11 flex-1 rounded-full"
-              onClick={() => onAction("like")}
-              disabled={busy || match.liked}
-            >
-              <Heart className="h-4 w-4 mr-1" />
-              {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
-            </Button>
+          <div className="flex flex-col gap-2 pt-1">
+            {onMessage ? (
+              <Button
+                type="button"
+                className="h-11 w-full rounded-full relative z-20"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onMessage();
+                }}
+                disabled={busy}
+              >
+                <MessageCircle className="h-4 w-4 mr-1.5" />
+                {t("matchesPage.message")}
+              </Button>
+            ) : null}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-11 w-11 rounded-full shrink-0 border-rose-200 text-rose-600"
+                onClick={() => onAction("pass")}
+                disabled={busy}
+                aria-label={t("matchesPage.pass")}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={match.shortlisted ? "secondary" : "outline"}
+                className="h-11 rounded-full"
+                onClick={() => onAction("shortlist")}
+                disabled={busy || match.shortlisted}
+                aria-label={t("matchesPage.shortlist")}
+              >
+                <Bookmark className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-11 flex-1 rounded-full relative z-20"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onView();
+                }}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                {t("matchesPage.view")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-11 flex-1 rounded-full"
+                onClick={() => onAction("like")}
+                disabled={busy || match.liked}
+              >
+                <Heart className="h-4 w-4 mr-1" />
+                {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

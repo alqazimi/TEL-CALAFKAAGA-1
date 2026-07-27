@@ -331,6 +331,7 @@ export default function MatchesPage() {
                 busy={actionBusyId === match.userId}
                 onView={() => setSelectedMatch(match)}
                 onAction={(action) => void handleAction(match.userId, action)}
+                onMessage={() => void handleMessage(match.userId)}
               />
             ))}
           </div>
@@ -342,6 +343,7 @@ export default function MatchesPage() {
               actionBusyId={actionBusyId}
               onView={setSelectedMatch}
               onAction={handleAction}
+              onMessage={(userId) => handleMessage(userId)}
             />
           </div>
         )}

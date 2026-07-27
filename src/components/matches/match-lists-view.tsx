@@ -33,6 +33,7 @@ interface MatchListsViewProps {
   isPremium?: boolean;
   onView: (match: MatchResult) => void;
   onAction: (userId: string, action: "like" | "pass" | "shortlist") => void;
+  onMessage?: (userId: string) => void;
 }
 
 export function MatchListsView({
@@ -44,6 +45,7 @@ export function MatchListsView({
   passed,
   onView,
   onAction,
+  onMessage,
 }: MatchListsViewProps) {
   const { t } = useTranslation();
 
@@ -128,6 +130,9 @@ export function MatchListsView({
                 index={i}
                 onView={() => onView(match)}
                 onAction={(action) => onAction(match.userId, action)}
+                onMessage={
+                  onMessage ? () => onMessage(match.userId) : undefined
+                }
               />
             ))}
           </div>
