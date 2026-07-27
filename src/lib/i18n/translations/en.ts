@@ -464,14 +464,18 @@ export const en = {
   downloadPage: {
     title: "Install Android App",
     subtitle: "Download Hel Calafkaaga for your Android phone.",
+    latestBuild: "Latest · Message on Discover",
     intro:
       "Tap download, then open the APK file to install. You may need to allow installs from your browser.",
+    whatsNew: "What's new",
+    newMessageDiscover: "Message button on Discover — start chat from any profile card",
+    newNoMutualLike: "Chat without waiting for a mutual like",
     downloadApk: "Download APK",
     stepsTitle: "On your phone:",
     step1: "Open this page in Chrome or Samsung Internet",
     step2: "Tap Download APK",
     step3: "Allow install from this browser if asked",
-    step4: "Open the downloaded file → Install",
+    step4: "Open the downloaded file → Install (replace the old app if asked)",
     packageLabel: "Package",
   },
   payment: {
