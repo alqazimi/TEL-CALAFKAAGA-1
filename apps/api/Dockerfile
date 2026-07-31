@@ -32,7 +32,7 @@ COPY --from=build /app/prisma ./prisma
 COPY public ./public
 # Bust image cache when the APK binary changes (size alone is not enough).
 COPY public/download/hel-calafkaaga.apk ./public/download/hel-calafkaaga.apk
-ARG APK_BUNDLE_REV=2026-07-28-signup-check
+ARG APK_BUNDLE_REV=2026-07-31-debug-apk
 LABEL apk.bundle.rev="${APK_BUNDLE_REV}"
 EXPOSE 4000
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
