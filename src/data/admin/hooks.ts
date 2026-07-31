@@ -413,6 +413,97 @@ export function useAdminBanUser() {
   }, []);
 }
 
+export function useAdminPauseUser() {
+  return useCallback(
+    async (profileId: string, reason?: string) =>
+      apiAdmin.users.pause(profileId, reason),
+    []
+  );
+}
+
+export function useAdminResumeUser() {
+  return useCallback(
+    async (profileId: string, reason?: string) =>
+      apiAdmin.users.resume(profileId, reason),
+    []
+  );
+}
+
+export function useAdminUserStatusHistory(
+  profileId: string | null,
+  enabled: boolean
+) {
+  const [apiData, setApiData] = useState<unknown>(undefined);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!enabled || !profileId) {
+      setApiData(undefined);
+      return;
+    }
+    let c = false;
+    void apiAdmin.users
+      .statusHistory(profileId, 80)
+      .then((d) => {
+        if (!c) setApiData(d);
+      })
+      .catch(() => {
+        if (!c) setApiData(null);
+      });
+    return () => {
+      c = true;
+    };
+  }, [enabled, profileId, tick]);
+  return {
+    history: apiData,
+    refresh: () => setTick((n) => n + 1),
+  };
+}
+
+export function useAdminStatusPeriodReport(enabled: boolean) {
+  const [apiData, setApiData] = useState<unknown>(undefined);
+  const [preset, setPreset] = useState("last_7_days");
+  const [tz, setTz] = useState(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+  );
+  const [country, setCountry] = useState("");
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) {
+      setApiData(undefined);
+      return;
+    }
+    let c = false;
+    void apiAdmin
+      .statusPeriodReport({
+        preset,
+        tz,
+        country: country || undefined,
+        compare: "1",
+      })
+      .then((d) => {
+        if (!c) setApiData(d);
+      })
+      .catch(() => {
+        if (!c) setApiData(null);
+      });
+    return () => {
+      c = true;
+    };
+  }, [enabled, preset, tz, country, tick]);
+
+  return {
+    report: apiData,
+    preset,
+    setPreset,
+    tz,
+    setTz,
+    country,
+    setCountry,
+    refresh: () => setTick((n) => n + 1),
+  };
+}
+
 export function useAdminRequestPhoto() {
   return useCallback(
     async (profileId: string, _message?: string) =>

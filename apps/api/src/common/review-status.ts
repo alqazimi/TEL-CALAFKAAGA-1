@@ -8,6 +8,7 @@ export const REVIEW_STATUSES = [
   "approved",
   "rejected",
   "suspended",
+  "paused",
 ] as const;
 
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
@@ -44,12 +45,16 @@ export function resolveReviewStatus(profile: ReviewProfile): ReviewStatus {
   if (isStaffRole(profile.role)) return "approved";
 
   if (profile.reviewStatus === "approved" || profile.approved === true) {
+    // Paused/suspended take precedence over the approved boolean.
+    if (profile.reviewStatus === "paused") return "paused";
+    if (profile.reviewStatus === "suspended") return "suspended";
     return "approved";
   }
 
   if (
     profile.reviewStatus === "rejected" ||
-    profile.reviewStatus === "suspended"
+    profile.reviewStatus === "suspended" ||
+    profile.reviewStatus === "paused"
   ) {
     return profile.reviewStatus;
   }
@@ -92,6 +97,9 @@ export function isDiscoverable(profile: ReviewProfile): boolean {
   if (isStaffRole(profile.role)) return false;
   if (!profile.questionnaireComplete) return false;
   if (profile.hasPaid !== true) return false;
+  if (profile.reviewStatus === "paused" || profile.reviewStatus === "suspended") {
+    return false;
+  }
   return resolveReviewStatus(profile) === "approved";
 }
 

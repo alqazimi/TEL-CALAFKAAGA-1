@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import type { CurrentUser, Profile } from "@/types";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { ProfileCompletionCard } from "@/components/profile/profile-completion-card";
 import { ProfileEditScreen } from "@/components/profile/profile-edit-screen";
 import type { Preferences } from "@/lib/profile-progress";
@@ -54,6 +56,12 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto space-y-6">
         {profile && !profile.questionnaireComplete && !isStaff && (
           <ProfileCompletionCard profile={profile} preferences={preferences} />
+        )}
+
+        {!isStaff && (
+          <Button asChild variant="outline" className="w-full sm:w-auto">
+            <Link href="/account-status">{t("accountStatus.title")}</Link>
+          </Button>
         )}
 
         <ProfileEditScreen

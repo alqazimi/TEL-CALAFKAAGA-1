@@ -108,14 +108,109 @@ export class AdminUsersController {
 
   @Post(":id/ban")
   @UseGuards(CsrfGuard, RateLimitGuard)
-  ban(@CurrentUser() user: RequestUser, @Param("id") id: string) {
-    return this.users.banUser(user.id, id, true);
+  ban(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        reason: z.string().max(2000).optional(),
+        internalAdminNote: z.string().max(4000).optional(),
+      }),
+      body ?? {}
+    );
+    return this.users.banUser(user.id, id, true, parsed);
   }
 
   @Post(":id/unban")
   @UseGuards(CsrfGuard, RateLimitGuard)
-  unban(@CurrentUser() user: RequestUser, @Param("id") id: string) {
-    return this.users.banUser(user.id, id, false);
+  unban(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        reason: z.string().max(2000).optional(),
+        internalAdminNote: z.string().max(4000).optional(),
+      }),
+      body ?? {}
+    );
+    return this.users.banUser(user.id, id, false, parsed);
+  }
+
+  @Post(":id/pause")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  pause(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        reason: z.string().max(2000).optional(),
+        publicUserMessage: z.string().max(2000).optional(),
+      }),
+      body ?? {}
+    );
+    return this.users.pauseUser(user.id, id, parsed);
+  }
+
+  @Post(":id/resume")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  resume(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({ reason: z.string().max(2000).optional() }),
+      body ?? {}
+    );
+    return this.users.resumeUser(user.id, id, parsed);
+  }
+
+  @Post(":id/suspend")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  suspend(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        reason: z.string().max(2000).optional(),
+        publicUserMessage: z.string().max(2000).optional(),
+        suspensionExpiresAt: z.string().datetime().optional().nullable(),
+      }),
+      body ?? {}
+    );
+    return this.users.suspendUser(user.id, id, parsed);
+  }
+
+  @Post(":id/unsuspend")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  unsuspend(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({ reason: z.string().max(2000).optional() }),
+      body ?? {}
+    );
+    return this.users.unsuspendUser(user.id, id, parsed.reason);
+  }
+
+  @Get(":id/status-history")
+  statusHistory(
+    @Param("id") id: string,
+    @Query("limit") limit?: string
+  ) {
+    return this.users.getStatusHistory(id, {
+      limit: limit ? Number(limit) : undefined,
+    });
   }
 
   @Post(":id/request-photo")

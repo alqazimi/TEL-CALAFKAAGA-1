@@ -28,6 +28,28 @@ enum ReviewStatus {
   approved
   rejected
   suspended
+  paused
+}
+
+enum AccountStatusEventType {
+  registered
+  submitted
+  approved
+  rejected
+  paused
+  resumed
+  suspended
+  unsuspended
+  banned
+  unbanned
+  deleted
+  restored
+  appeal_submitted
+  appeal_reviewed
+  verification_submitted
+  verification_approved
+  verification_rejected
+  other
 }
 
 enum PhotoVisibility {
@@ -190,9 +212,17 @@ model User {
   convexCreatedAt        DateTime? @map("convex_created_at")
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")
+  lastLoginAt            DateTime? @map("last_login_at")
+  lastActiveAt           DateTime? @map("last_active_at")
+  deletedAt              DateTime? @map("deleted_at")
+  restoredAt             DateTime? @map("restored_at")
 
   authAccounts       AuthAccount[]
   profile            Profile?
+  accountStatusEvents AccountStatusHistory[] @relation("AccountStatusSubject")
+  accountStatusPerformed AccountStatusHistory[] @relation("AccountStatusActor")
+  accountAppeals     AccountAppeal[] @relation("AppealSubject")
+  accountAppealsReviewed AccountAppeal[] @relation("AppealReviewer")
   preferences        Preference?
   uploads            UserUpload[]
   likesSent          Like[]            @relation("LikesSent")
@@ -329,6 +359,25 @@ model Profile {
   banned                     Boolean
   approved                   Boolean
   reviewStatus               ReviewStatus?    @map("review_status")
+  /// Status to restore after unban (saved before ban).
+  statusBeforeBan            ReviewStatus?    @map("status_before_ban")
+  /// Status to restore after resume (saved before pause).
+  statusBeforePause          ReviewStatus?    @map("status_before_pause")
+  /// Status to restore after unsuspend (saved before timed suspension).
+  statusBeforeSuspend        ReviewStatus?    @map("status_before_suspend")
+  approvedAt                 DateTime?        @map("approved_at")
+  rejectedAt                 DateTime?        @map("rejected_at")
+  pausedAt                   DateTime?        @map("paused_at")
+  resumedAt                  DateTime?        @map("resumed_at")
+  suspendedAt                DateTime?        @map("suspended_at")
+  suspensionExpiresAt        DateTime?        @map("suspension_expires_at")
+  bannedAt                   DateTime?        @map("banned_at")
+  unbannedAt                 DateTime?        @map("unbanned_at")
+  submittedAt                DateTime?        @map("submitted_at")
+  statusChangedAt            DateTime?        @map("status_changed_at")
+  verificationSubmittedAt    DateTime?        @map("verification_submitted_at")
+  verificationReviewedAt     DateTime?        @map("verification_reviewed_at")
+  assignedReviewerId         String?          @map("assigned_reviewer_id") @db.Uuid
   photoVisibility            PhotoVisibility? @map("photo_visibility")
   convexCreatedAt            DateTime?        @map("convex_created_at")
   createdAt                  DateTime         @default(now()) @map("created_at")
@@ -338,6 +387,8 @@ model Profile {
   auditTargets   AuditLog[]        @relation("AuditTargetProfile")
   evcProofs      EvcPaymentProof[]
   profileAudits  ProfileAuditEvent[]
+  accountStatusEvents AccountStatusHistory[]
+  accountAppeals AccountAppeal[]
 
   @@index([gender])
   @@index([country])
@@ -345,7 +396,61 @@ model Profile {
   @@index([reviewStatus])
   @@index([role])
   @@index([convexUserId])
+  @@index([approvedAt])
+  @@index([bannedAt])
+  @@index([statusChangedAt])
+  @@index([submittedAt])
   @@map("profiles")
+}
+
+/// Append-only account status history. Never update or delete rows in app code.
+model AccountStatusHistory {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  userId              String                  @map("user_id") @db.Uuid
+  profileId           String?                 @map("profile_id") @db.Uuid
+  eventType           AccountStatusEventType  @map("event_type")
+  previousStatus      ReviewStatus?           @map("previous_status")
+  newStatus           ReviewStatus?           @map("new_status")
+  reason              String?
+  internalAdminNote   String?                 @map("internal_admin_note")
+  publicUserMessage   String?                 @map("public_user_message")
+  performedByAdminId  String?                 @map("performed_by_admin_id") @db.Uuid
+  performedByAdminName String?                @map("performed_by_admin_name")
+  metadata            Json?
+  /// Always UTC.
+  createdAt           DateTime                @default(now()) @map("created_at")
+
+  user    User     @relation("AccountStatusSubject", fields: [userId], references: [id], onDelete: Restrict)
+  profile Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  admin   User?    @relation("AccountStatusActor", fields: [performedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([profileId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([createdAt])
+  @@map("account_status_history")
+}
+
+model AccountAppeal {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  profileId       String    @map("profile_id") @db.Uuid
+  status          String    @default("pending") // pending | approved | rejected
+  message         String
+  adminResponse   String?   @map("admin_response")
+  reviewedById    String?   @map("reviewed_by_id") @db.Uuid
+  submittedAt     DateTime  @default(now()) @map("submitted_at")
+  reviewedAt      DateTime? @map("reviewed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user     User    @relation("AppealSubject", fields: [userId], references: [id], onDelete: Restrict)
+  profile  Profile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  reviewer User?   @relation("AppealReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([userId, submittedAt])
+  @@index([status, submittedAt])
+  @@map("account_appeals")
 }
 
 model Preference {

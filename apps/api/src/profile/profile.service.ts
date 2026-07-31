@@ -39,6 +39,7 @@ import {
 import { AuthService } from "../auth/auth.service";
 import { DeletionService } from "../admin/deletion.service";
 import { MetricsService } from "../admin/metrics.service";
+import { AccountStatusService } from "../admin/account-status.service";
 
 const MEMBER_PATCH_ALLOW = new Set([
   "name",
@@ -90,7 +91,8 @@ export class ProfileService {
     private readonly mediaAccess: MediaAccessService,
     private readonly auth: AuthService,
     private readonly deletion: DeletionService,
-    private readonly metrics: MetricsService
+    private readonly metrics: MetricsService,
+    private readonly accountStatus: AccountStatusService
   ) {}
 
   private async audit(
@@ -587,6 +589,8 @@ export class ProfileService {
       questionnaireStep: QUESTIONNAIRE_COMPLETE_STEP,
       lastSavedAt: new Date(),
       verified: false,
+      submittedAt: new Date(),
+      statusChangedAt: new Date(),
     };
 
     if (womenBasicNeedsReview) {
@@ -600,6 +604,7 @@ export class ProfileService {
         ...patch,
         reviewStatus: "approved",
         approved: true,
+        approvedAt: new Date(),
       };
     } else {
       patch = {
@@ -629,6 +634,19 @@ export class ProfileService {
       gender: profile.gender,
       hasPaid: profile.hasPaid,
     });
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.accountStatus.recordHistory(tx, {
+        userId,
+        profileId: profile.id,
+        eventType: "submitted",
+        previousStatus: profile.reviewStatus,
+        newStatus: updated.reviewStatus,
+        publicUserMessage: "Profile information submitted for review.",
+        performedByAdminName: "System",
+      });
+    });
+
     return this.toPublicProfile(updated);
   }
 

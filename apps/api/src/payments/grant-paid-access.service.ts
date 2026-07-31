@@ -95,10 +95,13 @@ export class GrantPaidAccessService {
           ? {
               approved: true,
               reviewStatus: "approved" as const,
+              approvedAt: new Date(),
+              statusChangedAt: new Date(),
             }
           : {
               approved: false,
               reviewStatus: "pending_review" as const,
+              statusChangedAt: new Date(),
             }),
       },
     });

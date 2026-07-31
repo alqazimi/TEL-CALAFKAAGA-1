@@ -482,6 +482,11 @@ export class AuthService {
       userAgent: opts.userAgent,
     });
 
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date(), lastActiveAt: new Date() },
+    });
+
     await this.audit("login_success", {
       userId: user.id,
       metadata: {

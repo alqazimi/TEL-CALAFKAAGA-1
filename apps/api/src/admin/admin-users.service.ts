@@ -29,6 +29,7 @@ import {
   maskEmail,
   parseLimit,
 } from "./admin-auth.helpers";
+import { AccountStatusService } from "./account-status.service";
 
 const SOMALI_PHOTO_MSG =
   "Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.";
@@ -59,15 +60,6 @@ function premiumProfileWhere(): Prisma.ProfileWhereInput {
   };
 }
 
-function profileRestoredReviewStatus(target: {
-  questionnaireComplete: boolean;
-  approved: boolean;
-}) {
-  if (target.approved) return "approved" as const;
-  if (target.questionnaireComplete) return "pending_review" as const;
-  return "incomplete" as const;
-}
-
 @Injectable()
 export class AdminUsersService {
   constructor(
@@ -78,6 +70,7 @@ export class AdminUsersService {
     private readonly scores: ScoreQueueService,
     private readonly notifQueue: NotificationQueueService,
     private readonly mediaAccess: MediaAccessService,
+    private readonly accountStatus: AccountStatusService,
     @Inject(MAIL_ADAPTER) private readonly mail: MailAdapter
   ) {}
 
@@ -406,36 +399,33 @@ export class AdminUsersService {
     });
     if (!profile) throw new NotFoundException("Profile not found");
 
-    if (isStaffRole(profile.role)) {
-      throw new BadRequestException("Staff accounts cannot be approved here.");
-    }
-    if (profile.banned) {
-      throw new BadRequestException("Unban the member before approving.");
-    }
-
     if (
       profile.reviewStatus === "approved" ||
-      (profile.approved && profile.reviewStatus !== "rejected")
+      (profile.approved &&
+        profile.reviewStatus !== "rejected" &&
+        profile.reviewStatus !== "paused" &&
+        !profile.banned)
     ) {
       if (profile.reviewStatus !== "approved") {
-        await this.prisma.profile.update({
-          where: { id: profileId },
-          data: { reviewStatus: "approved", verified: false },
+        await this.accountStatus.transition({
+          actorUserId,
+          profileId,
+          event: "approve",
+          publicUserMessage:
+            "Your profile was approved. You can now browse matches and connect with members.",
         });
       }
       return { ok: true, alreadyApproved: true };
     }
 
-    await this.prisma.profile.update({
-      where: { id: profileId },
-      data: {
-        approved: true,
-        verified: false,
-        reviewStatus: "approved",
-      },
+    const result = await this.accountStatus.transition({
+      actorUserId,
+      profileId,
+      event: "approve",
+      publicUserMessage:
+        "Your profile was approved. You can now browse matches and connect with members.",
     });
 
-    await this.metrics.scheduleRebuild();
     await this.notifyApproval({
       userId: profile.userId,
       title: "Profile approved",
@@ -443,14 +433,7 @@ export class AdminUsersService {
       sendEmail: true,
     });
     await this.scores.enqueueUserRecalculation(profile.userId, "admin_approve");
-    await this.audit.write({
-      actorUserId,
-      action: "approve_user",
-      targetUserId: profile.userId,
-      targetProfileId: profileId,
-    });
-
-    return { ok: true };
+    return { ...result, ok: true as const };
   }
 
   async rejectUser(
@@ -464,17 +447,15 @@ export class AdminUsersService {
     if (!profile) throw new NotFoundException("Profile not found");
     assertCanRejectTarget(profile.role);
 
-    await this.prisma.profile.update({
-      where: { id: profileId },
-      data: {
-        approved: false,
-        verified: false,
-        reviewStatus: "rejected",
-      },
+    const body = reason?.trim() || SOMALI_PHOTO_MSG;
+    const result = await this.accountStatus.transition({
+      actorUserId,
+      profileId,
+      event: "reject",
+      reason: reason?.trim(),
+      publicUserMessage: body,
     });
 
-    await this.metrics.scheduleRebuild();
-    const body = reason?.trim() || SOMALI_PHOTO_MSG;
     await this.notifyApproval({
       userId: profile.userId,
       title: "Sawirka profile-ka",
@@ -482,41 +463,105 @@ export class AdminUsersService {
       emailCta: { label: "Cusboonaysii sawirka", path: "/profile" },
       sendEmail: true,
     });
-    await this.audit.write({
-      actorUserId,
-      action: "reject_user",
-      targetUserId: profile.userId,
-      targetProfileId: profileId,
-      metadata: reason?.trim() ? { reason: reason.trim() } : undefined,
-    });
-    return { ok: true };
+    return { ...result, ok: true as const };
   }
 
-  async banUser(actorUserId: string, profileId: string, banned: boolean) {
-    const target = await this.prisma.profile.findUnique({
-      where: { id: profileId },
-    });
-    if (!target) throw new NotFoundException("Profile not found");
-    assertCanBanTarget(target.role);
-
-    await this.prisma.profile.update({
-      where: { id: profileId },
-      data: {
-        banned,
-        ...(banned
-          ? { reviewStatus: "suspended" as const }
-          : { reviewStatus: profileRestoredReviewStatus(target) }),
-      },
-    });
-
-    await this.metrics.scheduleRebuild();
-    await this.audit.write({
+  async banUser(
+    actorUserId: string,
+    profileId: string,
+    banned: boolean,
+    opts?: { reason?: string; internalAdminNote?: string }
+  ) {
+    const result = await this.accountStatus.transition({
       actorUserId,
-      action: banned ? "ban_user" : "unban_user",
-      targetUserId: target.userId,
-      targetProfileId: profileId,
+      profileId,
+      event: banned ? "ban" : "unban",
+      reason: opts?.reason,
+      internalAdminNote: opts?.internalAdminNote,
+      publicUserMessage: banned
+        ? opts?.reason || "Your account has been banned."
+        : opts?.reason || "Your account ban has been lifted.",
     });
-    return { ok: true, banned };
+    return { ...result, ok: true as const, banned };
+  }
+
+  async pauseUser(
+    actorUserId: string,
+    profileId: string,
+    opts?: { reason?: string; publicUserMessage?: string }
+  ) {
+    return this.accountStatus.transition({
+      actorUserId,
+      profileId,
+      event: "pause",
+      reason: opts?.reason,
+      publicUserMessage:
+        opts?.publicUserMessage ||
+        opts?.reason ||
+        "Your account has been paused. Matching is temporarily unavailable.",
+    });
+  }
+
+  async resumeUser(
+    actorUserId: string,
+    profileId: string,
+    opts?: { reason?: string }
+  ) {
+    return this.accountStatus.transition({
+      actorUserId,
+      profileId,
+      event: "resume",
+      reason: opts?.reason,
+      publicUserMessage:
+        opts?.reason || "Your account has been resumed.",
+    });
+  }
+
+  async suspendUser(
+    actorUserId: string,
+    profileId: string,
+    opts: {
+      reason?: string;
+      suspensionExpiresAt?: string | Date | null;
+      publicUserMessage?: string;
+    }
+  ) {
+    const expires =
+      opts.suspensionExpiresAt == null || opts.suspensionExpiresAt === ""
+        ? null
+        : new Date(opts.suspensionExpiresAt);
+    if (expires && Number.isNaN(expires.getTime())) {
+      throw new BadRequestException("Invalid suspensionExpiresAt");
+    }
+    return this.accountStatus.transition({
+      actorUserId,
+      profileId,
+      event: "suspend",
+      reason: opts.reason,
+      suspensionExpiresAt: expires,
+      publicUserMessage:
+        opts.publicUserMessage ||
+        opts.reason ||
+        "Your account has been temporarily suspended.",
+    });
+  }
+
+  async unsuspendUser(actorUserId: string, profileId: string, reason?: string) {
+    return this.accountStatus.transition({
+      actorUserId,
+      profileId,
+      event: "unsuspend",
+      reason,
+      publicUserMessage: reason || "Your temporary suspension has ended.",
+    });
+  }
+
+  async getStatusHistory(profileId: string, opts?: { limit?: number }) {
+    return this.accountStatus.listHistory({
+      profileId,
+      limit: opts?.limit,
+      publicOnly: false,
+    });
   }
 
   async requestProfilePhoto(

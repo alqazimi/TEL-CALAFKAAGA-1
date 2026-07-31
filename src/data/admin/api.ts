@@ -53,6 +53,9 @@ export const apiAdmin: AdminAdapter = {
   async siteMetrics() {
     return apiClient.get("/admin/site-metrics");
   },
+  async statusPeriodReport(opts) {
+    return apiClient.get(`/admin/reports/status-period${q(opts)}`);
+  },
   async rebuildSiteMetrics() {
     return apiClient.post("/admin/site-metrics/rebuild", {});
   },
@@ -87,6 +90,23 @@ export const apiAdmin: AdminAdapter = {
     },
     async unban(id) {
       return apiClient.post(`/admin/users/${encodeURIComponent(id)}/unban`, {});
+    },
+    async pause(id, reason) {
+      return apiClient.post(`/admin/users/${encodeURIComponent(id)}/pause`, {
+        reason,
+      });
+    },
+    async resume(id, reason) {
+      return apiClient.post(`/admin/users/${encodeURIComponent(id)}/resume`, {
+        reason,
+      });
+    },
+    async statusHistory(id, limit) {
+      return apiClient.get(
+        `/admin/users/${encodeURIComponent(id)}/status-history${
+          limit ? `?limit=${limit}` : ""
+        }`
+      );
     },
     async requestPhoto(id) {
       return apiClient.post(

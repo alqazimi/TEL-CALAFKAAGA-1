@@ -1,11 +1,15 @@
 import { isStaffRole } from "./access";
 
-export type ReviewStatus =
-  | "incomplete"
-  | "pending_review"
-  | "approved"
-  | "rejected"
-  | "suspended";
+export const REVIEW_STATUSES = [
+  "incomplete",
+  "pending_review",
+  "approved",
+  "rejected",
+  "suspended",
+  "paused",
+] as const;
+
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
 
 type ReviewProfile = {
   reviewStatus?: ReviewStatus | string;
@@ -39,16 +43,14 @@ export function resolveReviewStatus(profile: ReviewProfile | null | undefined): 
   if (profile.banned) return "suspended";
   if (isStaffRole(profile.role)) return "approved";
 
+  // Honor explicit status locks before generic approved flag heuristics.
+  if (profile.reviewStatus === "paused") return "paused";
+  if (profile.reviewStatus === "suspended") return "suspended";
+  if (profile.reviewStatus === "rejected") return "rejected";
+
   // Honor explicit admin approval before payment / completeness heuristics.
   if (profile.reviewStatus === "approved" || profile.approved === true) {
     return "approved";
-  }
-
-  if (
-    profile.reviewStatus === "rejected" ||
-    profile.reviewStatus === "suspended"
-  ) {
-    return profile.reviewStatus;
   }
 
   // Unpaid members stay incomplete until payment (unless admin approved above).
@@ -87,6 +89,9 @@ export function isProfileDiscoverable(profile: ReviewProfile | null | undefined)
   if (profile.banned) return false;
   if (!profile.questionnaireComplete && !isStaffRole(profile.role)) return false;
   if (profile.hasPaid !== true && !isStaffRole(profile.role)) return false;
+  if (profile.reviewStatus === "paused" || profile.reviewStatus === "suspended") {
+    return false;
+  }
   return resolveReviewStatus(profile) === "approved";
 }
 

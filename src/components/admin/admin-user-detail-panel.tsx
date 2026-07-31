@@ -19,10 +19,13 @@ import {
   useAdminAdvisorReviewed,
   useAdminApproveUser,
   useAdminBanUser,
+  useAdminPauseUser,
+  useAdminResumeUser,
   useAdminRejectUser,
   useAdminRequestPhoto,
   useAdminUserActivity,
   useAdminUserDetail,
+  useAdminUserStatusHistory,
 } from "@/data/admin/hooks";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +110,15 @@ export function AdminUserDetailPanel({
   );
   const detail = detailRaw as any;
   const activityRaw = useAdminUserActivity(profileId, true);
+  const { history: statusHistoryRaw, refresh: refreshStatusHistory } =
+    useAdminUserStatusHistory(profileId, true);
+  const statusHistoryItems = (() => {
+    if (!statusHistoryRaw || typeof statusHistoryRaw !== "object") return [];
+    const items = (statusHistoryRaw as { items?: unknown }).items;
+    return Array.isArray(items) ? items : [];
+  })();
+  const pauseUser = useAdminPauseUser();
+  const resumeUser = useAdminResumeUser();
   const activity = (() => {
     if (!activityRaw || typeof activityRaw !== "object") return activityRaw as any;
     const raw = activityRaw as Record<string, unknown>;
@@ -406,10 +418,110 @@ export function AdminUserDetailPanel({
                       <Ban className="mr-1.5 h-3.5 w-3.5" />
                       {detail.profile.banned ? t("adminPage.unbanShort") : t("adminPage.banShort")}
                     </Button>
+                    {!detail.profile.banned &&
+                      detail.profile.reviewStatus !== "paused" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="rounded-lg"
+                          disabled={actionBusy}
+                          onClick={() => {
+                            setActionBusy(true);
+                            void pauseUser(profileId)
+                              .then(() => {
+                                toast.success("Account paused");
+                                reloadDetail();
+                                refreshStatusHistory();
+                                onActionComplete?.();
+                              })
+                              .catch((error) =>
+                                toast.error(
+                                  getSafeUserError(error, t("adminPage.actionFailed"))
+                                )
+                              )
+                              .finally(() => setActionBusy(false));
+                          }}
+                        >
+                          Pause
+                        </Button>
+                      )}
+                    {detail.profile.reviewStatus === "paused" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-lg"
+                        disabled={actionBusy}
+                        onClick={() => {
+                          setActionBusy(true);
+                          void resumeUser(profileId)
+                            .then(() => {
+                              toast.success("Account resumed");
+                              reloadDetail();
+                              refreshStatusHistory();
+                              onActionComplete?.();
+                            })
+                            .catch((error) =>
+                              toast.error(
+                                getSafeUserError(error, t("adminPage.actionFailed"))
+                              )
+                            )
+                            .finally(() => setActionBusy(false));
+                        }}
+                      >
+                        Resume
+                      </Button>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">{t("adminDetail.moderationHint")}</p>
                 </DetailSection>
               )}
+
+              <DetailSection title="Status history">
+                {statusHistoryItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No status events yet.</p>
+                ) : (
+                  <ol className="space-y-3 max-h-64 overflow-y-auto">
+                    {statusHistoryItems.map((raw) => {
+                      const item = raw as {
+                        id: string;
+                        eventType: string;
+                        previousStatus?: string | null;
+                        newStatus?: string | null;
+                        reason?: string | null;
+                        internalAdminNote?: string | null;
+                        performedByAdminName?: string | null;
+                        createdAt: string;
+                      };
+                      return (
+                        <li key={item.id} className="text-sm border-l-2 border-border pl-3">
+                          <p className="font-medium capitalize">
+                            {item.eventType.replace(/_/g, " ")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(item.createdAt).toLocaleString()}
+                            {item.performedByAdminName
+                              ? ` · ${item.performedByAdminName}`
+                              : ""}
+                          </p>
+                          {(item.previousStatus || item.newStatus) && (
+                            <p className="text-xs mt-0.5">
+                              {item.previousStatus ?? "—"} → {item.newStatus ?? "—"}
+                            </p>
+                          )}
+                          {item.reason ? (
+                            <p className="text-xs mt-0.5">Reason: {item.reason}</p>
+                          ) : null}
+                          {item.internalAdminNote ? (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Note: {item.internalAdminNote}
+                            </p>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </DetailSection>
 
               <DetailSection title={t("adminDetail.activityTitle")}>
                 {!activity ? (

@@ -44,6 +44,7 @@ import type {
 } from "@/types";
 import { AdminBootstrapPanel } from "@/components/admin/admin-bootstrap-panel";
 import { AdminMembersPanel } from "@/components/admin/admin-members-panel";
+import { AdminStatusPeriodPanel } from "@/components/admin/admin-status-period-panel";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
 import { AdminMessagesInbox } from "@/components/admin/admin-messages-inbox";
@@ -671,6 +672,7 @@ export default function AdminPage() {
 
         {activeTab === "users" && (
           <div className="space-y-5">
+            <AdminStatusPeriodPanel enabled />
             {canManageRoles && <AdminStaffInvitesPanel />}
             <AdminMembersPanel
               users={adminUsers}

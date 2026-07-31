@@ -3,6 +3,7 @@ export type AdminAdapter = {
   analytics(): Promise<unknown>;
   activity(): Promise<unknown>;
   siteMetrics(): Promise<unknown>;
+  statusPeriodReport(opts?: Record<string, unknown>): Promise<unknown>;
   rebuildSiteMetrics(): Promise<unknown>;
   users: {
     list(opts?: Record<string, unknown>): Promise<unknown>;
@@ -12,6 +13,9 @@ export type AdminAdapter = {
     reject(id: string, reason?: string): Promise<unknown>;
     ban(id: string): Promise<unknown>;
     unban(id: string): Promise<unknown>;
+    pause(id: string, reason?: string): Promise<unknown>;
+    resume(id: string, reason?: string): Promise<unknown>;
+    statusHistory(id: string, limit?: number): Promise<unknown>;
     requestPhoto(id: string): Promise<unknown>;
     delete(id: string, dryRun?: boolean): Promise<unknown>;
     setRole(id: string, role: string): Promise<unknown>;
