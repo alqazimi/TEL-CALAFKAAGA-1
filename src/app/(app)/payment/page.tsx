@@ -7,6 +7,7 @@ import type { Profile } from "@/types";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataLoadError } from "@/components/ui/data-load-error";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import { useTranslation } from "@/lib/i18n/context";
 import { hasPaidAccess, isStaffRole } from "@/lib/access";
@@ -19,7 +20,11 @@ export default function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const canceled = searchParams.get("canceled") === "true";
-  const { profile: profileRaw } = useProfile();
+  const {
+    profile: profileRaw,
+    error: profileError,
+    refresh: refreshProfile,
+  } = useProfile();
   const profile = profileRaw as Profile | null | undefined;
   const { t } = useTranslation();
 
@@ -67,7 +72,10 @@ export default function PaymentPage() {
   if (!profile) {
     return (
       <DashboardLayout>
-        <p className="text-center text-muted-foreground py-16">{t("payment.profileNotFound")}</p>
+        <DataLoadError
+          message={profileError ?? t("payment.profileNotFound")}
+          onRetry={() => void refreshProfile()}
+        />
       </DashboardLayout>
     );
   }

@@ -42,7 +42,8 @@ export function EvcPaymentSection({
   const premiumPrice =
     isWoman || freeBasic ? PREMIUM_UPGRADE_PRICE : PERSONAL_SUPPORT_PRICE;
 
-  const latest = useEvcLatestProof() as
+  const latestRaw = useEvcLatestProof();
+  const latest = latestRaw.proof as
     | {
         status?: string;
         payerFullName?: string;

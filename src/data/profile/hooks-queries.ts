@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { isAbortError, toLoadErrorMessage } from "../query-error";
 import { apiProfile } from "./api";
 
 const POLL_MS = 15_000;
@@ -8,15 +9,21 @@ const POLL_MS = 15_000;
 export function useProfile() {
   const [apiData, setApiData] = useState<unknown>(undefined);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const next = await apiProfile.getProfile();
       setApiData(next);
+      setError(null);
       return next;
-    } catch {
-      setApiData(null);
+    } catch (err: unknown) {
+      if (!isAbortError(err)) {
+        setError(toLoadErrorMessage(err));
+        // Keep last good profile on poll failure; only null on first failure.
+        setApiData((prev: unknown) => (prev === undefined ? null : prev));
+      }
       return null;
     } finally {
       setLoading(false);
@@ -29,7 +36,7 @@ export function useProfile() {
     return () => clearInterval(t);
   }, [refresh]);
 
-  return { profile: apiData, loading, refresh };
+  return { profile: apiData, loading, refresh, error };
 }
 
 export function usePreferencesQuery() {
@@ -44,6 +51,7 @@ export function usePreferences() {
 function useApiPreferences() {
   const [preferences, setPreferences] = useState<unknown>(undefined);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -51,9 +59,13 @@ function useApiPreferences() {
       const { apiPreferences } = await import("../preferences/api");
       const next = await apiPreferences.getPreferences();
       setPreferences(next);
+      setError(null);
       return next;
-    } catch {
-      setPreferences(null);
+    } catch (err: unknown) {
+      if (!isAbortError(err)) {
+        setError(toLoadErrorMessage(err));
+        setPreferences((prev: unknown) => (prev === undefined ? null : prev));
+      }
       return null;
     } finally {
       setLoading(false);
@@ -66,7 +78,7 @@ function useApiPreferences() {
     return () => clearInterval(t);
   }, [refresh]);
 
-  return { preferences, loading, refresh };
+  return { preferences, loading, refresh, error };
 }
 
 export function useWaliForMatch(targetUserId: string | undefined) {

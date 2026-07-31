@@ -20,6 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataLoadError } from "@/components/ui/data-load-error";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate } from "@/lib/utils";
 import { reminderCopy } from "@/lib/reminder-copy";
@@ -107,7 +108,11 @@ function groupNotifications(notifications: Notification[]) {
 export default function NotificationsPage() {
   const router = useRouter();
   const { t } = useTranslation();
-  const notificationsRaw = useNotificationsList();
+  const {
+    notifications: notificationsRaw,
+    error: notificationsError,
+    refresh: refreshNotifications,
+  } = useNotificationsList();
   const remindersRaw = useMemberReminders();
   const notifications = Array.isArray(notificationsRaw)
     ? (notificationsRaw as Notification[])
@@ -131,6 +136,17 @@ export default function NotificationsPage() {
     markedAllRef.current = true;
     void markAllAsRead();
   }, [notifications, markAllAsRead]);
+
+  if (notificationsError && notifications === undefined) {
+    return (
+      <DashboardLayout>
+        <DataLoadError
+          message={notificationsError}
+          onRetry={() => void refreshNotifications()}
+        />
+      </DashboardLayout>
+    );
+  }
 
   if (notifications === undefined) {
     return (

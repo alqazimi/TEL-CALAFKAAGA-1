@@ -9,6 +9,7 @@ import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataLoadError } from "@/components/ui/data-load-error";
 import { MatchFilters } from "@/components/matches/match-filters";
 import { MatchProfileModal } from "@/components/matches/match-profile-modal";
 import { MatchSwipeDeck } from "@/components/matches/match-swipe-deck";
@@ -69,7 +70,11 @@ export default function MatchesPage() {
     return () => clearTimeout(timer);
   }, [filters]);
 
-  const { profile: profileRaw } = useProfile();
+  const {
+    profile: profileRaw,
+    error: profileError,
+    refresh: refreshProfile,
+  } = useProfile();
   const profile = (
     staffLoading || isStaff ? undefined : profileRaw
   ) as Profile | null | undefined;
@@ -95,9 +100,11 @@ export default function MatchesPage() {
   const {
     matches: discoverMatchesRaw,
     isRefreshing: matchesRefreshing,
+    error: matchesError,
+    refresh: refreshMatches,
   } = useMatches(filterArgs, canQuery);
   const discoverMatches = (
-    canQuery ? discoverMatchesRaw : undefined
+    canQuery && Array.isArray(discoverMatchesRaw) ? discoverMatchesRaw : undefined
   ) as MatchResult[] | undefined;
   const [hiddenUserIds, setHiddenUserIds] = useState<Set<string>>(() => new Set());
 
@@ -208,6 +215,17 @@ export default function MatchesPage() {
     );
   }
 
+  if (!isStaff && profileError && !profile) {
+    return (
+      <DashboardLayout>
+        <DataLoadError
+          message={profileError}
+          onRetry={() => void refreshProfile()}
+        />
+      </DashboardLayout>
+    );
+  }
+
   if (profile && !profileReady) {
     return (
       <DashboardLayout>
@@ -246,6 +264,17 @@ export default function MatchesPage() {
     return (
       <DashboardLayout>
         <PendingApprovalGate isPremium={isPremium} />
+      </DashboardLayout>
+    );
+  }
+
+  if (canQuery && matchesError && discoverMatches === undefined) {
+    return (
+      <DashboardLayout>
+        <DataLoadError
+          message={matchesError}
+          onRetry={() => void refreshMatches()}
+        />
       </DashboardLayout>
     );
   }

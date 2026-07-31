@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isAbortError, toLoadErrorMessage } from "../query-error";
 import { apiMatching } from "./api";
 
 function useApiMatches(
@@ -8,14 +9,17 @@ function useApiMatches(
   enabled: boolean
 ) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const filterKey = JSON.stringify(filters ?? {});
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     if (!enabled) {
       abortRef.current?.abort();
       setApiData(undefined);
+      setError(null);
       setIsRefreshing(false);
       return;
     }
@@ -23,16 +27,20 @@ function useApiMatches(
     const ac = new AbortController();
     abortRef.current = ac;
     setIsRefreshing(true);
+    setError(null);
     void apiMatching
       .getMatches(filters, ac.signal)
       .then((d) => {
-        if (!ac.signal.aborted) setApiData(d);
+        if (!ac.signal.aborted) {
+          setApiData(d);
+          setError(null);
+        }
       })
       .catch((err: unknown) => {
-        if (ac.signal.aborted) return;
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        if (err instanceof Error && err.name === "AbortError") return;
-        setApiData(null);
+        if (ac.signal.aborted || isAbortError(err)) return;
+        setError(toLoadErrorMessage(err));
+        // Keep prior successful data when refresh fails; only clear on first load.
+        setApiData((prev: unknown) => (prev === undefined ? null : prev));
       })
       .finally(() => {
         if (!ac.signal.aborted) setIsRefreshing(false);
@@ -40,7 +48,9 @@ function useApiMatches(
     return () => {
       ac.abort();
     };
-  }, [filterKey, enabled]);
+  }, [filterKey, enabled, tick]);
+
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
 
   const removeUser = useCallback((userId: string) => {
     setApiData((prev: unknown) => {
@@ -52,7 +62,7 @@ function useApiMatches(
     });
   }, []);
 
-  return { matches: apiData, isRefreshing, removeUser };
+  return { matches: apiData, isRefreshing, removeUser, error, refresh };
 }
 
 export function useMatches(
@@ -73,27 +83,39 @@ function useApiMatchLists(
   filters: Record<string, unknown> | undefined,
   enabled: boolean
 ) {
-  const [apiData, setApiData] = useState<unknown>(undefined);
+  const [lists, setLists] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     if (!enabled) {
-      setApiData(undefined);
+      setLists(undefined);
+      setError(null);
       return;
     }
     let cancelled = false;
+    setError(null);
     void apiMatching
       .getMatchLists(filters)
       .then((d) => {
-        if (!cancelled) setApiData(d);
+        if (!cancelled) {
+          setLists(d);
+          setError(null);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setApiData(null);
+      .catch((err: unknown) => {
+        if (cancelled || isAbortError(err)) return;
+        setError(toLoadErrorMessage(err));
+        setLists((prev: unknown) => (prev === undefined ? null : prev));
       });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(filters ?? {}), enabled]);
-  return apiData;
+  }, [JSON.stringify(filters ?? {}), enabled, tick]);
+
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
+  return { lists, error, refresh };
 }
 
 export function useMyMatches(enabled = true) {
@@ -101,49 +123,73 @@ export function useMyMatches(enabled = true) {
 }
 
 function useApiMyMatches(enabled: boolean) {
-  const [apiData, setApiData] = useState<unknown>(undefined);
+  const [matches, setMatches] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     if (!enabled) {
-      setApiData(undefined);
+      setMatches(undefined);
+      setError(null);
       return;
     }
     let cancelled = false;
+    setError(null);
     void apiMatching
       .getMyMatches()
       .then((d) => {
-        if (!cancelled) setApiData(d);
+        if (!cancelled) {
+          setMatches(d);
+          setError(null);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setApiData(null);
+      .catch((err: unknown) => {
+        if (cancelled || isAbortError(err)) return;
+        setError(toLoadErrorMessage(err));
+        setMatches((prev: unknown) => (prev === undefined ? null : prev));
       });
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
-  return apiData;
+  }, [enabled, tick]);
+
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
+  return { matches, error, refresh };
 }
 
 export function useHomeFeed(enabled = true) {
-  const [data, setData] = useState<unknown>(undefined);
+  const [feed, setFeed] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     if (!enabled) {
-      setData(undefined);
+      setFeed(undefined);
+      setError(null);
       return;
     }
     let cancelled = false;
+    setError(null);
     void apiMatching
       .getHomeFeed()
       .then((d) => {
-        if (!cancelled) setData(d);
+        if (!cancelled) {
+          setFeed(d);
+          setError(null);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setData(null);
+      .catch((err: unknown) => {
+        if (cancelled || isAbortError(err)) return;
+        setError(toLoadErrorMessage(err));
+        setFeed((prev: unknown) => (prev === undefined ? null : prev));
       });
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
-  return data;
+  }, [enabled, tick]);
+
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
+  return { feed, error, refresh };
 }
 
 export function useLikeUser() {
@@ -198,26 +244,38 @@ export function useCompatibilityBreakdown(
 }
 
 function useApiBreakdown(userId: string | undefined) {
-  const [apiData, setApiData] = useState<unknown>(undefined);
+  const [data, setData] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     if (!userId) {
-      setApiData(undefined);
+      setData(undefined);
+      setError(null);
       return;
     }
     let cancelled = false;
+    setError(null);
     void apiMatching
       .getCompatibilityBreakdown(userId)
       .then((d) => {
-        if (!cancelled) setApiData(d);
+        if (!cancelled) {
+          setData(d);
+          setError(null);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setApiData(null);
+      .catch((err: unknown) => {
+        if (cancelled || isAbortError(err)) return;
+        setError(toLoadErrorMessage(err));
+        setData((prev: unknown) => (prev === undefined ? null : prev));
       });
     return () => {
       cancelled = true;
     };
-  }, [userId]);
-  return apiData;
+  }, [userId, tick]);
+
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
+  return { data, error, refresh };
 }
 
 export function usePrivateRevealStatus(
@@ -225,27 +283,35 @@ export function usePrivateRevealStatus(
   enabled = true
 ) {
   const [data, setData] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!enabled || !matchId) {
       setData(undefined);
+      setError(null);
       return;
     }
     let cancelled = false;
+    setError(null);
     void apiMatching
       .getPrivateRevealStatus(matchId)
       .then((d) => {
-        if (!cancelled) setData(d);
+        if (!cancelled) {
+          setData(d);
+          setError(null);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setData(null);
+      .catch((err: unknown) => {
+        if (cancelled || isAbortError(err)) return;
+        setError(toLoadErrorMessage(err));
+        setData((prev: unknown) => (prev === undefined ? null : prev));
       });
     return () => {
       cancelled = true;
     };
   }, [matchId, enabled, tick]);
   const refresh = useCallback(() => setTick((n) => n + 1), []);
-  return { data, refresh };
+  return { data, error, refresh };
 }
 
 export function useRevealPrivatePhoto() {

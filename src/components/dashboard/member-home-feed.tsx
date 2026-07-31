@@ -18,6 +18,7 @@ import { useTranslation } from "@/lib/i18n/context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataLoadError } from "@/components/ui/data-load-error";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { CompatibilityHighlights } from "@/components/matches/compatibility-highlights";
@@ -49,10 +50,18 @@ interface MemberHomeFeedProps {
 export function MemberHomeFeed({ firstName, canQuery }: MemberHomeFeedProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const feedRaw = useHomeFeed(canQuery);
+  const {
+    feed: feedRaw,
+    error: feedError,
+    refresh: refreshFeed,
+  } = useHomeFeed(canQuery);
   const feed = (canQuery ? feedRaw : undefined) as HomeFeedData | null | undefined;
   const likeUser = useLikeUser();
   const startChat = useStartChat();
+
+  if (canQuery && feedError && (feed === undefined || feed === null)) {
+    return <DataLoadError message={feedError} onRetry={() => void refreshFeed()} />;
+  }
 
   if (feed === undefined) {
     return (

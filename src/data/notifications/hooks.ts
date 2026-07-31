@@ -5,6 +5,7 @@ import {
   connectRealtime,
   subscribeRealtime,
 } from "../realtime/socket-client";
+import { isAbortError, toLoadErrorMessage } from "../query-error";
 import { apiNotifications } from "./api";
 
 export function useNotificationsList() {
@@ -36,15 +37,21 @@ function normalizeNotificationsResponse(data: unknown): unknown[] {
 }
 
 function useApiNotificationsList() {
-  const [apiData, setApiData] = useState<unknown>(undefined);
+  const [notifications, setNotifications] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
+
   const refresh = useCallback(async () => {
     try {
       const data = await apiNotifications.list();
-      setApiData(normalizeNotificationsResponse(data));
-    } catch {
-      setApiData([]);
+      setNotifications(normalizeNotificationsResponse(data));
+      setError(null);
+    } catch (err: unknown) {
+      if (isAbortError(err)) return;
+      setError(toLoadErrorMessage(err));
+      setNotifications((prev: unknown) => (prev === undefined ? null : prev));
     }
   }, []);
+
   useEffect(() => {
     void refresh();
     connectRealtime();
@@ -52,7 +59,8 @@ function useApiNotificationsList() {
       void refresh();
     });
   }, [refresh]);
-  return apiData;
+
+  return { notifications, error, refresh };
 }
 
 export function useUnreadCount() {
@@ -65,7 +73,7 @@ function useApiUnreadCount() {
     try {
       setApiData(await apiNotifications.unreadCount());
     } catch {
-      setApiData(null);
+      // Badge is non-critical — keep last known count.
     }
   }, []);
   useEffect(() => {

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataLoadError } from "@/components/ui/data-load-error";
 import { MatchProfileModal } from "@/components/matches/match-profile-modal";
 import {
   isSecondaryMatchList,
@@ -36,7 +37,11 @@ export default function LikesPage() {
   const tabParam = searchParams.get("tab");
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
 
-  const { profile: profileRaw } = useProfile();
+  const {
+    profile: profileRaw,
+    error: profileError,
+    refresh: refreshProfile,
+  } = useProfile();
   const profile = (
     staffLoading || isStaff ? undefined : profileRaw
   ) as Profile | null | undefined;
@@ -55,8 +60,16 @@ export default function LikesPage() {
     profileReady && hasPaidAccess(profile) && !needsApprovalGate(profile);
   const isPremium = isPremiumMember(profile);
 
-  const matchListsRaw = useMatchLists({}, canQuery);
-  const matchLists = (canQuery ? matchListsRaw : undefined) as
+  const {
+    lists: matchListsRaw,
+    error: listsError,
+    refresh: refreshLists,
+  } = useMatchLists({}, canQuery);
+  const matchLists = (
+    canQuery && matchListsRaw && typeof matchListsRaw === "object"
+      ? matchListsRaw
+      : undefined
+  ) as
     | {
         shortlist?: MatchResult[];
         liked?: MatchResult[];
@@ -168,6 +181,17 @@ export default function LikesPage() {
     );
   }
 
+  if (!isStaff && profileError && !profile) {
+    return (
+      <DashboardLayout>
+        <DataLoadError
+          message={profileError}
+          onRetry={() => void refreshProfile()}
+        />
+      </DashboardLayout>
+    );
+  }
+
   if (profile && !profileReady) {
     return (
       <DashboardLayout>
@@ -206,6 +230,17 @@ export default function LikesPage() {
     return (
       <DashboardLayout>
         <PendingApprovalGate isPremium={isPremium} />
+      </DashboardLayout>
+    );
+  }
+
+  if (canQuery && listsError && matchLists === undefined) {
+    return (
+      <DashboardLayout>
+        <DataLoadError
+          message={listsError}
+          onRetry={() => void refreshLists()}
+        />
       </DashboardLayout>
     );
   }

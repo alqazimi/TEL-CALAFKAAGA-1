@@ -44,6 +44,7 @@ export const en = {
     loadingData: "Loading your data...",
     loadingStuck:
       "This is taking too long. Check your connection, then retry or sign in again.",
+    loadFailed: "Could not load data. Check your connection and try again.",
     retry: "Retry",
     signInAgain: "Sign in again",
     securePayments: "Secure Payments",

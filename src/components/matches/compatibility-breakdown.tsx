@@ -58,7 +58,7 @@ export function CompatibilityBreakdown({
   overallScore,
 }: CompatibilityBreakdownProps) {
   const { t } = useTranslation();
-  const breakdownRaw = useCompatibilityBreakdown(
+  const { data: breakdownRaw } = useCompatibilityBreakdown(
     targetUserId ? String(targetUserId) : undefined,
     isPremium
   );

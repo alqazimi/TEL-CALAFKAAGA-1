@@ -7,6 +7,7 @@ import {
   leaveConversation,
   subscribeRealtime,
 } from "../realtime/socket-client";
+import { isAbortError, toLoadErrorMessage } from "../query-error";
 import { apiChat } from "./api";
 
 export function useConversations(opts?: { list?: string; enabled?: boolean }) {
@@ -16,20 +17,26 @@ export function useConversations(opts?: { list?: string; enabled?: boolean }) {
 }
 
 function useApiConversations(list: string | undefined, enabled: boolean) {
-  const [apiData, setApiData] = useState<unknown>(undefined);
+  const [conversations, setConversations] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
+
   const refresh = useCallback(async () => {
     if (!enabled) return;
     try {
-      setApiData(
-        await apiChat.getConversations(list ? { list } : undefined)
-      );
-    } catch {
-      setApiData(null);
+      const data = await apiChat.getConversations(list ? { list } : undefined);
+      setConversations(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err: unknown) {
+      if (isAbortError(err)) return;
+      setError(toLoadErrorMessage(err));
+      setConversations((prev: unknown) => (prev === undefined ? null : prev));
     }
   }, [enabled, list]);
+
   useEffect(() => {
     if (!enabled) {
-      setApiData(undefined);
+      setConversations(undefined);
+      setError(null);
       return;
     }
     void refresh();
@@ -38,7 +45,8 @@ function useApiConversations(list: string | undefined, enabled: boolean) {
       void refresh();
     });
   }, [refresh, enabled]);
-  return apiData;
+
+  return { conversations, error, refresh };
 }
 
 export function useMessages(conversationId: string | undefined) {
@@ -47,6 +55,7 @@ export function useMessages(conversationId: string | undefined) {
 
 function useApiMessages(conversationId: string | undefined) {
   const [apiData, setApiData] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const requestSeq = useRef(0);
@@ -61,13 +70,15 @@ function useApiMessages(conversationId: string | undefined) {
     try {
       const data = await apiChat.getMessages(conversationId, { signal: ac.signal });
       if (seq === requestSeq.current && !ac.signal.aborted) {
-        setApiData(data);
+        setApiData(Array.isArray(data) ? data : []);
+        setError(null);
       }
     } catch (err: unknown) {
-      if (ac.signal.aborted) return;
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      if (err instanceof Error && err.name === "AbortError") return;
-      if (seq === requestSeq.current) setApiData(null);
+      if (ac.signal.aborted || isAbortError(err)) return;
+      if (seq === requestSeq.current) {
+        setError(toLoadErrorMessage(err));
+        setApiData((prev: unknown) => (prev === undefined ? null : prev));
+      }
     } finally {
       if (seq === requestSeq.current && !ac.signal.aborted) {
         setIsRefreshing(false);
@@ -79,10 +90,12 @@ function useApiMessages(conversationId: string | undefined) {
     if (!conversationId) {
       abortRef.current?.abort();
       setApiData(undefined);
+      setError(null);
       setIsRefreshing(false);
       return;
     }
     setApiData(undefined);
+    setError(null);
     void refresh();
     connectRealtime();
     joinConversation(conversationId);
@@ -96,7 +109,7 @@ function useApiMessages(conversationId: string | undefined) {
     };
   }, [conversationId, refresh]);
 
-  return { messages: apiData, isRefreshing, refresh };
+  return { messages: apiData, isRefreshing, refresh, error };
 }
 
 export function useSendMessage() {
@@ -159,8 +172,12 @@ function useApiTyping(conversationId: string | undefined) {
     if (!conversationId) return;
     let cancelled = false;
     const poll = async () => {
-      const d = await apiChat.getTypingStatus(conversationId);
-      if (!cancelled) setApiData(d);
+      try {
+        const d = await apiChat.getTypingStatus(conversationId);
+        if (!cancelled) setApiData(d);
+      } catch {
+        // Typing indicators are best-effort — don't block the chat UI.
+      }
     };
     void poll();
     const unsub = subscribeRealtime("typing:update", () => {

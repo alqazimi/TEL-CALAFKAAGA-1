@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { isAbortError, toLoadErrorMessage } from "../query-error";
 import { apiPayments } from "./api";
 
 export function useCreateRegistrationCheckout() {
@@ -27,24 +28,33 @@ export function useVerifyCheckoutSession() {
 }
 
 export function useEvcLatestProof() {
-  const [apiData, setApiData] = useState<unknown>(undefined);
+  const [proof, setProof] = useState<unknown>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setError(null);
     void apiPayments.evc
       .myLatest()
       .then((d) => {
-        if (!cancelled) setApiData(d);
+        if (!cancelled) {
+          setProof(d);
+          setError(null);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setApiData(null);
+      .catch((err: unknown) => {
+        if (cancelled || isAbortError(err)) return;
+        setError(toLoadErrorMessage(err));
+        setProof((prev: unknown) => (prev === undefined ? null : prev));
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tick]);
 
-  return apiData;
+  const refresh = useCallback(() => setTick((n) => n + 1), []);
+  return { proof, error, refresh };
 }
 
 export function useSubmitEvcProof() {

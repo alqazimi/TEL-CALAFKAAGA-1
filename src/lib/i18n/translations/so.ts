@@ -46,6 +46,7 @@ export const so: Translations = {
     loadingData: "Macluumaadka waa la soo rarayaa...",
     loadingStuck:
       "Way qaadatay waqti badan. Hubi internetka, ka dib isku day ama dib u gal.",
+    loadFailed: "Macluumaadka lama soo rarayn. Hubi internetka oo isku day mar kale.",
     retry: "Isku day",
     signInAgain: "Dib u gal",
     securePayments: "Lacag Bixin Amaan ah",

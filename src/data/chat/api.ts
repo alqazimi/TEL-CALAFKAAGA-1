@@ -13,11 +13,11 @@ export const apiChat: ChatAdapter = {
     const res = await apiClient.get<{ items?: unknown } | unknown>(
       `/conversations${q}`
     );
-    // Nest returns { items }; Convex returns array — normalize for UI.
+    // Nest returns { items }; always normalize to an array for the UI.
     if (res && typeof res === "object" && "items" in res && Array.isArray(res.items)) {
       return res.items;
     }
-    return res;
+    return Array.isArray(res) ? res : [];
   },
   async getPartnerProfile(conversationId) {
     return apiClient.get(

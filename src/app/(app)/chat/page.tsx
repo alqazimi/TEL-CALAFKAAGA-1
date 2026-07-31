@@ -50,6 +50,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataLoadError } from "@/components/ui/data-load-error";
 import { formatTime } from "@/lib/utils";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
@@ -124,7 +125,11 @@ export default function ChatPage() {
   const markedReadRef = useRef<string | null>(null);
 
   const { user: currentUser } = useUnifiedAuth();
-  const { profile: profileRaw } = useProfile();
+  const {
+    profile: profileRaw,
+    error: profileError,
+    refresh: refreshProfile,
+  } = useProfile();
   const profile = (
     staffLoading || isStaff ? undefined : profileRaw
   ) as Profile | null | undefined;
@@ -141,7 +146,11 @@ export default function ChatPage() {
   const canQueryChat =
     profileReady && hasPaidAccess(profile) && !needsApprovalGate(profile);
 
-  const conversationsRaw = useConversations({
+  const {
+    conversations: conversationsRaw,
+    error: conversationsError,
+    refresh: refreshConversations,
+  } = useConversations({
     list: matchList,
     enabled: canQueryChat,
   });
@@ -154,7 +163,11 @@ export default function ChatPage() {
     ? (conversationParam as string)
     : null;
 
-  const { messages: messagesRaw } = useMessages(activeConversation ?? undefined);
+  const {
+    messages: messagesRaw,
+    error: messagesError,
+    refresh: refreshMessages,
+  } = useMessages(activeConversation ?? undefined);
   const messages = Array.isArray(messagesRaw)
     ? (messagesRaw as ChatMessage[])
     : undefined;
@@ -289,6 +302,17 @@ export default function ChatPage() {
     );
   }
 
+  if (!isStaff && profileError && !profile) {
+    return (
+      <DashboardLayout>
+        <DataLoadError
+          message={profileError}
+          onRetry={() => void refreshProfile()}
+        />
+      </DashboardLayout>
+    );
+  }
+
   if (profile && !profileReady) {
     return (
       <DashboardLayout>
@@ -332,6 +356,19 @@ export default function ChatPage() {
     return (
       <DashboardLayout>
         <PendingApprovalGate isPremium={isPremiumMember(profile)} />
+      </DashboardLayout>
+    );
+  }
+
+  if (canQueryChat && conversationsError && conversations === undefined) {
+    return (
+      <DashboardLayout>
+        <ChatShell>
+          <DataLoadError
+            message={conversationsError}
+            onRetry={() => void refreshConversations()}
+          />
+        </ChatShell>
       </DashboardLayout>
     );
   }
@@ -621,6 +658,12 @@ export default function ChatPage() {
                       </div>
                     )}
                     <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y px-4 py-4 space-y-3">
+                      {messagesError && messages === undefined ? (
+                        <DataLoadError
+                          message={messagesError}
+                          onRetry={() => void refreshMessages()}
+                        />
+                      ) : null}
                       {messages?.length === 0 && (
                         <div className="flex flex-col items-center justify-center h-full py-12 text-center">
                           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted mb-3">
