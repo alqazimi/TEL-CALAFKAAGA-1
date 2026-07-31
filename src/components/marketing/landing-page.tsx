@@ -16,7 +16,6 @@ import {
   Check,
 } from "lucide-react";
 import { AuthRegisterCta } from "@/components/auth/auth-register-cta";
-import { AndroidDownloadLink } from "@/components/marketing/android-download-link";
 import { PlanChoiceNote } from "@/components/marketing/plan-choice-note";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -134,7 +133,7 @@ export function LandingPage() {
               </p>
 
               <div
-                className="motion-safe:animate-hero-rise mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:flex-wrap"
+                className="motion-safe:animate-hero-rise mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
                 style={{ animationDelay: "300ms" }}
               >
                 <AuthRegisterCta
@@ -142,7 +141,6 @@ export function LandingPage() {
                   className="h-12 rounded-2xl px-8 text-base shadow-lg shadow-black/25"
                   size="lg"
                 />
-                <AndroidDownloadLink />
                 <Link
                   href="/how-it-works"
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-2 text-sm font-semibold text-white/90 transition-colors hover:text-white sm:px-4"
