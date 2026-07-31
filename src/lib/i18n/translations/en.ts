@@ -518,6 +518,10 @@ export const en = {
     pay: "Pay ${{price}}",
     redirecting: "Redirecting to Stripe...",
     stripeNote: "Secure checkout powered by Stripe. One payment, lifetime access.",
+    stripeNoProofNote:
+      "Card payments are verified by Stripe automatically. No screenshot or payment proof is required.",
+    payWithCard: "Pay with card",
+    payWithMobileMoney: "EVC / M-PESA",
     stepAccount: "Account",
     stepDetails: "Details",
     stepProfile: "Profile",

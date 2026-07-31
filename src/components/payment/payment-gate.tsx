@@ -152,6 +152,7 @@ export function PaymentGate({
 }: PaymentGateProps) {
   const { t } = useTranslation();
   const [preferredPlan] = useState<PlanPreference | null>(() => getPlanPreference());
+  const [payMethod, setPayMethod] = useState<"card" | "mobile">("card");
   const isWoman = gender === "female";
   const basicPrice = isWoman ? WOMEN_BASIC_PRICE : REGISTRATION_PRICE;
   const premiumDisplayPrice = isWoman || freeBasic ? PREMIUM_UPGRADE_PRICE : PERSONAL_SUPPORT_PRICE;
@@ -183,6 +184,32 @@ export function PaymentGate({
         </p>
       </div>
 
+      <div className="mb-6 flex justify-center">
+        <div className="inline-flex rounded-2xl border border-border bg-muted/40 p-1">
+          <Button
+            type="button"
+            size="sm"
+            variant={payMethod === "card" ? "default" : "ghost"}
+            className="rounded-xl px-4"
+            onClick={() => setPayMethod("card")}
+          >
+            <CreditCard className="h-4 w-4 mr-2" />
+            {t("payment.payWithCard")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={payMethod === "mobile" ? "default" : "ghost"}
+            className="rounded-xl px-4"
+            onClick={() => setPayMethod("mobile")}
+          >
+            {t("payment.payWithMobileMoney")}
+          </Button>
+        </div>
+      </div>
+
+      {payMethod === "card" ? (
+        <>
       <div
         className={cn(
           "grid gap-6",
@@ -314,8 +341,13 @@ export function PaymentGate({
         <span className="font-semibold tracking-wide">MC</span>
         <span className="font-semibold tracking-wide">AMEX</span>
       </div>
-
-      <EvcPaymentSection gender={gender} freeBasic={freeBasic} />
+      <p className="mt-4 text-center text-sm text-muted-foreground">
+        {t("payment.stripeNoProofNote")}
+      </p>
+        </>
+      ) : (
+        <EvcPaymentSection gender={gender} freeBasic={freeBasic} />
+      )}
     </div>
   );
 }

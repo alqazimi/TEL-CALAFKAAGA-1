@@ -524,6 +524,10 @@ export const so: Translations = {
     pay: "Bixi ${{price}}",
     redirecting: "Waa lagu wareejinayaa Stripe...",
     stripeNote: "Lacag bixin ammaan ah Stripe. Hal lacag, helitaan weligeed ah.",
+    stripeNoProofNote:
+      "Lacagta kaarka waxaa Stripe si toos ah u xaqiijiyaa. Sawir ama cadeyn lacag bixin looma baahna.",
+    payWithCard: "Ku bixi kaarka",
+    payWithMobileMoney: "EVC / M-PESA",
     stepAccount: "Akoon",
     stepDetails: "Faahfaahin",
     stepProfile: "Profile",

@@ -39,6 +39,22 @@ export class GrantPaidAccessService {
     });
   }
 
+  /** Stripe does not use screenshots — close any leftover EVC proof queue rows. */
+  async supersedePendingEvcProofs(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    reason: string
+  ) {
+    await tx.evcPaymentProof.updateMany({
+      where: { userId, status: "pending" },
+      data: {
+        status: "rejected",
+        reviewedAt: new Date(),
+        rejectionReason: reason,
+      },
+    });
+  }
+
   /**
    * Unlock paid membership — exact Convex rules:
    * - hasPaid + genderLocked always
@@ -192,6 +208,15 @@ export class GrantPaidAccessService {
 
       await this.supersedeOtherPendingPayments(tx, payment.userId, payment.id);
 
+      // Card payments never need a screenshot. Clear any pending EVC proofs.
+      if (args.source === "stripe") {
+        await this.supersedePendingEvcProofs(
+          tx,
+          payment.userId,
+          "Paid via Stripe — payment proof not required."
+        );
+      }
+
       const isPremium = isPremiumPayment(payment);
       const isUpgrade = payment.paymentType === "premium_upgrade";
       const shouldNotify =
@@ -202,6 +227,10 @@ export class GrantPaidAccessService {
           payment.paymentType === null ||
           payment.paymentType === undefined);
 
+      // Stripe is verified by Stripe itself — no admin payment proof / review wait.
+      const forceProfileApproval =
+        args.forceProfileApproval === true || args.source === "stripe";
+
       const grant = await this.grantProfileAccess(tx, {
         userId: payment.userId,
         isPremium,
@@ -209,7 +238,7 @@ export class GrantPaidAccessService {
         notify: shouldNotify,
         sourceKey: args.fulfillmentKey,
         paymentId: payment.id,
-        forceProfileApproval: args.forceProfileApproval,
+        forceProfileApproval,
       });
 
       const planType =

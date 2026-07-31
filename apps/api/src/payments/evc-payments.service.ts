@@ -400,11 +400,15 @@ export class EvcPaymentsService {
       take: 100,
       include: {
         user: { select: { email: true, phone: true } },
-        profile: { select: { name: true, phone: true, gender: true } },
+        profile: {
+          select: { name: true, phone: true, gender: true, hasPaid: true },
+        },
       },
     });
+    // Stripe payers already unlocked — hide leftover proofs from the admin queue.
+    const needsReview = pending.filter((p) => !p.profile?.hasPaid);
     return Promise.all(
-      pending.map(async (p) => {
+      needsReview.map(async (p) => {
         let screenshotUrl: string | null = null;
         let mediaId = p.screenshotMediaId;
         if (!mediaId && p.screenshotConvexId) {
