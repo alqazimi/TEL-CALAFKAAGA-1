@@ -45,6 +45,8 @@ export class AdminUsersController {
     @Query("reviewStatus") reviewStatus?: string,
     @Query("hasPaid") hasPaid?: string,
     @Query("paymentTier") paymentTier?: string,
+    @Query("gender") gender?: string,
+    @Query("onTrial") onTrial?: string,
     @Query("cursor") cursor?: string,
     @Query("limit") limit?: string,
     @Query("country") country?: string,
@@ -81,6 +83,9 @@ export class AdminUsersController {
               ? false
               : undefined,
       paymentTier: tier,
+      gender:
+        gender === "male" || gender === "female" ? gender : undefined,
+      onTrial: onTrial === "true" ? true : undefined,
       cursor,
       limit: limit ? Number(limit) : undefined,
       country,

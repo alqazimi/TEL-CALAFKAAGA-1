@@ -44,7 +44,8 @@ import { ConfirmDialog, type ConfirmDialogTone } from "@/components/ui/confirm-d
 import { getSafeUserError } from "@/lib/safe-error";
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
-type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
+type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium" | "trial";
+export type GenderFilter = "all" | "male" | "female";
 export type ReviewFilter =
   | "all"
   | "needs_action"
@@ -167,6 +168,8 @@ interface AdminMembersPanelProps {
   onRoleFilterChange: (value: RoleFilter) => void;
   paymentFilter: PaymentFilter;
   onPaymentFilterChange: (value: PaymentFilter) => void;
+  genderFilter: GenderFilter;
+  onGenderFilterChange: (value: GenderFilter) => void;
   reviewFilter: ReviewFilter;
   onReviewFilterChange: (value: ReviewFilter) => void;
   approvedMale?: number;
@@ -193,6 +196,8 @@ export function AdminMembersPanel({
   onRoleFilterChange,
   paymentFilter,
   onPaymentFilterChange,
+  genderFilter,
+  onGenderFilterChange,
   reviewFilter,
   onReviewFilterChange,
   approvedMale,
@@ -396,7 +401,7 @@ export function AdminMembersPanel({
               })}
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-muted-foreground">{t("adminPage.filterByRole")}</p>
                 <Select
@@ -428,7 +433,24 @@ export function AdminMembersPanel({
                     <SelectItem value="unpaid">{t("adminPage.unpaid")}</SelectItem>
                     <SelectItem value="basic">{t("adminPage.paidBasic")}</SelectItem>
                     <SelectItem value="premium">{t("adminPage.paidPremium")}</SelectItem>
+                    <SelectItem value="trial">{t("adminPage.trialMembers")}</SelectItem>
                     <SelectItem value="paid">{t("adminPage.filterAnyPaid")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">{t("adminPage.filterByGender")}</p>
+                <Select
+                  value={genderFilter}
+                  onValueChange={(value) => onGenderFilterChange(value as GenderFilter)}
+                >
+                  <SelectTrigger className="h-10 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("adminPage.filterAllGenders")}</SelectItem>
+                    <SelectItem value="male">{t("adminPage.genderMale")}</SelectItem>
+                    <SelectItem value="female">{t("adminPage.genderFemale")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -460,7 +482,11 @@ export function AdminMembersPanel({
                 ? `No member found for “${search.trim()}”. Try full email or part of the name.`
                 : t("adminPage.noUsers")}
             </p>
-            {searching || reviewFilter !== "all" || paymentFilter !== "all" || roleFilter !== "all" ? (
+            {searching ||
+            reviewFilter !== "all" ||
+            paymentFilter !== "all" ||
+            roleFilter !== "all" ||
+            genderFilter !== "all" ? (
               <Button
                 type="button"
                 size="sm"
@@ -470,6 +496,7 @@ export function AdminMembersPanel({
                   onReviewFilterChange("all");
                   onPaymentFilterChange("all");
                   onRoleFilterChange("all");
+                  onGenderFilterChange("all");
                 }}
               >
                 Clear search & filters

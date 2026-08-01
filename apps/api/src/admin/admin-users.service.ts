@@ -120,6 +120,8 @@ export class AdminUsersService {
     reviewStatus?: string;
     hasPaid?: boolean;
     paymentTier?: "basic" | "premium";
+    gender?: "male" | "female";
+    onTrial?: boolean;
     cursor?: string;
     limit?: number;
     country?: string;
@@ -165,8 +167,15 @@ export class AdminUsersService {
     } else if (opts.paymentTier === "basic") {
       where.hasPaid = true;
       andClauses.push({ NOT: premiumProfileWhere() });
+    } else if (opts.onTrial) {
+      where.hasPaid = false;
+      where.trialEndsAt = { gt: new Date() };
     } else if (opts.hasPaid !== undefined) {
       where.hasPaid = opts.hasPaid;
+    }
+
+    if (opts.gender === "male" || opts.gender === "female") {
+      where.gender = opts.gender;
     }
 
     if (opts.country?.trim()) {
@@ -416,6 +425,8 @@ export class AdminUsersService {
         reviewStatus: reviewStatus ?? null,
         hasPaid: opts.hasPaid ?? null,
         paymentTier: opts.paymentTier ?? null,
+        gender: opts.gender ?? null,
+        onTrial: opts.onTrial ?? null,
         country: opts.country ?? null,
         assignedReviewerId: opts.assignedReviewerId ?? null,
         ...dateFilter.applied,

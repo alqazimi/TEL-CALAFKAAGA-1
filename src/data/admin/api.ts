@@ -46,6 +46,8 @@ function nestUserListQuery(opts?: Record<string, unknown>): string {
   const payment = opts.payment;
   if (payment === "basic" || payment === "premium") {
     params.paymentTier = payment;
+  } else if (payment === "trial") {
+    params.onTrial = true;
   } else if (payment === "paid") {
     params.hasPaid = true;
   } else if (payment === "unpaid") {
@@ -54,6 +56,13 @@ function nestUserListQuery(opts?: Record<string, unknown>): string {
     params.hasPaid = opts.hasPaid;
   } else if (opts.paymentTier === "basic" || opts.paymentTier === "premium") {
     params.paymentTier = opts.paymentTier;
+  } else if (opts.onTrial === true) {
+    params.onTrial = true;
+  }
+
+  const gender = opts.gender;
+  if (gender === "male" || gender === "female") {
+    params.gender = gender;
   }
 
   return q(params);

@@ -19,6 +19,7 @@ import {
 } from "@/data/admin/hooks";
 import {
   CheckCircle2,
+  ChevronRight,
   CreditCard,
   Flag,
   Headphones,
@@ -85,7 +86,8 @@ import {
 } from "@/lib/constants";
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
-type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium";
+type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium" | "trial";
+type GenderFilter = "all" | "male" | "female";
 type ReviewFilter =
   | "all"
   | "needs_action"
@@ -132,6 +134,7 @@ export default function AdminPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
+  const [genderFilter, setGenderFilter] = useState<GenderFilter>("all");
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
   const [usersMode, setUsersMode] = useState<"members" | "review">("members");
   const [announcement, setAnnouncement] = useState({
@@ -187,6 +190,7 @@ export default function AdminPage() {
       role: isMemberSearch ? "all" : roleFilter,
       payment: isMemberSearch ? "all" : paymentFilter,
       review: isMemberSearch ? "all" : reviewFilter,
+      gender: isMemberSearch ? "all" : genderFilter,
       limit: 150,
       sortBy: "registered",
       sortOrder: "desc",
@@ -230,6 +234,21 @@ export default function AdminPage() {
 
   const setTab = (tab: AdminTab) => {
     router.replace(`/admin?tab=${tab}`, { scroll: false });
+  };
+
+  const goMembers = (opts?: {
+    role?: RoleFilter;
+    payment?: PaymentFilter;
+    review?: ReviewFilter;
+    gender?: GenderFilter;
+  }) => {
+    setSearch("");
+    setRoleFilter(opts?.role ?? "all");
+    setPaymentFilter(opts?.payment ?? "all");
+    setReviewFilter(opts?.review ?? "all");
+    setGenderFilter(opts?.gender ?? "all");
+    setUsersMode("members");
+    setTab("users");
   };
 
   const openUserProfile = (profileId: string) => {
@@ -326,48 +345,63 @@ export default function AdminPage() {
   ) as Record<AdminTab, { title: TranslationPath; desc: TranslationPath; icon: typeof Users }>;
 
   const isOwner = canManageRoles;
-  const overviewStats = [
+  const overviewStats: Array<{
+    label: string;
+    value: string | number;
+    hint: string;
+    icon: typeof Users;
+    onClick?: () => void;
+  }> = [
     {
       label: t("adminPage.totalUsers"),
       value: stats?.totalUsers ?? "—",
       hint: t("adminPage.statMembersHint"),
       icon: Users,
+      onClick: () => goMembers(),
     },
     {
       label: t("adminPage.approvedMen"),
       value: stats?.approvedMale ?? "—",
       hint: t("adminPage.statApprovedMenHint"),
       icon: Users,
+      onClick: () =>
+        goMembers({ role: "user", review: "approved", gender: "male" }),
     },
     {
       label: t("adminPage.approvedWomen"),
       value: stats?.approvedFemale ?? "—",
       hint: t("adminPage.statApprovedWomenHint"),
       icon: Users,
+      onClick: () =>
+        goMembers({ role: "user", review: "approved", gender: "female" }),
     },
     {
       label: t("adminPage.approvedTotal"),
       value: stats?.approvedTotal ?? "—",
       hint: t("adminPage.statApprovedTotalHint"),
       icon: CheckCircle2,
+      onClick: () => goMembers({ role: "user", review: "approved" }),
     },
     {
       label: t("adminPage.paidBasic"),
       value: stats?.money?.basicPaidCount ?? stats?.paidBasicCount ?? "—",
       hint: t("adminPage.statBasicPaidHint"),
       icon: CreditCard,
+      onClick: () => goMembers({ role: "user", payment: "basic" }),
     },
     {
       label: t("adminPage.paidPremiumMembers"),
       value: stats?.paidPremiumCount ?? "—",
       hint: t("adminPage.statPremiumMembersHint"),
       icon: CreditCard,
+      onClick: () => goMembers({ role: "user", payment: "premium" }),
     },
     {
       label: t("adminPage.trialMembers"),
       value: stats?.trialCount ?? "—",
       hint: t("adminPage.statTrialHint"),
       icon: Clock,
+      onClick: () => goMembers({ role: "user", payment: "trial" }),
     },
     {
       label: t("adminPage.revenue"),
@@ -378,36 +412,42 @@ export default function AdminPage() {
           : "—",
       hint: t("adminPage.statRevenueHint"),
       icon: Wallet,
+      onClick: () => setTab("payments"),
     },
     {
       label: t("adminPage.pendingReview"),
       value: stats?.pendingApproval ?? "—",
       hint: t("adminPage.statPendingHint"),
       icon: Flag,
+      onClick: () => goMembers({ role: "user", review: "pending_review" }),
     },
     {
       label: t("adminPage.activeMatches"),
       value: stats?.totalMatches ?? "—",
       hint: t("adminPage.statMatchesHint"),
       icon: Heart,
+      onClick: () => setTab("analytics"),
     },
     {
       label: t("adminPage.messages"),
       value: stats?.totalMessages ?? "—",
       hint: t("adminPage.statMessagesHint"),
       icon: MessageCircle,
+      onClick: () => setTab("messages"),
     },
     {
       label: t("adminPage.openReports"),
       value: openReports,
       hint: t("adminPage.statReportsHint"),
       icon: Flag,
+      onClick: () => setTab("reports"),
     },
     {
       label: t("adminPage.openContacts"),
       value: openContacts,
       hint: t("adminPage.statContactsHint"),
       icon: Headphones,
+      onClick: () => setTab("contacts"),
     },
   ];
 
@@ -439,19 +479,48 @@ export default function AdminPage() {
 
         {activeTab === "dashboard" && (
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {overviewStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-2xl border border-border bg-card p-3.5 shadow-[var(--shadow-sm)] sm:p-4"
-              >
-                <div className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-foreground">
-                  <stat.icon className="h-[18px] w-[18px]" />
-                </div>
-                <p className="text-xl font-semibold tracking-tight sm:text-2xl">{stat.value}</p>
-                <p className="mt-0.5 text-sm font-medium text-foreground">{stat.label}</p>
-                <p className="mt-1 hidden text-xs text-muted-foreground sm:block">{stat.hint}</p>
-              </div>
-            ))}
+            {overviewStats.map((stat) => {
+              const clickable = typeof stat.onClick === "function";
+              const Comp = clickable ? "button" : "div";
+              return (
+                <Comp
+                  key={stat.label}
+                  type={clickable ? "button" : undefined}
+                  onClick={stat.onClick}
+                  className={cn(
+                    "rounded-2xl border border-border bg-card p-3.5 text-left shadow-[var(--shadow-sm)] sm:p-4",
+                    clickable &&
+                      "group cursor-pointer transition-colors hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  )}
+                >
+                  <div className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-xl bg-muted text-foreground">
+                    <stat.icon className="h-[18px] w-[18px]" />
+                  </div>
+                  <p
+                    className={cn(
+                      "text-xl font-semibold tracking-tight sm:text-2xl",
+                      clickable && "group-hover:text-primary"
+                    )}
+                  >
+                    {stat.value}
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1 text-sm font-medium text-foreground">
+                    <span>{stat.label}</span>
+                    {clickable ? (
+                      <ChevronRight className="h-3.5 w-3.5 opacity-40 group-hover:opacity-100 group-hover:text-primary" />
+                    ) : null}
+                  </p>
+                  <p className="mt-1 hidden text-xs text-muted-foreground sm:block">
+                    {stat.hint}
+                  </p>
+                  {clickable ? (
+                    <p className="mt-1 hidden text-[11px] text-primary/80 opacity-0 transition-opacity group-hover:opacity-100 sm:block">
+                      {t("adminPage.clickToView")}
+                    </p>
+                  ) : null}
+                </Comp>
+              );
+            })}
           </section>
         )}
 
@@ -554,12 +623,7 @@ export default function AdminPage() {
                   variant="outline"
                   className="h-10 rounded-xl"
                   onClick={() => {
-                    setRoleFilter("user");
-                    setPaymentFilter("all");
-                    setReviewFilter("pending_review");
-                    setUsersMode("members");
-                    setSearch("");
-                    setTab("users");
+                    goMembers({ role: "user", review: "pending_review" });
                   }}
                 >
                   {t("adminPage.attentionPending", { count: pendingReviewCount })}
@@ -571,12 +635,7 @@ export default function AdminPage() {
                   variant="outline"
                   className="h-10 rounded-xl"
                   onClick={() => {
-                    setRoleFilter("user");
-                    setPaymentFilter("unpaid");
-                    setReviewFilter("all");
-                    setUsersMode("members");
-                    setSearch("");
-                    setTab("users");
+                    goMembers({ role: "user", payment: "unpaid" });
                   }}
                 >
                   {t("adminPage.attentionUnpaid", { count: stats!.unpaidCount })}
@@ -735,12 +794,15 @@ export default function AdminPage() {
                       setReviewFilter("all");
                       setPaymentFilter("all");
                       setRoleFilter("all");
+                      setGenderFilter("all");
                     }
                   }}
                   roleFilter={roleFilter}
                   onRoleFilterChange={setRoleFilter}
                   paymentFilter={paymentFilter}
                   onPaymentFilterChange={setPaymentFilter}
+                  genderFilter={genderFilter}
+                  onGenderFilterChange={setGenderFilter}
                   reviewFilter={reviewFilter}
                   onReviewFilterChange={setReviewFilter}
                   approvedMale={stats?.approvedMale}
