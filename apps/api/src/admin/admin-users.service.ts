@@ -228,10 +228,9 @@ export class AdminUsersService {
         { user: { emailNormalized: { contains: qLower } } },
         { user: { email: { contains: q, mode: "insensitive" } } },
         { user: { name: { contains: q, mode: "insensitive" } } },
+        // UUID fields only support exact equals (no startsWith on UuidFilter).
         { id: { equals: q } },
         { userId: { equals: q } },
-        { id: { startsWith: q } },
-        { userId: { startsWith: q } },
       ];
       if (phoneDigits.length >= 3) {
         or.push({ phone: { contains: phoneDigits } });
