@@ -29,6 +29,7 @@ enum ReviewStatus {
   rejected
   suspended
   paused
+  changes_requested
 }
 
 enum AccountStatusEventType {
@@ -49,6 +50,9 @@ enum AccountStatusEventType {
   verification_submitted
   verification_approved
   verification_rejected
+  changes_requested
+  resubmitted
+  reviewer_assigned
   other
 }
 
@@ -378,6 +382,13 @@ model Profile {
   verificationSubmittedAt    DateTime?        @map("verification_submitted_at")
   verificationReviewedAt     DateTime?        @map("verification_reviewed_at")
   assignedReviewerId         String?          @map("assigned_reviewer_id") @db.Uuid
+  assignedReviewerAt         DateTime?        @map("assigned_reviewer_at")
+  reviewStartedAt            DateTime?        @map("review_started_at")
+  reviewCompletedAt          DateTime?        @map("review_completed_at")
+  changesRequestedAt         DateTime?        @map("changes_requested_at")
+  changesDeadlineAt          DateTime?        @map("changes_deadline_at")
+  resubmittedAt              DateTime?        @map("resubmitted_at")
+  allowResubmission          Boolean?         @map("allow_resubmission")
   photoVisibility            PhotoVisibility? @map("photo_visibility")
   convexCreatedAt            DateTime?        @map("convex_created_at")
   createdAt                  DateTime         @default(now()) @map("created_at")
@@ -400,6 +411,8 @@ model Profile {
   @@index([bannedAt])
   @@index([statusChangedAt])
   @@index([submittedAt])
+  @@index([assignedReviewerId])
+  @@index([changesRequestedAt])
   @@map("profiles")
 }
 

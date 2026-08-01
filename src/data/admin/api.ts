@@ -12,13 +12,28 @@ function q(opts?: Record<string, unknown>): string {
   return s ? `?${s}` : "";
 }
 
-/** Map Convex admin filter names to Nest query params. */
+/** Map admin filter names to Nest query params. */
 function nestUserListQuery(opts?: Record<string, unknown>): string {
   if (!opts) return "";
   const params: Record<string, unknown> = {};
   if (opts.search) params.search = opts.search;
   if (opts.cursor) params.cursor = opts.cursor;
   if (opts.limit != null) params.limit = opts.limit;
+  if (opts.page != null) params.page = opts.page;
+  if (opts.pageSize != null) params.pageSize = opts.pageSize;
+  if (opts.country) params.country = opts.country;
+  if (opts.dateField) params.dateField = opts.dateField;
+  if (opts.dateFrom) params.dateFrom = opts.dateFrom;
+  if (opts.dateTo) params.dateTo = opts.dateTo;
+  if (opts.preset) params.preset = opts.preset;
+  if (opts.timezone || opts.tz) params.timezone = opts.timezone || opts.tz;
+  if (opts.eventType) params.eventType = opts.eventType;
+  if (opts.assignedReviewerId) params.assignedReviewerId = opts.assignedReviewerId;
+  if (opts.waitingMoreThanHours != null) {
+    params.waitingMoreThanHours = opts.waitingMoreThanHours;
+  }
+  if (opts.sortBy) params.sortBy = opts.sortBy;
+  if (opts.sortOrder) params.sortOrder = opts.sortOrder;
 
   const role = opts.role;
   if (role && role !== "all") params.role = role;
@@ -35,6 +50,10 @@ function nestUserListQuery(opts?: Record<string, unknown>): string {
     params.hasPaid = true;
   } else if (payment === "unpaid") {
     params.hasPaid = false;
+  } else if (opts.hasPaid === true || opts.hasPaid === false) {
+    params.hasPaid = opts.hasPaid;
+  } else if (opts.paymentTier === "basic" || opts.paymentTier === "premium") {
+    params.paymentTier = opts.paymentTier;
   }
 
   return q(params);
@@ -77,13 +96,39 @@ export const apiAdmin: AdminAdapter = {
     async activity(id) {
       return apiClient.get(`/admin/users/${encodeURIComponent(id)}/activity`);
     },
-    async approve(id) {
-      return apiClient.post(`/admin/users/${encodeURIComponent(id)}/approve`, {});
+    async approve(id, body) {
+      return apiClient.post(
+        `/admin/users/${encodeURIComponent(id)}/approve`,
+        body ?? {}
+      );
     },
-    async reject(id, reason) {
-      return apiClient.post(`/admin/users/${encodeURIComponent(id)}/reject`, {
-        reason,
-      });
+    async reject(id, reasonOrBody) {
+      const body =
+        typeof reasonOrBody === "string"
+          ? { reason: reasonOrBody }
+          : reasonOrBody ?? {};
+      return apiClient.post(
+        `/admin/users/${encodeURIComponent(id)}/reject`,
+        body
+      );
+    },
+    async requestChanges(id, body) {
+      return apiClient.post(
+        `/admin/users/${encodeURIComponent(id)}/request-changes`,
+        body ?? {}
+      );
+    },
+    async assignReviewer(id, body) {
+      return apiClient.post(
+        `/admin/users/${encodeURIComponent(id)}/assign-reviewer`,
+        body ?? {}
+      );
+    },
+    async bulkApprove(body) {
+      return apiClient.post(`/admin/users/bulk/approve`, body ?? {});
+    },
+    async bulkReject(body) {
+      return apiClient.post(`/admin/users/bulk/reject`, body ?? {});
     },
     async ban(id) {
       return apiClient.post(`/admin/users/${encodeURIComponent(id)}/ban`, {});

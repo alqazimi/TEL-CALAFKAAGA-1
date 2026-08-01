@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAdminStatusPeriodReport } from "@/data/admin/hooks";
 import { useTranslation } from "@/lib/i18n/context";
+import { cn } from "@/lib/utils";
+import type { PeriodDrilldown } from "@/components/admin/admin-review-queue-panel";
 
 const PRESETS = [
   { value: "today", label: "Today" },
@@ -21,47 +23,87 @@ const PRESETS = [
 
 type PeriodCurrent = {
   registrations?: number;
+  submissions?: number;
+  profileSubmissions?: number;
   approved?: number;
   rejected?: number;
+  changesRequested?: number;
   pendingSnapshot?: number;
+  pendingOver24h?: number;
+  pendingOver48h?: number;
   paused?: number;
   resumed?: number;
   banned?: number;
   unbanned?: number;
   suspended?: number;
+  unsuspended?: number;
   activeUsers?: number;
   messages?: number;
   reports?: number;
   appealsSubmitted?: number;
+  averageReviewTimeMs?: number | null;
+  medianReviewTimeMs?: number | null;
+  approvalRate?: number | null;
+  rejectionRate?: number | null;
 };
 
 function Stat({
   label,
   value,
   delta,
+  onClick,
 }: {
   label: string;
-  value: number | undefined;
+  value: number | undefined | null;
   delta?: { diff: number; pct: number | null };
+  onClick?: () => void;
 }) {
+  const clickable = typeof onClick === "function";
+  const Comp = clickable ? "button" : "div";
   return (
-    <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
+    <Comp
+      type={clickable ? "button" : undefined}
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-left w-full",
+        clickable &&
+          "hover:border-foreground/30 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
+      )}
+    >
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
         {label}
+        {clickable ? " · open" : ""}
       </p>
-      <p className="text-xl font-semibold tabular-nums mt-0.5">{value ?? "—"}</p>
+      <p className="text-xl font-semibold tabular-nums mt-0.5">
+        {value ?? "—"}
+      </p>
       {delta ? (
         <p className="text-xs text-muted-foreground mt-0.5">
           {delta.diff >= 0 ? "+" : ""}
           {delta.diff}
-          {delta.pct == null ? "" : ` (${delta.pct >= 0 ? "+" : ""}${delta.pct}%)`}
+          {delta.pct == null
+            ? ""
+            : ` (${delta.pct >= 0 ? "+" : ""}${delta.pct}%)`}
         </p>
       ) : null}
-    </div>
+    </Comp>
   );
 }
 
-export function AdminStatusPeriodPanel({ enabled }: { enabled: boolean }) {
+function formatDuration(ms: number | null | undefined) {
+  if (ms == null) return "—";
+  const hours = Math.round(ms / 3_600_000);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
+}
+
+export function AdminStatusPeriodPanel({
+  enabled,
+  onDrilldown,
+}: {
+  enabled: boolean;
+  onDrilldown?: (filter: PeriodDrilldown) => void;
+}) {
   const { t } = useTranslation();
   const {
     report,
@@ -89,6 +131,14 @@ export function AdminStatusPeriodPanel({ enabled }: { enabled: boolean }) {
   const current = payload?.current;
   const deltas = payload?.comparison?.deltas ?? {};
 
+  const drill = (partial: PeriodDrilldown) => {
+    onDrilldown?.({
+      preset,
+      country: country || undefined,
+      ...partial,
+    });
+  };
+
   return (
     <Card className="border-border">
       <CardContent className="p-4 sm:p-5 space-y-4">
@@ -102,6 +152,7 @@ export function AdminStatusPeriodPanel({ enabled }: { enabled: boolean }) {
               {payload?.refreshedAt
                 ? ` · ${new Date(payload.refreshedAt).toLocaleString()}`
                 : ""}
+              {onDrilldown ? " · Click a metric to open matching users" : ""}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -169,19 +220,165 @@ export function AdminStatusPeriodPanel({ enabled }: { enabled: boolean }) {
           <p className="text-sm text-destructive">Could not load period report.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
-            <Stat label="Registrations" value={current?.registrations} delta={deltas.registrations} />
-            <Stat label="Approved" value={current?.approved} delta={deltas.approved} />
-            <Stat label="Rejected" value={current?.rejected} delta={deltas.rejected} />
-            <Stat label="Pending now" value={current?.pendingSnapshot} />
-            <Stat label="Paused" value={current?.paused} delta={deltas.paused} />
-            <Stat label="Resumed" value={current?.resumed} delta={deltas.resumed} />
-            <Stat label="Banned" value={current?.banned} delta={deltas.banned} />
-            <Stat label="Unbanned" value={current?.unbanned} delta={deltas.unbanned} />
-            <Stat label="Suspended" value={current?.suspended} delta={deltas.suspended} />
-            <Stat label="Active users" value={current?.activeUsers} delta={deltas.activeUsers} />
-            <Stat label="Messages" value={current?.messages} delta={deltas.messages} />
-            <Stat label="Reports" value={current?.reports} delta={deltas.reports} />
-            <Stat label="Appeals" value={current?.appealsSubmitted} delta={deltas.appealsSubmitted} />
+            <Stat
+              label="Registrations"
+              value={current?.registrations}
+              delta={deltas.registrations}
+              onClick={
+                onDrilldown
+                  ? () => drill({ dateField: "registration" })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Submissions"
+              value={current?.submissions ?? current?.profileSubmissions}
+              onClick={
+                onDrilldown
+                  ? () => drill({ dateField: "submission" })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Approved"
+              value={current?.approved}
+              delta={deltas.approved}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({
+                        eventType: "approved",
+                        dateField: "event",
+                      })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Rejected"
+              value={current?.rejected}
+              delta={deltas.rejected}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({
+                        eventType: "rejected",
+                        dateField: "event",
+                      })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Changes requested"
+              value={current?.changesRequested}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({
+                        eventType: "changes_requested",
+                        dateField: "event",
+                      })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Pending now"
+              value={current?.pendingSnapshot}
+              onClick={
+                onDrilldown
+                  ? () => drill({ reviewStatus: "pending_review" })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Paused"
+              value={current?.paused}
+              delta={deltas.paused}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({ eventType: "paused", dateField: "event" })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Resumed"
+              value={current?.resumed}
+              delta={deltas.resumed}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({ eventType: "resumed", dateField: "event" })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Banned"
+              value={current?.banned}
+              delta={deltas.banned}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({ eventType: "banned", dateField: "event" })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Unbanned"
+              value={current?.unbanned}
+              delta={deltas.unbanned}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({ eventType: "unbanned", dateField: "event" })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Suspended"
+              value={current?.suspended}
+              delta={deltas.suspended}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({ eventType: "suspended", dateField: "event" })
+                  : undefined
+              }
+            />
+            <Stat label="Pending >24h" value={current?.pendingOver24h} />
+            <Stat label="Pending >48h" value={current?.pendingOver48h} />
+            <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Review time
+              </p>
+              <p className="text-sm font-semibold mt-0.5">
+                avg {formatDuration(current?.averageReviewTimeMs)} · med{" "}
+                {formatDuration(current?.medianReviewTimeMs)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Approve {current?.approvalRate ?? "—"}% · Reject{" "}
+                {current?.rejectionRate ?? "—"}%
+              </p>
+            </div>
+            <Stat
+              label="Active users"
+              value={current?.activeUsers}
+              delta={deltas.activeUsers}
+            />
+            <Stat
+              label="Messages"
+              value={current?.messages}
+              delta={deltas.messages}
+            />
+            <Stat
+              label="Reports"
+              value={current?.reports}
+              delta={deltas.reports}
+            />
+            <Stat
+              label="Appeals"
+              value={current?.appealsSubmitted}
+              delta={deltas.appealsSubmitted}
+            />
           </div>
         )}
       </CardContent>

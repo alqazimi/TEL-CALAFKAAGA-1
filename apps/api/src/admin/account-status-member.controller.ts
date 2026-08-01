@@ -81,6 +81,9 @@ export class AccountStatusMemberController {
     } else if (review === "rejected") {
       nextStep =
         "Update your profile photo or details, then wait for another review.";
+    } else if ((review as string) === "changes_requested") {
+      nextStep =
+        "Please update the requested profile details and resubmit for review.";
     } else if (review === "paused") {
       nextStep =
         "Your account is paused. Matching is temporarily unavailable.";
@@ -130,6 +133,48 @@ export class AccountStatusMemberController {
           }
         : null,
       timeline: history.items,
+    };
+  }
+
+  @Post("resubmit")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  async resubmit(@CurrentUser() user: RequestUser) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { userId: user.id },
+    });
+    if (!profile) throw new BadRequestException("Profile not found");
+
+    const result = await this.status.transition({
+      actorUserId: user.id,
+      profileId: profile.id,
+      event: "resubmit",
+      publicUserMessage: "Profile resubmitted for review.",
+    });
+
+    if (profile.assignedReviewerId) {
+      const reviewer = await this.prisma.user.findUnique({
+        where: { id: profile.assignedReviewerId },
+      });
+      if (reviewer) {
+        await this.prisma.notification.create({
+          data: {
+            convexId: `local_notif_resub_${profile.id}_${Date.now()}`,
+            userId: reviewer.id,
+            convexUserId: reviewer.convexId,
+            type: "approval",
+            title: "Member resubmitted profile",
+            body: `${profile.name || "A member"} resubmitted their profile for review.`,
+            read: false,
+            notificationCreatedAt: new Date(),
+          },
+        });
+      }
+    }
+
+    return {
+      ok: true,
+      reviewStatus: result.newStatus,
+      resubmittedAt: result.at,
     };
   }
 

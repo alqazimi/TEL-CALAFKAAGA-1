@@ -30,12 +30,20 @@ type TransitionInput = {
     | "pause"
     | "resume"
     | "suspend"
-    | "unsuspend";
+    | "unsuspend"
+    | "request_changes"
+    | "resubmit";
   reason?: string;
   internalAdminNote?: string;
   publicUserMessage?: string;
   /** Timed suspension end (UTC). */
   suspensionExpiresAt?: Date | null;
+  /** Optional deadline when requesting profile changes. */
+  changesDeadlineAt?: Date | null;
+  /** Require a new photo as part of request-changes. */
+  requireNewPhoto?: boolean;
+  allowResubmission?: boolean;
+  metadata?: Record<string, unknown>;
 };
 
 function asReviewStatus(value: string | null | undefined): ReviewStatus {
@@ -46,6 +54,7 @@ function asReviewStatus(value: string | null | undefined): ReviewStatus {
     case "rejected":
     case "suspended":
     case "paused":
+    case "changes_requested":
       return value;
     default:
       return "incomplete";
@@ -70,7 +79,8 @@ export function capturableStatus(profile: {
     current === "rejected" ||
     current === "incomplete" ||
     current === "paused" ||
-    current === "suspended"
+    current === "suspended" ||
+    current === "changes_requested"
   ) {
     // Don't capture transitional lock states as restore targets.
     if (current === "paused" || current === "suspended") {
@@ -346,6 +356,60 @@ export class AccountStatusService {
           auditAction = "USER_UNSUSPENDED";
           break;
         }
+        case "request_changes": {
+          if (isStaffRole(profile.role)) {
+            throw new BadRequestException(
+              "Cannot request changes on a staff account"
+            );
+          }
+          if (profile.banned) {
+            throw new BadRequestException(
+              "Unban the member before requesting changes."
+            );
+          }
+          eventType = "changes_requested";
+          newStatus = "changes_requested";
+          data = {
+            ...data,
+            approved: false,
+            verified: false,
+            reviewStatus: "changes_requested",
+            changesRequestedAt: now,
+            changesDeadlineAt: input.changesDeadlineAt ?? null,
+            allowResubmission: input.allowResubmission ?? true,
+            assignedReviewerId: input.actorUserId,
+            assignedReviewerAt: now,
+          };
+          auditAction = "USER_CHANGES_REQUESTED";
+          break;
+        }
+        case "resubmit": {
+          if (
+            profile.reviewStatus !== "changes_requested" &&
+            profile.reviewStatus !== "rejected"
+          ) {
+            throw new BadRequestException(
+              "Only rejected or changes-requested profiles can resubmit."
+            );
+          }
+          if (profile.allowResubmission === false) {
+            throw new BadRequestException("Resubmission is not allowed.");
+          }
+          eventType = "resubmitted";
+          newStatus = "pending_review";
+          data = {
+            ...data,
+            approved: false,
+            reviewStatus: "pending_review",
+            resubmittedAt: now,
+            submittedAt: now,
+            rejectedAt: null,
+            changesRequestedAt: null,
+            changesDeadlineAt: null,
+          };
+          auditAction = "USER_RESUBMITTED";
+          break;
+        }
         default:
           throw new BadRequestException("Unknown status transition");
       }
@@ -372,6 +436,8 @@ export class AccountStatusService {
         metadata: {
           event: input.event,
           suspensionExpiresAt: input.suspensionExpiresAt?.toISOString() ?? null,
+          requireNewPhoto: input.requireNewPhoto ?? false,
+          ...(input.metadata ?? {}),
         },
         createdAt: now,
       });
@@ -545,13 +611,143 @@ export class AccountStatusService {
       },
     });
 
+    const changesRequestedSnapshot = await this.prisma.profile.count({
+      where: {
+        reviewStatus: "changes_requested",
+        banned: false,
+        ...(country
+          ? { country: { equals: country, mode: "insensitive" } }
+          : {}),
+      },
+    });
+
+    const submissions = await this.prisma.profile.count({
+      where: {
+        submittedAt: { gte: from, lt: to },
+        ...(country
+          ? { country: { equals: country, mode: "insensitive" } }
+          : {}),
+      },
+    });
+
+    const approvedEvents = await this.prisma.accountStatusHistory.findMany({
+      where: {
+        eventType: "approved",
+        createdAt: { gte: from, lt: to },
+        ...(country
+          ? {
+              profile: {
+                country: { equals: country, mode: "insensitive" },
+              },
+            }
+          : {}),
+      },
+      select: {
+        createdAt: true,
+        profileId: true,
+        profile: { select: { submittedAt: true, createdAt: true } },
+      },
+      take: 5000,
+    });
+    const reviewDurationsMs = approvedEvents
+      .map((e) => {
+        const start = e.profile?.submittedAt ?? e.profile?.createdAt;
+        if (!start) return null;
+        return e.createdAt.getTime() - start.getTime();
+      })
+      .filter((ms): ms is number => ms != null && ms >= 0)
+      .sort((a, b) => a - b);
+    const avgReviewMs =
+      reviewDurationsMs.length > 0
+        ? Math.round(
+            reviewDurationsMs.reduce((a, b) => a + b, 0) /
+              reviewDurationsMs.length
+          )
+        : null;
+    const medianReviewMs =
+      reviewDurationsMs.length > 0
+        ? reviewDurationsMs[Math.floor(reviewDurationsMs.length / 2)]!
+        : null;
+
+    const oldestPending = await this.prisma.profile.findFirst({
+      where: {
+        reviewStatus: "pending_review",
+        banned: false,
+        ...(country
+          ? { country: { equals: country, mode: "insensitive" } }
+          : {}),
+      },
+      orderBy: [{ submittedAt: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        submittedAt: true,
+        createdAt: true,
+      },
+    });
+
+    const waitingCutoff24 = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const waitingCutoff48 = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const pendingOver24h = await this.prisma.profile.count({
+      where: {
+        reviewStatus: "pending_review",
+        banned: false,
+        OR: [
+          { submittedAt: { lte: waitingCutoff24 } },
+          { submittedAt: null, createdAt: { lte: waitingCutoff24 } },
+        ],
+        ...(country
+          ? { country: { equals: country, mode: "insensitive" } }
+          : {}),
+      },
+    });
+    const pendingOver48h = await this.prisma.profile.count({
+      where: {
+        reviewStatus: "pending_review",
+        banned: false,
+        OR: [
+          { submittedAt: { lte: waitingCutoff48 } },
+          { submittedAt: null, createdAt: { lte: waitingCutoff48 } },
+        ],
+        ...(country
+          ? { country: { equals: country, mode: "insensitive" } }
+          : {}),
+      },
+    });
+
+    const decided = (byType.approved ?? 0) + (byType.rejected ?? 0);
+    const approvalRate =
+      decided > 0 ? Math.round(((byType.approved ?? 0) / decided) * 1000) / 10 : null;
+    const rejectionRate =
+      decided > 0 ? Math.round(((byType.rejected ?? 0) / decided) * 1000) / 10 : null;
+
+    const reviewsByAdmin = await this.prisma.accountStatusHistory.groupBy({
+      by: ["performedByAdminId"],
+      where: {
+        eventType: { in: ["approved", "rejected", "changes_requested"] },
+        createdAt: { gte: from, lt: to },
+        performedByAdminId: { not: null },
+        ...(country
+          ? {
+              profile: {
+                country: { equals: country, mode: "insensitive" },
+              },
+            }
+          : {}),
+      },
+      _count: { _all: true },
+    });
+
     return {
       from: from.toISOString(),
       to: to.toISOString(),
       timezoneNote: "All bounds are UTC. Convert display timezone in the UI.",
       registrations,
+      submissions,
+      profileSubmissions: submissions,
       approved: byType.approved ?? 0,
       rejected: byType.rejected ?? 0,
+      changesRequested: byType.changes_requested ?? 0,
       paused: byType.paused ?? 0,
       resumed: byType.resumed ?? 0,
       suspended: byType.suspended ?? 0,
@@ -565,6 +761,27 @@ export class AccountStatusService {
       verificationApproved: byType.verification_approved ?? 0,
       verificationRejected: byType.verification_rejected ?? 0,
       pendingSnapshot,
+      changesRequestedSnapshot,
+      pendingAtEnd: pendingSnapshot,
+      averageReviewTimeMs: avgReviewMs,
+      medianReviewTimeMs: medianReviewMs,
+      oldestPendingApplication: oldestPending
+        ? {
+            profileId: oldestPending.id,
+            name: oldestPending.name,
+            waitingSince: (
+              oldestPending.submittedAt ?? oldestPending.createdAt
+            ).toISOString(),
+          }
+        : null,
+      pendingOver24h,
+      pendingOver48h,
+      approvalRate,
+      rejectionRate,
+      reviewsCompletedPerAdmin: reviewsByAdmin.map((r) => ({
+        adminUserId: r.performedByAdminId,
+        count: r._count._all,
+      })),
       activeUsers,
       messages,
       reports,

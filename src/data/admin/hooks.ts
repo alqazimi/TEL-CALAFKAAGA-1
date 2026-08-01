@@ -78,6 +78,10 @@ export function useAdminUsers(
 ) {
   const [apiData, setApiData] = useState<unknown[] | undefined>(undefined);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [total, setTotal] = useState<number | null>(null);
+  const [summaryCounts, setSummaryCounts] = useState<Record<string, number> | null>(
+    null
+  );
   const [loadingMore, setLoadingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -85,8 +89,16 @@ export function useAdminUsers(
 
   const applyListResponse = useCallback(
     (d: unknown, append: boolean) => {
-      const payload = d as { items?: unknown[]; nextCursor?: string | null };
-      const raw = Array.isArray(d) ? d : (payload?.items ?? []);
+      const payload = d as {
+        items?: unknown[];
+        records?: unknown[];
+        nextCursor?: string | null;
+        total?: number;
+        summaryCounts?: Record<string, number>;
+      };
+      const raw = Array.isArray(d)
+        ? d
+        : (payload?.records ?? payload?.items ?? []);
       const items = withEntityIds(raw);
       setApiData((prev) => (append ? [...(prev ?? []), ...items] : items));
       setNextCursor(
@@ -94,6 +106,12 @@ export function useAdminUsers(
           ? payload.nextCursor
           : null
       );
+      if (!append && typeof payload.total === "number") {
+        setTotal(payload.total);
+      }
+      if (!append && payload.summaryCounts) {
+        setSummaryCounts(payload.summaryCounts);
+      }
     },
     []
   );
@@ -137,6 +155,8 @@ export function useAdminUsers(
       abortRef.current?.abort();
       setApiData(undefined);
       setNextCursor(null);
+      setTotal(null);
+      setSummaryCounts(null);
       setIsRefreshing(false);
       return;
     }
@@ -195,6 +215,8 @@ export function useAdminUsers(
 
   return {
     users: apiData,
+    total,
+    summaryCounts,
     isRefreshing,
     loadMore,
     hasMore: Boolean(nextCursor),
@@ -392,15 +414,60 @@ export function useAdminAuditLogs(enabled: boolean, limit = 80) {
 /** profileId — Nest UUID */
 export function useAdminApproveUser() {
   return useCallback(
-    async (profileId: string) => apiAdmin.users.approve(profileId),
+    async (
+      profileId: string,
+      body?: { expectedUpdatedAt?: string }
+    ) => apiAdmin.users.approve(profileId, body),
     []
   );
 }
 
 export function useAdminRejectUser() {
   return useCallback(
-    async (profileId: string, reason?: string) =>
-      apiAdmin.users.reject(profileId, reason),
+    async (
+      profileId: string,
+      reasonOrBody?:
+        | string
+        | {
+            reason?: string;
+            publicUserMessage?: string;
+            internalAdminNote?: string;
+            allowResubmission?: boolean;
+            requestPhoto?: boolean;
+            expectedUpdatedAt?: string;
+          }
+    ) => apiAdmin.users.reject(profileId, reasonOrBody),
+    []
+  );
+}
+
+export function useAdminRequestChanges() {
+  return useCallback(
+    async (
+      profileId: string,
+      body: {
+        whatMustChange: string;
+        publicInstructions: string;
+        internalAdminNote?: string;
+        deadlineAt?: string | null;
+        requireNewPhoto?: boolean;
+        expectedUpdatedAt?: string;
+      }
+    ) => apiAdmin.users.requestChanges(profileId, body),
+    []
+  );
+}
+
+export function useAdminAssignReviewer() {
+  return useCallback(
+    async (
+      profileId: string,
+      body: {
+        action: "assign_me" | "reassign" | "release";
+        reviewerUserId?: string;
+        expectedUpdatedAt?: string;
+      }
+    ) => apiAdmin.users.assignReviewer(profileId, body),
     []
   );
 }

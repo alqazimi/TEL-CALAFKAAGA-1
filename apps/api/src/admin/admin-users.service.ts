@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -30,6 +31,8 @@ import {
   parseLimit,
 } from "./admin-auth.helpers";
 import { AccountStatusService } from "./account-status.service";
+import { buildAdminUserDateFilter } from "./admin-user-date-filter";
+import type { ReviewStatus } from "@prisma/client";
 
 const SOMALI_PHOTO_MSG =
   "Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.";
@@ -120,9 +123,27 @@ export class AdminUsersService {
     paymentTier?: "basic" | "premium";
     cursor?: string;
     limit?: number;
+    country?: string;
+    dateField?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    preset?: string;
+    timeZone?: string;
+    eventType?: string;
+    assignedReviewerId?: string;
+    waitingMoreThanHours?: number;
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
   }) {
-    const limit = parseLimit(String(opts.limit ?? 50), 50, 250);
+    const pageSize = Math.min(
+      Math.max(opts.pageSize ?? opts.limit ?? 50, 1),
+      250
+    );
+    const page = Math.max(opts.page ?? 1, 1);
     const where: Prisma.ProfileWhereInput = {};
+    const andClauses: Prisma.ProfileWhereInput[] = [];
 
     const role = opts.role?.trim();
     if (role && role !== "all") {
@@ -132,14 +153,13 @@ export class AdminUsersService {
     const reviewStatus = opts.reviewStatus?.trim();
     if (reviewStatus && reviewStatus !== "all") {
       if (reviewStatus === "needs_action") {
-        // Convex "needs_action" = pending_review OR rejected (then approval rules).
-        where.reviewStatus = { in: ["pending_review", "rejected"] };
+        where.reviewStatus = {
+          in: ["pending_review", "rejected", "changes_requested"],
+        };
       } else {
         where.reviewStatus = reviewStatus as never;
       }
     }
-
-    const andClauses: Prisma.ProfileWhereInput[] = [];
 
     if (opts.paymentTier === "premium") {
       andClauses.push(premiumProfileWhere());
@@ -148,6 +168,45 @@ export class AdminUsersService {
       andClauses.push({ NOT: premiumProfileWhere() });
     } else if (opts.hasPaid !== undefined) {
       where.hasPaid = opts.hasPaid;
+    }
+
+    if (opts.country?.trim()) {
+      where.country = { equals: opts.country.trim(), mode: "insensitive" };
+    }
+
+    if (opts.assignedReviewerId?.trim()) {
+      if (opts.assignedReviewerId === "me") {
+        where.assignedReviewerId = opts.actorUserId;
+      } else if (opts.assignedReviewerId === "unassigned") {
+        where.assignedReviewerId = null;
+      } else {
+        where.assignedReviewerId = opts.assignedReviewerId.trim();
+      }
+    }
+
+    if (opts.waitingMoreThanHours != null && opts.waitingMoreThanHours > 0) {
+      const cutoff = new Date(
+        Date.now() - opts.waitingMoreThanHours * 60 * 60 * 1000
+      );
+      andClauses.push({
+        reviewStatus: { in: ["pending_review", "changes_requested"] },
+        OR: [
+          { submittedAt: { lte: cutoff } },
+          { submittedAt: null, createdAt: { lte: cutoff } },
+        ],
+      });
+    }
+
+    const dateFilter = buildAdminUserDateFilter({
+      dateField: opts.dateField,
+      eventType: opts.eventType,
+      dateFrom: opts.dateFrom,
+      dateTo: opts.dateTo,
+      preset: opts.preset,
+      timeZone: opts.timeZone,
+    });
+    if (Object.keys(dateFilter.profileWhere).length > 0) {
+      andClauses.push(dateFilter.profileWhere);
     }
 
     if (opts.search?.trim()) {
@@ -159,6 +218,8 @@ export class AdminUsersService {
           { city: { contains: q, mode: "insensitive" } },
           { country: { contains: q, mode: "insensitive" } },
           { user: { emailNormalized: { contains: q.toLowerCase() } } },
+          { id: { equals: q } },
+          { userId: { equals: q } },
         ],
       });
     }
@@ -166,36 +227,92 @@ export class AdminUsersService {
     if (andClauses.length > 0) {
       where.AND = andClauses;
     }
+
+    // Cursor mode (legacy) takes precedence over page for infinite scroll.
     if (opts.cursor) {
       where.id = { lt: opts.cursor };
     }
 
-    // Over-fetch for needs_action so we can apply Convex-equivalent approval rules.
-    const fetchLimit =
-      reviewStatus === "needs_action" ? Math.min(limit * 3, 150) : limit + 1;
+    const sortBy = opts.sortBy || "waiting";
+    const sortOrder = opts.sortOrder === "asc" ? "asc" : "desc";
+    let orderBy: Prisma.ProfileOrderByWithRelationInput[] = [{ id: "desc" }];
+    if (sortBy === "waiting" || reviewStatus === "pending_review") {
+      orderBy = [
+        { submittedAt: "asc" },
+        { createdAt: "asc" },
+        { id: "asc" },
+      ];
+    } else if (sortBy === "registered") {
+      orderBy = [{ user: { createdAt: sortOrder } }, { id: sortOrder }];
+    } else if (sortBy === "submitted") {
+      orderBy = [{ submittedAt: sortOrder }, { id: sortOrder }];
+    } else if (sortBy === "statusChanged") {
+      orderBy = [{ statusChangedAt: sortOrder }, { id: sortOrder }];
+    } else if (sortBy === "name") {
+      orderBy = [{ name: sortOrder }, { id: sortOrder }];
+    }
 
-    const rows = await this.prisma.profile.findMany({
-      where,
-      orderBy: { id: "desc" },
-      take: fetchLimit,
-      include: {
-        user: { select: { email: true, id: true, convexId: true } },
-      },
-    });
+    const fetchLimit = opts.cursor
+      ? reviewStatus === "needs_action"
+        ? Math.min(pageSize * 3, 150)
+        : pageSize + 1
+      : undefined;
+
+    const [total, rows] = await Promise.all([
+      this.prisma.profile.count({ where }),
+      this.prisma.profile.findMany({
+        where,
+        orderBy,
+        ...(opts.cursor
+          ? { take: fetchLimit }
+          : { skip: (page - 1) * pageSize, take: pageSize }),
+        include: {
+          user: {
+            select: {
+              email: true,
+              id: true,
+              convexId: true,
+              createdAt: true,
+              lastActiveAt: true,
+              lastLoginAt: true,
+            },
+          },
+        },
+      }),
+    ]);
 
     const filtered =
       reviewStatus === "needs_action"
         ? rows.filter((p) => requiresAdminProfileApproval(p))
         : rows;
 
-    const hasMore =
-      reviewStatus === "needs_action"
-        ? filtered.length > limit
-        : rows.length > limit;
-    const page = hasMore ? filtered.slice(0, limit) : filtered.slice(0, limit);
+    const hasMore = opts.cursor
+      ? reviewStatus === "needs_action"
+        ? filtered.length > pageSize
+        : rows.length > pageSize
+      : page * pageSize < total;
+    const pageRows = opts.cursor
+      ? filtered.slice(0, pageSize)
+      : filtered;
+
+    const reviewerIds = [
+      ...new Set(
+        pageRows
+          .map((p) => p.assignedReviewerId)
+          .filter((id): id is string => !!id)
+      ),
+    ];
+    const reviewers =
+      reviewerIds.length > 0
+        ? await this.prisma.profile.findMany({
+            where: { userId: { in: reviewerIds } },
+            select: { userId: true, name: true },
+          })
+        : [];
+    const reviewerName = new Map(reviewers.map((r) => [r.userId, r.name]));
 
     const items = await Promise.all(
-      page.map(async (p) => {
+      pageRows.map(async (p) => {
         const paidAgg = await this.prisma.payment.aggregate({
           where: { userId: p.userId, status: "completed" },
           _sum: { amount: true },
@@ -206,8 +323,9 @@ export class AdminUsersService {
           p,
           { userId: opts.actorUserId, roles: [opts.actorRole] }
         );
+        const waitingSince = p.submittedAt ?? p.user.createdAt;
+        const waitingMs = Date.now() - waitingSince.getTime();
         return {
-          // UI still uses Convex-shaped `_id` as the profile id.
           _id: p.id,
           id: p.id,
           userId: p.userId,
@@ -228,13 +346,65 @@ export class AdminUsersService {
           paidCents: paidAgg._sum.amount ?? 0,
           country: p.country,
           city: p.city,
+          registeredAt: p.user.createdAt.toISOString(),
+          submittedAt: p.submittedAt?.toISOString() ?? null,
+          approvedAt: p.approvedAt?.toISOString() ?? null,
+          rejectedAt: p.rejectedAt?.toISOString() ?? null,
+          statusChangedAt: p.statusChangedAt?.toISOString() ?? null,
+          lastActiveAt: p.user.lastActiveAt?.toISOString() ?? null,
+          assignedReviewerId: p.assignedReviewerId,
+          assignedReviewerName: p.assignedReviewerId
+            ? reviewerName.get(p.assignedReviewerId) ?? null
+            : null,
+          assignedReviewerAt: p.assignedReviewerAt?.toISOString() ?? null,
+          waitingSince: waitingSince.toISOString(),
+          waitingMs,
+          updatedAt: p.updatedAt.toISOString(),
         };
       })
     );
 
+    const summaryCounts = {
+      total,
+      pending_review: await this.prisma.profile.count({
+        where: { ...where, reviewStatus: "pending_review" },
+      }),
+      changes_requested: await this.prisma.profile.count({
+        where: { ...where, reviewStatus: "changes_requested" },
+      }),
+      rejected: await this.prisma.profile.count({
+        where: { ...where, reviewStatus: "rejected" },
+      }),
+      approved: await this.prisma.profile.count({
+        where: { ...where, reviewStatus: "approved", banned: false },
+      }),
+      banned: await this.prisma.profile.count({
+        where: { ...where, banned: true },
+      }),
+      paused: await this.prisma.profile.count({
+        where: { ...where, reviewStatus: "paused" },
+      }),
+    };
+
     return {
       items,
-      nextCursor: hasMore ? page[page.length - 1]?.id ?? null : null,
+      records: items,
+      total,
+      page,
+      pageSize,
+      nextCursor: hasMore ? pageRows[pageRows.length - 1]?.id ?? null : null,
+      appliedFilters: {
+        role: role ?? null,
+        reviewStatus: reviewStatus ?? null,
+        hasPaid: opts.hasPaid ?? null,
+        paymentTier: opts.paymentTier ?? null,
+        country: opts.country ?? null,
+        assignedReviewerId: opts.assignedReviewerId ?? null,
+        ...dateFilter.applied,
+        sortBy,
+        sortOrder,
+      },
+      summaryCounts,
     };
   }
 
@@ -393,17 +563,23 @@ export class AdminUsersService {
     };
   }
 
-  async approveUser(actorUserId: string, profileId: string) {
+  async approveUser(
+    actorUserId: string,
+    profileId: string,
+    opts?: { expectedUpdatedAt?: string }
+  ) {
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },
     });
     if (!profile) throw new NotFoundException("Profile not found");
+    this.assertExpectedUpdatedAt(profile.updatedAt, opts?.expectedUpdatedAt);
 
     if (
       profile.reviewStatus === "approved" ||
       (profile.approved &&
         profile.reviewStatus !== "rejected" &&
         profile.reviewStatus !== "paused" &&
+        profile.reviewStatus !== "changes_requested" &&
         !profile.banned)
     ) {
       if (profile.reviewStatus !== "approved") {
@@ -426,6 +602,15 @@ export class AdminUsersService {
         "Your profile was approved. You can now browse matches and connect with members.",
     });
 
+    await this.prisma.profile.update({
+      where: { id: profileId },
+      data: {
+        reviewCompletedAt: new Date(),
+        assignedReviewerId: actorUserId,
+        assignedReviewerAt: new Date(),
+      },
+    });
+
     await this.notifyApproval({
       userId: profile.userId,
       title: "Profile approved",
@@ -439,21 +624,41 @@ export class AdminUsersService {
   async rejectUser(
     actorUserId: string,
     profileId: string,
-    reason?: string
+    opts?: {
+      reason?: string;
+      publicUserMessage?: string;
+      internalAdminNote?: string;
+      allowResubmission?: boolean;
+      requestPhoto?: boolean;
+      expectedUpdatedAt?: string;
+    }
   ) {
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },
     });
     if (!profile) throw new NotFoundException("Profile not found");
     assertCanRejectTarget(profile.role);
+    this.assertExpectedUpdatedAt(profile.updatedAt, opts?.expectedUpdatedAt);
 
-    const body = reason?.trim() || SOMALI_PHOTO_MSG;
+    const body =
+      opts?.publicUserMessage?.trim() ||
+      opts?.reason?.trim() ||
+      SOMALI_PHOTO_MSG;
     const result = await this.accountStatus.transition({
       actorUserId,
       profileId,
       event: "reject",
-      reason: reason?.trim(),
+      reason: opts?.reason?.trim(),
+      internalAdminNote: opts?.internalAdminNote,
       publicUserMessage: body,
+    });
+
+    await this.prisma.profile.update({
+      where: { id: profileId },
+      data: {
+        allowResubmission: opts?.allowResubmission ?? true,
+        reviewCompletedAt: new Date(),
+      },
     });
 
     await this.notifyApproval({
@@ -463,6 +668,11 @@ export class AdminUsersService {
       emailCta: { label: "Cusboonaysii sawirka", path: "/profile" },
       sendEmail: true,
     });
+
+    if (opts?.requestPhoto) {
+      await this.requestProfilePhoto(actorUserId, profileId);
+    }
+
     return { ...result, ok: true as const };
   }
 
@@ -554,6 +764,214 @@ export class AdminUsersService {
       reason,
       publicUserMessage: reason || "Your temporary suspension has ended.",
     });
+  }
+
+  private assertExpectedUpdatedAt(
+    actual: Date,
+    expectedUpdatedAt?: string
+  ) {
+    if (!expectedUpdatedAt) return;
+    const expectedMs = Date.parse(expectedUpdatedAt);
+    if (Number.isNaN(expectedMs)) {
+      throw new BadRequestException("Invalid expectedUpdatedAt");
+    }
+    if (actual.getTime() !== expectedMs) {
+      throw new ConflictException(
+        "This account was updated by another admin. Refresh and try again."
+      );
+    }
+  }
+
+  async requestChanges(
+    actorUserId: string,
+    profileId: string,
+    opts: {
+      whatMustChange: string;
+      publicInstructions: string;
+      internalAdminNote?: string;
+      deadlineAt?: string | null;
+      requireNewPhoto?: boolean;
+      expectedUpdatedAt?: string;
+    }
+  ) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+    });
+    if (!profile) throw new NotFoundException("Profile not found");
+    assertCanRejectTarget(profile.role);
+    this.assertExpectedUpdatedAt(profile.updatedAt, opts.expectedUpdatedAt);
+
+    const publicMsg =
+      opts.publicInstructions.trim() ||
+      opts.whatMustChange.trim() ||
+      "Please update your profile and resubmit.";
+
+    const result = await this.accountStatus.transition({
+      actorUserId,
+      profileId,
+      event: "request_changes",
+      reason: opts.whatMustChange.trim(),
+      publicUserMessage: publicMsg,
+      internalAdminNote: opts.internalAdminNote,
+      changesDeadlineAt: opts.deadlineAt
+        ? new Date(opts.deadlineAt)
+        : null,
+      requireNewPhoto: opts.requireNewPhoto,
+      allowResubmission: true,
+      metadata: {
+        whatMustChange: opts.whatMustChange.trim(),
+        requireNewPhoto: !!opts.requireNewPhoto,
+      },
+    });
+
+    await this.notifyApproval({
+      userId: profile.userId,
+      title: "Profile changes requested",
+      body: publicMsg,
+      emailCta: { label: "Update profile", path: "/profile" },
+      sendEmail: true,
+    });
+
+    if (opts.requireNewPhoto) {
+      await this.requestProfilePhoto(actorUserId, profileId, publicMsg);
+    }
+
+    return { ...result, ok: true as const };
+  }
+
+  async assignReviewer(
+    actorUserId: string,
+    profileId: string,
+    opts: {
+      action: "assign_me" | "reassign" | "release";
+      reviewerUserId?: string;
+      expectedUpdatedAt?: string;
+    }
+  ) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+    });
+    if (!profile) throw new NotFoundException("Profile not found");
+    this.assertExpectedUpdatedAt(profile.updatedAt, opts.expectedUpdatedAt);
+
+    const now = new Date();
+    let assignedReviewerId: string | null = null;
+    if (opts.action === "assign_me") {
+      assignedReviewerId = actorUserId;
+    } else if (opts.action === "reassign") {
+      if (!opts.reviewerUserId?.trim()) {
+        throw new BadRequestException("reviewerUserId is required to reassign");
+      }
+      assignedReviewerId = opts.reviewerUserId.trim();
+    } else {
+      assignedReviewerId = null;
+    }
+
+    const updated = await this.prisma.profile.update({
+      where: { id: profileId },
+      data: {
+        assignedReviewerId,
+        assignedReviewerAt: assignedReviewerId ? now : null,
+        reviewStartedAt:
+          opts.action === "assign_me" || opts.action === "reassign"
+            ? now
+            : profile.reviewStartedAt,
+      },
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.accountStatus.recordHistory(tx, {
+        userId: profile.userId,
+        profileId: profile.id,
+        eventType: "reviewer_assigned",
+        previousStatus: profile.reviewStatus,
+        newStatus: profile.reviewStatus,
+        reason:
+          opts.action === "release"
+            ? "Reviewer released"
+            : opts.action === "assign_me"
+              ? "Assigned to self"
+              : "Reassigned",
+        performedByAdminId: actorUserId,
+        performedByAdminName: undefined,
+        metadata: {
+          action: opts.action,
+          assignedReviewerId,
+        },
+      });
+    });
+
+    await this.audit.write({
+      actorUserId,
+      action: "REVIEWER_ASSIGNED",
+      targetUserId: profile.userId,
+      targetProfileId: profileId,
+      metadata: { action: opts.action, assignedReviewerId },
+    });
+
+    return {
+      ok: true as const,
+      assignedReviewerId: updated.assignedReviewerId,
+      assignedReviewerAt: updated.assignedReviewerAt?.toISOString() ?? null,
+      reviewStartedAt: updated.reviewStartedAt?.toISOString() ?? null,
+    };
+  }
+
+  async bulkApprove(
+    actorUserId: string,
+    profileIds: string[],
+    opts?: { expectedUpdatedAtById?: Record<string, string> }
+  ) {
+    const results: Array<{ id: string; ok: boolean; error?: string }> = [];
+    for (const id of profileIds.slice(0, 50)) {
+      try {
+        await this.approveUser(actorUserId, id, {
+          expectedUpdatedAt: opts?.expectedUpdatedAtById?.[id],
+        });
+        results.push({ id, ok: true });
+      } catch (e) {
+        results.push({
+          id,
+          ok: false,
+          error: e instanceof Error ? e.message : "Failed",
+        });
+      }
+    }
+    return { results };
+  }
+
+  async bulkReject(
+    actorUserId: string,
+    profileIds: string[],
+    opts: {
+      reason: string;
+      publicUserMessage: string;
+      internalAdminNote?: string;
+      expectedUpdatedAtById?: Record<string, string>;
+    }
+  ) {
+    if (!opts.publicUserMessage?.trim()) {
+      throw new BadRequestException("publicUserMessage is required for bulk reject");
+    }
+    const results: Array<{ id: string; ok: boolean; error?: string }> = [];
+    for (const id of profileIds.slice(0, 50)) {
+      try {
+        await this.rejectUser(actorUserId, id, {
+          reason: opts.reason,
+          publicUserMessage: opts.publicUserMessage,
+          internalAdminNote: opts.internalAdminNote,
+          expectedUpdatedAt: opts.expectedUpdatedAtById?.[id],
+        });
+        results.push({ id, ok: true });
+      } catch (e) {
+        results.push({
+          id,
+          ok: false,
+          error: e instanceof Error ? e.message : "Failed",
+        });
+      }
+    }
+    return { results };
   }
 
   async getStatusHistory(profileId: string, opts?: { limit?: number }) {

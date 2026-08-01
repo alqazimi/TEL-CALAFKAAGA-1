@@ -9,8 +9,54 @@ export type AdminAdapter = {
     list(opts?: Record<string, unknown>): Promise<unknown>;
     detail(id: string): Promise<unknown>;
     activity(id: string): Promise<unknown>;
-    approve(id: string): Promise<unknown>;
-    reject(id: string, reason?: string): Promise<unknown>;
+    approve(
+      id: string,
+      body?: { expectedUpdatedAt?: string }
+    ): Promise<unknown>;
+    reject(
+      id: string,
+      reasonOrBody?:
+        | string
+        | {
+            reason?: string;
+            publicUserMessage?: string;
+            internalAdminNote?: string;
+            allowResubmission?: boolean;
+            requestPhoto?: boolean;
+            expectedUpdatedAt?: string;
+          }
+    ): Promise<unknown>;
+    requestChanges(
+      id: string,
+      body: {
+        whatMustChange: string;
+        publicInstructions: string;
+        internalAdminNote?: string;
+        deadlineAt?: string | null;
+        requireNewPhoto?: boolean;
+        expectedUpdatedAt?: string;
+      }
+    ): Promise<unknown>;
+    assignReviewer(
+      id: string,
+      body: {
+        action: "assign_me" | "reassign" | "release";
+        reviewerUserId?: string;
+        expectedUpdatedAt?: string;
+      }
+    ): Promise<unknown>;
+    bulkApprove(body: {
+      profileIds: string[];
+      expectedUpdatedAtById?: Record<string, string>;
+    }): Promise<unknown>;
+    bulkReject(body: {
+      profileIds: string[];
+      reason: string;
+      publicUserMessage: string;
+      internalAdminNote?: string;
+      confirmCount: number;
+      expectedUpdatedAtById?: Record<string, string>;
+    }): Promise<unknown>;
     ban(id: string): Promise<unknown>;
     unban(id: string): Promise<unknown>;
     pause(id: string, reason?: string): Promise<unknown>;

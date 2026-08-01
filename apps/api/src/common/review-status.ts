@@ -9,6 +9,7 @@ export const REVIEW_STATUSES = [
   "rejected",
   "suspended",
   "paused",
+  "changes_requested",
 ] as const;
 
 export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
@@ -48,13 +49,15 @@ export function resolveReviewStatus(profile: ReviewProfile): ReviewStatus {
     // Paused/suspended take precedence over the approved boolean.
     if (profile.reviewStatus === "paused") return "paused";
     if (profile.reviewStatus === "suspended") return "suspended";
+    if (profile.reviewStatus === "changes_requested") return "changes_requested";
     return "approved";
   }
 
   if (
     profile.reviewStatus === "rejected" ||
     profile.reviewStatus === "suspended" ||
-    profile.reviewStatus === "paused"
+    profile.reviewStatus === "paused" ||
+    profile.reviewStatus === "changes_requested"
   ) {
     return profile.reviewStatus;
   }
@@ -100,6 +103,7 @@ export function isDiscoverable(profile: ReviewProfile): boolean {
   if (profile.reviewStatus === "paused" || profile.reviewStatus === "suspended") {
     return false;
   }
+  if (profile.reviewStatus === "changes_requested") return false;
   return resolveReviewStatus(profile) === "approved";
 }
 
@@ -108,5 +112,9 @@ export function needsApprovalGate(
 ): boolean {
   if (!requiresAdminProfileApproval(profile)) return false;
   const status = resolveReviewStatus(profile ?? {});
-  return status === "pending_review" || status === "rejected";
+  return (
+    status === "pending_review" ||
+    status === "rejected" ||
+    status === "changes_requested"
+  );
 }

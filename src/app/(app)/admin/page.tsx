@@ -44,6 +44,7 @@ import type {
 } from "@/types";
 import { AdminBootstrapPanel } from "@/components/admin/admin-bootstrap-panel";
 import { AdminMembersPanel } from "@/components/admin/admin-members-panel";
+import { AdminReviewQueuePanel, type PeriodDrilldown } from "@/components/admin/admin-review-queue-panel";
 import { AdminStatusPeriodPanel } from "@/components/admin/admin-status-period-panel";
 import { AdminStaffInvitesPanel } from "@/components/admin/admin-staff-invites-panel";
 import { AdminUserDetailPanel } from "@/components/admin/admin-user-detail-panel";
@@ -141,6 +142,9 @@ export default function AdminPage() {
   const [reportNotes, setReportNotes] = useState<Record<string, string>>({});
   const [reportBusyId, setReportBusyId] = useState<string | null>(null);
   const [announcementSending, setAnnouncementSending] = useState(false);
+  const [periodDrilldown, setPeriodDrilldown] = useState<PeriodDrilldown | null>(
+    null
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -672,7 +676,19 @@ export default function AdminPage() {
 
         {activeTab === "users" && (
           <div className="space-y-5">
-            <AdminStatusPeriodPanel enabled />
+            <AdminStatusPeriodPanel
+              enabled
+              onDrilldown={(filter) => {
+                setPeriodDrilldown(filter);
+              }}
+            />
+            <AdminReviewQueuePanel
+              enabled
+              drilldown={periodDrilldown}
+              onClearDrilldown={() => setPeriodDrilldown(null)}
+              onOpenUser={openUserProfile}
+              onOpenHistory={openUserProfile}
+            />
             {canManageRoles && <AdminStaffInvitesPanel />}
             <AdminMembersPanel
               users={adminUsers}

@@ -46,7 +46,21 @@ export class AdminUsersController {
     @Query("hasPaid") hasPaid?: string,
     @Query("paymentTier") paymentTier?: string,
     @Query("cursor") cursor?: string,
-    @Query("limit") limit?: string
+    @Query("limit") limit?: string,
+    @Query("country") country?: string,
+    @Query("dateField") dateField?: string,
+    @Query("dateFrom") dateFrom?: string,
+    @Query("dateTo") dateTo?: string,
+    @Query("preset") preset?: string,
+    @Query("timezone") timezone?: string,
+    @Query("tz") tz?: string,
+    @Query("eventType") eventType?: string,
+    @Query("assignedReviewerId") assignedReviewerId?: string,
+    @Query("waitingMoreThanHours") waitingMoreThanHours?: string,
+    @Query("page") page?: string,
+    @Query("pageSize") pageSize?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: string
   ) {
     const tier =
       paymentTier === "basic" || paymentTier === "premium"
@@ -69,7 +83,65 @@ export class AdminUsersController {
       paymentTier: tier,
       cursor,
       limit: limit ? Number(limit) : undefined,
+      country,
+      dateField,
+      dateFrom,
+      dateTo,
+      preset,
+      timeZone: timezone || tz,
+      eventType,
+      assignedReviewerId,
+      waitingMoreThanHours: waitingMoreThanHours
+        ? Number(waitingMoreThanHours)
+        : undefined,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+      sortBy,
+      sortOrder: sortOrder === "asc" || sortOrder === "desc" ? sortOrder : undefined,
     });
+  }
+
+  @Post("bulk/approve")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  bulkApprove(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        profileIds: z.array(z.string().uuid()).min(1).max(50),
+        expectedUpdatedAtById: z.record(z.string()).optional(),
+      }),
+      body ?? {}
+    );
+    return this.users.bulkApprove(user.id, parsed.profileIds, {
+      expectedUpdatedAtById: parsed.expectedUpdatedAtById,
+    });
+  }
+
+  @Post("bulk/reject")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  bulkReject(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        profileIds: z.array(z.string().uuid()).min(1).max(50),
+        reason: z.string().min(1).max(2000),
+        publicUserMessage: z.string().min(1).max(2000),
+        internalAdminNote: z.string().max(4000).optional(),
+        confirmCount: z.number().int().positive(),
+        expectedUpdatedAtById: z.record(z.string()).optional(),
+      }),
+      body ?? {}
+    );
+    if (parsed.confirmCount !== parsed.profileIds.length) {
+      throw new BadRequestException(
+        "confirmCount must match the number of selected users"
+      );
+    }
+    return this.users.bulkReject(user.id, parsed.profileIds, parsed);
   }
 
   @Get(":id")
@@ -88,8 +160,18 @@ export class AdminUsersController {
 
   @Post(":id/approve")
   @UseGuards(CsrfGuard, RateLimitGuard)
-  approve(@CurrentUser() user: RequestUser, @Param("id") id: string) {
-    return this.users.approveUser(user.id, id);
+  approve(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        expectedUpdatedAt: z.string().optional(),
+      }),
+      body ?? {}
+    );
+    return this.users.approveUser(user.id, id, parsed);
   }
 
   @Post(":id/reject")
@@ -100,10 +182,56 @@ export class AdminUsersController {
     @Body() body: unknown
   ) {
     const parsed = parseBody(
-      z.object({ reason: z.string().max(2000).optional() }),
+      z.object({
+        reason: z.string().max(2000).optional(),
+        publicUserMessage: z.string().max(2000).optional(),
+        internalAdminNote: z.string().max(4000).optional(),
+        allowResubmission: z.boolean().optional(),
+        requestPhoto: z.boolean().optional(),
+        expectedUpdatedAt: z.string().optional(),
+      }),
       body ?? {}
     );
-    return this.users.rejectUser(user.id, id, parsed.reason);
+    return this.users.rejectUser(user.id, id, parsed);
+  }
+
+  @Post(":id/request-changes")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  requestChanges(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        whatMustChange: z.string().min(1).max(2000),
+        publicInstructions: z.string().min(1).max(2000),
+        internalAdminNote: z.string().max(4000).optional(),
+        deadlineAt: z.string().optional().nullable(),
+        requireNewPhoto: z.boolean().optional(),
+        expectedUpdatedAt: z.string().optional(),
+      }),
+      body ?? {}
+    );
+    return this.users.requestChanges(user.id, id, parsed);
+  }
+
+  @Post(":id/assign-reviewer")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  assignReviewer(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        action: z.enum(["assign_me", "reassign", "release"]),
+        reviewerUserId: z.string().uuid().optional(),
+        expectedUpdatedAt: z.string().optional(),
+      }),
+      body ?? {}
+    );
+    return this.users.assignReviewer(user.id, id, parsed);
   }
 
   @Post(":id/ban")
