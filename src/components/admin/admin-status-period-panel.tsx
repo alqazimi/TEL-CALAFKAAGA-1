@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import { ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAdminStatusPeriodReport } from "@/data/admin/hooks";
@@ -67,14 +67,21 @@ function Stat({
       className={cn(
         "rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-left w-full",
         clickable &&
-          "hover:border-foreground/30 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
+          "group hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
       )}
     >
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        {label}
-        {clickable ? " · open" : ""}
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1">
+        <span>{label}</span>
+        {clickable ? (
+          <ChevronRight className="h-3 w-3 opacity-50 group-hover:opacity-100 group-hover:text-primary" />
+        ) : null}
       </p>
-      <p className="text-xl font-semibold tabular-nums mt-0.5">
+      <p
+        className={cn(
+          "text-xl font-semibold tabular-nums mt-0.5",
+          clickable && "text-foreground group-hover:text-primary"
+        )}
+      >
         {value ?? "—"}
       </p>
       {delta ? (
@@ -84,6 +91,10 @@ function Stat({
           {delta.pct == null
             ? ""
             : ` (${delta.pct >= 0 ? "+" : ""}${delta.pct}%)`}
+        </p>
+      ) : clickable ? (
+        <p className="text-[11px] text-primary/80 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          Click to view users
         </p>
       ) : null}
     </Comp>
@@ -133,8 +144,9 @@ export function AdminStatusPeriodPanel({
 
   const drill = (partial: PeriodDrilldown) => {
     onDrilldown?.({
-      preset,
       country: country || undefined,
+      // Period-scoped metrics keep the selected preset unless overridden.
+      preset,
       ...partial,
     });
   };
@@ -152,7 +164,7 @@ export function AdminStatusPeriodPanel({
               {payload?.refreshedAt
                 ? ` · ${new Date(payload.refreshedAt).toLocaleString()}`
                 : ""}
-              {onDrilldown ? " · Click a metric to open matching users" : ""}
+              {onDrilldown ? " · Click any number to open matching users below" : ""}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -226,7 +238,11 @@ export function AdminStatusPeriodPanel({
               delta={deltas.registrations}
               onClick={
                 onDrilldown
-                  ? () => drill({ dateField: "registration" })
+                  ? () =>
+                      drill({
+                        dateField: "registration",
+                        label: "Registrations",
+                      })
                   : undefined
               }
             />
@@ -235,7 +251,11 @@ export function AdminStatusPeriodPanel({
               value={current?.submissions ?? current?.profileSubmissions}
               onClick={
                 onDrilldown
-                  ? () => drill({ dateField: "submission" })
+                  ? () =>
+                      drill({
+                        dateField: "submission",
+                        label: "Submissions",
+                      })
                   : undefined
               }
             />
@@ -249,6 +269,7 @@ export function AdminStatusPeriodPanel({
                       drill({
                         eventType: "approved",
                         dateField: "event",
+                        label: "Approved",
                       })
                   : undefined
               }
@@ -263,6 +284,7 @@ export function AdminStatusPeriodPanel({
                       drill({
                         eventType: "rejected",
                         dateField: "event",
+                        label: "Rejected",
                       })
                   : undefined
               }
@@ -276,6 +298,7 @@ export function AdminStatusPeriodPanel({
                       drill({
                         eventType: "changes_requested",
                         dateField: "event",
+                        label: "Changes requested",
                       })
                   : undefined
               }
@@ -285,7 +308,15 @@ export function AdminStatusPeriodPanel({
               value={current?.pendingSnapshot}
               onClick={
                 onDrilldown
-                  ? () => drill({ reviewStatus: "pending_review" })
+                  ? () =>
+                      drill({
+                        reviewStatus: "pending_review",
+                        // Snapshot is current queue — do not apply period date filter.
+                        preset: null,
+                        dateField: null,
+                        eventType: null,
+                        label: "Pending now",
+                      })
                   : undefined
               }
             />
@@ -296,7 +327,11 @@ export function AdminStatusPeriodPanel({
               onClick={
                 onDrilldown
                   ? () =>
-                      drill({ eventType: "paused", dateField: "event" })
+                      drill({
+                        eventType: "paused",
+                        dateField: "event",
+                        label: "Paused",
+                      })
                   : undefined
               }
             />
@@ -307,7 +342,11 @@ export function AdminStatusPeriodPanel({
               onClick={
                 onDrilldown
                   ? () =>
-                      drill({ eventType: "resumed", dateField: "event" })
+                      drill({
+                        eventType: "resumed",
+                        dateField: "event",
+                        label: "Resumed",
+                      })
                   : undefined
               }
             />
@@ -318,7 +357,11 @@ export function AdminStatusPeriodPanel({
               onClick={
                 onDrilldown
                   ? () =>
-                      drill({ eventType: "banned", dateField: "event" })
+                      drill({
+                        eventType: "banned",
+                        dateField: "event",
+                        label: "Banned",
+                      })
                   : undefined
               }
             />
@@ -329,7 +372,11 @@ export function AdminStatusPeriodPanel({
               onClick={
                 onDrilldown
                   ? () =>
-                      drill({ eventType: "unbanned", dateField: "event" })
+                      drill({
+                        eventType: "unbanned",
+                        dateField: "event",
+                        label: "Unbanned",
+                      })
                   : undefined
               }
             />
@@ -340,12 +387,48 @@ export function AdminStatusPeriodPanel({
               onClick={
                 onDrilldown
                   ? () =>
-                      drill({ eventType: "suspended", dateField: "event" })
+                      drill({
+                        eventType: "suspended",
+                        dateField: "event",
+                        label: "Suspended",
+                      })
                   : undefined
               }
             />
-            <Stat label="Pending >24h" value={current?.pendingOver24h} />
-            <Stat label="Pending >48h" value={current?.pendingOver48h} />
+            <Stat
+              label="Pending >24h"
+              value={current?.pendingOver24h}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({
+                        reviewStatus: "pending_review",
+                        waitingMoreThanHours: 24,
+                        preset: null,
+                        dateField: null,
+                        eventType: null,
+                        label: "Pending >24h",
+                      })
+                  : undefined
+              }
+            />
+            <Stat
+              label="Pending >48h"
+              value={current?.pendingOver48h}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({
+                        reviewStatus: "pending_review",
+                        waitingMoreThanHours: 48,
+                        preset: null,
+                        dateField: null,
+                        eventType: null,
+                        label: "Pending >48h",
+                      })
+                  : undefined
+              }
+            />
             <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
               <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
                 Review time
@@ -363,6 +446,15 @@ export function AdminStatusPeriodPanel({
               label="Active users"
               value={current?.activeUsers}
               delta={deltas.activeUsers}
+              onClick={
+                onDrilldown
+                  ? () =>
+                      drill({
+                        dateField: "last_active",
+                        label: "Active users",
+                      })
+                  : undefined
+              }
             />
             <Stat
               label="Messages"

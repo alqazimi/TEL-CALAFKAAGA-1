@@ -10,6 +10,7 @@ import {
   Play,
   RefreshCw,
   Ban,
+  Search,
   UserCheck,
   XCircle,
 } from "lucide-react";
@@ -200,13 +201,16 @@ function queueFilters(tab: QueueTab, tz: string): Record<string, unknown> {
 }
 
 export type PeriodDrilldown = {
-  preset?: string;
-  dateField?: string;
-  eventType?: string;
-  country?: string;
-  reviewStatus?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  preset?: string | null;
+  dateField?: string | null;
+  eventType?: string | null;
+  country?: string | null;
+  reviewStatus?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  waitingMoreThanHours?: number | null;
+  /** Shown in the review queue banner after a period metric click. */
+  label?: string;
 };
 
 export function AdminReviewQueuePanel({
@@ -259,12 +263,42 @@ export function AdminReviewQueuePanel({
       : "UTC";
 
   const listOpts = useMemo(() => {
-    if (drilldown) {
+    const searchQ = search.trim();
+
+    // Name/email search always searches broadly so new users are findable.
+    if (searchQ) {
       return {
-        role: "user",
-        limit: 50,
+        limit: 100,
         timezone: tz,
-        sortBy: "waiting",
+        sortBy: "registered",
+        sortOrder: "desc",
+        search: searchQ,
+        ...(useAdvanced && reviewStatus !== "all"
+          ? { reviewStatus }
+          : {}),
+        ...(useAdvanced && payment !== "all" ? { payment } : {}),
+        ...(useAdvanced && country.trim() ? { country: country.trim() } : {}),
+      };
+    }
+
+    if (drilldown) {
+      const sortBy =
+        drilldown.dateField === "registration"
+          ? "registered"
+          : drilldown.eventType ||
+              drilldown.dateField === "event" ||
+              drilldown.dateField === "approval" ||
+              drilldown.dateField === "rejection"
+            ? "statusChanged"
+            : drilldown.dateField === "submission"
+              ? "submitted"
+              : "waiting";
+      return {
+        ...(drilldown.dateField === "registration" ? {} : { role: "user" }),
+        limit: 100,
+        timezone: tz,
+        sortBy,
+        sortOrder: "desc",
         ...(drilldown.preset ? { preset: drilldown.preset } : {}),
         ...(drilldown.dateField ? { dateField: drilldown.dateField } : {}),
         ...(drilldown.eventType ? { eventType: drilldown.eventType } : {}),
@@ -274,6 +308,9 @@ export function AdminReviewQueuePanel({
           : {}),
         ...(drilldown.dateFrom ? { dateFrom: drilldown.dateFrom } : {}),
         ...(drilldown.dateTo ? { dateTo: drilldown.dateTo } : {}),
+        ...(drilldown.waitingMoreThanHours
+          ? { waitingMoreThanHours: drilldown.waitingMoreThanHours }
+          : {}),
       };
     }
     if (useAdvanced) {
@@ -291,7 +328,6 @@ export function AdminReviewQueuePanel({
         ...(reviewStatus !== "all" ? { reviewStatus } : {}),
         ...(payment !== "all" ? { payment } : {}),
         ...(reviewer !== "all" ? { assignedReviewerId: reviewer } : {}),
-        ...(search.trim() ? { search: search.trim() } : {}),
       };
     }
     return queueFilters(queueTab, tz);
@@ -551,7 +587,7 @@ export function AdminReviewQueuePanel({
   };
 
   return (
-    <Card className="border-border">
+    <Card id="admin-review-queue" className="border-border scroll-mt-24">
       <CardContent className="p-4 sm:p-5 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -585,7 +621,45 @@ export function AdminReviewQueuePanel({
           </div>
         </div>
 
-        {!useAdvanced && !drilldown ? (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => {
+              const next = e.target.value;
+              setSearch(next);
+              if (next.trim() && drilldown) onClearDrilldown?.();
+            }}
+            placeholder="Search name, email, phone, or ID (all members)"
+            className="h-10 rounded-xl pl-9"
+          />
+        </div>
+
+        {drilldown ? (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm">
+            <p className="font-medium text-foreground">
+              Period activity
+              {drilldown.label ? `: ${drilldown.label}` : ""}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Showing users for this metric
+              {drilldown.preset ? ` · ${String(drilldown.preset).replace(/_/g, " ")}` : ""}
+              {drilldown.country ? ` · ${drilldown.country}` : ""}
+              {typeof total === "number" ? ` · ${total} found` : ""}
+              . Clear the filter to return to the normal queue.
+            </p>
+          </div>
+        ) : null}
+
+        {search.trim() ? (
+          <p className="text-xs text-muted-foreground">
+            Searching all members by name/email/phone
+            {typeof total === "number" ? ` · ${total} found` : ""}.
+            Clear the search box to return to queue tabs.
+          </p>
+        ) : null}
+
+        {!useAdvanced && !drilldown && !search.trim() ? (
           <div className="flex flex-wrap gap-1.5">
             {QUEUE_TABS.map((tab) => (
               <button
@@ -605,13 +679,14 @@ export function AdminReviewQueuePanel({
           </div>
         ) : null}
 
-        {(useAdvanced || drilldown) && (
+        {(useAdvanced || drilldown) && !search.trim() && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
             <label className="space-y-1 text-xs">
               <span className="text-muted-foreground">Period</span>
               <select
                 className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
-                value={preset}
+                value={drilldown?.preset || preset}
+                disabled={!!drilldown}
                 onChange={(e) => setPreset(e.target.value)}
               >
                 {PRESETS.map((p) => (
@@ -625,7 +700,8 @@ export function AdminReviewQueuePanel({
               <span className="text-muted-foreground">Date field</span>
               <select
                 className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
-                value={dateField}
+                value={drilldown?.dateField || dateField}
+                disabled={!!drilldown}
                 onChange={(e) => setDateField(e.target.value)}
               >
                 {DATE_FIELDS.map((f) => (
@@ -638,7 +714,8 @@ export function AdminReviewQueuePanel({
             <label className="space-y-1 text-xs">
               <span className="text-muted-foreground">Country</span>
               <Input
-                value={country}
+                value={drilldown?.country || country}
+                disabled={!!drilldown}
                 onChange={(e) => setCountry(e.target.value)}
                 placeholder="e.g. Somalia"
                 className="h-9"
@@ -648,7 +725,8 @@ export function AdminReviewQueuePanel({
               <span className="text-muted-foreground">Status</span>
               <select
                 className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
-                value={reviewStatus}
+                value={drilldown?.reviewStatus || reviewStatus}
+                disabled={!!drilldown}
                 onChange={(e) => setReviewStatus(e.target.value)}
               >
                 <option value="all">All</option>
@@ -665,6 +743,7 @@ export function AdminReviewQueuePanel({
               <select
                 className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
                 value={payment}
+                disabled={!!drilldown}
                 onChange={(e) => setPayment(e.target.value)}
               >
                 <option value="all">All</option>
@@ -679,6 +758,7 @@ export function AdminReviewQueuePanel({
               <select
                 className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
                 value={reviewer}
+                disabled={!!drilldown}
                 onChange={(e) => setReviewer(e.target.value)}
               >
                 <option value="all">All</option>
@@ -686,7 +766,7 @@ export function AdminReviewQueuePanel({
                 <option value="unassigned">Unassigned</option>
               </select>
             </label>
-            {preset === "custom" ? (
+            {preset === "custom" && !drilldown ? (
               <>
                 <label className="space-y-1 text-xs">
                   <span className="text-muted-foreground">From</span>
@@ -708,15 +788,6 @@ export function AdminReviewQueuePanel({
                 </label>
               </>
             ) : null}
-            <label className="space-y-1 text-xs col-span-2">
-              <span className="text-muted-foreground">Search</span>
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Name, phone, email, ID"
-                className="h-9"
-              />
-            </label>
           </div>
         )}
 
@@ -802,6 +873,11 @@ export function AdminReviewQueuePanel({
                           />
                           <div>
                             <p className="font-medium leading-tight">{user.name}</p>
+                            {user.email ? (
+                              <p className="text-[11px] text-muted-foreground truncate max-w-[220px]">
+                                {user.email}
+                              </p>
+                            ) : null}
                             <p className="text-[11px] text-muted-foreground font-mono">
                               {id.slice(0, 8)}…
                             </p>

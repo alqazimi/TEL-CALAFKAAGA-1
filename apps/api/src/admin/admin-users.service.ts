@@ -27,7 +27,6 @@ import { resolveProfileMainImageUrl } from "../media/profile-image-url";
 import {
   assertCanBanTarget,
   assertCanRejectTarget,
-  maskEmail,
   parseLimit,
 } from "./admin-auth.helpers";
 import { AccountStatusService } from "./account-status.service";
@@ -211,17 +210,33 @@ export class AdminUsersService {
 
     if (opts.search?.trim()) {
       const q = opts.search.trim();
-      andClauses.push({
-        OR: [
-          { name: { contains: q, mode: "insensitive" } },
-          { phone: { contains: q } },
-          { city: { contains: q, mode: "insensitive" } },
-          { country: { contains: q, mode: "insensitive" } },
-          { user: { emailNormalized: { contains: q.toLowerCase() } } },
-          { id: { equals: q } },
-          { userId: { equals: q } },
-        ],
-      });
+      const qLower = q.toLowerCase();
+      const phoneDigits = q.replace(/[^\d+]/g, "");
+      const or: Prisma.ProfileWhereInput[] = [
+        { name: { contains: q, mode: "insensitive" } },
+        { city: { contains: q, mode: "insensitive" } },
+        { country: { contains: q, mode: "insensitive" } },
+        { user: { emailNormalized: { contains: qLower } } },
+        { user: { email: { contains: q, mode: "insensitive" } } },
+        { user: { name: { contains: q, mode: "insensitive" } } },
+        { id: { equals: q } },
+        { userId: { equals: q } },
+      ];
+      if (phoneDigits.length >= 3) {
+        or.push({ phone: { contains: phoneDigits } });
+      } else if (q.length >= 3) {
+        or.push({ phone: { contains: q } });
+      }
+      // Multi-word names: match when each token appears in the profile name.
+      const tokens = q.split(/\s+/).filter((t) => t.length >= 2);
+      if (tokens.length > 1) {
+        or.push({
+          AND: tokens.map((token) => ({
+            name: { contains: token, mode: "insensitive" as const },
+          })),
+        });
+      }
+      andClauses.push({ OR: or });
     }
 
     if (andClauses.length > 0) {
@@ -236,13 +251,7 @@ export class AdminUsersService {
     const sortBy = opts.sortBy || "waiting";
     const sortOrder = opts.sortOrder === "asc" ? "asc" : "desc";
     let orderBy: Prisma.ProfileOrderByWithRelationInput[] = [{ id: "desc" }];
-    if (sortBy === "waiting" || reviewStatus === "pending_review") {
-      orderBy = [
-        { submittedAt: "asc" },
-        { createdAt: "asc" },
-        { id: "asc" },
-      ];
-    } else if (sortBy === "registered") {
+    if (sortBy === "registered") {
       orderBy = [{ user: { createdAt: sortOrder } }, { id: sortOrder }];
     } else if (sortBy === "submitted") {
       orderBy = [{ submittedAt: sortOrder }, { id: sortOrder }];
@@ -250,6 +259,12 @@ export class AdminUsersService {
       orderBy = [{ statusChangedAt: sortOrder }, { id: sortOrder }];
     } else if (sortBy === "name") {
       orderBy = [{ name: sortOrder }, { id: sortOrder }];
+    } else if (sortBy === "waiting" || reviewStatus === "pending_review") {
+      orderBy = [
+        { submittedAt: "asc" },
+        { createdAt: "asc" },
+        { id: "asc" },
+      ];
     }
 
     const fetchLimit = opts.cursor
@@ -330,7 +345,8 @@ export class AdminUsersService {
           id: p.id,
           userId: p.userId,
           name: p.name,
-          email: maskEmail(p.user.email),
+          // Full email for staff search / support (detail already returns unmasked).
+          email: p.user.email,
           gender: p.gender,
           role: p.role,
           hasPaid: p.hasPaid,
@@ -708,7 +724,7 @@ export class AdminUsersService {
       publicUserMessage:
         opts?.publicUserMessage ||
         opts?.reason ||
-        "Your account has been paused. Matching is temporarily unavailable.",
+        "Your account has been paused. Matching and messaging are temporarily unavailable.",
     });
   }
 

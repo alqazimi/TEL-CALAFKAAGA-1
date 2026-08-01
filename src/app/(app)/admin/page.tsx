@@ -680,6 +680,12 @@ export default function AdminPage() {
               enabled
               onDrilldown={(filter) => {
                 setPeriodDrilldown(filter);
+                // Let the review queue remount/filter, then scroll to results.
+                requestAnimationFrame(() => {
+                  document
+                    .getElementById("admin-review-queue")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
               }}
             />
             <AdminReviewQueuePanel
@@ -693,7 +699,15 @@ export default function AdminPage() {
             <AdminMembersPanel
               users={adminUsers}
               search={search}
-              onSearchChange={setSearch}
+              onSearchChange={(value) => {
+                setSearch(value);
+                // Broaden filters while searching so new users aren't hidden.
+                if (value.trim()) {
+                  setReviewFilter("all");
+                  setPaymentFilter("all");
+                  setRoleFilter("all");
+                }
+              }}
               roleFilter={roleFilter}
               onRoleFilterChange={setRoleFilter}
               paymentFilter={paymentFilter}
