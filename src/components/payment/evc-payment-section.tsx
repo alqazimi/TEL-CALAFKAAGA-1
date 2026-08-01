@@ -132,13 +132,13 @@ export function EvcPaymentSection({
 
   if (latest?.status === "pending") {
     return (
-      <div className="mt-10 rounded-3xl border border-amber-300/60 bg-amber-50/80 p-6 sm:p-8 text-center space-y-3">
-        <Clock className="mx-auto h-8 w-8 text-amber-700" />
-        <h2 className="text-xl font-semibold text-amber-950">{t("payment.evcPendingTitle")}</h2>
-        <p className="text-sm text-amber-900/80 max-w-lg mx-auto leading-relaxed">
+      <div className="mt-10 rounded-3xl border border-amber-300/60 bg-amber-50/80 p-6 sm:p-8 text-center space-y-3 dark:border-amber-800/60 dark:bg-amber-950/40">
+        <Clock className="mx-auto h-8 w-8 text-amber-700 dark:text-amber-400" />
+        <h2 className="text-xl font-semibold text-amber-950 dark:text-amber-100">{t("payment.evcPendingTitle")}</h2>
+        <p className="text-sm text-amber-900/80 max-w-lg mx-auto leading-relaxed dark:text-amber-200/80">
           {t("payment.evcPendingDesc")}
         </p>
-        <p className="text-xs text-amber-900/70">
+        <p className="text-xs text-amber-900/70 dark:text-amber-200/70">
           {latest.payerFullName} · ****{latest.lastFourDigits} ·{" "}
           {latest.tier === "premium" ? t("payment.premiumPlan") : t("payment.basicPlan")}
         </p>
@@ -230,7 +230,10 @@ export function EvcPaymentSection({
             <Button
               type="button"
               variant={tier === "basic" ? "default" : "outline"}
-              className="rounded-xl"
+              className={cn(
+                "rounded-xl",
+                tier !== "basic" && "border-border bg-background text-foreground"
+              )}
               onClick={() => setTier("basic")}
             >
               {t("payment.basicPlan")} · ${formatMoney(basicPrice)}
@@ -238,7 +241,10 @@ export function EvcPaymentSection({
             <Button
               type="button"
               variant={tier === "premium" ? "default" : "outline"}
-              className="rounded-xl"
+              className={cn(
+                "rounded-xl",
+                tier !== "premium" && "border-border bg-background text-foreground"
+              )}
               onClick={() => setTier("premium")}
             >
               {t("payment.premiumPlan")} · ${formatMoney(premiumPrice)}

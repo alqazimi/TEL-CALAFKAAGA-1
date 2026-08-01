@@ -185,12 +185,15 @@ export function PaymentGate({
       </div>
 
       <div className="mb-6 flex justify-center">
-        <div className="inline-flex rounded-2xl border border-border bg-muted/40 p-1">
+        <div className="inline-flex rounded-2xl border border-border bg-muted p-1">
           <Button
             type="button"
             size="sm"
-            variant={payMethod === "card" ? "default" : "ghost"}
-            className="rounded-xl px-4"
+            variant={payMethod === "card" ? "default" : "secondary"}
+            className={cn(
+              "rounded-xl px-4",
+              payMethod !== "card" && "bg-transparent text-foreground hover:bg-background/60"
+            )}
             onClick={() => setPayMethod("card")}
           >
             <CreditCard className="h-4 w-4 mr-2" />
@@ -199,8 +202,11 @@ export function PaymentGate({
           <Button
             type="button"
             size="sm"
-            variant={payMethod === "mobile" ? "default" : "ghost"}
-            className="rounded-xl px-4"
+            variant={payMethod === "mobile" ? "default" : "secondary"}
+            className={cn(
+              "rounded-xl px-4",
+              payMethod !== "mobile" && "bg-transparent text-foreground hover:bg-background/60"
+            )}
             onClick={() => setPayMethod("mobile")}
           >
             {t("payment.payWithMobileMoney")}
@@ -262,7 +268,7 @@ export function PaymentGate({
 
               <PaymentCheckoutButton
                 tier="basic"
-                className="w-full"
+                className="w-full border-border bg-background text-foreground hover:bg-muted"
                 variant="outline"
                 labelPrice={basicPrice}
               />
