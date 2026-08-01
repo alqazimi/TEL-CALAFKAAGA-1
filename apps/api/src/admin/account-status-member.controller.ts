@@ -86,7 +86,7 @@ export class AccountStatusMemberController {
         "Please update the requested profile details and resubmit for review.";
     } else if (review === "paused") {
       nextStep =
-        "Your account is paused. Matching is temporarily unavailable.";
+        "Your account is paused. Matching and messaging are temporarily unavailable.";
     } else if (review === "incomplete") {
       nextStep = "Complete your questionnaire and payment to continue.";
     } else if (review === "approved") {

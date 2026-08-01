@@ -11,6 +11,10 @@ import { ConfigService } from "@nestjs/config";
 import type { Conversation, Match, Profile } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { hasPaidAccess, isStaffRole } from "../common/access";
+import {
+  interactionLockMessage,
+  isInteractionLocked,
+} from "../common/review-status";
 import { MediaAccessService } from "../media/media-access.service";
 import { resolveProfileMainImageUrl, resolveAdditionalImageUrls } from "../media/profile-image-url";
 import { PrismaService } from "../prisma/prisma.service";
@@ -55,7 +59,9 @@ export class ConversationService {
   private async requireProfile(userId: string): Promise<Profile> {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
     if (!profile) throw new ForbiddenException("Profile required");
-    if (profile.banned) throw new ForbiddenException("Account suspended");
+    if (isInteractionLocked(profile)) {
+      throw new ForbiddenException(interactionLockMessage(profile));
+    }
     return profile;
   }
 

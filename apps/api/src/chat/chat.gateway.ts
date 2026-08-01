@@ -11,6 +11,7 @@ import {
 import { Logger } from "@nestjs/common";
 import type { Server, Socket } from "socket.io";
 import { SessionService } from "../auth/session.service";
+import { isInteractionLocked } from "../common/review-status";
 import { ConversationService } from "./conversation.service";
 import { ChatRealtimeService } from "./chat-realtime.service";
 import { RedisService } from "../redis/redis.module";
@@ -121,7 +122,9 @@ export class ChatGateway
     if (!session) throw new Error("invalid_session");
 
     const profile = session.user.profile;
-    if (profile?.banned) throw new Error("banned");
+    if (profile && isInteractionLocked(profile)) {
+      throw new Error(profile.banned ? "banned" : "paused");
+    }
 
     client.data.userId = session.user.id;
     client.data.sessionId = session.id;

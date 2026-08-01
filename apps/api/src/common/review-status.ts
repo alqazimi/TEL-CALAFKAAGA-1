@@ -118,3 +118,24 @@ export function needsApprovalGate(
     status === "changes_requested"
   );
 }
+
+/** Banned, paused, or timed-suspension — no matches/messaging. */
+export function isInteractionLocked(
+  profile: ReviewProfile | null | undefined
+): boolean {
+  if (!profile) return false;
+  if (profile.banned) return true;
+  const status = resolveReviewStatus(profile);
+  return status === "paused" || status === "suspended";
+}
+
+export function interactionLockMessage(
+  profile: ReviewProfile | null | undefined
+): string {
+  if (!profile) return "Account unavailable";
+  if (profile.banned) return "Account suspended";
+  const status = resolveReviewStatus(profile);
+  if (status === "paused") return "Account paused";
+  if (status === "suspended") return "Account suspended";
+  return "Account unavailable";
+}

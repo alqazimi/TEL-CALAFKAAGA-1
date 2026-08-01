@@ -16,11 +16,16 @@ import { MatchSwipeDeck } from "@/components/matches/match-swipe-deck";
 import { MatchProfileCard } from "@/components/matches/match-profile-card";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
+import { AccountLockedGate } from "@/components/profile/account-locked-gate";
 import { PaymentGate } from "@/components/payment/payment-gate";
 import type { MatchResult, Profile } from "@/types";
 import type { Preferences } from "@/lib/profile-progress";
 import { hasPaidAccess, isPremiumMember } from "@/lib/access";
-import { needsApprovalGate } from "@/lib/review-status";
+import {
+  needsApprovalGate,
+  isInteractionLocked,
+  resolveReviewStatus,
+} from "@/lib/review-status";
 import { useStaffRedirect } from "@/hooks/use-staff-redirect";
 import { isMemberProfileReady, isProfileQueriesLoading } from "@/lib/profile-progress";
 import { isInTrialPeriod, isTrialExpired } from "@/lib/trial";
@@ -90,7 +95,10 @@ export default function MatchesPage() {
     !queriesLoading &&
     (profile.questionnaireComplete || isMemberProfileReady(profile, preferences));
   const canQuery =
-    profileReady && hasPaidAccess(profile) && !needsApprovalGate(profile);
+    profileReady &&
+    hasPaidAccess(profile) &&
+    !needsApprovalGate(profile) &&
+    !isInteractionLocked(profile);
   const isPremium = isPremiumMember(profile);
 
   useMarkNotificationsRead(["match", "approval"], canQuery);
@@ -256,6 +264,19 @@ export default function MatchesPage() {
                 })
           }
         />
+      </DashboardLayout>
+    );
+  }
+
+  if (profile && isInteractionLocked(profile)) {
+    const status = profile.banned
+      ? "banned"
+      : resolveReviewStatus(profile) === "paused"
+        ? "paused"
+        : "suspended";
+    return (
+      <DashboardLayout>
+        <AccountLockedGate status={status} />
       </DashboardLayout>
     );
   }

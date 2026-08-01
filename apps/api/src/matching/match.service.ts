@@ -8,7 +8,7 @@ import type { LikeAction, MatchStatus, Profile } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { hasPaidAccess, isPremiumMember, isStaffRole, shouldHideProfileFromViewer } from "../common/access";
-import { isDiscoverable } from "../common/review-status";
+import { isDiscoverable, interactionLockMessage, isInteractionLocked } from "../common/review-status";
 import { canViewerSeePhotos } from "../profile/photo-rules";
 import {
   PRIVATE_REVEALS_PER_MATCH_BASIC,
@@ -46,7 +46,9 @@ export class MatchService {
   private async requireMatchAccess(userId: string): Promise<AccessCtx> {
     const profile = await this.prisma.profile.findUnique({ where: { userId } });
     if (!profile) throw new ForbiddenException("Profile required");
-    if (profile.banned) throw new ForbiddenException("Account suspended");
+    if (isInteractionLocked(profile)) {
+      throw new ForbiddenException(interactionLockMessage(profile));
+    }
     if (!profile.questionnaireComplete) {
       throw new ForbiddenException("Complete your questionnaire first");
     }
