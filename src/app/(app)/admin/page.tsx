@@ -133,6 +133,7 @@ export default function AdminPage() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
+  const [usersMode, setUsersMode] = useState<"members" | "review">("members");
   const [announcement, setAnnouncement] = useState({
     title: "",
     body: "",
@@ -151,6 +152,7 @@ export default function AdminPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  const isMemberSearch = Boolean(debouncedSearch.trim());
   const { user: authUser } = useUnifiedAuth();
   const currentUser = authUser as CurrentUser | null | undefined;
   const userTimedOut = useLoadingTimeout(currentUser === undefined, 8_000);
@@ -169,6 +171,7 @@ export default function AdminPage() {
   const reloadStats = adminStatsQuery.reload;
   const {
     users,
+    total: membersTotal,
     isRefreshing: usersRefreshing,
     loadMore: loadMoreUsers,
     hasMore: hasMoreUsers,
@@ -176,13 +179,19 @@ export default function AdminPage() {
     reload: reloadUsers,
     patchUser,
     removeUser,
-  } = useAdminUsers(!!isStaff && activeTab === "users", {
-    search: debouncedSearch || undefined,
-    role: roleFilter,
-    payment: paymentFilter,
-    review: reviewFilter,
-    limit: 150,
-  });
+  } = useAdminUsers(
+    !!isStaff && activeTab === "users" && usersMode === "members",
+    {
+      // While searching, ignore other filters so name/email always finds the user.
+      search: debouncedSearch || undefined,
+      role: isMemberSearch ? "all" : roleFilter,
+      payment: isMemberSearch ? "all" : paymentFilter,
+      review: isMemberSearch ? "all" : reviewFilter,
+      limit: 150,
+      sortBy: "registered",
+      sortOrder: "desc",
+    }
+  );
   const adminUsers = users as AdminUser[] | undefined;
   const analytics = useAdminAnalytics(
     !!isStaff && activeTab === "analytics"
@@ -547,7 +556,9 @@ export default function AdminPage() {
                   onClick={() => {
                     setRoleFilter("user");
                     setPaymentFilter("all");
-                    setReviewFilter("needs_action");
+                    setReviewFilter("pending_review");
+                    setUsersMode("members");
+                    setSearch("");
                     setTab("users");
                   }}
                 >
@@ -563,6 +574,8 @@ export default function AdminPage() {
                     setRoleFilter("user");
                     setPaymentFilter("unpaid");
                     setReviewFilter("all");
+                    setUsersMode("members");
+                    setSearch("");
                     setTab("users");
                   }}
                 >
@@ -661,9 +674,8 @@ export default function AdminPage() {
                   size="sm"
                   className="mt-4 rounded-xl"
                   onClick={() => {
-                    setRoleFilter("user");
-                    setPaymentFilter("all");
-                    setReviewFilter("pending_review");
+                    setUsersMode("review");
+                    setPeriodDrilldown(null);
                     setTab("users");
                   }}
                 >
@@ -676,60 +688,101 @@ export default function AdminPage() {
 
         {activeTab === "users" && (
           <div className="space-y-5">
-            <AdminStatusPeriodPanel
-              enabled
-              onDrilldown={(filter) => {
-                setPeriodDrilldown(filter);
-                // Let the review queue remount/filter, then scroll to results.
-                requestAnimationFrame(() => {
-                  document
-                    .getElementById("admin-review-queue")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                });
-              }}
-            />
-            <AdminReviewQueuePanel
-              enabled
-              drilldown={periodDrilldown}
-              onClearDrilldown={() => setPeriodDrilldown(null)}
-              onOpenUser={openUserProfile}
-              onOpenHistory={openUserProfile}
-            />
-            {canManageRoles && <AdminStaffInvitesPanel />}
-            <AdminMembersPanel
-              users={adminUsers}
-              search={search}
-              onSearchChange={(value) => {
-                setSearch(value);
-                // Broaden filters while searching so new users aren't hidden.
-                if (value.trim()) {
-                  setReviewFilter("all");
-                  setPaymentFilter("all");
-                  setRoleFilter("all");
-                }
-              }}
-              roleFilter={roleFilter}
-              onRoleFilterChange={setRoleFilter}
-              paymentFilter={paymentFilter}
-              onPaymentFilterChange={setPaymentFilter}
-              reviewFilter={reviewFilter}
-              onReviewFilterChange={setReviewFilter}
-              approvedMale={stats?.approvedMale}
-              approvedFemale={stats?.approvedFemale}
-              approvedTotal={stats?.approvedTotal}
-              currentProfileId={currentUser?.profile?._id}
-              canManageRoles={canManageRoles}
-              onOpenUser={openUserProfile}
-              onLoadMore={() => void loadMoreUsers()}
-              hasMore={hasMoreUsers}
-              loadingMore={loadingMoreUsers}
-              isRefreshing={usersRefreshing}
-              onPatchUser={patchUser}
-              onRemoveUser={removeUser}
-              onActionComplete={() => {
-                void reloadStats();
-              }}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setUsersMode("members");
+                  setPeriodDrilldown(null);
+                }}
+                className={cn(
+                  "rounded-xl border px-4 py-2 text-sm font-semibold transition-colors",
+                  usersMode === "members"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-background text-muted-foreground hover:text-foreground"
+                )}
+              >
+                All members
+              </button>
+              <button
+                type="button"
+                onClick={() => setUsersMode("review")}
+                className={cn(
+                  "rounded-xl border px-4 py-2 text-sm font-semibold transition-colors",
+                  usersMode === "review"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-background text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Review queue
+              </button>
+              <p className="text-xs text-muted-foreground sm:ml-2">
+                {usersMode === "members"
+                  ? "Search anyone by name or email · newest signups first"
+                  : "Approve pending profiles · click Period activity numbers to open users"}
+              </p>
+            </div>
+
+            {usersMode === "members" ? (
+              <>
+                <AdminMembersPanel
+                  users={adminUsers}
+                  total={membersTotal}
+                  search={search}
+                  onSearchChange={(value) => {
+                    setSearch(value);
+                    if (value.trim()) {
+                      setReviewFilter("all");
+                      setPaymentFilter("all");
+                      setRoleFilter("all");
+                    }
+                  }}
+                  roleFilter={roleFilter}
+                  onRoleFilterChange={setRoleFilter}
+                  paymentFilter={paymentFilter}
+                  onPaymentFilterChange={setPaymentFilter}
+                  reviewFilter={reviewFilter}
+                  onReviewFilterChange={setReviewFilter}
+                  approvedMale={stats?.approvedMale}
+                  approvedFemale={stats?.approvedFemale}
+                  approvedTotal={stats?.approvedTotal}
+                  currentProfileId={currentUser?.profile?._id}
+                  canManageRoles={canManageRoles}
+                  onOpenUser={openUserProfile}
+                  onLoadMore={() => void loadMoreUsers()}
+                  hasMore={hasMoreUsers}
+                  loadingMore={loadingMoreUsers}
+                  isRefreshing={usersRefreshing}
+                  onPatchUser={patchUser}
+                  onRemoveUser={removeUser}
+                  onActionComplete={() => {
+                    void reloadStats();
+                  }}
+                />
+                {canManageRoles && <AdminStaffInvitesPanel />}
+              </>
+            ) : (
+              <>
+                <AdminStatusPeriodPanel
+                  enabled
+                  onDrilldown={(filter) => {
+                    setPeriodDrilldown(filter);
+                    requestAnimationFrame(() => {
+                      document
+                        .getElementById("admin-review-queue")
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    });
+                  }}
+                />
+                <AdminReviewQueuePanel
+                  enabled
+                  drilldown={periodDrilldown}
+                  onClearDrilldown={() => setPeriodDrilldown(null)}
+                  onOpenUser={openUserProfile}
+                  onOpenHistory={openUserProfile}
+                />
+              </>
+            )}
           </div>
         )}
 

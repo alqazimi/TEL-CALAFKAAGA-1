@@ -55,19 +55,31 @@ export type ReviewFilter =
   | "suspended";
 
 const REVIEW_FILTERS: { value: ReviewFilter; labelKey: TranslationPath }[] = [
-  { value: "needs_action", labelKey: "adminPage.filterNeedsAction" },
+  { value: "all", labelKey: "adminPage.filterAllStatuses" },
   { value: "pending_review", labelKey: "adminPage.filterPendingReview" },
   { value: "approved", labelKey: "adminPage.filterApproved" },
   { value: "incomplete", labelKey: "adminPage.filterIncomplete" },
   { value: "rejected", labelKey: "adminPage.filterRejected" },
   { value: "suspended", labelKey: "adminPage.filterSuspended" },
-  { value: "all", labelKey: "adminPage.filterAllStatuses" },
+  { value: "needs_action", labelKey: "adminPage.filterNeedsAction" },
 ];
 
 type PendingConfirm = {
   type: "reject" | "delete" | "ban" | "unban";
   user: AdminUser;
 };
+
+function formatJoined(value: string | null | undefined) {
+  if (!value) return null;
+  try {
+    return new Date(value).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return value;
+  }
+}
 
 function isMemberApproved(user: AdminUser): boolean {
   return (
@@ -148,6 +160,7 @@ function memberStatus(user: AdminUser): {
 
 interface AdminMembersPanelProps {
   users: AdminUser[] | undefined;
+  total?: number | null;
   search: string;
   onSearchChange: (value: string) => void;
   roleFilter: RoleFilter;
@@ -173,6 +186,7 @@ interface AdminMembersPanelProps {
 
 export function AdminMembersPanel({
   users,
+  total,
   search,
   onSearchChange,
   roleFilter,
@@ -308,118 +322,127 @@ export function AdminMembersPanel({
     );
   };
 
+  const searching = Boolean(search.trim());
+
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold">All members</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Newest signups first
+              {typeof total === "number" ? ` · ${total} total` : ""}
+              {searching ? " · searching all members (filters paused)" : ""}
+            </p>
+          </div>
+          <div className="flex gap-3 text-center text-xs">
+            <div>
+              <p className="text-base font-semibold tabular-nums">{approvedMale ?? "—"}</p>
+              <p className="text-muted-foreground">{t("adminPage.approvedMen")}</p>
+            </div>
+            <div>
+              <p className="text-base font-semibold tabular-nums">{approvedFemale ?? "—"}</p>
+              <p className="text-muted-foreground">{t("adminPage.approvedWomen")}</p>
+            </div>
+            <div>
+              <p className="text-base font-semibold tabular-nums">{approvedTotal ?? "—"}</p>
+              <p className="text-muted-foreground">{t("adminPage.approvedTotal")}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="h-11 rounded-xl border-border/80 bg-background pl-10"
-            placeholder={t("adminPage.searchPlaceholder")}
+            className="h-12 rounded-xl border-border bg-background pl-10 text-base"
+            placeholder="Search by name or email…"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
+            autoComplete="off"
+            spellCheck={false}
           />
+          {searching ? (
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground hover:text-foreground"
+              onClick={() => onSearchChange("")}
+            >
+              Clear
+            </button>
+          ) : null}
         </div>
 
-        <div className="space-y-1.5">
-          <p className="text-xs font-medium text-muted-foreground">
-            {t("adminPage.filterByReview")}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {REVIEW_FILTERS.map((item) => {
-              const active = reviewFilter === item.value;
-              return (
-                <button
-                  key={item.value}
-                  type="button"
-                  onClick={() => onReviewFilterChange(item.value)}
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                    active
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
+        {!searching ? (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {REVIEW_FILTERS.map((item) => {
+                const active = reviewFilter === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => onReviewFilterChange(item.value)}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                      active
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {t(item.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">{t("adminPage.filterByRole")}</p>
+                <Select
+                  value={roleFilter}
+                  onValueChange={(value) => onRoleFilterChange(value as RoleFilter)}
                 >
-                  {t(item.labelKey)}
-                </button>
-              );
-            })}
+                  <SelectTrigger className="h-10 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("adminPage.filterAllRoles")}</SelectItem>
+                    <SelectItem value="user">{t("adminPage.filterMembers")}</SelectItem>
+                    <SelectItem value="admin">{t("adminPage.filterAdmins")}</SelectItem>
+                    <SelectItem value="owner">{t("adminPage.filterOwner")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">{t("adminPage.filterByPayment")}</p>
+                <Select
+                  value={paymentFilter}
+                  onValueChange={(value) => onPaymentFilterChange(value as PaymentFilter)}
+                >
+                  <SelectTrigger className="h-10 rounded-xl">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("adminPage.filterAllPayments")}</SelectItem>
+                    <SelectItem value="unpaid">{t("adminPage.unpaid")}</SelectItem>
+                    <SelectItem value="basic">{t("adminPage.paidBasic")}</SelectItem>
+                    <SelectItem value="premium">{t("adminPage.paidPremium")}</SelectItem>
+                    <SelectItem value="paid">{t("adminPage.filterAnyPaid")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/80 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/30">
-          <div className="text-center">
-            <p className="text-lg font-semibold tabular-nums text-foreground">
-              {approvedMale ?? "—"}
-            </p>
-            <p className="text-[11px] font-medium text-muted-foreground">
-              {t("adminPage.approvedMen")}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-semibold tabular-nums text-foreground">
-              {approvedFemale ?? "—"}
-            </p>
-            <p className="text-[11px] font-medium text-muted-foreground">
-              {t("adminPage.approvedWomen")}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-semibold tabular-nums text-foreground">
-              {approvedTotal ?? "—"}
-            </p>
-            <p className="text-[11px] font-medium text-muted-foreground">
-              {t("adminPage.approvedTotal")}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">{t("adminPage.filterByRole")}</p>
-            <Select
-              value={roleFilter}
-              onValueChange={(value) => onRoleFilterChange(value as RoleFilter)}
-            >
-              <SelectTrigger className="h-10 rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("adminPage.filterAllRoles")}</SelectItem>
-                <SelectItem value="user">{t("adminPage.filterMembers")}</SelectItem>
-                <SelectItem value="admin">{t("adminPage.filterAdmins")}</SelectItem>
-                <SelectItem value="owner">{t("adminPage.filterOwner")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground">{t("adminPage.filterByPayment")}</p>
-            <Select
-              value={paymentFilter}
-              onValueChange={(value) => onPaymentFilterChange(value as PaymentFilter)}
-            >
-              <SelectTrigger className="h-10 rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("adminPage.filterAllPayments")}</SelectItem>
-                <SelectItem value="unpaid">{t("adminPage.unpaid")}</SelectItem>
-                <SelectItem value="basic">{t("adminPage.paidBasic")}</SelectItem>
-                <SelectItem value="premium">{t("adminPage.paidPremium")}</SelectItem>
-                <SelectItem value="paid">{t("adminPage.filterAnyPaid")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <p className="text-xs text-muted-foreground">{t("adminPage.clickHint")}</p>
+        ) : null}
       </div>
 
       <div className={cn("overflow-hidden rounded-2xl border border-border bg-card", isRefreshing && "opacity-80")}>
-        <div className="hidden grid-cols-[minmax(0,1.4fr)_110px_100px_minmax(0,1fr)] gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
+        <div className="hidden grid-cols-[minmax(0,1.6fr)_110px_100px_140px_minmax(0,1fr)] gap-3 border-b border-border bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
           <span>{t("adminPage.colMember")}</span>
           <span>{t("adminPage.colStatus")}</span>
           <span>{t("adminPage.colPayment")}</span>
+          <span>Joined</span>
           <span className="text-right">{t("adminPage.colActions")}</span>
         </div>
 
@@ -430,9 +453,28 @@ export function AdminMembersPanel({
             ))}
           </div>
         ) : users.length === 0 ? (
-          <div className="px-4 py-14 text-center">
+          <div className="px-4 py-14 text-center space-y-2">
             <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">{t("adminPage.noUsers")}</p>
+            <p className="text-sm text-muted-foreground">
+              {searching
+                ? `No member found for “${search.trim()}”. Try full email or part of the name.`
+                : t("adminPage.noUsers")}
+            </p>
+            {searching || reviewFilter !== "all" || paymentFilter !== "all" || roleFilter !== "all" ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  onSearchChange("");
+                  onReviewFilterChange("all");
+                  onPaymentFilterChange("all");
+                  onRoleFilterChange("all");
+                }}
+              >
+                Clear search & filters
+              </Button>
+            ) : null}
           </div>
         ) : (
           <ul className="divide-y divide-border">
@@ -446,12 +488,15 @@ export function AdminMembersPanel({
                     ? t("adminPage.paidPremium")
                     : t("adminPage.paidBasic")
                   : t("adminPage.unpaid");
+              const joined = formatJoined(
+                (user as { registeredAt?: string | null }).registeredAt
+              );
 
               return (
                 <li
                   key={user._id}
                   className={cn(
-                    "grid gap-3 px-4 py-4 transition-colors hover:bg-muted/30 lg:grid-cols-[minmax(0,1.4fr)_110px_100px_minmax(0,1fr)] lg:items-center",
+                    "grid gap-3 px-4 py-4 transition-colors hover:bg-muted/30 lg:grid-cols-[minmax(0,1.6fr)_110px_100px_140px_minmax(0,1fr)] lg:items-center",
                   )}
                 >
                   <button
@@ -479,9 +524,9 @@ export function AdminMembersPanel({
                           : ""}
                       </span>
                       {user.email && (
-                        <span className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1 truncate text-xs text-foreground/80">
                           <Mail className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{user.email}</span>
+                          <span className="truncate font-medium">{user.email}</span>
                         </span>
                       )}
                       {user.phone && (
@@ -490,6 +535,11 @@ export function AdminMembersPanel({
                           {user.phone}
                         </span>
                       )}
+                      {joined ? (
+                        <span className="block text-[11px] text-muted-foreground lg:hidden">
+                          Joined {joined}
+                        </span>
+                      ) : null}
                     </span>
                   </button>
 
@@ -507,6 +557,10 @@ export function AdminMembersPanel({
                       {t("adminPage.colPayment")}
                     </span>
                     <p className="text-sm font-medium text-foreground">{paymentLabel}</p>
+                  </div>
+
+                  <div className="hidden lg:block text-xs text-muted-foreground tabular-nums">
+                    {joined ?? "—"}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 lg:justify-end">

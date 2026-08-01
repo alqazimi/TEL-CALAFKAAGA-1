@@ -1200,7 +1200,7 @@ export const en = {
     filterByRole: "Filter by role",
     filterByPayment: "Filter by payment",
     filterByReview: "Filter by approval status",
-    filterNeedsAction: "Needs review",
+    filterNeedsAction: "Women awaiting approval",
     filterPendingReview: "Pending",
     filterApproved: "Approved",
     filterIncomplete: "Incomplete",

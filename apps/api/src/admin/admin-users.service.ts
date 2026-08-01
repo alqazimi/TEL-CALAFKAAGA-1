@@ -221,6 +221,8 @@ export class AdminUsersService {
         { user: { name: { contains: q, mode: "insensitive" } } },
         { id: { equals: q } },
         { userId: { equals: q } },
+        { id: { startsWith: q } },
+        { userId: { startsWith: q } },
       ];
       if (phoneDigits.length >= 3) {
         or.push({ phone: { contains: phoneDigits } });

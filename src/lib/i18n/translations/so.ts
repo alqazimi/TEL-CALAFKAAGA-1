@@ -1194,7 +1194,7 @@ export const so: Translations = {
     filterByRole: "Shaandhee doorka",
     filterByPayment: "Shaandhee lacag bixinta",
     filterByReview: "Shaandhee xaaladda oggolaanshaha",
-    filterNeedsAction: "U baahan dib-u-eegis",
+    filterNeedsAction: "Haweenka sugaya oggolaanshaha",
     filterPendingReview: "Sugaya",
     filterApproved: "La ansixiyay",
     filterIncomplete: "Aan dhammaystirnayn",

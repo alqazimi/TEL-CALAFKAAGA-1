@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle,
@@ -234,9 +234,16 @@ export function AdminReviewQueuePanel({
   const [payment, setPayment] = useState("all");
   const [reviewer, setReviewer] = useState("all");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [useAdvanced, setUseAdvanced] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [approveTarget, setApproveTarget] = useState<ReviewRow | null>(null);
@@ -263,7 +270,7 @@ export function AdminReviewQueuePanel({
       : "UTC";
 
   const listOpts = useMemo(() => {
-    const searchQ = search.trim();
+    const searchQ = debouncedSearch.trim();
 
     // Name/email search always searches broadly so new users are findable.
     if (searchQ) {
@@ -273,11 +280,6 @@ export function AdminReviewQueuePanel({
         sortBy: "registered",
         sortOrder: "desc",
         search: searchQ,
-        ...(useAdvanced && reviewStatus !== "all"
-          ? { reviewStatus }
-          : {}),
-        ...(useAdvanced && payment !== "all" ? { payment } : {}),
-        ...(useAdvanced && country.trim() ? { country: country.trim() } : {}),
       };
     }
 
@@ -341,7 +343,7 @@ export function AdminReviewQueuePanel({
     reviewStatus,
     payment,
     reviewer,
-    search,
+    debouncedSearch,
     customFrom,
     customTo,
     tz,
