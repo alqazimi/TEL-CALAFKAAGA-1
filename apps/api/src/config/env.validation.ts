@@ -10,8 +10,15 @@ export const envSchema = z.object({
     .default("info"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
+  /** Optional; injected into REDIS_URL when the URL has no password (local Compose). */
+  REDIS_PASSWORD: z.string().optional(),
   SESSION_SECRET: z.string().min(16).optional(),
   AUTH_SECRET: z.string().min(16).optional(),
+  /**
+   * L4: when true/1/yes/on, staff (admin/owner) without MFA get a restricted
+   * session until enrollment. Default off for safe local/dev rollout.
+   */
+  REQUIRE_STAFF_MFA: z.string().optional(),
   COOKIE_DOMAIN: z.string().optional(),
   COOKIE_SECURE: z.string().optional(),
   CORS_ORIGINS: z.string().optional(),
@@ -27,6 +34,18 @@ export const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_GATEWAY: z.enum(["live", "fake"]).optional(),
   STRIPE_ALLOW_LIVE: z.string().optional(),
+  /** Stripe webhook abuse controls (M5) — optional; safe defaults apply. */
+  STRIPE_WEBHOOK_MAX_BODY_BYTES: z.coerce.number().int().positive().optional(),
+  STRIPE_WEBHOOK_RATE_IP_MAX: z.coerce.number().int().positive().optional(),
+  STRIPE_WEBHOOK_RATE_IP_WINDOW_SEC: z.coerce.number().int().positive().optional(),
+  STRIPE_WEBHOOK_RATE_GLOBAL_MAX: z.coerce.number().int().positive().optional(),
+  STRIPE_WEBHOOK_RATE_GLOBAL_WINDOW_SEC: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional(),
+  /** M6: reclaim processing rows older than this many ms (default 5m). */
+  STRIPE_WEBHOOK_STALE_PROCESSING_MS: z.coerce.number().int().positive().optional(),
   // Local MinIO / future R2
   S3_ENDPOINT: z.string().optional(),
   S3_REGION: z.string().default("us-east-1"),
@@ -43,6 +62,20 @@ export const envSchema = z.object({
 
 export type AppEnv = z.infer<typeof envSchema>;
 
+/** True when fake Stripe must never be used (public production hosts). */
+export function isStripeFakeForbidden(
+  env: Pick<AppEnv, "NODE_ENV"> & {
+    RENDER?: unknown;
+    RENDER_SERVICE_ID?: unknown;
+  }
+): boolean {
+  return (
+    env.NODE_ENV === "production" ||
+    Boolean(env.RENDER) ||
+    Boolean(env.RENDER_SERVICE_ID)
+  );
+}
+
 export function validateEnv(config: Record<string, unknown>): AppEnv {
   const parsed = envSchema.safeParse(config);
   if (!parsed.success) {
@@ -51,5 +84,20 @@ export function validateEnv(config: Record<string, unknown>): AppEnv {
       .join("; ");
     throw new Error(`Invalid environment: ${details}`);
   }
-  return parsed.data;
+
+  const data = parsed.data;
+  if (
+    data.STRIPE_GATEWAY === "fake" &&
+    isStripeFakeForbidden({
+      NODE_ENV: data.NODE_ENV,
+      RENDER: config.RENDER,
+      RENDER_SERVICE_ID: config.RENDER_SERVICE_ID,
+    })
+  ) {
+    throw new Error(
+      "Invalid environment: STRIPE_GATEWAY=fake is forbidden when NODE_ENV=production or RENDER is set. Use live Stripe with webhook signature verification."
+    );
+  }
+
+  return data;
 }

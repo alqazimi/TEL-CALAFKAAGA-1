@@ -29,7 +29,7 @@ NEXT_PUBLIC_BACKEND_PROVIDER=api
 NEXT_PUBLIC_APP_URL=https://tel-calafkaaga-1-api-one.vercel.app
 NEXT_PUBLIC_API_URL=https://YOUR-NEST-API.example.com
 NEXT_PUBLIC_SOCKET_URL=https://YOUR-NEST-API.example.com
-# Nest CORS_ORIGINS must include https://tel-calafkaaga-1-api-one.vercel.app
+# Nest CORS_ORIGINS must explicitly include that preview URL if it should call the API (L5).
 ```
 
 Convex URL is **not** required for API-mode auth.

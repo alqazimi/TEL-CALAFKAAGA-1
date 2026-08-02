@@ -6,6 +6,7 @@ import {
   Headers,
   HttpCode,
   Param,
+  PayloadTooLargeException,
   Post,
   Req,
   UseGuards,
@@ -24,6 +25,7 @@ import { CsrfGuard } from "../auth/csrf";
 import { RateLimitGuard } from "../redis/rate-limit.guard";
 import { PaymentsService } from "./payments.service";
 import { EvcPaymentsService } from "./evc-payments.service";
+import { stripeWebhookMaxBodyBytes } from "./stripe-webhook-limits";
 
 function parseBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body);
@@ -87,6 +89,7 @@ export class PaymentsController {
   @Public()
   @Post("webhooks/stripe")
   @HttpCode(200)
+  @UseGuards(RateLimitGuard)
   async stripeWebhook(
     @Req() req: RawBodyRequest<Request>,
     @Headers("stripe-signature") signature?: string
@@ -96,6 +99,11 @@ export class PaymentsController {
       (typeof req.body === "string" || Buffer.isBuffer(req.body)
         ? req.body
         : Buffer.from(JSON.stringify(req.body ?? {})));
+    const size = Buffer.isBuffer(raw) ? raw.length : Buffer.byteLength(raw);
+    if (size > stripeWebhookMaxBodyBytes()) {
+      throw new PayloadTooLargeException("Payload Too Large");
+    }
+    // Pass through original raw bytes + signature unchanged for HMAC verify.
     return this.payments.handleWebhook(raw, signature);
   }
 
@@ -107,7 +115,7 @@ export class PaymentsController {
     const parsed = parseBody(
       z.object({
         contentType: z.string().min(3).max(100),
-        sizeBytes: z.number().int().positive().optional(),
+        sizeBytes: z.number().int().positive(),
       }),
       body
     );

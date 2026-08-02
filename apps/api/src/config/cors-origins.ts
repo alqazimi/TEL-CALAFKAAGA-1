@@ -1,6 +1,10 @@
 /**
  * Browser origins allowed to call this API with credentials.
- * Merges CORS_ORIGINS, APP_URL, and known Hel production frontends.
+ *
+ * L5: Production / Render trust only explicitly configured origins
+ * (CORS_ORIGINS, APP_URL, CORS_ORIGIN). No hardcoded Vercel preview hosts.
+ *
+ * Development falls back to localhost / Capacitor defaults when unset.
  */
 export function resolveCorsOrigins(
   env: NodeJS.ProcessEnv = process.env
@@ -11,7 +15,7 @@ export function resolveCorsOrigins(
       .map((s) => s.trim().replace(/\/$/, ""))
       .filter(Boolean);
 
-  const defaults = [
+  const localDefaults = [
     "http://127.0.0.1:3001",
     "http://localhost:3001",
     "http://127.0.0.1:3000",
@@ -21,12 +25,6 @@ export function resolveCorsOrigins(
     "ionic://localhost",
     "http://localhost",
     "https://localhost",
-  ];
-
-  const productionFrontends = [
-    "https://www.helcalafkaaga.com",
-    "https://helcalafkaaga.com",
-    "https://tel-calafkaaga-1-api-one.vercel.app",
   ];
 
   const configured = [
@@ -40,10 +38,10 @@ export function resolveCorsOrigins(
     Boolean(env.RENDER) ||
     Boolean(env.RENDER_SERVICE_ID);
 
-  return [
-    ...new Set([
-      ...(configured.length > 0 ? configured : defaults),
-      ...(isProd ? productionFrontends : []),
-    ]),
-  ];
+  if (isProd) {
+    // Explicit env only — preview/staging hosts must be listed in CORS_ORIGINS.
+    return [...new Set(configured)];
+  }
+
+  return [...new Set(configured.length > 0 ? configured : localDefaults)];
 }

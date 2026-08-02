@@ -37,6 +37,7 @@ export const AUTH_FAILED_MESSAGE = "Invalid email or password";
 export const RESET_GENERIC_MESSAGE =
   "A password reset link has been sent to your email. Check your inbox and spam folder.";
 
+/** @deprecated M2 — never return this from forgot-password (enumeration). */
 export const RESET_NOT_FOUND_MESSAGE =
   "No account found with this email. Please register first, or check for typos.";
 

@@ -1,3 +1,6 @@
+import { sanitizeLogMessage } from "../observability/log-redact";
+import { escapeHtml } from "../mail/html-escape";
+
 export interface MailMessage {
   to: string;
   subject: string;
@@ -24,13 +27,11 @@ export class ConsoleMailAdapter implements MailAdapter {
         "MAIL_DRIVER=console cannot send email in production. Set MAIL_DRIVER=resend and RESEND_API_KEY."
       );
     }
+    // Mail delivery still receives the full message; logs get a sanitized copy.
     const redacted = {
       to: message.to,
       subject: message.subject,
-      text: message.text.replace(
-        /([A-Za-z0-9_-]{20,})/g,
-        (m) => `${m.slice(0, 4)}…[REDACTED]`
-      ),
+      text: sanitizeLogMessage(message.text),
     };
     console.info("[mail:console]", JSON.stringify(redacted));
   }
@@ -71,7 +72,7 @@ export class ResendMailAdapter implements MailAdapter {
         text: message.text,
         html:
           message.html ??
-          `<p>${message.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>")}</p>`,
+          `<p>${escapeHtml(message.text).replace(/\n/g, "<br/>")}</p>`,
       }),
     });
     if (!res.ok) {

@@ -75,6 +75,7 @@ export class SessionService {
             emailNormalized: true,
             mustResetPassword: true,
             emailVerificationTime: true,
+            mfaEnabled: true,
             profile: {
               select: {
                 id: true,

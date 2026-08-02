@@ -50,16 +50,9 @@ function ApiForgotPasswordInner() {
     setSending(true);
     try {
       const result = await auth.forgotPassword(normalizeAuthEmail(data.email));
-      if (!result.found) {
-        toast.error(t("auth.errorNoAccount"));
-        return;
-      }
-      if (!result.sent) {
-        toast.error(t("auth.resetSendFailed"));
-        return;
-      }
+      // M2: never branch on account existence — HTTP 200 always means generic success.
       setSent(true);
-      toast.success(t("auth.resetLinkSent"));
+      toast.success(result.message || t("auth.resetLinkSent"));
     } catch (error) {
       toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed"), t));
     } finally {

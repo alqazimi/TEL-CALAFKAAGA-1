@@ -7,6 +7,7 @@ import { IdleSessionGuard } from "@/components/auth/idle-session-guard";
 import { ApiAuthProvider } from "@/components/auth/api-auth-provider";
 import { ForcedPasswordResetGate } from "@/components/auth/forced-password-reset-gate";
 import { EmailVerificationGate } from "@/components/auth/email-verification-gate";
+import { MfaEnrollmentGate } from "@/components/auth/mfa-enrollment-gate";
 import { LanguageProvider } from "@/lib/i18n/context";
 import { validateFrontendEnv } from "@/data/env";
 
@@ -25,7 +26,9 @@ export function Providers({ children }: { children: ReactNode }) {
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <IdleSessionGuard />
           <ForcedPasswordResetGate>
-            <EmailVerificationGate>{children}</EmailVerificationGate>
+            <EmailVerificationGate>
+              <MfaEnrollmentGate>{children}</MfaEnrollmentGate>
+            </EmailVerificationGate>
           </ForcedPasswordResetGate>
           <Toaster position="top-right" richColors />
         </ThemeProvider>

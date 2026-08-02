@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { buildContentSecurityPolicy } from "./src/lib/security/content-security-policy";
 
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
@@ -14,6 +15,16 @@ const securityHeaders = [
   {
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(self)",
+  },
+  // L2: production-safe CSP (see src/lib/security/content-security-policy.ts).
+  {
+    key: "Content-Security-Policy",
+    value: buildContentSecurityPolicy({
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+      NEXT_PUBLIC_SOCKET_URL: process.env.NEXT_PUBLIC_SOCKET_URL,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    }),
   },
 ];
 

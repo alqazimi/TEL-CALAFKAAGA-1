@@ -63,7 +63,7 @@ const waliSchema = z.object({
 const signUploadSchema = z.object({
   contentType: z.string().min(3).max(100),
   slot: z.enum(["main", "additional", "private"]).default("additional"),
-  sizeBytes: z.number().int().positive().optional(),
+  sizeBytes: z.number().int().positive(),
 });
 
 const confirmUploadSchema = z.object({
@@ -245,6 +245,7 @@ export class ProfileController {
   @Post("photos/sign-upload")
   @HttpCode(200)
   @RequireProfile()
+  @UseGuards(RateLimitGuard)
   async signUpload(
     @CurrentUser() user: RequestUser,
     @Body() body: unknown
@@ -260,6 +261,7 @@ export class ProfileController {
   @Post("photos/confirm-upload")
   @HttpCode(200)
   @RequireProfile()
+  @UseGuards(RateLimitGuard)
   async confirmUpload(
     @CurrentUser() user: RequestUser,
     @Body() body: unknown

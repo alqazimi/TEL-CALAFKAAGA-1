@@ -1,5 +1,4 @@
 import { io, type Socket } from "socket.io-client";
-import { getApiSessionToken } from "../api-client";
 import { getSocketUrl } from "../provider";
 import { track } from "../telemetry";
 
@@ -27,10 +26,9 @@ function ensureSocket(): Socket | null {
   if (socket) return socket;
 
   const url = getSocketUrl();
-  const sessionToken = getApiSessionToken();
+  // H5: authenticate Socket.IO via HttpOnly session cookie (withCredentials).
   socket = io(url, {
     withCredentials: true,
-    auth: sessionToken ? { token: sessionToken } : undefined,
     transports: ["websocket", "polling"],
     autoConnect: true,
     reconnection: true,

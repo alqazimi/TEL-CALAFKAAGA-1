@@ -31,6 +31,7 @@ import {
   PaymentReconcileQueueService,
   type PaymentReconcileJob,
 } from "../queue/payment-email-queue.service";
+import { claimStripeWebhookEvent } from "./stripe-webhook-claim";
 
 @Injectable()
 export class PaymentsService implements OnModuleInit {
@@ -295,28 +296,24 @@ export class PaymentsService implements OnModuleInit {
       .update(typeof rawBody === "string" ? rawBody : rawBody)
       .digest("hex");
 
-    const existing = await this.prisma.stripeWebhookEvent.findUnique({
-      where: { stripeEventId: event.id },
+    // M6: durable atomic claim via UNIQUE(stripe_event_id) — never find-then-create.
+    const claim = await claimStripeWebhookEvent(this.prisma, {
+      stripeEventId: event.id,
+      eventType: event.type,
+      payloadHash,
     });
-    if (existing?.status === "completed") {
+
+    if (claim.outcome === "duplicate_completed") {
       return { received: true, duplicate: true };
     }
+    if (claim.outcome === "busy") {
+      // Another instance owns a fresh processing claim — ask Stripe to retry.
+      throw new ServiceUnavailableException(
+        "Webhook event is already being processed. Retry later."
+      );
+    }
 
-    const row =
-      existing ??
-      (await this.prisma.stripeWebhookEvent.create({
-        data: {
-          stripeEventId: event.id,
-          eventType: event.type,
-          payloadHash,
-          status: "received",
-        },
-      }));
-
-    await this.prisma.stripeWebhookEvent.update({
-      where: { id: row.id },
-      data: { status: "processing" },
-    });
+    const row = claim.row;
 
     try {
       if (event.type === "checkout.session.completed") {
@@ -331,6 +328,8 @@ export class PaymentsService implements OnModuleInit {
         const session = event.data.object as { id: string };
         await this.expireSession(session.id);
       }
+      // Unknown signed types: record completed with no business effects so Stripe
+      // does not retry forever.
 
       await this.prisma.stripeWebhookEvent.update({
         where: { id: row.id },

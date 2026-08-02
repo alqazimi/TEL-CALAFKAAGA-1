@@ -6,7 +6,12 @@ import {
 import { disconnectRealtime } from "../realtime/socket-client";
 import { track } from "../telemetry";
 import type { AccessStateLike, SessionUser } from "../types";
-import type { AuthAdapter, LoginResult } from "./types";
+import type {
+  AuthAdapter,
+  LoginResult,
+  MfaEnrollStartResult,
+  MfaStatus,
+} from "./types";
 
 type NestAuthUser = {
   id: string;
@@ -18,6 +23,8 @@ type NestAuthUser = {
   hasPaid?: boolean;
   mustResetPassword?: boolean;
   emailVerified?: boolean;
+  mfaEnabled?: boolean;
+  mfaEnrollmentRequired?: boolean;
   profile?: Record<string, unknown> | null;
   [key: string]: unknown;
 };
@@ -54,6 +61,8 @@ function toSessionUser(raw: NestAuthUser | null | undefined): SessionUser | null
     banned,
     mustResetPassword: Boolean(raw.mustResetPassword),
     emailVerified: raw.emailVerified !== false,
+    mfaEnabled: Boolean(raw.mfaEnabled),
+    mfaEnrollmentRequired: Boolean(raw.mfaEnrollmentRequired),
     profile: {
       ...(nested ?? {}),
       role,
@@ -61,21 +70,33 @@ function toSessionUser(raw: NestAuthUser | null | undefined): SessionUser | null
       banned,
       mustResetPassword: Boolean(raw.mustResetPassword),
       emailVerified: raw.emailVerified !== false,
+      mfaEnabled: Boolean(raw.mfaEnabled),
+      mfaEnrollmentRequired: Boolean(raw.mfaEnrollmentRequired),
     },
   };
 }
 
 function toLoginResult(
-  res: (LoginResult & {
+  res: {
+    mfaRequired?: boolean;
+    mfaToken?: string;
+    expiresAt?: string;
     csrfToken?: string;
     user?: NestAuthUser;
-  }) | null
+  } | null
 ): LoginResult {
+  if (res?.mfaRequired && res.mfaToken) {
+    clearApiAuthStorage();
+    return {
+      mfaRequired: true,
+      mfaToken: res.mfaToken,
+      expiresAt: res.expiresAt ?? "",
+    };
+  }
   // H5: session is HttpOnly cookie only — never persist a session token.
   clearApiAuthStorage();
   if (res?.csrfToken) setApiCsrfToken(res.csrfToken);
   return {
-    ...res,
     user: toSessionUser(res?.user as NestAuthUser) as SessionUser,
     csrfToken: res?.csrfToken,
   };
@@ -99,10 +120,13 @@ export const apiAuth: AuthAdapter = {
 
   async login(email, password) {
     try {
-      const res = await apiClient.post<LoginResult & { csrfToken?: string }>(
-        "/auth/login",
-        { email, password }
-      );
+      const res = await apiClient.post<{
+        mfaRequired?: boolean;
+        mfaToken?: string;
+        expiresAt?: string;
+        csrfToken?: string;
+        user?: NestAuthUser;
+      }>("/auth/login", { email, password });
       return toLoginResult(res);
     } catch (e) {
       track("login_failure", { status: (e as { status?: number })?.status });
@@ -110,12 +134,27 @@ export const apiAuth: AuthAdapter = {
     }
   },
 
+  async verifyMfaLogin(mfaToken, code) {
+    try {
+      const res = await apiClient.post<{
+        csrfToken?: string;
+        user?: NestAuthUser;
+      }>("/auth/mfa/verify-login", { mfaToken, code });
+      return toLoginResult(res);
+    } catch (e) {
+      track("login_failure", {
+        status: (e as { status?: number })?.status,
+      });
+      throw e;
+    }
+  },
+
   async register(email, password) {
     try {
-      const res = await apiClient.post<LoginResult & { csrfToken?: string }>(
-        "/auth/register",
-        { email, password }
-      );
+      const res = await apiClient.post<{
+        csrfToken?: string;
+        user?: NestAuthUser;
+      }>("/auth/register", { email, password });
       return toLoginResult(res);
     } catch (e) {
       track("register_failure", { status: (e as { status?: number })?.status });
@@ -149,15 +188,13 @@ export const apiAuth: AuthAdapter = {
 
   async forgotPassword(email) {
     const res = await apiClient.post<{
-      found?: boolean;
-      sent?: boolean;
       message?: string;
     }>("/auth/forgot-password", { email });
+    const message = res?.message ?? "";
+    // M2: API always returns the same body; treat HTTP 200 as success.
     return {
-      found: res?.found === true,
-      sent: res?.sent === true,
-      message: res?.message ?? "",
-      ok: res?.sent === true,
+      message,
+      ok: true,
     };
   },
 
@@ -174,6 +211,39 @@ export const apiAuth: AuthAdapter = {
       currentPassword,
       newPassword,
     });
+  },
+
+  async mfaStatus() {
+    return apiClient.get<MfaStatus>("/auth/mfa/status");
+  },
+
+  async mfaEnrollStart() {
+    return apiClient.post<MfaEnrollStartResult>("/auth/mfa/enroll/start", {});
+  },
+
+  async mfaEnrollConfirm(code) {
+    return apiClient.post<{ ok: boolean; recoveryCodes: string[] }>(
+      "/auth/mfa/enroll/confirm",
+      { code }
+    );
+  },
+
+  async mfaEnrollCancel() {
+    return apiClient.post<{ ok: boolean }>("/auth/mfa/enroll/cancel", {});
+  },
+
+  async mfaDisable(password, code) {
+    return apiClient.post<{ ok: boolean }>("/auth/mfa/disable", {
+      password,
+      code,
+    });
+  },
+
+  async mfaRegenerateRecovery(code) {
+    return apiClient.post<{ ok: boolean; recoveryCodes: string[] }>(
+      "/auth/mfa/recovery/regenerate",
+      { code }
+    );
   },
 
   async bootstrapMe() {

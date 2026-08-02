@@ -19,7 +19,7 @@ describe("api-client", () => {
     globalThis.document = originalDocument;
   });
 
-  it("sends CSRF header on mutating methods", async () => {
+  it("sends CSRF header on mutating methods with credentials", async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = mock.fn(async (url: string | URL, init?: RequestInit) => {
       calls.push({ url: String(url), init });
@@ -35,6 +35,30 @@ describe("api-client", () => {
     assert.equal(headers["X-CSRF-Token"], "test-csrf-token");
     assert.equal(headers["Content-Type"], "application/json");
     assert.ok(headers["X-Request-Id"]);
+    assert.equal(headers["X-Session-Token"], undefined);
+    assert.equal(calls[0].init?.credentials, "include");
+  });
+
+  it("does not persist session tokens in sessionStorage", async () => {
+    const store = new Map<string, string>();
+    // @ts-expect-error test stub
+    globalThis.sessionStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        store.set(k, v);
+      },
+      removeItem: (k: string) => {
+        store.delete(k);
+      },
+    };
+
+    const { setApiSessionToken, getApiSessionToken } = await import(
+      "../api-client"
+    );
+    store.set("hel_session_token", "stolen");
+    setApiSessionToken("should-not-store");
+    assert.equal(getApiSessionToken(), undefined);
+    assert.equal(store.has("hel_session_token"), false);
   });
 
   it("does not retry POST payment without Idempotency-Key", async () => {

@@ -5,6 +5,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { MAIL_ADAPTER } from "../auth/auth.service";
 import type { MailAdapter } from "../auth/mail.adapter";
 import { PaymentEmailQueueService } from "../queue/payment-email-queue.service";
+import { escapeHtml } from "./html-escape";
 
 export type PaymentMailTemplate =
   | "payment_success"
@@ -147,7 +148,7 @@ export class PaymentMailService {
       to: opts.to,
       subject: opts.subject,
       text: opts.text,
-      html: `<p>${opts.text.replace(/</g, "&lt;")}</p>`,
+      html: `<p>${escapeHtml(opts.text)}</p>`,
     });
 
     await this.prisma.mailDelivery.updateMany({

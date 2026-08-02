@@ -19,6 +19,7 @@ import {
   RequireProfile,
   AllowDuringPasswordReset,
   AllowWhileUnverified,
+  AllowWhileMfaEnrollment,
   type AuthedRequest,
   type RequestUser,
 } from "./auth.guards";
@@ -31,6 +32,7 @@ import {
   issueCsrfCookie,
   setSessionCookie,
 } from "./csrf";
+import { MfaService } from "./mfa.service";
 
 function parseBody<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body);
@@ -76,11 +78,26 @@ const deleteAccountSchema = z.object({
   confirm: z.literal(true),
 });
 
+const mfaCodeSchema = z.object({
+  code: z.string().min(6).max(32),
+});
+
+const mfaLoginSchema = z.object({
+  mfaToken: z.string().min(10).max(512),
+  code: z.string().min(6).max(32),
+});
+
+const mfaDisableSchema = z.object({
+  password: z.string().min(1).max(256),
+  code: z.string().min(6).max(32),
+});
+
 @Controller("auth")
 @UseGuards(RateLimitGuard, CsrfGuard)
 export class AuthController {
   constructor(
     private readonly auth: AuthService,
+    private readonly mfa: MfaService,
     private readonly profiles: ProfileService,
     private readonly config: ConfigService
   ) {}
@@ -108,6 +125,14 @@ export class AuthController {
       ip: req.ip,
       userAgent: req.headers["user-agent"],
     });
+    if (result.kind === "mfa_required") {
+      // L4: no session cookie until TOTP succeeds.
+      return {
+        mfaRequired: true as const,
+        mfaToken: result.mfaToken,
+        expiresAt: result.expiresAt.toISOString(),
+      };
+    }
     const opts = this.cookieOpts();
     setSessionCookie(res, result.rawToken, {
       ...opts,
@@ -120,6 +145,97 @@ export class AuthController {
       // H5: session lives in HttpOnly hel_session cookie only — do not return
       // a browser-readable sessionToken.
     };
+  }
+
+  /** L4: finish staff login after password + TOTP (or recovery code). */
+  @Public()
+  @Post("mfa/verify-login")
+  @HttpCode(200)
+  async verifyMfaLogin(
+    @Body() body: unknown,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    const parsed = parseBody(mfaLoginSchema, body);
+    const result = await this.auth.completeMfaLogin({
+      mfaToken: parsed.mfaToken,
+      code: parsed.code,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+    const opts = this.cookieOpts();
+    setSessionCookie(res, result.rawToken, {
+      ...opts,
+      expiresAt: result.expiresAt,
+    });
+    const csrf = issueCsrfCookie(res, opts.secure, opts.domain);
+    return {
+      user: result.user,
+      csrfToken: csrf,
+    };
+  }
+
+  @Get("mfa/status")
+  @AllowWhileMfaEnrollment()
+  async mfaStatus(@CurrentUser() user: RequestUser) {
+    return this.mfa.status(user.id);
+  }
+
+  @Post("mfa/enroll/start")
+  @HttpCode(200)
+  @AllowWhileMfaEnrollment()
+  async mfaEnrollStart(@CurrentUser() user: RequestUser, @Req() req: Request) {
+    return this.mfa.enrollStart(user.id, req.ip);
+  }
+
+  @Post("mfa/enroll/confirm")
+  @HttpCode(200)
+  @AllowWhileMfaEnrollment()
+  async mfaEnrollConfirm(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown,
+    @Req() req: Request
+  ) {
+    const parsed = parseBody(mfaCodeSchema, body);
+    return this.mfa.enrollConfirm(user.id, parsed.code, req.ip);
+  }
+
+  @Post("mfa/enroll/cancel")
+  @HttpCode(200)
+  @AllowWhileMfaEnrollment()
+  async mfaEnrollCancel(@CurrentUser() user: RequestUser, @Req() req: Request) {
+    return this.mfa.enrollCancel(user.id, req.ip);
+  }
+
+  @Post("mfa/disable")
+  @HttpCode(200)
+  @AllowWhileMfaEnrollment()
+  async mfaDisable(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown,
+    @Req() req: Request
+  ) {
+    const parsed = parseBody(mfaDisableSchema, body);
+    return this.mfa.disable(user.id, {
+      password: parsed.password,
+      code: parsed.code,
+      ip: req.ip,
+    });
+  }
+
+  @Post("mfa/recovery/regenerate")
+  @HttpCode(200)
+  @AllowWhileMfaEnrollment()
+  async mfaRecoveryRegenerate(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown,
+    @Req() req: Request
+  ) {
+    const parsed = parseBody(mfaCodeSchema, body);
+    return this.mfa.regenerateRecoveryCodes(user.id, {
+      code: parsed.code,
+      ip: req.ip,
+    });
   }
 
   @Public()
@@ -182,6 +298,7 @@ export class AuthController {
   @HttpCode(200)
   @AllowDuringPasswordReset()
   @AllowWhileUnverified()
+  @AllowWhileMfaEnrollment()
   async logout(
     @CurrentUser() user: RequestUser,
     @Req() req: AuthedRequest,
@@ -196,6 +313,7 @@ export class AuthController {
   @HttpCode(200)
   @AllowDuringPasswordReset()
   @AllowWhileUnverified()
+  @AllowWhileMfaEnrollment()
   async logoutAll(
     @CurrentUser() user: RequestUser,
     @Req() req: Request,
@@ -209,6 +327,7 @@ export class AuthController {
   @Get("me")
   @AllowDuringPasswordReset()
   @AllowWhileUnverified()
+  @AllowWhileMfaEnrollment()
   async me(
     @CurrentUser() user: RequestUser,
     @Req() req: Request,
@@ -249,6 +368,7 @@ export class AuthController {
   @HttpCode(200)
   @AllowDuringPasswordReset()
   @AllowWhileUnverified()
+  @AllowWhileMfaEnrollment()
   async changePassword(
     @CurrentUser() user: RequestUser,
     @Body() body: unknown,
@@ -278,6 +398,7 @@ export class AuthController {
   @HttpCode(200)
   @AllowDuringPasswordReset()
   @AllowWhileUnverified()
+  @AllowWhileMfaEnrollment()
   async resendVerification(
     @CurrentUser() user: RequestUser,
     @Req() req: Request

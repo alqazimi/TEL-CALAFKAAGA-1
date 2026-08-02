@@ -8,12 +8,47 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module";
 import { RedisIoAdapter } from "./chat/redis-io.adapter";
 import { resolveCorsOrigins } from "./config/cors-origins";
+import {
+  isStripeWebhookPath,
+  stripeWebhookMaxBodyBytes,
+} from "./payments/stripe-webhook-limits";
+import { resolveRedisUrl } from "./redis/redis-url";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     rawBody: true,
+    // Register parsers ourselves so the Stripe size check runs first (M5).
+    bodyParser: false,
   });
+
+  // M5: reject oversized Stripe webhooks before JSON/raw-body parsing work.
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const path = req.path || req.url?.split("?")[0] || "";
+    if (req.method === "POST" && isStripeWebhookPath(path)) {
+      const max = stripeWebhookMaxBodyBytes();
+      const cl = req.headers["content-length"];
+      if (cl !== undefined) {
+        const n = Number(cl);
+        if (!Number.isFinite(n) || n < 0) {
+          res.status(400).json({
+            statusCode: 400,
+            message: "Invalid Content-Length",
+          });
+          return;
+        }
+        if (n > max) {
+          res.status(413).json({
+            statusCode: 413,
+            message: "Payload Too Large",
+          });
+          return;
+        }
+      }
+    }
+    next();
+  });
+
   // EVC mobile base64 uploads can be several MB (report allows ~12mb JSON).
   app.useBodyParser("json", { limit: "12mb" });
   app.useBodyParser("urlencoded", { limit: "12mb", extended: true });
@@ -21,7 +56,10 @@ async function bootstrap() {
   app.useLogger(logger);
   app.enableShutdownHooks();
 
-  const redisUrl = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
+  const redisUrl = resolveRedisUrl({
+    redisUrl: process.env.REDIS_URL,
+    redisPassword: process.env.REDIS_PASSWORD,
+  });
   const redisIoAdapter = new RedisIoAdapter(app, redisUrl);
   const redisOk = await redisIoAdapter.connectToRedis();
   app.useWebSocketAdapter(redisIoAdapter);

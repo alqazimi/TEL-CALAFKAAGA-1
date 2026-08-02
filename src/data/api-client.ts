@@ -39,7 +39,7 @@ export type ApiRequestOptions = {
 
 const CSRF_COOKIE = "hel_csrf";
 const CSRF_HEADER = "X-CSRF-Token";
-const SESSION_HEADER = "X-Session-Token";
+/** Legacy key — cleared on access; session must not live in JS storage (H5). */
 const SESSION_STORAGE_KEY = "hel_session_token";
 const CSRF_STORAGE_KEY = "hel_csrf_token";
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -54,18 +54,37 @@ function readCookie(name: string): string | undefined {
   return decodeURIComponent(match.slice(name.length + 1));
 }
 
-/** Persist Nest session for cross-site Vercel↔API (cookies often blocked). */
-export function setApiSessionToken(token: string | null | undefined) {
+function clearLegacySessionStorage() {
   if (typeof sessionStorage === "undefined") return;
-  if (token) sessionStorage.setItem(SESSION_STORAGE_KEY, token);
-  else sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  try {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {
+    // ignore quota / private mode
+  }
 }
 
+/**
+ * @deprecated H5 — browser sessions use HttpOnly cookies only.
+ * Calls clear any legacy sessionStorage token and do nothing else.
+ */
+export function setApiSessionToken(_token?: string | null) {
+  clearLegacySessionStorage();
+}
+
+/**
+ * @deprecated H5 — always returns undefined; clears legacy storage.
+ */
 export function getApiSessionToken(): string | undefined {
-  if (typeof sessionStorage === "undefined") return undefined;
-  return sessionStorage.getItem(SESSION_STORAGE_KEY) ?? undefined;
+  clearLegacySessionStorage();
+  return undefined;
 }
 
+/**
+ * Persist CSRF token from login/me JSON.
+ * Cross-site: CSRF cookie is on the API host and not readable via document.cookie
+ * on the Vercel origin, so the response body value is stored for the header.
+ * This is not a session credential.
+ */
 export function setApiCsrfToken(token: string | null | undefined) {
   if (typeof sessionStorage === "undefined") return;
   if (token) sessionStorage.setItem(CSRF_STORAGE_KEY, token);
@@ -80,7 +99,7 @@ export function getApiCsrfToken(): string | undefined {
 }
 
 export function clearApiAuthStorage() {
-  setApiSessionToken(null);
+  clearLegacySessionStorage();
   setApiCsrfToken(null);
 }
 
@@ -187,8 +206,8 @@ export async function apiFetch<T = unknown>(
         }
       }
 
-      const sessionToken = getApiSessionToken();
-      if (sessionToken) headers[SESSION_HEADER] = sessionToken;
+      // H5: never send X-Session-Token from the browser client.
+      clearLegacySessionStorage();
 
       if (MUTATING.has(method)) {
         const csrf = getApiCsrfToken();
@@ -278,13 +297,12 @@ export const apiClient = {
     const onAbort = () => controller.abort();
     opts?.signal?.addEventListener("abort", onAbort);
     try {
+      clearLegacySessionStorage();
       const headers: Record<string, string> = {
         Accept: "*/*",
         "X-Request-Id": newRequestId(),
         ...opts?.headers,
       };
-      const sessionToken = getApiSessionToken();
-      if (sessionToken) headers[SESSION_HEADER] = sessionToken;
       const res = await fetch(url, {
         method,
         credentials: "include",

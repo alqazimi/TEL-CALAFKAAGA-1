@@ -9,6 +9,8 @@ import { AuthController } from "./auth.controller";
 import { AuthGuard } from "./auth.guards";
 import { AuthService, MAIL_ADAPTER } from "./auth.service";
 import { createMailAdapter, type MailAdapter } from "./mail.adapter";
+import { CsrfGuard } from "./csrf";
+import { MfaService } from "./mfa.service";
 import { SessionService } from "./session.service";
 
 @Global()
@@ -22,8 +24,10 @@ import { SessionService } from "./session.service";
   controllers: [AuthController],
   providers: [
     SessionService,
+    MfaService,
     AuthService,
     RateLimitGuard,
+    CsrfGuard,
     {
       provide: MAIL_ADAPTER,
       useFactory: (config: ConfigService): MailAdapter => {
@@ -59,7 +63,19 @@ import { SessionService } from "./session.service";
       provide: APP_GUARD,
       useClass: AuthGuard,
     },
+    {
+      // Global CSRF for cookie-authenticated mutations (H5).
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
+    },
   ],
-  exports: [AuthService, SessionService, MAIL_ADAPTER, RateLimitGuard],
+  exports: [
+    AuthService,
+    MfaService,
+    SessionService,
+    MAIL_ADAPTER,
+    RateLimitGuard,
+    CsrfGuard,
+  ],
 })
 export class AuthModule {}

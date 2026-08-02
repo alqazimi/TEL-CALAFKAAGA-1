@@ -9,8 +9,10 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
+import type { Request } from "express";
 import { z } from "zod";
 import {
   CurrentUser,
@@ -18,6 +20,7 @@ import {
   type RequestUser,
 } from "../auth/auth.guards";
 import { CsrfGuard } from "../auth/csrf";
+import { MfaService } from "../auth/mfa.service";
 import { RateLimitGuard } from "../redis/rate-limit.guard";
 import { AdminUsersService } from "./admin-users.service";
 
@@ -34,7 +37,10 @@ function parseBody<T>(schema: z.ZodType<T>, body: unknown): T {
 @Controller("admin/users")
 @Roles("admin")
 export class AdminUsersController {
-  constructor(private readonly users: AdminUsersService) {}
+  constructor(
+    private readonly users: AdminUsersService,
+    private readonly mfa: MfaService
+  ) {}
 
   @Get()
   @UseGuards(RateLimitGuard)
@@ -290,6 +296,22 @@ export class AdminUsersController {
       body ?? {}
     );
     return this.users.banUser(user.id, id, false, parsed);
+  }
+
+  /** L4: owner (higher rank) can clear staff MFA after device loss. Audited. */
+  @Post(":id/reset-mfa")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  resetMfa(
+    @CurrentUser() user: RequestUser,
+    @Param("id") id: string,
+    @Req() req: Request
+  ) {
+    return this.mfa.adminResetMfa({
+      actorUserId: user.id,
+      actorRole: user.role === "owner" ? "owner" : "admin",
+      targetUserId: id,
+      ip: req.ip,
+    });
   }
 
   @Post(":id/pause")

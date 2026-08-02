@@ -8,11 +8,18 @@ import {
 } from "@nestjs/common";
 import type { Request } from "express";
 import { normalizeEmail } from "../auth/crypto-util";
+import {
+  stripeWebhookGlobalRateLimit,
+  stripeWebhookIpRateLimit,
+} from "../payments/stripe-webhook-limits";
 import { RedisService } from "../redis/redis.module";
 
 type LimitSpec = { windowSec: number; max: number };
 
-const LIMITS: Record<string, { ip?: LimitSpec; email?: LimitSpec; user?: LimitSpec }> = {
+const LIMITS: Record<
+  string,
+  { ip?: LimitSpec; email?: LimitSpec; user?: LimitSpec; global?: LimitSpec }
+> = {
   "auth.login": {
     ip: { windowSec: 15 * 60, max: 40 },
     email: { windowSec: 15 * 60, max: 15 },
@@ -38,6 +45,15 @@ const LIMITS: Record<string, { ip?: LimitSpec; email?: LimitSpec; user?: LimitSp
   "auth.verifyResend": {
     user: { windowSec: 15 * 60, max: 5 },
     ip: { windowSec: 15 * 60, max: 20 },
+  },
+  /** L4: TOTP / recovery code guesses during login challenge. */
+  "auth.mfaLogin": {
+    ip: { windowSec: 15 * 60, max: 30 },
+  },
+  /** L4: enroll confirm / disable / recovery regen (authenticated). */
+  "auth.mfa": {
+    user: { windowSec: 15 * 60, max: 20 },
+    ip: { windowSec: 15 * 60, max: 40 },
   },
   "profile.write": {
     user: { windowSec: 60, max: 60 },
@@ -78,8 +94,12 @@ const LIMITS: Record<string, { ip?: LimitSpec; email?: LimitSpec; user?: LimitSp
   "payments.evc": {
     user: { windowSec: 60, max: 20 },
   },
+  "media.upload": {
+    user: { windowSec: 60, max: 20 },
+  },
   "payments.webhook": {
-    ip: { windowSec: 60, max: 120 },
+    // Defaults overridden at runtime from STRIPE_WEBHOOK_RATE_* env (see hitWebhook).
+    ip: { windowSec: 60, max: 300 },
   },
   "admin.list": {
     user: { windowSec: 60, max: 120 },
@@ -136,7 +156,9 @@ export class RateLimitGuard implements CanActivate {
       bucket === "matches.action" ||
       bucket === "profile.write" ||
       bucket.startsWith("chat.") ||
-      bucket.startsWith("payments.") ||
+      // Stripe webhook: fail-open on Redis outage so signed deliveries can still
+      // reach handleWebhook (which may return retryable 5xx on its own).
+      (bucket.startsWith("payments.") && bucket !== "payments.webhook") ||
       bucket.startsWith("admin.") ||
       bucket.startsWith("support.") ||
       bucket === "profile.delete_account";
@@ -161,9 +183,19 @@ export class RateLimitGuard implements CanActivate {
         : null;
     const userId = req.user?.id;
 
+    if (bucket === "payments.webhook") {
+      const ipSpec = stripeWebhookIpRateLimit();
+      const globalSpec = stripeWebhookGlobalRateLimit();
+      // Keys use route + IP / shared global only — never secrets or signatures.
+      await this.hit(`rl:payments.webhook:ip:${ip}`, ipSpec);
+      await this.hit(`rl:payments.webhook:global`, globalSpec);
+      return true;
+    }
+
     if (spec.ip) await this.hit(`rl:${bucket}:ip:${ip}`, spec.ip);
     if (spec.email && email) await this.hit(`rl:${bucket}:email:${email}`, spec.email);
     if (spec.user && userId) await this.hit(`rl:${bucket}:user:${userId}`, spec.user);
+    if (spec.global) await this.hit(`rl:${bucket}:global`, spec.global);
 
     return true;
   }
@@ -171,6 +203,8 @@ export class RateLimitGuard implements CanActivate {
   private resolveBucket(req: Request): string | null {
     const path = req.path || "";
     const method = req.method.toUpperCase();
+    if (path.includes("/auth/mfa/verify-login")) return "auth.mfaLogin";
+    if (path.includes("/auth/mfa/")) return "auth.mfa";
     if (path.includes("/auth/login")) return "auth.login";
     if (path.includes("/auth/register/check-email")) return "auth.registerCheck";
     if (path.includes("/auth/register")) return "auth.register";
@@ -186,6 +220,16 @@ export class RateLimitGuard implements CanActivate {
     }
     if (method === "POST" && path.includes("/profile/geolocation/verify")) {
       return "profile.geocode";
+    }
+    if (
+      method === "POST" &&
+      (path.includes("/photos/sign-upload") ||
+        path.includes("/photos/confirm-upload") ||
+        path.includes("/images/sign-upload") ||
+        path.includes("/payments/evc/proof/sign-upload") ||
+        path.includes("/payments/evc/proof/upload"))
+    ) {
+      return "media.upload";
     }
     if (
       method !== "GET" &&

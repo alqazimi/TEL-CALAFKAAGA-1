@@ -81,7 +81,7 @@ export class ConversationController {
     const parsed = parseBody(
       z.object({
         contentType: z.string().min(3).max(100),
-        sizeBytes: z.number().int().positive().optional(),
+        sizeBytes: z.number().int().positive(),
       }),
       body
     );

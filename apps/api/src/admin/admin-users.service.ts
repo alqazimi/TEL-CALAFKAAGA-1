@@ -20,13 +20,13 @@ import { ScoreQueueService } from "../queue/score-queue.service";
 import { NotificationQueueService } from "../queue/notification-queue.service";
 import { MAIL_ADAPTER } from "../auth/auth.service";
 import type { MailAdapter } from "../auth/mail.adapter";
+import { escapeHtml } from "../mail/html-escape";
 import { AuditLogService } from "./audit-log.service";
 import { DeletionService } from "./deletion.service";
 import { MetricsService } from "./metrics.service";
 import { MediaAccessService } from "../media/media-access.service";
 import { resolveProfileMainImageUrl } from "../media/profile-image-url";
 import {
-  assertCanBanTarget,
   assertCanRejectTarget,
   parseLimit,
 } from "./admin-auth.helpers";
@@ -118,7 +118,7 @@ export class AdminUsersService {
         to: user.email,
         subject: opts.title,
         text: `${opts.body}\n\n${opts.emailCta?.label ?? "Open app"}: ${absolute}`,
-        html: `<p>${opts.body}</p><p><a href="${absolute}">${opts.emailCta?.label ?? "Open app"}</a></p>`,
+        html: `<p>${escapeHtml(opts.body)}</p><p><a href="${escapeHtml(absolute)}">${escapeHtml(opts.emailCta?.label ?? "Open app")}</a></p>`,
       });
       await this.notifQueue.enqueueEmailStub({
         notificationId: notification.id,

@@ -7,10 +7,13 @@ import {
   createParamDecorator,
   SetMetadata,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
+import { isStaffRole } from "../common/access";
 import { AUTH_FAILED_MESSAGE } from "./crypto-util";
 import { SessionService } from "./session.service";
+import { isStaffMfaRequired } from "./staff-mfa-policy";
 
 export const IS_PUBLIC_KEY = "isPublic";
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
@@ -41,6 +44,17 @@ export const AllowWhileUnverified = () =>
 /** Stable machine-readable denial for missing email verification. */
 export const EMAIL_VERIFICATION_REQUIRED = "EMAIL_VERIFICATION_REQUIRED";
 
+/**
+ * L4: route may run while staff MFA enrollment is still required
+ * (REQUIRE_STAFF_MFA and !mfaEnabled).
+ */
+export const ALLOW_WHILE_MFA_ENROLLMENT_KEY = "allowWhileMfaEnrollment";
+export const AllowWhileMfaEnrollment = () =>
+  SetMetadata(ALLOW_WHILE_MFA_ENROLLMENT_KEY, true);
+
+/** Stable machine-readable denial for missing staff MFA enrollment. */
+export const MFA_ENROLLMENT_REQUIRED = "MFA_ENROLLMENT_REQUIRED";
+
 export type RequestUser = {
   id: string;
   email: string | null;
@@ -51,6 +65,13 @@ export type RequestUser = {
   mustResetPassword: boolean;
   /** True when User.emailVerificationTime is set. */
   emailVerified: boolean;
+  /** Live User.mfaEnabled from the session load. */
+  mfaEnabled: boolean;
+  /**
+   * True when REQUIRE_STAFF_MFA is on, role is staff, and MFA is not enabled.
+   * Session exists but is restricted to enrollment allowlist routes.
+   */
+  mfaEnrollmentRequired: boolean;
   sessionId: string;
 };
 
@@ -71,7 +92,8 @@ export const CurrentUser = createParamDecorator(
 export class AuthGuard implements CanActivate {
   constructor(
     private readonly sessions: SessionService,
-    private readonly reflector: Reflector
+    private readonly reflector: Reflector,
+    private readonly config: ConfigService
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -118,28 +140,41 @@ export class AuthGuard implements CanActivate {
     );
 
     const profile = session.user.profile;
+    const role = profile?.role ?? "user";
+    const mfaEnabled = session.user.mfaEnabled === true;
+    const mfaEnrollmentRequired =
+      isStaffMfaRequired(this.config) &&
+      isStaffRole(role) &&
+      !mfaEnabled;
+
     req.rawSessionToken = raw;
     req.user = {
       id: session.user.id,
       email: session.user.email,
-      role: profile?.role ?? "user",
+      role,
       banned: profile?.banned ?? false,
       hasProfile: !!profile,
       hasPaid: profile?.hasPaid ?? false,
       mustResetPassword: session.user.mustResetPassword === true,
       emailVerified: session.user.emailVerificationTime != null,
+      mfaEnabled,
+      mfaEnrollmentRequired,
       sessionId: session.id,
     };
 
     if (isPublic) return true;
 
-    // Banned / deleted-style blocks take precedence over forced reset.
+    // Precedence:
+    // 1) authentication (above)
+    // 2) banned/deleted/suspended
+    // 3) mustResetPassword (M4)
+    // 4) email verification (M3)
+    // 5) required staff MFA enrollment (L4)
+    // 6) role / profile / paid authorization
     if (req.user.banned) {
       throw new ForbiddenException("Unable to access this account");
     }
 
-    // M4: central forced-reset — deny all non-allowlisted authenticated routes.
-    // Precedence: banned → mustResetPassword → email verification → roles.
     if (req.user.mustResetPassword) {
       const allowReset = this.reflector.getAllAndOverride<boolean>(
         ALLOW_DURING_PASSWORD_RESET_KEY,
@@ -154,7 +189,6 @@ export class AuthGuard implements CanActivate {
       }
     }
 
-    // M3: unverified email — deny normal product routes by default.
     if (!req.user.emailVerified) {
       const allowUnverified = this.reflector.getAllAndOverride<boolean>(
         ALLOW_WHILE_UNVERIFIED_KEY,
@@ -165,6 +199,20 @@ export class AuthGuard implements CanActivate {
           statusCode: 403,
           message: "Email verification required",
           code: EMAIL_VERIFICATION_REQUIRED,
+        });
+      }
+    }
+
+    if (req.user.mfaEnrollmentRequired) {
+      const allowMfaEnroll = this.reflector.getAllAndOverride<boolean>(
+        ALLOW_WHILE_MFA_ENROLLMENT_KEY,
+        [context.getHandler(), context.getClass()]
+      );
+      if (!allowMfaEnroll) {
+        throw new ForbiddenException({
+          statusCode: 403,
+          message: "Staff MFA enrollment required",
+          code: MFA_ENROLLMENT_REQUIRED,
         });
       }
     }

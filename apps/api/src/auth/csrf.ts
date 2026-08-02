@@ -16,6 +16,7 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 function isCsrfExemptPath(path: string): boolean {
   if (
     path.endsWith("/auth/login") ||
+    path.endsWith("/auth/mfa/verify-login") ||
     path.endsWith("/auth/register") ||
     path.endsWith("/auth/register/check-email") ||
     path.endsWith("/auth/forgot-password") ||

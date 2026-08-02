@@ -9,8 +9,11 @@ import {
   WebSocketServer,
 } from "@nestjs/websockets";
 import { Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { Server, Socket } from "socket.io";
 import { SessionService } from "../auth/session.service";
+import { isStaffMfaRequired } from "../auth/staff-mfa-policy";
+import { isStaffRole } from "../common/access";
 import { isInteractionLocked } from "../common/review-status";
 import { ConversationService } from "./conversation.service";
 import { ChatRealtimeService } from "./chat-realtime.service";
@@ -58,7 +61,8 @@ export class ChatGateway
     private readonly sessions: SessionService,
     private readonly conversations: ConversationService,
     private readonly realtime: ChatRealtimeService,
-    private readonly redis: RedisService
+    private readonly redis: RedisService,
+    private readonly config: ConfigService
   ) {}
 
   afterInit(server: Server) {
@@ -139,13 +143,22 @@ export class ChatGateway
     }
 
     const profile = session.user.profile;
+    const role = profile?.role ?? "user";
+    if (
+      isStaffMfaRequired(this.config) &&
+      isStaffRole(role) &&
+      session.user.mfaEnabled !== true
+    ) {
+      throw new Error("mfa_enrollment_required");
+    }
+
     if (profile && isInteractionLocked(profile)) {
       throw new Error(profile.banned ? "banned" : "paused");
     }
 
     client.data.userId = session.user.id;
     client.data.sessionId = session.id;
-    client.data.role = profile?.role ?? "user";
+    client.data.role = role;
     client.data.banned = false;
     await client.join(`user:${session.user.id}`);
   }

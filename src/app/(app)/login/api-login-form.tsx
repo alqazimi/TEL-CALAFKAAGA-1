@@ -9,41 +9,123 @@ import { normalizeAuthEmail } from "@/lib/auth-email";
 import { useTranslation } from "@/lib/i18n/context";
 import { useUnifiedAuth } from "@/data/auth/hooks";
 import { auth } from "@/data/auth";
+import { useApiAuth } from "@/components/auth/api-auth-provider";
 import { LoginFormShell, type LoginForm } from "./login-form-shell";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { GuestGate } from "@/components/auth/guest-gate";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FormField } from "@/components/ui/form-field";
+import { APP_NAME } from "@/lib/constants";
 
 export default function ApiLoginForm() {
   const { login, refresh } = useUnifiedAuth();
+  const { verifyMfaLogin } = useApiAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
   const { t } = useTranslation();
+
+  const finishLogin = async () => {
+    await refresh?.();
+    const user = await auth.getCurrentUser();
+    toast.success(t("auth.welcomeBackToast"));
+    const profileForRoute =
+      (user?.profile as Parameters<typeof getAuthenticatedHomeRoute>[0]) ??
+      ({
+        role: (user as { role?: string } | null)?.role,
+        hasPaid: (user as { hasPaid?: boolean } | null)?.hasPaid,
+        questionnaireComplete: true,
+        registrationComplete: true,
+      } as Parameters<typeof getAuthenticatedHomeRoute>[0]);
+    router.push(getAuthenticatedHomeRoute(profileForRoute));
+  };
 
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     try {
-      await Promise.race([
+      const result = await Promise.race([
         login!(normalizeAuthEmail(data.email), data.password),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error(t("common.loadingStuck"))), 20_000)
         ),
       ]);
-      await refresh?.();
-      const user = await auth.getCurrentUser();
-      toast.success(t("auth.welcomeBackToast"));
-      const profileForRoute =
-        (user?.profile as Parameters<typeof getAuthenticatedHomeRoute>[0]) ??
-        ({
-          role: (user as { role?: string } | null)?.role,
-          hasPaid: (user as { hasPaid?: boolean } | null)?.hasPaid,
-          questionnaireComplete: true,
-          registrationComplete: true,
-        } as Parameters<typeof getAuthenticatedHomeRoute>[0]);
-      router.push(getAuthenticatedHomeRoute(profileForRoute));
+      if (result && "mfaRequired" in result && result.mfaRequired) {
+        setMfaToken(result.mfaToken);
+        setMfaCode("");
+        return;
+      }
+      await finishLogin();
     } catch (error) {
       toast.error(getAuthErrorMessage(error, t("validation.invalidCredentials"), t));
     } finally {
       setLoading(false);
     }
   };
+
+  const onVerifyMfa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaToken) return;
+    setLoading(true);
+    try {
+      await verifyMfaLogin(mfaToken, mfaCode.trim());
+      setMfaToken(null);
+      await finishLogin();
+    } catch (error) {
+      toast.error(getAuthErrorMessage(error, t("auth.mfaInvalid"), t));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (mfaToken) {
+    return (
+      <GuestGate>
+        <AuthShell
+          title={t("auth.mfaTitle")}
+          description={t("auth.mfaDesc")}
+          eyebrow={t("auth.signInEyebrow")}
+          footer={
+            <button
+              type="button"
+              className="text-sm font-semibold text-primary hover:underline"
+              onClick={() => {
+                setMfaToken(null);
+                setMfaCode("");
+              }}
+            >
+              {t("auth.mfaBack")}
+            </button>
+          }
+        >
+          <form onSubmit={onVerifyMfa} className="space-y-5">
+            <FormField label={t("auth.mfaCode")} htmlFor="mfaCode">
+              <Input
+                id="mfaCode"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                className="h-13 rounded-2xl text-center text-lg tracking-widest"
+                value={mfaCode}
+                onChange={(ev) => setMfaCode(ev.target.value)}
+                placeholder="000000"
+                maxLength={32}
+                required
+              />
+            </FormField>
+            <Button
+              type="submit"
+              className="h-13 w-full rounded-2xl"
+              disabled={loading || mfaCode.trim().length < 6}
+            >
+              {loading ? t("auth.mfaVerifying") : t("auth.mfaVerify")}
+            </Button>
+            <p className="sr-only">{APP_NAME}</p>
+          </form>
+        </AuthShell>
+      </GuestGate>
+    );
+  }
 
   return <LoginFormShell onSubmit={onSubmit} loading={loading} />;
 }

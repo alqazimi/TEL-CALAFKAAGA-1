@@ -23,7 +23,7 @@ const steps = [
   ],
   [
     "6. CORS on API",
-    "CORS_ORIGINS must include www + apex + any Vercel preview URLs",
+    "CORS_ORIGINS must include www + apex; add Vercel preview URLs only when intentional (L5)",
   ],
   ["7. Redeploy frontend", "Vercel Redeploy after changing NEXT_PUBLIC_* vars"],
   ["8. Smoke test", "Login, profile photo, chat, payment status"],

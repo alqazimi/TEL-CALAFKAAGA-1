@@ -33,7 +33,16 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--requirepass",
+        "${REDIS_PASSWORD:?set}",
+      ]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?set}
     volumes:
       - hel_staging_redis:/data
     healthcheck:
@@ -88,7 +97,8 @@ services:
       NODE_ENV: staging
       PORT: 4000
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set}
       S3_ENDPOINT: http://minio:9000
       S3_FORCE_PATH_STYLE: "true"
       S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER}

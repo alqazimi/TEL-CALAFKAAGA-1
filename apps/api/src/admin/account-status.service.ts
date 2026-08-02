@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -12,7 +13,11 @@ import { PrismaService } from "../prisma/prisma.service";
 import { isStaffRole } from "../common/access";
 import { AuditLogService } from "./audit-log.service";
 import { MetricsService } from "./metrics.service";
-import { assertCanBanTarget } from "./admin-auth.helpers";
+import {
+  assertCanBanTarget,
+  assertNotSelf,
+  STAFF_ACTION_FORBIDDEN,
+} from "./admin-auth.helpers";
 
 export type EffectiveStatus =
   | ReviewStatus
@@ -164,9 +169,22 @@ export class AccountStatusService {
         where: { id: input.profileId },
       });
       if (!profile) throw new NotFoundException("Profile not found");
-      if (isStaffRole(profile.role) && input.event !== "unban") {
-        // Ban/reject/pause of staff handled by assert helpers below for ban;
-        // approve/reject already blocked elsewhere.
+
+      const actor = await tx.profile.findUnique({
+        where: { userId: input.actorUserId },
+        select: { userId: true, role: true },
+      });
+      // Staff-driven transitions require a live staff actor from the DB.
+      // Member self-resubmit is the only exception.
+      if (input.event !== "resubmit") {
+        if (!actor || !isStaffRole(actor.role)) {
+          throw new ForbiddenException(STAFF_ACTION_FORBIDDEN);
+        }
+        assertNotSelf(
+          input.actorUserId,
+          profile.userId,
+          STAFF_ACTION_FORBIDDEN
+        );
       }
 
       const previous = asReviewStatus(profile.reviewStatus);
@@ -219,7 +237,12 @@ export class AccountStatusService {
           break;
         }
         case "ban": {
-          assertCanBanTarget(profile.role);
+          assertCanBanTarget({
+            actorUserId: input.actorUserId,
+            actorRole: actor!.role,
+            targetUserId: profile.userId,
+            targetRole: profile.role,
+          });
           if (profile.banned) {
             throw new BadRequestException("Member is already banned.");
           }
@@ -237,7 +260,12 @@ export class AccountStatusService {
           break;
         }
         case "unban": {
-          assertCanBanTarget(profile.role);
+          assertCanBanTarget({
+            actorUserId: input.actorUserId,
+            actorRole: actor!.role,
+            targetUserId: profile.userId,
+            targetRole: profile.role,
+          });
           if (!profile.banned) {
             throw new BadRequestException("Member is not banned.");
           }

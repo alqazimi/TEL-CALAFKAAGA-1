@@ -37,6 +37,7 @@ import { ProfilePhotoPreview } from "@/components/profile/profile-photo-preview"
 import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { ChangePasswordCard } from "@/components/profile/change-password-card";
+import { MfaSettingsCard } from "@/components/profile/mfa-settings-card";
 import { DeleteAccountCard } from "@/components/profile/delete-account-card";
 import { BlockedUsersCard } from "@/components/safety/blocked-users-card";
 import { PremiumSupportCard } from "@/components/premium/premium-support-card";
@@ -638,6 +639,7 @@ export function ProfileEditScreen({
                 </div>
               )}
               <ChangePasswordCard embedded />
+              {isStaff && <MfaSettingsCard embedded />}
               {!isStaff && <DeleteAccountCard embedded />}
               {isOwner && <AdminStaffInvitesPanel embedded />}
             </TabsContent>

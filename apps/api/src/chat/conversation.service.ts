@@ -17,12 +17,9 @@ import {
 } from "../common/review-status";
 import { MediaAccessService } from "../media/media-access.service";
 import { resolveProfileMainImageUrl, resolveAdditionalImageUrls } from "../media/profile-image-url";
+import { assertStoredUpload, assertUploadIntent } from "../media/upload-policy";
 import { PrismaService } from "../prisma/prisma.service";
-import {
-  ALLOWED_IMAGE_CONTENT_TYPES,
-  MAX_UPLOAD_BYTES,
-  canViewerSeePhotos,
-} from "../profile/photo-rules";
+import { canViewerSeePhotos } from "../profile/photo-rules";
 import { RedisService } from "../redis/redis.module";
 import { NotificationQueueService } from "../queue/notification-queue.service";
 import { ChatRealtimeService } from "./chat-realtime.service";
@@ -461,23 +458,18 @@ export class ConversationService {
       throw new ForbiddenException("You cannot message this user");
     }
 
-    const contentType = opts.contentType.toLowerCase().trim();
-    if (!ALLOWED_IMAGE_CONTENT_TYPES.has(contentType)) {
-      throw new BadRequestException(
-        "Only JPG, PNG, or WebP images are allowed"
-      );
-    }
-    if (opts.sizeBytes !== undefined && opts.sizeBytes > MAX_UPLOAD_BYTES) {
-      throw new BadRequestException(
-        "Image is too large. Please choose a photo under 2MB after compression."
-      );
-    }
+    const { contentType, sizeBytes, maxBytes } = assertUploadIntent({
+      purpose: "chat_image",
+      contentType: opts.contentType,
+      sizeBytes: opts.sizeBytes,
+    });
 
-    const ext = contentType.includes("png")
-      ? "png"
-      : contentType.includes("webp")
-        ? "webp"
-        : "jpg";
+    const ext =
+      contentType === "image/png"
+        ? "png"
+        : contentType === "image/webp"
+          ? "webp"
+          : "jpg";
     const localStorageId = `local_chat_${randomUUID()}`;
     const objectKey = `${conversationId}/${localStorageId}.${ext}`;
 
@@ -492,6 +484,7 @@ export class ConversationService {
         bucket: this.chatBucket,
         objectKey,
         contentType,
+        sizeBytes: BigInt(sizeBytes),
         ownerUserId: userId,
         convexOwnerUserId: senderUser?.convexId ?? profile.convexUserId,
         migrationStatus: "pending",
@@ -504,6 +497,7 @@ export class ConversationService {
         bucket: this.chatBucket,
         objectKey,
         contentType,
+        contentLength: sizeBytes,
       });
 
     return {
@@ -511,7 +505,7 @@ export class ConversationService {
       uploadUrl,
       expiresInSeconds,
       contentType,
-      maxBytes: MAX_UPLOAD_BYTES,
+      maxBytes,
     };
   }
 
@@ -580,16 +574,35 @@ export class ConversationService {
             "Image upload did not finish. Please try again."
           );
         }
-        if (head.sizeBytes <= 0 || head.sizeBytes > MAX_UPLOAD_BYTES) {
-          throw new BadRequestException(
-            "Image is too large. Please choose a photo under 2MB after compression."
-          );
+        const declared =
+          media.sizeBytes != null ? Number(media.sizeBytes) : undefined;
+        let verifiedType: string;
+        try {
+          ({ contentType: verifiedType } = assertStoredUpload({
+            purpose: "chat_image",
+            contentType: head.contentType ?? media.contentType,
+            sizeBytes: head.sizeBytes,
+            declaredSizeBytes: declared,
+          }));
+        } catch (err) {
+          await this.media.deleteObjectQuietly(media.bucket, media.objectKey);
+          await this.prisma.mediaObject
+            .update({
+              where: { id: media.id },
+              data: {
+                migrationStatus: "failed",
+                failureReason: "upload_validation_failed",
+                verifiedReadable: false,
+              },
+            })
+            .catch(() => undefined);
+          throw err;
         }
         await this.prisma.mediaObject.update({
           where: { id: media.id },
           data: {
             sizeBytes: BigInt(head.sizeBytes),
-            ...(head.contentType ? { contentType: head.contentType } : {}),
+            contentType: verifiedType,
             migrationStatus: "verified",
             verifiedReadable: true,
             migratedAt: new Date(),

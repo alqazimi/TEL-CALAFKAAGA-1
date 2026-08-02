@@ -68,7 +68,7 @@ function mockContext(opts: {
     }),
   };
 
-  return { guard: new AuthGuard(sessions as never, reflector), ctx, req };
+  return { guard: new AuthGuard(sessions as never, reflector, { get: () => undefined } as never), ctx, req };
 }
 
 const baseSession = {

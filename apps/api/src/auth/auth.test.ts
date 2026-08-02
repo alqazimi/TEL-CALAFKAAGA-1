@@ -427,6 +427,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
               },
             ],
           }),
+          update: async () => ({}),
         },
         authAccount: {
           update: async () => ({}),
@@ -447,8 +448,11 @@ describe("AuthService behaviour (mocked prisma)", () => {
       email: "np@example.com",
       password,
     });
-    assert.equal(result.user.hasProfile, false);
-    assert.equal(result.user.role, "user");
+    assert.equal(result.kind, "session");
+    if (result.kind === "session") {
+      assert.equal(result.user.hasProfile, false);
+      assert.equal(result.user.role, "user");
+    }
   });
 
   it("preserves admin and owner roles", async () => {
@@ -465,6 +469,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
               email: `${role}@example.com`,
               emailNormalized: `${role}@example.com`,
               mustResetPassword: false,
+              mfaEnabled: false,
               profile: { id: "p", role, banned: false, hasPaid: true },
               authAccounts: [
                 {
@@ -474,6 +479,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
                 },
               ],
             }),
+            update: async () => ({}),
           },
           authAccount: { update: async () => ({}) },
           authAuditEvent: { create: async () => ({}) },
@@ -491,25 +497,47 @@ describe("AuthService behaviour (mocked prisma)", () => {
       return auth.login({ email: `${role}@example.com`, password });
     }
 
-    assert.equal((await loginAs("admin")).user.role, "admin");
-    assert.equal((await loginAs("owner")).user.role, "owner");
+    const admin = await loginAs("admin");
+    const owner = await loginAs("owner");
+    assert.equal(admin.kind, "session");
+    assert.equal(owner.kind, "session");
+    if (admin.kind === "session") assert.equal(admin.user.role, "admin");
+    if (owner.kind === "session") assert.equal(owner.user.role, "owner");
   });
 
-  it("forgot-password reports missing emails and sends for known ones", async () => {
+  it("forgot-password returns identical generic response for missing and known emails (M2)", async () => {
     const { AuthService } = await import("./auth.service");
-    const { RESET_GENERIC_MESSAGE, RESET_NOT_FOUND_MESSAGE } = await import(
-      "./crypto-util"
-    );
-    const mail = { send: async () => {}, sent: [] as unknown[] };
+    const { RESET_GENERIC_MESSAGE } = await import("./crypto-util");
+    const mailMissing = { send: async () => {}, calls: 0 };
+    const mailPresent = {
+      send: async () => {
+        mailPresent.calls += 1;
+      },
+      calls: 0,
+    };
+    let tokenCreates = 0;
+    const audits: Array<{ action: string; metadata?: unknown; userId?: unknown }> =
+      [];
     const authMissing = new AuthService(
       {
         user: withFindMany(null),
         authAccount: { findFirst: async () => null },
-        authAuditEvent: { create: async () => ({}) },
+        authAuditEvent: {
+          create: async (args: { data: (typeof audits)[number] }) => {
+            audits.push(args.data);
+            return {};
+          },
+        },
+        passwordResetToken: {
+          create: async () => {
+            tokenCreates += 1;
+            return {};
+          },
+        },
       } as never,
       {} as never,
       { get: () => "test-session-secret-32chars-min!!" } as never,
-      mail as never
+      mailMissing as never
     );
     const authPresent = new AuthService(
       {
@@ -520,8 +548,18 @@ describe("AuthService behaviour (mocked prisma)", () => {
           profile: null,
           authAccounts: [],
         }),
-        passwordResetToken: { create: async () => ({}) },
-        authAuditEvent: { create: async () => ({}) },
+        passwordResetToken: {
+          create: async () => {
+            tokenCreates += 1;
+            return {};
+          },
+        },
+        authAuditEvent: {
+          create: async (args: { data: (typeof audits)[number] }) => {
+            audits.push(args.data);
+            return {};
+          },
+        },
       } as never,
       {} as never,
       {
@@ -530,16 +568,18 @@ describe("AuthService behaviour (mocked prisma)", () => {
             ? "http://127.0.0.1:3001"
             : "test-session-secret-32chars-min!!",
       } as never,
-      mail as never
+      mailPresent as never
     );
     const a = await authMissing.forgotPassword("missing@example.com");
     const b = await authPresent.forgotPassword("a@example.com");
-    assert.equal(a.found, false);
-    assert.equal(a.sent, false);
-    assert.equal(a.message, RESET_NOT_FOUND_MESSAGE);
-    assert.equal(b.found, true);
-    assert.equal(b.sent, true);
-    assert.equal(b.message, RESET_GENERIC_MESSAGE);
+    assert.deepEqual(a, b);
+    assert.equal(a.message, RESET_GENERIC_MESSAGE);
+    assert.equal(mailPresent.calls, 1);
+    assert.equal(tokenCreates, 1); // only known email stores a token
+    for (const ev of audits.filter((e) => e.action === "password_reset_request")) {
+      assert.equal(ev.userId ?? null, null);
+      assert.deepEqual(ev.metadata, { requested: true });
+    }
   });
 
   it("reset token rejects reuse and expiry", async () => {

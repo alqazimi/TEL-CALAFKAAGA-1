@@ -12,7 +12,7 @@ export type UnifiedAuth = {
   isLoading: boolean;
   user: SessionUser | null | undefined;
   signOut: () => Promise<void>;
-  login?: (email: string, password: string) => Promise<void>;
+  login?: (email: string, password: string) => Promise<LoginResult>;
   register?: (email: string, password: string) => Promise<LoginResult | void>;
   checkEmail?: (email: string) => Promise<{ available: boolean }>;
   refresh?: () => Promise<void>;

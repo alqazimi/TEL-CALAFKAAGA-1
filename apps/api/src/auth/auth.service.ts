@@ -3,18 +3,19 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Optional,
   ServiceUnavailableException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { AuthAuditAction, Gender, PasswordAlgo } from "@prisma/client";
 import { randomUUID } from "node:crypto";
+import { isStaffRole } from "../common/access";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   AUTH_FAILED_MESSAGE,
   REGISTER_FAILED_MESSAGE,
   RESET_GENERIC_MESSAGE,
-  RESET_NOT_FOUND_MESSAGE,
   generateToken,
   hashToken,
   hmacSha256Hex,
@@ -28,6 +29,7 @@ import {
 } from "./email-identity";
 import type { MailAdapter } from "./mail.adapter";
 import { escapeHtml } from "../mail/html-escape";
+import { MfaService } from "./mfa.service";
 import {
   hashPasswordPreferred,
   shouldRehashOnLogin,
@@ -36,6 +38,7 @@ import {
 import { SessionService } from "./session.service";
 import { computeAccessState } from "../common/access-state";
 import { PROFILE_DEFAULTS } from "../profile/questionnaire";
+import { isStaffMfaRequired } from "./staff-mfa-policy";
 
 export const MAIL_ADAPTER = "MAIL_ADAPTER";
 
@@ -50,6 +53,13 @@ export type AuthUserView = {
   mustResetPassword: boolean;
   /** True when User.emailVerificationTime is set (M3). */
   emailVerified: boolean;
+  /** Live MFA enrollment flag (L4). */
+  mfaEnabled: boolean;
+  /**
+   * True when REQUIRE_STAFF_MFA is on for staff without MFA.
+   * Session is restricted to enrollment allowlist routes.
+   */
+  mfaEnrollmentRequired: boolean;
   /** Member flags the app shell needs (nav, dashboard routing, greeting). */
   profile?: {
     role: "user" | "admin" | "owner";
@@ -71,7 +81,9 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly sessions: SessionService,
     private readonly config: ConfigService,
-    @Inject(MAIL_ADAPTER) private readonly mail: MailAdapter
+    @Inject(MAIL_ADAPTER) private readonly mail: MailAdapter,
+    /** Optional so existing unit tests keep constructing AuthService with 4 args. */
+    @Optional() private readonly mfa?: MfaService
   ) {}
 
   private ipHash(ip?: string): string | null {
@@ -102,22 +114,29 @@ export class AuthService {
     emailNormalized: string | null;
     mustResetPassword: boolean;
     emailVerificationTime?: Date | null;
+    mfaEnabled?: boolean;
     profile: {
       role: "user" | "admin" | "owner";
       banned: boolean;
       hasPaid: boolean;
     } | null;
   }): AuthUserView {
+    const role = user.profile?.role ?? "user";
+    const mfaEnabled = user.mfaEnabled === true;
+    const mfaEnrollmentRequired =
+      isStaffMfaRequired(this.config) && isStaffRole(role) && !mfaEnabled;
     return {
       id: user.id,
       email: user.email,
       emailNormalized: user.emailNormalized,
-      role: user.profile?.role ?? "user",
+      role,
       banned: user.profile?.banned ?? false,
       hasProfile: !!user.profile,
       hasPaid: user.profile?.hasPaid ?? false,
       mustResetPassword: user.mustResetPassword,
       emailVerified: user.emailVerificationTime != null,
+      mfaEnabled,
+      mfaEnrollmentRequired,
     };
   }
 
@@ -474,7 +493,19 @@ export class AuthService {
     password: string;
     ip?: string;
     userAgent?: string;
-  }): Promise<{ user: AuthUserView; rawToken: string; expiresAt: Date }> {
+  }): Promise<
+    | {
+        kind: "session";
+        user: AuthUserView;
+        rawToken: string;
+        expiresAt: Date;
+      }
+    | {
+        kind: "mfa_required";
+        mfaToken: string;
+        expiresAt: Date;
+      }
+  > {
     const emailNormalized = normalizeEmail(opts.email);
     const matches = emailNormalized
       ? await this.findUsersMatchingEmail(emailNormalized)
@@ -577,6 +608,21 @@ export class AuthService {
       }
     }
 
+    // L4: staff with MFA enabled must verify TOTP before any session is issued.
+    if (isStaffRole(user.profile?.role) && user.mfaEnabled) {
+      if (!this.mfa) {
+        throw new ServiceUnavailableException(
+          "MFA is required but unavailable. Try again later."
+        );
+      }
+      const challenge = await this.mfa.createLoginChallenge(user.id, opts.ip);
+      return {
+        kind: "mfa_required",
+        mfaToken: challenge.mfaToken,
+        expiresAt: challenge.expiresAt,
+      };
+    }
+
     const session = await this.sessions.createSession({
       userId: user.id,
       ip: opts.ip,
@@ -600,9 +646,30 @@ export class AuthService {
     });
 
     return {
+      kind: "session",
       user: this.toView(user),
       rawToken: session.rawToken,
       expiresAt: session.expiresAt,
+    };
+  }
+
+  /** Complete staff MFA challenge and issue the normal session cookie path. */
+  async completeMfaLogin(opts: {
+    mfaToken: string;
+    code: string;
+    ip?: string;
+    userAgent?: string;
+  }): Promise<{ user: AuthUserView; rawToken: string; expiresAt: Date }> {
+    if (!this.mfa) {
+      throw new ServiceUnavailableException(
+        "MFA is required but unavailable. Try again later."
+      );
+    }
+    const result = await this.mfa.completeLoginChallenge(opts);
+    return {
+      user: this.toView(result.user),
+      rawToken: result.rawToken,
+      expiresAt: result.expiresAt,
     };
   }
 
@@ -670,10 +737,16 @@ export class AuthService {
     await this.audit("logout_all", { userId, ip });
   }
 
+  /**
+   * M2: anti-enumeration forgot-password.
+   * Always returns the same HTTP body whether the email exists or not.
+   * Tokens/mail are only created for known accounts; missing accounts burn
+   * equivalent token crypto work so the cheap path is not an instant return.
+   */
   async forgotPassword(
     email: string,
     ip?: string
-  ): Promise<{ found: boolean; sent: boolean; message: string }> {
+  ): Promise<{ message: string }> {
     const emailNormalized = normalizeEmail(email);
     if (!emailNormalized || !emailNormalized.includes("@")) {
       throw new BadRequestException("Enter a valid email address");
@@ -705,22 +778,16 @@ export class AuthService {
       ? matches.find((m) => m.id === user.id) ?? null
       : null;
 
+    // Identical audit shape for found and missing (no existence flags / userId).
     await this.audit("password_reset_request", {
-      userId: fullUser?.id,
-      metadata: {
-        requested: true,
-        found: !!fullUser,
-        duplicateCount: matches.length,
-      },
+      metadata: { requested: true },
       ip,
     });
 
     if (!fullUser) {
-      return {
-        found: false,
-        sent: false,
-        message: RESET_NOT_FOUND_MESSAGE,
-      };
+      // Normalize cheap-path timing: same token generate+hash as the found path.
+      hashToken(generateToken(32));
+      return { message: RESET_GENERIC_MESSAGE };
     }
 
     const raw = generateToken(32);
@@ -753,24 +820,17 @@ export class AuthService {
         html,
       });
     } catch (err) {
+      // Do not surface mail failure to the client — 503 vs 200 would enumerate.
       await this.audit("password_reset_failure", {
-        userId: fullUser.id,
         metadata: {
           reason: "mail_send_failed",
           detail: err instanceof Error ? err.message.slice(0, 200) : "unknown",
         },
         ip,
       });
-      throw new ServiceUnavailableException(
-        "Could not send the reset email. Please try again later."
-      );
     }
 
-    return {
-      found: true,
-      sent: true,
-      message: RESET_GENERIC_MESSAGE,
-    };
+    return { message: RESET_GENERIC_MESSAGE };
   }
 
   private async findUsersMatchingEmailByUserId(userId: string) {

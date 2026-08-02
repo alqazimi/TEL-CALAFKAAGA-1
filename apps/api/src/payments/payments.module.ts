@@ -23,6 +23,7 @@ import {
   STRIPE_GATEWAY,
   StripeService,
 } from "./stripe.gateway";
+import { isStripeFakeForbidden } from "../config/env.validation";
 
 @Module({
   imports: [
@@ -48,7 +49,21 @@ import {
     {
       provide: STRIPE_GATEWAY,
       useFactory: (config: ConfigService) => {
-        if (config.get<string>("STRIPE_GATEWAY") === "fake") {
+        const gateway = config.get<string>("STRIPE_GATEWAY");
+        if (gateway === "fake") {
+          if (
+            isStripeFakeForbidden({
+              NODE_ENV: (config.get<string>("NODE_ENV") ??
+                "development") as "development" | "test" | "production",
+              RENDER: config.get("RENDER") ?? process.env.RENDER,
+              RENDER_SERVICE_ID:
+                config.get("RENDER_SERVICE_ID") ?? process.env.RENDER_SERVICE_ID,
+            })
+          ) {
+            throw new Error(
+              "STRIPE_GATEWAY=fake is forbidden in production/Render. Refusing to start FakeStripeGateway."
+            );
+          }
           return new FakeStripeGateway();
         }
         return new StripeService(config);

@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { apiAuth } from "@/data/auth/api";
+import type { LoginResult } from "@/data/auth/types";
 import type { AccessStateLike, SessionUser } from "@/data/types";
 import {
   connectRealtime,
@@ -25,7 +26,8 @@ type ApiAuthContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   refresh: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  verifyMfaLogin: (mfaToken: string, code: string) => Promise<LoginResult>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   logoutAll: () => Promise<void>;
@@ -117,11 +119,25 @@ export function ApiAuthProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh]);
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      await apiAuth.login(email, password);
+  const login = useCallback(async (email: string, password: string) => {
+    const result = await apiAuth.login(email, password);
+    if ("mfaRequired" in result && result.mfaRequired) {
+      return result;
+    }
+    await refresh();
+    connectRealtime();
+    return result;
+  }, [refresh]);
+
+  const verifyMfaLogin = useCallback(
+    async (mfaToken: string, code: string) => {
+      const result = await apiAuth.verifyMfaLogin(mfaToken, code);
+      if ("mfaRequired" in result && result.mfaRequired) {
+        return result;
+      }
       await refresh();
       connectRealtime();
+      return result;
     },
     [refresh]
   );
@@ -155,11 +171,22 @@ export function ApiAuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       refresh,
       login,
+      verifyMfaLogin,
       register,
       logout,
       logoutAll,
     }),
-    [user, accessState, isLoading, refresh, login, register, logout, logoutAll]
+    [
+      user,
+      accessState,
+      isLoading,
+      refresh,
+      login,
+      verifyMfaLogin,
+      register,
+      logout,
+      logoutAll,
+    ]
   );
 
   return (

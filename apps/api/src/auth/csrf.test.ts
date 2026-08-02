@@ -70,6 +70,18 @@ describe("CsrfGuard (H5)", () => {
     );
   });
 
+  it("allows MFA verify-login without CSRF (L4 challenge completion)", () => {
+    assert.equal(
+      guard.canActivate(
+        mockContext({
+          path: "/auth/mfa/verify-login",
+          method: "POST",
+        }) as never
+      ),
+      true
+    );
+  });
+
   it("allows verify-email without CSRF (email-link flow)", () => {
     assert.equal(
       guard.canActivate(
