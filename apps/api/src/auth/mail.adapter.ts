@@ -81,7 +81,7 @@ export function createMailAdapter(opts: {
     }
     return new ResendMailAdapter(
       opts.resendApiKey,
-      opts.resendFrom ?? "Hel Calafkaaga <hello@helcalafkaaga.com>"
+      opts.resendFrom ?? "Hel Calafkaaga <support@helcalafkaaga.com>"
     );
   }
   return new ConsoleMailAdapter();

@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -603,11 +604,25 @@ export class AuthService {
       const appUrl =
         this.config.get<string>("APP_URL") ?? "http://127.0.0.1:3001";
       const resetUrl = `${appUrl}/reset-password?token=${raw}`;
-      await this.mail.send({
-        to: fullUser.email ?? emailNormalized,
-        subject: "Reset your Hel Calafkaaga password",
-        text: `Use this link within 15 minutes to reset your password:\n${resetUrl}\n\nIf you did not request this, ignore this email.`,
-      });
+      try {
+        await this.mail.send({
+          to: fullUser.email ?? emailNormalized,
+          subject: "Reset your Hel Calafkaaga password",
+          text: `Use this link within 15 minutes to reset your password:\n${resetUrl}\n\nIf you did not request this, ignore this email.`,
+        });
+      } catch (err) {
+        await this.audit("password_reset_failure", {
+          userId: fullUser.id,
+          metadata: {
+            reason: "mail_send_failed",
+            detail: err instanceof Error ? err.message.slice(0, 200) : "unknown",
+          },
+          ip,
+        });
+        throw new ServiceUnavailableException(
+          "Could not send the reset email. Please try again later."
+        );
+      }
     }
 
     return { message: RESET_GENERIC_MESSAGE };

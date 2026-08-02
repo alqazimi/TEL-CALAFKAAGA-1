@@ -15,7 +15,7 @@ export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 export const ANDROID_INSTALL_PATH = "/download";
 export const ANDROID_INSTALL_URL = `${PRODUCTION_SITE_URL}${ANDROID_INSTALL_PATH}`;
 export const ANDROID_APK_URL = "/download/hel-calafkaaga.apk";
-export const SUPPORT_EMAIL = "hello@helcalafkaaga.com";
+export const SUPPORT_EMAIL = "support@helcalafkaaga.com";
 /** Manual EVC / Hormuud mobile-money payee (Somalia). */
 export const EVC_PAYEE_NAME = "Axmed Xaaji";
 export const EVC_PAYEE_PHONE = "+252617975403";

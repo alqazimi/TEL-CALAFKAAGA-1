@@ -32,6 +32,8 @@ import {
 import { AccountStatusService } from "./account-status.service";
 import { buildAdminUserDateFilter } from "./admin-user-date-filter";
 import type { ReviewStatus } from "@prisma/client";
+import { normalizeEmail } from "../auth/crypto-util";
+import { emailMatchWhere } from "../auth/email-identity";
 
 const SOMALI_PHOTO_MSG =
   "Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.";
@@ -220,6 +222,7 @@ export class AdminUsersService {
     if (opts.search?.trim()) {
       const q = opts.search.trim();
       const qLower = q.toLowerCase();
+      const emailNormalized = q.includes("@") ? normalizeEmail(q) : "";
       const phoneDigits = q.replace(/[^\d+]/g, "");
       const or: Prisma.ProfileWhereInput[] = [
         { name: { contains: q, mode: "insensitive" } },
@@ -232,6 +235,12 @@ export class AdminUsersService {
         { id: { equals: q } },
         { userId: { equals: q } },
       ];
+      if (emailNormalized) {
+        or.push({ user: { emailNormalized } });
+        or.push({
+          user: { email: { equals: emailNormalized, mode: "insensitive" } },
+        });
+      }
       if (phoneDigits.length >= 3) {
         or.push({ phone: { contains: phoneDigits } });
       } else if (q.length >= 3) {
@@ -1138,5 +1147,157 @@ export class AdminUsersService {
     });
     await this.metrics.scheduleRebuild();
     return result;
+  }
+
+  /**
+   * Resolve why an email blocks signup even when Members search looks empty.
+   * Checks User + password AuthAccount (same as register), not only Profile.
+   */
+  async lookupEmailIdentity(email: string) {
+    const emailNormalized = normalizeEmail(email);
+    if (!emailNormalized || !emailNormalized.includes("@")) {
+      throw new BadRequestException("Enter a valid email address");
+    }
+
+    const users = await this.prisma.user.findMany({
+      where: emailMatchWhere(emailNormalized),
+      select: {
+        id: true,
+        email: true,
+        emailNormalized: true,
+        name: true,
+        deletedAt: true,
+        createdAt: true,
+        profile: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            banned: true,
+            reviewStatus: true,
+            hasPaid: true,
+            registrationComplete: true,
+            questionnaireComplete: true,
+            gender: true,
+          },
+        },
+        authAccounts: {
+          select: {
+            id: true,
+            provider: true,
+            providerAccountId: true,
+          },
+        },
+      },
+      take: 20,
+    });
+
+    const passwordAccounts = await this.prisma.authAccount.findMany({
+      where: {
+        provider: "password",
+        providerAccountId: {
+          equals: emailNormalized,
+          mode: "insensitive",
+        },
+      },
+      select: {
+        id: true,
+        userId: true,
+        providerAccountId: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            emailNormalized: true,
+            deletedAt: true,
+            profile: { select: { id: true, name: true } },
+          },
+        },
+      },
+      take: 20,
+    });
+
+    const blocksSignup = users.length > 0 || passwordAccounts.length > 0;
+    const orphans = users.filter((u) => !u.profile);
+
+    return {
+      emailNormalized,
+      found: blocksSignup,
+      blocksSignup,
+      userCount: users.length,
+      passwordAccountCount: passwordAccounts.length,
+      orphanUserCount: orphans.length,
+      users: users.map((u) => ({
+        userId: u.id,
+        email: u.email,
+        emailNormalized: u.emailNormalized,
+        name: u.name,
+        deletedAt: u.deletedAt?.toISOString() ?? null,
+        createdAt: u.createdAt.toISOString(),
+        hasProfile: !!u.profile,
+        profileId: u.profile?.id ?? null,
+        profileName: u.profile?.name ?? null,
+        role: u.profile?.role ?? null,
+        banned: u.profile?.banned ?? false,
+        reviewStatus: u.profile?.reviewStatus ?? null,
+        hasPaid: u.profile?.hasPaid ?? false,
+        authProviders: u.authAccounts.map((a) => a.provider),
+      })),
+      passwordAccounts: passwordAccounts.map((a) => ({
+        authAccountId: a.id,
+        userId: a.userId,
+        providerAccountId: a.providerAccountId,
+        userEmail: a.user.email,
+        hasProfile: !!a.user.profile,
+        profileId: a.user.profile?.id ?? null,
+        deletedAt: a.user.deletedAt?.toISOString() ?? null,
+      })),
+      hint: !blocksSignup
+        ? "No auth identity found — this email should be free to register."
+        : orphans.length > 0
+          ? "Email is taken by a User with no Profile (hidden from All members). Free it with “Release email” or open the profile if one exists."
+          : "Email is taken. Open the profile below — it may use a placeholder name like “User”." ,
+    };
+  }
+
+  /** Hard-delete a User that has no Profile so the email can register again. */
+  async releaseOrphanEmail(actorUserId: string, userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: { select: { id: true, role: true } },
+        authAccounts: { select: { id: true, provider: true } },
+      },
+    });
+    if (!user) throw new NotFoundException("User not found");
+    if (user.profile) {
+      throw new BadRequestException(
+        "This account has a profile. Delete it from the member detail page instead."
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.session.deleteMany({ where: { userId } });
+      await tx.passwordResetToken.deleteMany({ where: { userId } });
+      await tx.authAuditEvent.deleteMany({ where: { userId } });
+      await tx.preference.deleteMany({ where: { userId } });
+      await tx.authAccount.deleteMany({ where: { userId } });
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    await this.audit.write({
+      actorUserId,
+      action: "release_orphan_email",
+      targetUserId: userId,
+      metadata: {
+        email: user.email,
+        emailNormalized: user.emailNormalized,
+      },
+    });
+    await this.metrics.scheduleRebuild();
+    return {
+      ok: true,
+      releasedEmail: user.emailNormalized ?? user.email,
+    };
   }
 }

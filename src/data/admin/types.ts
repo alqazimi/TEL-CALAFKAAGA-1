@@ -7,6 +7,8 @@ export type AdminAdapter = {
   rebuildSiteMetrics(): Promise<unknown>;
   users: {
     list(opts?: Record<string, unknown>): Promise<unknown>;
+    lookupEmail(email: string): Promise<unknown>;
+    releaseOrphan(userId: string): Promise<unknown>;
     detail(id: string): Promise<unknown>;
     activity(id: string): Promise<unknown>;
     approve(

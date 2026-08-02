@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   Ban,
@@ -23,6 +23,7 @@ import {
   useAdminRequestPhoto,
   useAdminSetRole,
 } from "@/data/admin/hooks";
+import { apiAdmin } from "@/data/admin/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +69,32 @@ const REVIEW_FILTERS: { value: ReviewFilter; labelKey: TranslationPath }[] = [
 type PendingConfirm = {
   type: "reject" | "delete" | "ban" | "unban";
   user: AdminUser;
+};
+
+type EmailLookupResult = {
+  emailNormalized: string;
+  found: boolean;
+  blocksSignup: boolean;
+  orphanUserCount: number;
+  hint: string;
+  users: Array<{
+    userId: string;
+    email: string | null;
+    name: string | null;
+    hasProfile: boolean;
+    profileId: string | null;
+    profileName: string | null;
+    role: string | null;
+    banned: boolean;
+    reviewStatus: string | null;
+    authProviders: string[];
+  }>;
+  passwordAccounts: Array<{
+    authAccountId: string;
+    userId: string;
+    hasProfile: boolean;
+    profileId: string | null;
+  }>;
 };
 
 function formatJoined(value: string | null | undefined) {
@@ -223,6 +250,51 @@ export function AdminMembersPanel({
   const setUserRole = useAdminSetRole();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
+  const [emailLookup, setEmailLookup] = useState<EmailLookupResult | null>(null);
+  const [emailLookupLoading, setEmailLookupLoading] = useState(false);
+  const [releasingId, setReleasingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const q = search.trim();
+    if (!q.includes("@")) {
+      setEmailLookup(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setEmailLookupLoading(true);
+      void apiAdmin.users
+        .lookupEmail(q)
+        .then((data) => {
+          if (!cancelled) setEmailLookup(data as EmailLookupResult);
+        })
+        .catch(() => {
+          if (!cancelled) setEmailLookup(null);
+        })
+        .finally(() => {
+          if (!cancelled) setEmailLookupLoading(false);
+        });
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [search]);
+
+  const releaseOrphan = async (userId: string) => {
+    setReleasingId(userId);
+    try {
+      await apiAdmin.users.releaseOrphan(userId);
+      toast.success("Email released — they can register again.");
+      const refreshed = (await apiAdmin.users.lookupEmail(search.trim())) as EmailLookupResult;
+      setEmailLookup(refreshed);
+      onActionComplete?.();
+    } catch (error) {
+      toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
+    } finally {
+      setReleasingId(null);
+    }
+  };
 
   const canApproveMember = (user: AdminUser) => {
     if (isStaffRole(user.role) || user.banned || isMemberApproved(user)) {
@@ -377,6 +449,120 @@ export function AdminMembersPanel({
             </button>
           ) : null}
         </div>
+
+        {search.trim().includes("@") ? (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3.5 text-sm space-y-2">
+            <p className="font-medium text-foreground">
+              Email identity check
+              {emailLookupLoading ? "…" : ""}
+            </p>
+            {emailLookup ? (
+              <>
+                <p className="text-muted-foreground">{emailLookup.hint}</p>
+                {emailLookup.blocksSignup ? (
+                  <ul className="space-y-2">
+                    {emailLookup.users.map((u) => (
+                      <li
+                        key={u.userId}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">
+                            {u.profileName || u.name || "No display name"}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {u.email || emailLookup.emailNormalized}
+                            {u.hasProfile
+                              ? ` · profile · ${u.reviewStatus ?? "—"}`
+                              : " · orphan (no profile — hidden from list)"}
+                            {u.banned ? " · banned" : ""}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          {u.profileId ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="rounded-lg"
+                              onClick={() => onOpenUser(u.profileId!)}
+                            >
+                              Open
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="destructive"
+                              className="rounded-lg"
+                              disabled={releasingId === u.userId}
+                              onClick={() => void releaseOrphan(u.userId)}
+                            >
+                              {releasingId === u.userId
+                                ? "Releasing…"
+                                : "Release email"}
+                            </Button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                    {emailLookup.passwordAccounts
+                      .filter(
+                        (a) =>
+                          !emailLookup.users.some((u) => u.userId === a.userId)
+                      )
+                      .map((a) => (
+                        <li
+                          key={a.authAccountId}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium">Password login only</p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {emailLookup.emailNormalized}
+                              {a.hasProfile
+                                ? " · linked profile exists"
+                                : " · orphan auth row"}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            {a.profileId ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="rounded-lg"
+                                onClick={() => onOpenUser(a.profileId!)}
+                              >
+                                Open
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                className="rounded-lg"
+                                disabled={releasingId === a.userId}
+                                onClick={() => void releaseOrphan(a.userId)}
+                              >
+                                {releasingId === a.userId
+                                  ? "Releasing…"
+                                  : "Release email"}
+                              </Button>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                  </ul>
+                ) : null}
+              </>
+            ) : !emailLookupLoading ? (
+              <p className="text-muted-foreground">
+                Could not check auth identity for this email.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {!searching ? (
           <div className="space-y-3">

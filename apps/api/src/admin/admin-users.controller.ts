@@ -149,6 +149,25 @@ export class AdminUsersController {
     return this.users.bulkReject(user.id, parsed.profileIds, parsed);
   }
 
+  @Get("lookup-email")
+  @UseGuards(RateLimitGuard)
+  lookupEmail(@Query("email") email?: string) {
+    return this.users.lookupEmailIdentity(email ?? "");
+  }
+
+  @Post("release-orphan")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  releaseOrphan(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({ userId: z.string().uuid() }),
+      body ?? {}
+    );
+    return this.users.releaseOrphanEmail(user.id, parsed.userId);
+  }
+
   @Get(":id")
   get(@CurrentUser() user: RequestUser, @Param("id") id: string) {
     return this.users.getUserDetail(

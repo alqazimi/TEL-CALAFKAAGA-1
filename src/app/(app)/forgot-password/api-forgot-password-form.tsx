@@ -53,9 +53,7 @@ function ApiForgotPasswordInner() {
       setSent(true);
       toast.success(t("auth.resetCodeSent"));
     } catch (error) {
-      setSent(true);
-      toast.success(t("auth.resetCodeSent"));
-      void error;
+      toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed"), t));
     } finally {
       setSending(false);
     }

@@ -99,6 +99,14 @@ export const apiAdmin: AdminAdapter = {
         signal,
       });
     },
+    async lookupEmail(email) {
+      return apiClient.get(
+        `/admin/users/lookup-email${q({ email })}`
+      );
+    },
+    async releaseOrphan(userId) {
+      return apiClient.post("/admin/users/release-orphan", { userId });
+    },
     async detail(id) {
       return apiClient.get(`/admin/users/${encodeURIComponent(id)}`);
     },
