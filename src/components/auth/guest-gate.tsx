@@ -27,6 +27,11 @@ export function GuestGate({ children }: { children: ReactNode }) {
       | undefined
       | null;
 
+    if ((user as { emailVerified?: boolean } | null)?.emailVerified === false) {
+      router.replace("/verify-email");
+      return;
+    }
+
     if (profile?.registrationComplete === false) {
       router.replace("/register/details");
       return;

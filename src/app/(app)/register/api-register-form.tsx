@@ -47,7 +47,7 @@ export default function ApiRegisterForm() {
       ]);
       await refresh?.();
       toast.success(t("auth.registerSuccess"));
-      router.push("/register/details");
+      router.push("/verify-email");
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (

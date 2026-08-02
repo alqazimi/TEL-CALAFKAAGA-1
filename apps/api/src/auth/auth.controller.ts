@@ -17,6 +17,8 @@ import {
   CurrentUser,
   Public,
   RequireProfile,
+  AllowDuringPasswordReset,
+  AllowWhileUnverified,
   type AuthedRequest,
   type RequestUser,
 } from "./auth.guards";
@@ -65,6 +67,10 @@ const changeSchema = z.object({
   newPassword: z.string().min(8).max(256),
 });
 
+const verifyEmailSchema = z.object({
+  token: z.string().min(10).max(512),
+});
+
 const deleteAccountSchema = z.object({
   password: z.string().min(1).max(256),
   confirm: z.literal(true),
@@ -111,8 +117,8 @@ export class AuthController {
     return {
       user: result.user,
       csrfToken: csrf,
-      // For Vercel↔Render (cross-site cookies often blocked); frontend sends X-Session-Token
-      sessionToken: result.rawToken,
+      // H5: session lives in HttpOnly hel_session cookie only — do not return
+      // a browser-readable sessionToken.
     };
   }
 
@@ -148,7 +154,6 @@ export class AuthController {
     return {
       user: result.user,
       csrfToken: csrf,
-      sessionToken: result.rawToken,
     };
   }
 
@@ -175,6 +180,8 @@ export class AuthController {
 
   @Post("logout")
   @HttpCode(200)
+  @AllowDuringPasswordReset()
+  @AllowWhileUnverified()
   async logout(
     @CurrentUser() user: RequestUser,
     @Req() req: AuthedRequest,
@@ -187,6 +194,8 @@ export class AuthController {
 
   @Post("logout-all")
   @HttpCode(200)
+  @AllowDuringPasswordReset()
+  @AllowWhileUnverified()
   async logoutAll(
     @CurrentUser() user: RequestUser,
     @Req() req: Request,
@@ -198,6 +207,8 @@ export class AuthController {
   }
 
   @Get("me")
+  @AllowDuringPasswordReset()
+  @AllowWhileUnverified()
   async me(
     @CurrentUser() user: RequestUser,
     @Req() req: Request,
@@ -236,6 +247,8 @@ export class AuthController {
 
   @Post("change-password")
   @HttpCode(200)
+  @AllowDuringPasswordReset()
+  @AllowWhileUnverified()
   async changePassword(
     @CurrentUser() user: RequestUser,
     @Body() body: unknown,
@@ -251,6 +264,25 @@ export class AuthController {
     });
     clearAuthCookies(res, this.cookieOpts());
     return result;
+  }
+
+  @Public()
+  @Post("verify-email")
+  @HttpCode(200)
+  async verifyEmail(@Body() body: unknown, @Req() req: Request) {
+    const parsed = parseBody(verifyEmailSchema, body);
+    return this.auth.verifyEmailToken(parsed.token, req.ip);
+  }
+
+  @Post("resend-verification")
+  @HttpCode(200)
+  @AllowDuringPasswordReset()
+  @AllowWhileUnverified()
+  async resendVerification(
+    @CurrentUser() user: RequestUser,
+    @Req() req: Request
+  ) {
+    return this.auth.resendEmailVerification(user.id, req.ip);
   }
 
   /**

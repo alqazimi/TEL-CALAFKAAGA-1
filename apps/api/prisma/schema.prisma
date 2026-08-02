@@ -257,6 +257,7 @@ model User {
   scoresAsB          CompatibilityScore[] @relation("ScoreUserB")
   sessions           Session[]
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
   authAuditEvents    AuthAuditEvent[]
   photoRevealsViewed PhotoReveal[] @relation("PhotoRevealViewer")
   photoRevealsOwned  PhotoReveal[] @relation("PhotoRevealOwner")
@@ -1120,6 +1121,11 @@ enum AuthAuditAction {
   rehash_failure
   register_success
   register_failed
+  email_verification_sent
+  email_verification_send_failed
+  email_verification_success
+  email_verification_failure
+  email_verification_resend
 }
 
 model Session {
@@ -1160,6 +1166,27 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+/// M3: single-use email ownership proof. Store only tokenHash — never the raw token.
+model EmailVerificationToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  /// Email address this token proves ownership of (snapshot at issue time).
+  email      String
+  /// SHA-256 hex of raw verification token.
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  /// Set on successful verify or when replaced by a newer token.
+  usedAt     DateTime? @map("used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  ipHash     String?   @map("ip_hash")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("email_verification_tokens")
 }
 
 model AuthAuditEvent {

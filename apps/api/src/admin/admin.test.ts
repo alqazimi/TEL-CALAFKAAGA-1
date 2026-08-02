@@ -118,6 +118,8 @@ function asUser(
     banned: false,
     hasProfile: true,
     hasPaid: true,
+    mustResetPassword: false,
+    emailVerified: true,
     sessionId: randomUUID(),
   };
 }

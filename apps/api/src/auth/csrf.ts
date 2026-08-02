@@ -12,44 +12,63 @@ export const SESSION_COOKIE = "hel_session";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
+/** Paths that never require CSRF (unauthenticated bootstrap / provider webhooks). */
+function isCsrfExemptPath(path: string): boolean {
+  if (
+    path.endsWith("/auth/login") ||
+    path.endsWith("/auth/register") ||
+    path.endsWith("/auth/register/check-email") ||
+    path.endsWith("/auth/forgot-password") ||
+    path.endsWith("/auth/reset-password") ||
+    path.endsWith("/auth/verify-email")
+  ) {
+    return true;
+  }
+  // Stripe HMAC-verified webhook — not browser cookie auth.
+  if (path.endsWith("/webhooks/stripe")) return true;
+  // Public contact form — no session cookie expected.
+  if (path.endsWith("/support/public")) return true;
+  return false;
+}
+
 @Injectable()
 export class CsrfGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request>();
     if (SAFE_METHODS.has(req.method.toUpperCase())) return true;
 
-    // Unauthenticated auth bootstrap endpoints skip CSRF
     const path = req.path || req.url || "";
-    if (
-      path.endsWith("/auth/login") ||
-      path.endsWith("/auth/register") ||
-      path.endsWith("/auth/register/check-email") ||
-      path.endsWith("/auth/forgot-password") ||
-      path.endsWith("/auth/reset-password")
-    ) {
-      return true;
-    }
+    if (isCsrfExemptPath(path)) return true;
 
-    // Cross-site SPA auth (Vercel → Render) uses X-Session-Token; custom headers
-    // are CORS-protected so CSRF is not needed for that auth path.
+    const cookieSession = req.cookies?.[SESSION_COOKIE] as string | undefined;
     const headerSession =
       typeof req.headers["x-session-token"] === "string"
         ? req.headers["x-session-token"]
         : undefined;
+
+    // H5: cookie-authenticated browser requests always require CSRF.
+    // Presence of X-Session-Token must NOT skip CSRF when a session cookie exists.
+    if (cookieSession) {
+      const cookieToken = req.cookies?.[CSRF_COOKIE] as string | undefined;
+      const headerToken =
+        (req.headers["x-csrf-token"] as string | undefined) ??
+        (req.headers["x-xsrf-token"] as string | undefined);
+
+      if (
+        !cookieToken ||
+        !headerToken ||
+        !safeEqualHex(cookieToken, headerToken)
+      ) {
+        throw new ForbiddenException("Invalid CSRF token");
+      }
+      return true;
+    }
+
+    // Header-only clients (no session cookie): CSRF does not apply.
+    // Official browser clients must not use this path.
     if (headerSession) return true;
 
-    // Only enforce when a session cookie is present
-    const session = req.cookies?.[SESSION_COOKIE];
-    if (!session) return true;
-
-    const cookieToken = req.cookies?.[CSRF_COOKIE] as string | undefined;
-    const headerToken =
-      (req.headers["x-csrf-token"] as string | undefined) ??
-      (req.headers["x-xsrf-token"] as string | undefined);
-
-    if (!cookieToken || !headerToken || !safeEqualHex(cookieToken, headerToken)) {
-      throw new ForbiddenException("Invalid CSRF token");
-    }
+    // Unauthenticated mutating request — AuthGuard / route handlers decide.
     return true;
   }
 }

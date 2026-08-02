@@ -2,7 +2,6 @@ import {
   apiClient,
   clearApiAuthStorage,
   setApiCsrfToken,
-  setApiSessionToken,
 } from "../api-client";
 import { disconnectRealtime } from "../realtime/socket-client";
 import { track } from "../telemetry";
@@ -18,6 +17,7 @@ type NestAuthUser = {
   hasProfile?: boolean;
   hasPaid?: boolean;
   mustResetPassword?: boolean;
+  emailVerified?: boolean;
   profile?: Record<string, unknown> | null;
   [key: string]: unknown;
 };
@@ -52,11 +52,15 @@ function toSessionUser(raw: NestAuthUser | null | undefined): SessionUser | null
     role,
     hasPaid,
     banned,
+    mustResetPassword: Boolean(raw.mustResetPassword),
+    emailVerified: raw.emailVerified !== false,
     profile: {
       ...(nested ?? {}),
       role,
       hasPaid,
       banned,
+      mustResetPassword: Boolean(raw.mustResetPassword),
+      emailVerified: raw.emailVerified !== false,
     },
   };
 }
@@ -64,17 +68,16 @@ function toSessionUser(raw: NestAuthUser | null | undefined): SessionUser | null
 function toLoginResult(
   res: (LoginResult & {
     csrfToken?: string;
-    sessionToken?: string;
     user?: NestAuthUser;
   }) | null
 ): LoginResult {
-  if (res?.sessionToken) setApiSessionToken(res.sessionToken);
+  // H5: session is HttpOnly cookie only — never persist a session token.
+  clearApiAuthStorage();
   if (res?.csrfToken) setApiCsrfToken(res.csrfToken);
   return {
     ...res,
     user: toSessionUser(res?.user as NestAuthUser) as SessionUser,
     csrfToken: res?.csrfToken,
-    sessionToken: res?.sessionToken,
   };
 }
 
@@ -96,9 +99,10 @@ export const apiAuth: AuthAdapter = {
 
   async login(email, password) {
     try {
-      const res = await apiClient.post<
-        LoginResult & { csrfToken?: string; sessionToken?: string }
-      >("/auth/login", { email, password });
+      const res = await apiClient.post<LoginResult & { csrfToken?: string }>(
+        "/auth/login",
+        { email, password }
+      );
       return toLoginResult(res);
     } catch (e) {
       track("login_failure", { status: (e as { status?: number })?.status });
@@ -108,9 +112,10 @@ export const apiAuth: AuthAdapter = {
 
   async register(email, password) {
     try {
-      const res = await apiClient.post<
-        LoginResult & { csrfToken?: string; sessionToken?: string }
-      >("/auth/register", { email, password });
+      const res = await apiClient.post<LoginResult & { csrfToken?: string }>(
+        "/auth/register",
+        { email, password }
+      );
       return toLoginResult(res);
     } catch (e) {
       track("register_failure", { status: (e as { status?: number })?.status });

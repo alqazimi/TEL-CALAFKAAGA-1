@@ -32,6 +32,13 @@ const LIMITS: Record<string, { ip?: LimitSpec; email?: LimitSpec; user?: LimitSp
   "auth.reset": {
     ip: { windowSec: 15 * 60, max: 20 },
   },
+  "auth.verify": {
+    ip: { windowSec: 15 * 60, max: 40 },
+  },
+  "auth.verifyResend": {
+    user: { windowSec: 15 * 60, max: 5 },
+    ip: { windowSec: 15 * 60, max: 20 },
+  },
   "profile.write": {
     user: { windowSec: 60, max: 60 },
   },
@@ -169,6 +176,8 @@ export class RateLimitGuard implements CanActivate {
     if (path.includes("/auth/register")) return "auth.register";
     if (path.includes("/auth/forgot-password")) return "auth.forgot";
     if (path.includes("/auth/reset-password")) return "auth.reset";
+    if (path.includes("/auth/resend-verification")) return "auth.verifyResend";
+    if (path.includes("/auth/verify-email")) return "auth.verify";
     if (
       (method === "DELETE" && path === "/profile/account") ||
       (method === "POST" && path === "/auth/delete-account")

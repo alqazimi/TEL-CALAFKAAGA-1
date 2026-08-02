@@ -69,7 +69,12 @@ export class SessionService {
       where: { tokenHash },
       include: {
         user: {
-          include: {
+          select: {
+            id: true,
+            email: true,
+            emailNormalized: true,
+            mustResetPassword: true,
+            emailVerificationTime: true,
             profile: {
               select: {
                 id: true,

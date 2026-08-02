@@ -5,6 +5,8 @@ import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "sonner";
 import { IdleSessionGuard } from "@/components/auth/idle-session-guard";
 import { ApiAuthProvider } from "@/components/auth/api-auth-provider";
+import { ForcedPasswordResetGate } from "@/components/auth/forced-password-reset-gate";
+import { EmailVerificationGate } from "@/components/auth/email-verification-gate";
 import { LanguageProvider } from "@/lib/i18n/context";
 import { validateFrontendEnv } from "@/data/env";
 
@@ -22,7 +24,9 @@ export function Providers({ children }: { children: ReactNode }) {
       <LanguageProvider>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <IdleSessionGuard />
-          {children}
+          <ForcedPasswordResetGate>
+            <EmailVerificationGate>{children}</EmailVerificationGate>
+          </ForcedPasswordResetGate>
           <Toaster position="top-right" richColors />
         </ThemeProvider>
       </LanguageProvider>

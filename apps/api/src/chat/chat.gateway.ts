@@ -107,19 +107,36 @@ export class ChatGateway
     }
 
     const cookies = parseCookieHeader(client.handshake.headers.cookie);
-    const raw =
-      cookies["hel_session"] ||
-      (typeof client.handshake.auth?.token === "string"
+    const cookieToken = cookies["hel_session"];
+    const authToken =
+      typeof client.handshake.auth?.token === "string"
         ? client.handshake.auth.token
-        : undefined) ||
-      (typeof client.handshake.headers["x-session-token"] === "string"
+        : undefined;
+    const headerToken =
+      typeof client.handshake.headers["x-session-token"] === "string"
         ? client.handshake.headers["x-session-token"]
-        : undefined);
+        : undefined;
+    if (
+      cookieToken &&
+      ((authToken && authToken !== cookieToken) ||
+        (headerToken && headerToken !== cookieToken))
+    ) {
+      throw new Error("ambiguous_session");
+    }
+    const raw = cookieToken || authToken || headerToken;
 
     if (!raw) throw new Error("unauthenticated");
 
     const session = await this.sessions.findValidSession(raw);
     if (!session) throw new Error("invalid_session");
+
+    if (session.user.mustResetPassword) {
+      throw new Error("password_reset_required");
+    }
+
+    if (session.user.emailVerificationTime == null) {
+      throw new Error("email_verification_required");
+    }
 
     const profile = session.user.profile;
     if (profile && isInteractionLocked(profile)) {

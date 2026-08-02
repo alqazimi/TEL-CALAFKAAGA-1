@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { UnauthorizedException } from "@nestjs/common";
 import {
   AUTH_FAILED_MESSAGE,
   hashToken,
@@ -666,11 +667,12 @@ describe("AuthService behaviour (mocked prisma)", () => {
     assert.equal(revokedAll, true);
   });
 
-  it("change-password updates to argon2id and revokes sessions", async () => {
+  it("change-password updates to argon2id, clears mustResetPassword, and revokes sessions", async () => {
     const { AuthService } = await import("./auth.service");
     const current = "Current-Pass-11";
     const luciaHash = await hashPasswordLuciaScrypt(current);
     let algo: string | null = null;
+    let clearedReset = false;
     let revoked = false;
     const auth = new AuthService(
       {
@@ -680,18 +682,41 @@ describe("AuthService behaviour (mocked prisma)", () => {
             passwordHash: luciaHash,
             passwordAlgo: "lucia_scrypt",
           }),
-          update: async ({ data }: { data: { passwordAlgo: string } }) => {
-            algo = data.passwordAlgo;
-            return {};
-          },
+        },
+        $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            authAccount: {
+              update: async ({
+                data,
+              }: {
+                data: { passwordAlgo: string };
+              }) => {
+                algo = data.passwordAlgo;
+                return {};
+              },
+            },
+            user: {
+              update: async ({
+                data,
+              }: {
+                data: { mustResetPassword: boolean };
+              }) => {
+                if (data.mustResetPassword === false) clearedReset = true;
+                return {};
+              },
+            },
+            session: {
+              updateMany: async () => {
+                revoked = true;
+                return { count: 1 };
+              },
+            },
+          };
+          return fn(tx);
         },
         authAuditEvent: { create: async () => ({}) },
       } as never,
-      {
-        revokeAllForUser: async () => {
-          revoked = true;
-        },
-      } as never,
+      {} as never,
       { get: () => "test-session-secret-32chars-min!!" } as never,
       { send: async () => {} } as never
     );
@@ -702,7 +727,41 @@ describe("AuthService behaviour (mocked prisma)", () => {
     });
     assert.equal(result.message, "Password changed");
     assert.equal(algo, "argon2id");
+    assert.equal(clearedReset, true);
     assert.equal(revoked, true);
+  });
+
+  it("failed change-password does not clear mustResetPassword", async () => {
+    const { AuthService } = await import("./auth.service");
+    let clearedReset = false;
+    const auth = new AuthService(
+      {
+        authAccount: {
+          findFirst: async () => ({
+            id: "22222222-2222-2222-2222-222222222222",
+            passwordHash: await hashPasswordLuciaScrypt("right-pass"),
+            passwordAlgo: "lucia_scrypt",
+          }),
+        },
+        $transaction: async () => {
+          clearedReset = true;
+        },
+        authAuditEvent: { create: async () => ({}) },
+      } as never,
+      {} as never,
+      { get: () => "test-session-secret-32chars-min!!" } as never,
+      { send: async () => {} } as never
+    );
+    await assert.rejects(
+      () =>
+        auth.changePassword({
+          userId: "11111111-1111-1111-1111-111111111111",
+          currentPassword: "wrong-pass",
+          newPassword: "Changed-Pass-22",
+        }),
+      UnauthorizedException
+    );
+    assert.equal(clearedReset, false);
   });
 
   it("checkEmailRegistered returns available when email free", async () => {
@@ -770,6 +829,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
           email: "new@example.com",
           emailNormalized: "new@example.com",
           mustResetPassword: false,
+          emailVerificationTime: null,
           profile: { role: "user", banned: false, hasPaid: false },
         }),
         create: async ({ data }: { data: { email: string; gender: string } }) => {
@@ -809,6 +869,10 @@ describe("AuthService behaviour (mocked prisma)", () => {
           return {};
         },
       },
+      emailVerificationToken: {
+        updateMany: async () => ({ count: 0 }),
+        create: async () => ({ id: "evt1" }),
+      },
       authAuditEvent: {
         create: async ({ data }: { data: { action: string } }) => {
           auditActions.push(data.action);
@@ -845,6 +909,7 @@ describe("AuthService behaviour (mocked prisma)", () => {
     assert.equal(registrationComplete, false);
     assert.equal(result.user.hasPaid, false);
     assert.equal(result.user.hasProfile, true);
+    assert.equal(result.user.emailVerified, false);
     assert.equal(result.rawToken, "reg-tok");
     assert.ok(auditActions.includes("register_success"));
     assert.ok(!auditActions.includes("register_failed"));

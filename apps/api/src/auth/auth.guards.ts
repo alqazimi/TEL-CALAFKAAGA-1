@@ -25,6 +25,22 @@ export const RequireProfile = () => SetMetadata(REQUIRE_PROFILE_KEY, true);
 export const REQUIRE_PAID_KEY = "requirePaid";
 export const RequirePaid = () => SetMetadata(REQUIRE_PAID_KEY, true);
 
+/** M4: route may run while User.mustResetPassword is true. */
+export const ALLOW_DURING_PASSWORD_RESET_KEY = "allowDuringPasswordReset";
+export const AllowDuringPasswordReset = () =>
+  SetMetadata(ALLOW_DURING_PASSWORD_RESET_KEY, true);
+
+/** Stable machine-readable denial for forced password reset. */
+export const PASSWORD_RESET_REQUIRED = "PASSWORD_RESET_REQUIRED";
+
+/** M3: route may run while email is unverified (emailVerificationTime null). */
+export const ALLOW_WHILE_UNVERIFIED_KEY = "allowWhileUnverified";
+export const AllowWhileUnverified = () =>
+  SetMetadata(ALLOW_WHILE_UNVERIFIED_KEY, true);
+
+/** Stable machine-readable denial for missing email verification. */
+export const EMAIL_VERIFICATION_REQUIRED = "EMAIL_VERIFICATION_REQUIRED";
+
 export type RequestUser = {
   id: string;
   email: string | null;
@@ -32,6 +48,9 @@ export type RequestUser = {
   banned: boolean;
   hasProfile: boolean;
   hasPaid: boolean;
+  mustResetPassword: boolean;
+  /** True when User.emailVerificationTime is set. */
+  emailVerified: boolean;
   sessionId: string;
 };
 
@@ -61,11 +80,25 @@ export class AuthGuard implements CanActivate {
       context.getClass(),
     ]);
     const req = context.switchToHttp().getRequest<AuthedRequest>();
-    const raw =
-      (req.cookies?.["hel_session"] as string | undefined) ??
-      (typeof req.headers["x-session-token"] === "string"
+    const cookieToken = req.cookies?.["hel_session"] as string | undefined;
+    const headerToken =
+      typeof req.headers["x-session-token"] === "string"
         ? req.headers["x-session-token"]
-        : undefined);
+        : undefined;
+
+    // H5: reject ambiguous dual credentials (cookie + differing header).
+    if (
+      cookieToken &&
+      headerToken &&
+      cookieToken.length > 0 &&
+      headerToken.length > 0 &&
+      cookieToken !== headerToken
+    ) {
+      throw new ForbiddenException("Ambiguous session credentials");
+    }
+
+    // Prefer HttpOnly cookie; header is a non-browser compatibility fallback only.
+    const raw = cookieToken || headerToken;
 
     if (!raw) {
       if (isPublic) return true;
@@ -93,13 +126,47 @@ export class AuthGuard implements CanActivate {
       banned: profile?.banned ?? false,
       hasProfile: !!profile,
       hasPaid: profile?.hasPaid ?? false,
+      mustResetPassword: session.user.mustResetPassword === true,
+      emailVerified: session.user.emailVerificationTime != null,
       sessionId: session.id,
     };
 
     if (isPublic) return true;
 
+    // Banned / deleted-style blocks take precedence over forced reset.
     if (req.user.banned) {
       throw new ForbiddenException("Unable to access this account");
+    }
+
+    // M4: central forced-reset — deny all non-allowlisted authenticated routes.
+    // Precedence: banned → mustResetPassword → email verification → roles.
+    if (req.user.mustResetPassword) {
+      const allowReset = this.reflector.getAllAndOverride<boolean>(
+        ALLOW_DURING_PASSWORD_RESET_KEY,
+        [context.getHandler(), context.getClass()]
+      );
+      if (!allowReset) {
+        throw new ForbiddenException({
+          statusCode: 403,
+          message: "Password reset required",
+          code: PASSWORD_RESET_REQUIRED,
+        });
+      }
+    }
+
+    // M3: unverified email — deny normal product routes by default.
+    if (!req.user.emailVerified) {
+      const allowUnverified = this.reflector.getAllAndOverride<boolean>(
+        ALLOW_WHILE_UNVERIFIED_KEY,
+        [context.getHandler(), context.getClass()]
+      );
+      if (!allowUnverified) {
+        throw new ForbiddenException({
+          statusCode: 403,
+          message: "Email verification required",
+          code: EMAIL_VERIFICATION_REQUIRED,
+        });
+      }
     }
 
     const roles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [

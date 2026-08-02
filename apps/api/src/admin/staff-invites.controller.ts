@@ -12,6 +12,8 @@ import {
   CurrentUser,
   Public,
   Roles,
+  AllowDuringPasswordReset,
+  AllowWhileUnverified,
   type RequestUser,
 } from "../auth/auth.guards";
 import { CsrfGuard } from "../auth/csrf";
@@ -67,6 +69,8 @@ export class StaffInvitesController {
   }
 
   @Post("staff-invites/:token/accept")
+  @AllowDuringPasswordReset()
+  @AllowWhileUnverified()
   @UseGuards(CsrfGuard, RateLimitGuard)
   accept(@CurrentUser() user: RequestUser, @Param("token") token: string) {
     return this.invites.accept(user.id, token);
