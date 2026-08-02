@@ -28,6 +28,12 @@ import { SessionService } from "./session.service";
       provide: MAIL_ADAPTER,
       useFactory: (config: ConfigService): MailAdapter => {
         const driver = config.get<string>("MAIL_DRIVER") ?? "console";
+        const nodeEnv = config.get<string>("NODE_ENV") ?? process.env.NODE_ENV;
+        if (nodeEnv === "production" && driver !== "resend") {
+          console.error(
+            `[mail] MAIL_DRIVER must be "resend" in production (got "${driver}"). Password reset emails will not deliver.`
+          );
+        }
         return createMailAdapter({
           driver,
           resendApiKey: config.get<string>("RESEND_API_KEY"),

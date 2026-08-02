@@ -16,7 +16,12 @@ export type AuthAdapter = {
   checkEmail(email: string): Promise<{ available: boolean }>;
   logout(): Promise<void>;
   logoutAll(): Promise<void>;
-  forgotPassword(email: string): Promise<{ ok: boolean }>;
+  forgotPassword(email: string): Promise<{
+    found: boolean;
+    sent: boolean;
+    message: string;
+    ok: boolean;
+  }>;
   resetPassword(token: string, newPassword: string): Promise<{ ok: boolean }>;
   changePassword(
     currentPassword: string,

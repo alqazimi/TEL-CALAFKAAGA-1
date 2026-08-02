@@ -143,8 +143,17 @@ export const apiAuth: AuthAdapter = {
   },
 
   async forgotPassword(email) {
-    await apiClient.post("/auth/forgot-password", { email });
-    return { ok: true };
+    const res = await apiClient.post<{
+      found?: boolean;
+      sent?: boolean;
+      message?: string;
+    }>("/auth/forgot-password", { email });
+    return {
+      found: res?.found === true,
+      sent: res?.sent === true,
+      message: res?.message ?? "",
+      ok: res?.sent === true,
+    };
   },
 
   async resetPassword(token, newPassword) {

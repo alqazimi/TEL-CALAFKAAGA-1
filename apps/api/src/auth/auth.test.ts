@@ -494,12 +494,16 @@ describe("AuthService behaviour (mocked prisma)", () => {
     assert.equal((await loginAs("owner")).user.role, "owner");
   });
 
-  it("forgot-password does not enumerate emails", async () => {
+  it("forgot-password reports missing emails and sends for known ones", async () => {
     const { AuthService } = await import("./auth.service");
+    const { RESET_GENERIC_MESSAGE, RESET_NOT_FOUND_MESSAGE } = await import(
+      "./crypto-util"
+    );
     const mail = { send: async () => {}, sent: [] as unknown[] };
     const authMissing = new AuthService(
       {
         user: withFindMany(null),
+        authAccount: { findFirst: async () => null },
         authAuditEvent: { create: async () => ({}) },
       } as never,
       {} as never,
@@ -529,7 +533,12 @@ describe("AuthService behaviour (mocked prisma)", () => {
     );
     const a = await authMissing.forgotPassword("missing@example.com");
     const b = await authPresent.forgotPassword("a@example.com");
-    assert.equal(a.message, b.message);
+    assert.equal(a.found, false);
+    assert.equal(a.sent, false);
+    assert.equal(a.message, RESET_NOT_FOUND_MESSAGE);
+    assert.equal(b.found, true);
+    assert.equal(b.sent, true);
+    assert.equal(b.message, RESET_GENERIC_MESSAGE);
   });
 
   it("reset token rejects reuse and expiry", async () => {

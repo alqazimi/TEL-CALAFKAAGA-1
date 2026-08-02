@@ -33,8 +33,14 @@ export function getAuthErrorMessage(
   ) {
     return t?.("auth.errorAccountExists") ?? fallback;
   }
-  if (msg.includes("Could not send reset email")) {
+  if (msg.includes("Could not send the reset email") || msg.includes("Could not send reset")) {
     return t?.("auth.errorResetEmail") ?? fallback;
+  }
+  if (
+    msg.includes("No account found") ||
+    msg.includes("No account found with this email")
+  ) {
+    return t?.("auth.errorNoAccount") ?? fallback;
   }
   if (msg.includes("AUTH_RESEND_KEY is not configured")) {
     return t?.("auth.errorResetEmail") ?? fallback;

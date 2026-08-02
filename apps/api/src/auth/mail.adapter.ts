@@ -9,14 +9,20 @@ export interface MailAdapter {
   send(message: MailMessage): Promise<void>;
 }
 
+function isProductionRuntime(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
 /** Local / CI sink — never calls Resend or any external API. */
 export class ConsoleMailAdapter implements MailAdapter {
   readonly sent: MailMessage[] = [];
 
   async send(message: MailMessage): Promise<void> {
     this.sent.push(message);
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("ConsoleMailAdapter must not be used in production");
+    if (isProductionRuntime()) {
+      throw new Error(
+        "MAIL_DRIVER=console cannot send email in production. Set MAIL_DRIVER=resend and RESEND_API_KEY."
+      );
     }
     const redacted = {
       to: message.to,
@@ -33,7 +39,11 @@ export class ConsoleMailAdapter implements MailAdapter {
 /** Explicit no-op driver for tests that assert queueing without delivery. */
 export class DisabledMailAdapter implements MailAdapter {
   async send(_message: MailMessage): Promise<void> {
-    return;
+    if (isProductionRuntime()) {
+      throw new Error(
+        "MAIL_DRIVER=disabled cannot send email in production. Set MAIL_DRIVER=resend and RESEND_API_KEY."
+      );
+    }
   }
 }
 
@@ -59,12 +69,22 @@ export class ResendMailAdapter implements MailAdapter {
         to: [message.to],
         subject: message.subject,
         text: message.text,
-        html: message.html ?? `<p>${message.text}</p>`,
+        html:
+          message.html ??
+          `<p>${message.text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>")}</p>`,
       }),
     });
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`Resend failed: ${res.status} ${body.slice(0, 200)}`);
+      throw new Error(`Resend failed: ${res.status} ${body.slice(0, 300)}`);
+    }
+    try {
+      const payload = (await res.json()) as { id?: string };
+      if (payload.id) {
+        console.info("[mail:resend]", JSON.stringify({ id: payload.id, to: message.to }));
+      }
+    } catch {
+      // Response body optional — send already succeeded.
     }
   }
 }
@@ -82,6 +102,11 @@ export function createMailAdapter(opts: {
     return new ResendMailAdapter(
       opts.resendApiKey,
       opts.resendFrom ?? "Hel Calafkaaga <support@helcalafkaaga.com>"
+    );
+  }
+  if (isProductionRuntime() && opts.driver !== "resend") {
+    console.error(
+      `[mail] WARNING: MAIL_DRIVER=${opts.driver || "console"} in production — password reset emails will fail until MAIL_DRIVER=resend is set.`
     );
   }
   return new ConsoleMailAdapter();

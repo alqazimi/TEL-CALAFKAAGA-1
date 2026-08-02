@@ -49,9 +49,17 @@ function ApiForgotPasswordInner() {
   const onRequestReset = async (data: EmailForm) => {
     setSending(true);
     try {
-      await auth.forgotPassword(normalizeAuthEmail(data.email));
+      const result = await auth.forgotPassword(normalizeAuthEmail(data.email));
+      if (!result.found) {
+        toast.error(t("auth.errorNoAccount"));
+        return;
+      }
+      if (!result.sent) {
+        toast.error(t("auth.resetSendFailed"));
+        return;
+      }
       setSent(true);
-      toast.success(t("auth.resetCodeSent"));
+      toast.success(t("auth.resetLinkSent"));
     } catch (error) {
       toast.error(getAuthErrorMessage(error, t("auth.resetSendFailed"), t));
     } finally {
@@ -143,7 +151,7 @@ function ApiForgotPasswordInner() {
   return (
     <AuthShell
       title={t("auth.resetTitle")}
-      description={sent ? t("auth.resetCodeSent") : t("auth.resetDesc")}
+      description={sent ? t("auth.resetLinkSent") : t("auth.resetDesc")}
       footer={
         <div className="text-center">
           <Link
@@ -158,7 +166,7 @@ function ApiForgotPasswordInner() {
     >
       {sent ? (
         <p className="text-sm text-muted-foreground text-center">
-          {t("auth.resetCodeSent")}
+          {t("auth.resetLinkSent")}
         </p>
       ) : (
         <form onSubmit={emailForm.handleSubmit(onRequestReset)} className="space-y-5">

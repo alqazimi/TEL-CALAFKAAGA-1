@@ -35,7 +35,11 @@ export function safeEqualHex(a: string, b: string): boolean {
 export const AUTH_FAILED_MESSAGE = "Invalid email or password";
 
 export const RESET_GENERIC_MESSAGE =
-  "If an account exists for that email, password reset instructions have been sent.";
+  "A password reset link has been sent to your email. Check your inbox and spam folder.";
+
+export const RESET_NOT_FOUND_MESSAGE =
+  "No account found with this email. Please register first, or check for typos.";
+
 
 /** Anti-enumeration register failure — same message for taken email and other create failures. */
 export const REGISTER_FAILED_MESSAGE = "Unable to create account";

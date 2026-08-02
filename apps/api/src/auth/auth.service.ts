@@ -14,6 +14,7 @@ import {
   AUTH_FAILED_MESSAGE,
   REGISTER_FAILED_MESSAGE,
   RESET_GENERIC_MESSAGE,
+  RESET_NOT_FOUND_MESSAGE,
   generateToken,
   hashToken,
   hmacSha256Hex,
@@ -570,11 +571,34 @@ export class AuthService {
     await this.audit("logout_all", { userId, ip });
   }
 
-  async forgotPassword(email: string, ip?: string): Promise<{ message: string }> {
+  async forgotPassword(
+    email: string,
+    ip?: string
+  ): Promise<{ found: boolean; sent: boolean; message: string }> {
     const emailNormalized = normalizeEmail(email);
-    const matches = emailNormalized
-      ? await this.findUsersMatchingEmail(emailNormalized)
-      : [];
+    if (!emailNormalized || !emailNormalized.includes("@")) {
+      throw new BadRequestException("Enter a valid email address");
+    }
+
+    let matches = await this.findUsersMatchingEmail(emailNormalized);
+
+    // Also resolve password AuthAccount rows (same identity signup checks).
+    if (matches.length === 0) {
+      const account = await this.prisma.authAccount.findFirst({
+        where: {
+          provider: "password",
+          providerAccountId: {
+            equals: emailNormalized,
+            mode: "insensitive",
+          },
+        },
+        select: { userId: true },
+      });
+      if (account) {
+        matches = await this.findUsersMatchingEmailByUserId(account.userId);
+      }
+    }
+
     const user = pickCanonicalEmailUser(
       matches.map((u) => this.toIdentityCandidate(u))
     );
@@ -584,48 +608,93 @@ export class AuthService {
 
     await this.audit("password_reset_request", {
       userId: fullUser?.id,
-      metadata: { requested: true, duplicateCount: matches.length },
+      metadata: {
+        requested: true,
+        found: !!fullUser,
+        duplicateCount: matches.length,
+      },
       ip,
     });
 
-    if (fullUser) {
-      const raw = generateToken(32);
-      const tokenHash = hashToken(raw);
-      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-      await this.prisma.passwordResetToken.create({
-        data: {
-          userId: fullUser.id,
-          tokenHash,
-          expiresAt,
-          ipHash: this.ipHash(ip),
-        },
-      });
-
-      const appUrl =
-        this.config.get<string>("APP_URL") ?? "http://127.0.0.1:3001";
-      const resetUrl = `${appUrl}/reset-password?token=${raw}`;
-      try {
-        await this.mail.send({
-          to: fullUser.email ?? emailNormalized,
-          subject: "Reset your Hel Calafkaaga password",
-          text: `Use this link within 15 minutes to reset your password:\n${resetUrl}\n\nIf you did not request this, ignore this email.`,
-        });
-      } catch (err) {
-        await this.audit("password_reset_failure", {
-          userId: fullUser.id,
-          metadata: {
-            reason: "mail_send_failed",
-            detail: err instanceof Error ? err.message.slice(0, 200) : "unknown",
-          },
-          ip,
-        });
-        throw new ServiceUnavailableException(
-          "Could not send the reset email. Please try again later."
-        );
-      }
+    if (!fullUser) {
+      return {
+        found: false,
+        sent: false,
+        message: RESET_NOT_FOUND_MESSAGE,
+      };
     }
 
-    return { message: RESET_GENERIC_MESSAGE };
+    const raw = generateToken(32);
+    const tokenHash = hashToken(raw);
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: fullUser.id,
+        tokenHash,
+        expiresAt,
+        ipHash: this.ipHash(ip),
+      },
+    });
+
+    const appUrl =
+      this.config.get<string>("APP_URL") ?? "http://127.0.0.1:3001";
+    const resetUrl = `${appUrl.replace(/\/$/, "")}/reset-password?token=${raw}`;
+    const to = fullUser.email ?? emailNormalized;
+    const text = `Use this link within 15 minutes to reset your Hel Calafkaaga password:\n\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
+    const html = `<p>Use this link within 15 minutes to reset your Hel Calafkaaga password:</p>
+<p><a href="${resetUrl}">Reset your password</a></p>
+<p style="word-break:break-all;color:#666;font-size:12px">${resetUrl}</p>
+<p>If you did not request this, ignore this email.</p>`;
+
+    try {
+      await this.mail.send({
+        to,
+        subject: "Reset your Hel Calafkaaga password",
+        text,
+        html,
+      });
+    } catch (err) {
+      await this.audit("password_reset_failure", {
+        userId: fullUser.id,
+        metadata: {
+          reason: "mail_send_failed",
+          detail: err instanceof Error ? err.message.slice(0, 200) : "unknown",
+        },
+        ip,
+      });
+      throw new ServiceUnavailableException(
+        "Could not send the reset email. Please try again later."
+      );
+    }
+
+    return {
+      found: true,
+      sent: true,
+      message: RESET_GENERIC_MESSAGE,
+    };
+  }
+
+  private async findUsersMatchingEmailByUserId(userId: string) {
+    const include = {
+      profile: {
+        select: {
+          id: true,
+          role: true,
+          banned: true,
+          hasPaid: true,
+          questionnaireComplete: true,
+          registrationComplete: true,
+        },
+      },
+      authAccounts: {
+        where: { provider: "password" as const },
+      },
+    };
+    const one = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include,
+    });
+    return one ? [one] : [];
   }
 
   async resetPassword(opts: {
