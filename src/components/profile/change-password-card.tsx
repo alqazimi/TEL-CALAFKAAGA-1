@@ -17,7 +17,14 @@ import { getSafeUserError } from "@/lib/safe-error";
 
 type ChangePasswordForm = z.infer<ReturnType<typeof createChangePasswordSchema>>;
 
-export function ChangePasswordCard({ embedded = false }: { embedded?: boolean }) {
+export function ChangePasswordCard({
+  embedded = false,
+  onSuccess,
+}: {
+  embedded?: boolean;
+  /** When set, caller handles success UX (e.g. forced-reset → login). */
+  onSuccess?: () => void | Promise<void>;
+}) {
   const { t } = useTranslation();
   const schema = useMemo(() => createChangePasswordSchema(t), [t]);
   const changePassword = useChangePassword();
@@ -40,7 +47,11 @@ export function ChangePasswordCard({ embedded = false }: { embedded?: boolean })
         newPassword: data.newPassword,
       });
       reset();
-      toast.success(t("profilePage.passwordChanged"));
+      if (onSuccess) {
+        await onSuccess();
+      } else {
+        toast.success(t("profilePage.passwordChanged"));
+      }
     } catch (error) {
       const message =
         getSafeUserError(error, t("profilePage.passwordChangeFailed"));
