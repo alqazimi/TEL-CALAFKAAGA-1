@@ -818,7 +818,9 @@ export function useRevokeStaffInvite() {
 }
 
 export function useResendStaffInvite() {
-  return useCallback(async (_args: { inviteId: string }) => {
-    throw new Error("Staff invite resend is not available in API mode");
-  }, []);
+  return useCallback(
+    async (args: { inviteId: string }) =>
+      apiAdmin.staffInvites.resend(args.inviteId),
+    []
+  );
 }

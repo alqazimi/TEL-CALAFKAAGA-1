@@ -582,7 +582,17 @@ export class ProfileService {
       );
     }
 
-    const womenBasicNeedsReview = profile.gender === "female";
+    const alreadyApproved =
+      profile.approved === true || profile.reviewStatus === "approved";
+    const isPremium = profile.hasPersonalSupport === true;
+    const isMale = profile.gender === "male";
+    // Women Basic still need admin review only if not already approved
+    // (Stripe/admin force-approve must not be undone here).
+    const womenBasicNeedsReview =
+      profile.gender === "female" &&
+      !isPremium &&
+      !alreadyApproved &&
+      profile.hasPaid === true;
 
     let patch: Prisma.ProfileUpdateInput = {
       questionnaireComplete: true,
@@ -593,18 +603,18 @@ export class ProfileService {
       statusChangedAt: new Date(),
     };
 
-    if (womenBasicNeedsReview) {
-      patch = {
-        ...patch,
-        reviewStatus: "incomplete",
-        approved: false,
-      };
-    } else if (profile.hasPaid) {
+    if (alreadyApproved || isPremium || (isMale && profile.hasPaid)) {
       patch = {
         ...patch,
         reviewStatus: "approved",
         approved: true,
-        approvedAt: new Date(),
+        approvedAt: profile.approvedAt ?? new Date(),
+      };
+    } else if (womenBasicNeedsReview) {
+      patch = {
+        ...patch,
+        reviewStatus: "pending_review",
+        approved: false,
       };
     } else {
       patch = {
@@ -614,35 +624,40 @@ export class ProfileService {
       };
     }
 
-    let updated = await this.prisma.profile.update({
+    const updated = await this.prisma.profile.update({
       where: { id: profile.id },
       data: patch,
     });
 
-    if (womenBasicNeedsReview && profile.hasPaid) {
-      updated = await this.prisma.profile.update({
-        where: { id: profile.id },
-        data: { reviewStatus: "pending_review", approved: false },
-      });
-    }
-
-    if (!womenBasicNeedsReview && profile.hasPaid) {
-      await this.scoreStub.enqueue(userId, "questionnaire_complete_paid_male");
+    if (updated.reviewStatus === "approved" && updated.hasPaid) {
+      await this.scoreStub.enqueue(
+        userId,
+        isMale
+          ? "questionnaire_complete_paid_male"
+          : "questionnaire_complete_paid_approved"
+      );
     }
 
     await this.audit(userId, "questionnaire_complete", profile.id, {
       gender: profile.gender,
       hasPaid: profile.hasPaid,
+      reviewStatus: updated.reviewStatus,
     });
 
     await this.prisma.$transaction(async (tx) => {
       await this.accountStatus.recordHistory(tx, {
         userId,
         profileId: profile.id,
-        eventType: "submitted",
+        eventType:
+          updated.reviewStatus === "approved" ? "approved" : "submitted",
         previousStatus: profile.reviewStatus,
         newStatus: updated.reviewStatus,
-        publicUserMessage: "Profile information submitted for review.",
+        publicUserMessage:
+          updated.reviewStatus === "approved"
+            ? "Profile completed and approved. You can browse matches."
+            : updated.reviewStatus === "pending_review"
+              ? "Profile information submitted for review."
+              : "Profile information saved. Complete payment to continue.",
         performedByAdminName: "System",
       });
     });

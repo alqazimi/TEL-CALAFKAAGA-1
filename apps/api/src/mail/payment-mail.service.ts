@@ -38,15 +38,17 @@ export class PaymentMailService {
     gender: string;
     title: string;
     body: string;
+    /** When true (Stripe / force approve), never use pending-review template. */
+    profileApproved?: boolean;
   }) {
     const template: PaymentMailTemplate =
       opts.isUpgrade || opts.isPremium
         ? opts.isUpgrade
           ? "premium_upgrade"
           : "payment_success"
-        : opts.gender === "female"
-          ? "payment_pending_review"
-          : "payment_success";
+        : opts.profileApproved === true || opts.gender !== "female"
+          ? "payment_success"
+          : "payment_pending_review";
 
     await this.enqueue({
       userId: opts.userId,

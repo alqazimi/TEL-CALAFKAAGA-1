@@ -285,6 +285,12 @@ export const apiAdmin: AdminAdapter = {
         {}
       );
     },
+    async resend(id) {
+      return apiClient.post(
+        `/admin/staff-invites/${encodeURIComponent(id)}/resend`,
+        {}
+      );
+    },
     async getByToken(token) {
       return apiClient.get(`/staff-invites/${encodeURIComponent(token)}`);
     },

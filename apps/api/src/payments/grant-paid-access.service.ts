@@ -304,6 +304,9 @@ export class GrantPaidAccessService {
               gender: profile?.gender ?? "male",
               title: n.title,
               body: n.body,
+              profileApproved:
+                profile?.approved === true ||
+                profile?.reviewStatus === "approved",
             });
           }
         }

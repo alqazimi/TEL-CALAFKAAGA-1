@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import { Inject } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import {
@@ -75,8 +76,15 @@ export class AdminUsersService {
     private readonly notifQueue: NotificationQueueService,
     private readonly mediaAccess: MediaAccessService,
     private readonly accountStatus: AccountStatusService,
+    private readonly config: ConfigService,
     @Inject(MAIL_ADAPTER) private readonly mail: MailAdapter
   ) {}
+
+  private appUrl(): string {
+    return (
+      this.config.get<string>("APP_URL") ?? "https://www.helcalafkaaga.com"
+    ).replace(/\/$/, "");
+  }
 
   private async notifyApproval(opts: {
     userId: string;
@@ -101,10 +109,16 @@ export class AdminUsersService {
       },
     });
     if (opts.sendEmail !== false && user.email) {
+      const path = opts.emailCta?.path ?? "/matches";
+      const absolute =
+        path.startsWith("http://") || path.startsWith("https://")
+          ? path
+          : `${this.appUrl()}${path.startsWith("/") ? path : `/${path}`}`;
       await this.mail.send({
         to: user.email,
         subject: opts.title,
-        text: `${opts.body}\n\n${opts.emailCta?.label ?? "Open app"}: ${opts.emailCta?.path ?? "/matches"}`,
+        text: `${opts.body}\n\n${opts.emailCta?.label ?? "Open app"}: ${absolute}`,
+        html: `<p>${opts.body}</p><p><a href="${absolute}">${opts.emailCta?.label ?? "Open app"}</a></p>`,
       });
       await this.notifQueue.enqueueEmailStub({
         notificationId: notification.id,

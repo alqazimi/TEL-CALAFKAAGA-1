@@ -53,6 +53,13 @@ export class StaffInvitesController {
     return this.invites.revoke(user.id, id);
   }
 
+  @Post("admin/staff-invites/:id/resend")
+  @Roles("owner")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  resend(@CurrentUser() user: RequestUser, @Param("id") id: string) {
+    return this.invites.resend(user.id, id);
+  }
+
   @Public()
   @Get("staff-invites/:token")
   getByToken(@Param("token") token: string) {

@@ -49,6 +49,10 @@ function mergeAccessStateIntoUser(
       profile[key] = value;
     }
   };
+  /** Always trust live accessState for approval/payment — stale SPA session was keeping “pending”. */
+  const overwrite = (key: string, value: unknown) => {
+    if (value !== undefined) profile[key] = value;
+  };
   fill("questionnaireComplete", accessState.questionnaireComplete);
   fill(
     "registrationComplete",
@@ -56,9 +60,12 @@ function mergeAccessStateIntoUser(
       ? accessState.genderComplete
       : undefined
   );
-  fill("approved", accessState.approved);
-  fill("reviewStatus", accessState.reviewStatus);
-  fill("hasPersonalSupport", accessState.hasPersonalSupport);
+  overwrite("approved", accessState.approved);
+  overwrite("reviewStatus", accessState.reviewStatus);
+  overwrite("hasPersonalSupport", accessState.hasPersonalSupport);
+  if (typeof accessState.hasPaid === "boolean") {
+    overwrite("hasPaid", accessState.hasPaid);
+  }
   return { ...user, profile };
 }
 

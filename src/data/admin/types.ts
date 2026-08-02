@@ -100,6 +100,7 @@ export type AdminAdapter = {
     list(): Promise<unknown>;
     create(body: Record<string, unknown>): Promise<unknown>;
     revoke(id: string): Promise<unknown>;
+    resend(id: string): Promise<unknown>;
     getByToken(token: string): Promise<unknown>;
     accept(token: string, body?: Record<string, unknown>): Promise<unknown>;
   };
