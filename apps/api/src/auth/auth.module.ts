@@ -34,10 +34,23 @@ import { SessionService } from "./session.service";
             `[mail] MAIL_DRIVER must be "resend" in production (got "${driver}"). Password reset emails will not deliver.`
           );
         }
+        const resendApiKey =
+          config.get<string>("RESEND_API_KEY") ||
+          config.get<string>("AUTH_RESEND_KEY") ||
+          undefined;
+        const resendFrom =
+          config.get<string>("RESEND_FROM") ||
+          config.get<string>("AUTH_EMAIL_FROM") ||
+          undefined;
+        if (driver === "resend" && !resendApiKey) {
+          console.error(
+            "[mail] MAIL_DRIVER=resend but neither RESEND_API_KEY nor AUTH_RESEND_KEY is set."
+          );
+        }
         return createMailAdapter({
           driver,
-          resendApiKey: config.get<string>("RESEND_API_KEY"),
-          resendFrom: config.get<string>("RESEND_FROM"),
+          resendApiKey,
+          resendFrom,
         });
       },
       inject: [ConfigService],

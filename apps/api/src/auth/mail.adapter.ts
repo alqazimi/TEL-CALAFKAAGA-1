@@ -101,7 +101,7 @@ export function createMailAdapter(opts: {
     }
     return new ResendMailAdapter(
       opts.resendApiKey,
-      opts.resendFrom ?? "Hel Calafkaaga <support@helcalafkaaga.com>"
+      opts.resendFrom ?? "Hel Calafkaaga <noreply@helcalafkaaga.com>"
     );
   }
   if (isProductionRuntime() && opts.driver !== "resend") {

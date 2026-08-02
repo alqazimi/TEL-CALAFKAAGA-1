@@ -20,6 +20,9 @@ export const envSchema = z.object({
   MAIL_DRIVER: z.enum(["console", "resend", "disabled"]).default("console"),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM: z.string().optional(),
+  /** Legacy Convex / Render aliases — preferred names are RESEND_*. */
+  AUTH_RESEND_KEY: z.string().optional(),
+  AUTH_EMAIL_FROM: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_GATEWAY: z.enum(["live", "fake"]).optional(),
