@@ -247,14 +247,20 @@ export const so: Translations = {
     signingIn: "Waa la galayaa...",
     welcomeBackToast: "Ku soo dhawoow mar kale!",
     mfaTitle: "Koodhka xaqiijinta",
-    mfaDesc: "Geli koodhka 6-tirada ah ee app-ka xaqiijinta.",
+    mfaDesc:
+      "Geli koodhka 6-tirada ah ee app-ka xaqiijinta, ama koodh soo kabasho.",
     mfaCode: "Koodhka xaqiijinta",
+    mfaCodePlaceholder: "000000 ama ABCD-EFGH",
+    mfaRecoveryHint: "Ma lumin device-kaaga? Isticmaal koodh soo kabasho ah.",
     mfaVerify: "Xaqiiji oo gal",
     mfaVerifying: "Waa la xaqiijinayaa...",
     mfaBack: "Ku noqo gelitaanka",
     mfaInvalid: "Koodhka waa khaldan ama wuu dhacay. Isku day mar kale.",
     mfaEnrollRequiredDesc:
       "Akoonnada shaqaalaha waa inay furaan MFA ka hor inta aysan sii wadin. Sawir QR-ka, xaqiiji koodh, oo kaydi koodhadka soo kabashada.",
+    errorPasswordResetRequired: "Waa inaad beddeshaa furaha ka hor intaadan sii wadin.",
+    errorEmailVerificationRequired: "Xaqiiji email-kaaga ka hor intaadan sii wadin.",
+    errorMfaEnrollmentRequired: "Fur MFA ka hor intaadan sii wadin.",
     findMatch: "Hel lammaanahaaga ujeedo leh",
     findMatchDesc:
       "Platform la isku halayn karo oo Muslimiinta u doonaya guur iyadoo lagu saleynayo iimaanka, iswaafajinta, iyo ixtiraamka.",
@@ -1019,6 +1025,8 @@ export const so: Translations = {
     mfaDisableConfirm: "Xir",
     mfaRegenerate: "Dib u abuuri koodhadka soo kabashada",
     mfaCodesRemaining: "{{count}} koodhad soo kabasho ah ayaa hadhay",
+    mfaRequiredLocked:
+      "MFA waa loo baahan yahay akoonnada shaqaalaha oo halkan lagama xiri karo. Weydiiso milkiilaha haddii aad luminayso device-ka.",
     mfaNotEligible: "MFA waxaa loogu talagalay oo keliya akoonnada shaqaalaha.",
     accountSectionDesc: "Cusbooneysii magacaaga iyo xiriirkaaga.",
     securitySection: "Amniga",
@@ -1509,6 +1517,14 @@ export const so: Translations = {
     any: "Mid kasta",
     moderationTitle: "Kormeer",
     moderationHint: "Haddii ay si xun u hadlaan chat-ka, halkan ka diid ama mamnuuc.",
+    mfaSectionTitle: "MFA shaqaalaha",
+    resetMfa: "Dib u deji MFA",
+    resetMfaHint:
+      "Wuxuu tirtiraa MFA marka device-ka la lumiyo. Waa inay dib u furaan marka xigta.",
+    resetMfaConfirmTitle: "Ma dib u dejisaa MFA ee maamulahan?",
+    resetMfaConfirm:
+      "Tani waxay ka saaraysaa MFA {{name}}. Waa inay dib u furaan. Ficilkani waa la xisaabiyaa.",
+    resetMfaSuccess: "MFA waa la dib u dejiyay. Weydiiso inay dib u furaan.",
     activityTitle: "Soo koobid dhaqdhaqaaqa",
     messagesLabel: "Fariimo",
     likesGivenLabel: "Likes la diray",

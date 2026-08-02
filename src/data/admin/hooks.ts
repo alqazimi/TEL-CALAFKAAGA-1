@@ -594,6 +594,13 @@ export function useAdminSetRole() {
   );
 }
 
+export function useAdminResetMfa() {
+  return useCallback(
+    async (profileId: string) => apiAdmin.users.resetMfa(profileId),
+    []
+  );
+}
+
 export function useAdminCreateAnnouncement() {
   return useCallback(
     async (body: Record<string, unknown>) =>

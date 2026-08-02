@@ -1,5 +1,7 @@
 import type { TranslationPath } from "@/lib/i18n/translations";
 import { getSafeUserError, isTechnicalErrorMessage } from "@/lib/safe-error";
+import { ApiClientError } from "@/data/api-client";
+import { SECURITY_GATE_CODES } from "@/lib/security-gate-codes";
 
 type TranslateFn = (key: TranslationPath) => string;
 
@@ -14,6 +16,21 @@ export function getAuthErrorMessage(
   fallback: string,
   t?: TranslateFn
 ): string {
+  if (error instanceof ApiClientError && error.code) {
+    if (error.code === SECURITY_GATE_CODES.PASSWORD_RESET_REQUIRED) {
+      return t?.("auth.errorPasswordResetRequired") ?? fallback;
+    }
+    if (error.code === SECURITY_GATE_CODES.EMAIL_VERIFICATION_REQUIRED) {
+      return t?.("auth.errorEmailVerificationRequired") ?? fallback;
+    }
+    if (error.code === SECURITY_GATE_CODES.MFA_ENROLLMENT_REQUIRED) {
+      return t?.("auth.errorMfaEnrollmentRequired") ?? fallback;
+    }
+    if (error.status === 429) {
+      return t?.("auth.errorTooManyAttempts") ?? fallback;
+    }
+  }
+
   if (!(error instanceof Error)) {
     return fallback;
   }

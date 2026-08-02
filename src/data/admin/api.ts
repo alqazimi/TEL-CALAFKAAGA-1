@@ -192,6 +192,12 @@ export const apiAdmin: AdminAdapter = {
         { reviewed }
       );
     },
+    async resetMfa(id) {
+      return apiClient.post<{ ok: boolean }>(
+        `/admin/users/${encodeURIComponent(id)}/reset-mfa`,
+        {}
+      );
+    },
   },
   reports: {
     async list(opts) {

@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from "./provider";
 import { track } from "./telemetry";
+import { redirectForSecurityGateCode } from "@/lib/security-gate-codes";
 
 export type ApiErrorShape = {
   status: number;
@@ -225,6 +226,9 @@ export async function apiFetch<T = unknown>(
       if (!res.ok) {
         const err = await normalizeError(res);
         track("api_error", { status: err.status, code: err.code ?? "" });
+        if (err.status === 403 && err.code) {
+          redirectForSecurityGateCode(err.code);
+        }
         // Retry only on 5xx / network for allowed methods
         if (
           attempt < maxAttempts &&

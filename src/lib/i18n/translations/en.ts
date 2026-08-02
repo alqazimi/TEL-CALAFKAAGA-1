@@ -245,14 +245,20 @@ export const en = {
     signingIn: "Signing in...",
     welcomeBackToast: "Welcome back!",
     mfaTitle: "Authenticator code",
-    mfaDesc: "Enter the 6-digit code from your authenticator app.",
+    mfaDesc:
+      "Enter the 6-digit code from your authenticator app, or a recovery code.",
     mfaCode: "Authentication code",
+    mfaCodePlaceholder: "000000 or ABCD-EFGH",
+    mfaRecoveryHint: "Lost your device? Use a one-time recovery code instead.",
     mfaVerify: "Verify and sign in",
     mfaVerifying: "Verifying...",
     mfaBack: "Back to sign in",
     mfaInvalid: "Invalid or expired code. Try again.",
     mfaEnrollRequiredDesc:
       "Staff accounts must enable authenticator MFA before continuing. Scan the QR code, confirm a code, and save your recovery codes.",
+    errorPasswordResetRequired: "You must change your password before continuing.",
+    errorEmailVerificationRequired: "Verify your email before continuing.",
+    errorMfaEnrollmentRequired: "Enable authenticator MFA before continuing.",
     findMatch: "Find your match with purpose",
     findMatchDesc:
       "A trusted platform for Muslims seeking marriage through faith, compatibility, and respect.",
@@ -1010,6 +1016,8 @@ export const en = {
     mfaDisableConfirm: "Disable",
     mfaRegenerate: "Regenerate recovery codes",
     mfaCodesRemaining: "{{count}} recovery codes remaining",
+    mfaRequiredLocked:
+      "MFA is required for staff accounts and cannot be disabled here. Ask an owner to reset MFA if you lost your device.",
     mfaNotEligible: "MFA is only available for staff accounts.",
     accountSectionDesc: "Update your name and contact details.",
     securitySection: "Security",
@@ -1499,6 +1507,14 @@ export const en = {
     any: "Any",
     moderationTitle: "Moderation",
     moderationHint: "If they speak wrongly in chat, reject or ban them here.",
+    mfaSectionTitle: "Staff MFA",
+    resetMfa: "Reset MFA",
+    resetMfaHint:
+      "Clears authenticator enrollment after device loss. They must enroll again at next sign-in when MFA is required.",
+    resetMfaConfirmTitle: "Reset MFA for this admin?",
+    resetMfaConfirm:
+      "This removes MFA for {{name}}. They will need to enroll again. This action is audited.",
+    resetMfaSuccess: "MFA reset. Ask them to enroll again.",
     activityTitle: "Activity summary",
     messagesLabel: "Messages",
     likesGivenLabel: "Likes sent",

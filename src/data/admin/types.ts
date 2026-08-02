@@ -68,6 +68,8 @@ export type AdminAdapter = {
     delete(id: string, dryRun?: boolean): Promise<unknown>;
     setRole(id: string, role: string): Promise<unknown>;
     advisorReviewed(id: string, reviewed: boolean): Promise<unknown>;
+    /** L4: clear staff MFA (profile id). H4 hierarchy enforced server-side. */
+    resetMfa(id: string): Promise<{ ok: boolean }>;
   };
   reports: {
     list(opts?: Record<string, unknown>): Promise<unknown>;

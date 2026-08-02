@@ -31,6 +31,13 @@ export default function ApiLoginForm() {
     await refresh?.();
     const user = await auth.getCurrentUser();
     toast.success(t("auth.welcomeBackToast"));
+    if (
+      (user as { mfaEnrollmentRequired?: boolean } | null)
+        ?.mfaEnrollmentRequired === true
+    ) {
+      router.push("/enroll-mfa");
+      return;
+    }
     const profileForRoute =
       (user?.profile as Parameters<typeof getAuthenticatedHomeRoute>[0]) ??
       ({
@@ -71,6 +78,7 @@ export default function ApiLoginForm() {
     try {
       await verifyMfaLogin(mfaToken, mfaCode.trim());
       setMfaToken(null);
+      setMfaCode("");
       await finishLogin();
     } catch (error) {
       toast.error(getAuthErrorMessage(error, t("auth.mfaInvalid"), t));
@@ -100,15 +108,19 @@ export default function ApiLoginForm() {
           }
         >
           <form onSubmit={onVerifyMfa} className="space-y-5">
-            <FormField label={t("auth.mfaCode")} htmlFor="mfaCode">
+            <FormField
+              label={t("auth.mfaCode")}
+              htmlFor="mfaCode"
+              hint={t("auth.mfaRecoveryHint")}
+            >
               <Input
                 id="mfaCode"
-                inputMode="numeric"
                 autoComplete="one-time-code"
+                spellCheck={false}
                 className="h-13 rounded-2xl text-center text-lg tracking-widest"
                 value={mfaCode}
                 onChange={(ev) => setMfaCode(ev.target.value)}
-                placeholder="000000"
+                placeholder={t("auth.mfaCodePlaceholder")}
                 maxLength={32}
                 required
               />

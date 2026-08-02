@@ -20,7 +20,6 @@ import {
   type RequestUser,
 } from "../auth/auth.guards";
 import { CsrfGuard } from "../auth/csrf";
-import { MfaService } from "../auth/mfa.service";
 import { RateLimitGuard } from "../redis/rate-limit.guard";
 import { AdminUsersService } from "./admin-users.service";
 
@@ -37,10 +36,7 @@ function parseBody<T>(schema: z.ZodType<T>, body: unknown): T {
 @Controller("admin/users")
 @Roles("admin")
 export class AdminUsersController {
-  constructor(
-    private readonly users: AdminUsersService,
-    private readonly mfa: MfaService
-  ) {}
+  constructor(private readonly users: AdminUsersService) {}
 
   @Get()
   @UseGuards(RateLimitGuard)
@@ -306,12 +302,12 @@ export class AdminUsersController {
     @Param("id") id: string,
     @Req() req: Request
   ) {
-    return this.mfa.adminResetMfa({
-      actorUserId: user.id,
-      actorRole: user.role === "owner" ? "owner" : "admin",
-      targetUserId: id,
-      ip: req.ip,
-    });
+    return this.users.resetUserMfa(
+      user.id,
+      user.role === "owner" ? "owner" : "admin",
+      id,
+      req.ip
+    );
   }
 
   @Post(":id/pause")

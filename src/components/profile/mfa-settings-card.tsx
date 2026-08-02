@@ -212,14 +212,21 @@ export function MfaSettingsCard({
           )}
 
           {status.enabled && mode === "idle" && (
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" onClick={() => setMode("regen")}>
-                {t("profilePage.mfaRegenerate")}
-              </Button>
-              {!status.required && (
-                <Button type="button" variant="outline" onClick={() => setMode("disable")}>
-                  {t("profilePage.mfaDisable")}
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" onClick={() => setMode("regen")}>
+                  {t("profilePage.mfaRegenerate")}
                 </Button>
+                {!status.required && (
+                  <Button type="button" variant="outline" onClick={() => setMode("disable")}>
+                    {t("profilePage.mfaDisable")}
+                  </Button>
+                )}
+              </div>
+              {status.required && (
+                <p className="text-xs text-muted-foreground">
+                  {t("profilePage.mfaRequiredLocked")}
+                </p>
               )}
             </div>
           )}

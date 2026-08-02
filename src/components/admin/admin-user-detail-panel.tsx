@@ -23,6 +23,7 @@ import {
   useAdminResumeUser,
   useAdminRejectUser,
   useAdminRequestPhoto,
+  useAdminResetMfa,
   useAdminUserActivity,
   useAdminUserDetail,
   useAdminUserStatusHistory,
@@ -40,6 +41,8 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { getSafeUserError } from "@/lib/safe-error";
+import { useApiAuth } from "@/components/auth/api-auth-provider";
+import { ShieldOff } from "lucide-react";
 
 interface AdminUserDetailPanelProps {
   profileId: string;
@@ -104,6 +107,7 @@ export function AdminUserDetailPanel({
   onActionComplete,
 }: AdminUserDetailPanelProps) {
   const { t } = useTranslation();
+  const { user: actor } = useApiAuth();
   const { detail: detailRaw, reload: reloadDetail } = useAdminUserDetail(
     profileId,
     true
@@ -155,9 +159,12 @@ export function AdminUserDetailPanel({
   const banUser = useAdminBanUser();
   const rejectUser = useAdminRejectUser();
   const approveUser = useAdminApproveUser();
+  const resetMfa = useAdminResetMfa();
   const [photoBusy, setPhotoBusy] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
-  const [confirm, setConfirm] = useState<"ban" | "unban" | "reject" | null>(null);
+  const [confirm, setConfirm] = useState<
+    "ban" | "unban" | "reject" | "reset-mfa" | null
+  >(null);
 
   const yesNo = (value: boolean | undefined) => {
     if (value === undefined) return "—";
@@ -169,6 +176,16 @@ export function AdminUserDetailPanel({
     detail?.profile &&
     !isStaffRole(detail.profile.role) &&
     !isOwnerRole(detail.profile.role);
+  const actorIsOwner = isOwnerRole(
+    (actor as { role?: string } | null)?.role ??
+      (actor?.profile as { role?: string } | null | undefined)?.role
+  );
+  const canResetMfa =
+    actorIsOwner &&
+    !!detail?.profile &&
+    isStaffRole(detail.profile.role) &&
+    detail.profile.role === "admin" &&
+    detail.profile.mfaEnabled === true;
   const canApproveDetail =
     !!detail?.profile &&
     canModerate &&
@@ -473,6 +490,26 @@ export function AdminUserDetailPanel({
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">{t("adminDetail.moderationHint")}</p>
+                </DetailSection>
+              )}
+
+              {canResetMfa && (
+                <DetailSection title={t("adminDetail.mfaSectionTitle")}>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-lg"
+                      disabled={actionBusy}
+                      onClick={() => setConfirm("reset-mfa")}
+                    >
+                      <ShieldOff className="mr-1.5 h-3.5 w-3.5" />
+                      {t("adminDetail.resetMfa")}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t("adminDetail.resetMfaHint")}
+                  </p>
                 </DetailSection>
               )}
 
@@ -883,21 +920,29 @@ export function AdminUserDetailPanel({
                 ? t("adminPage.rejectConfirmTitle")
                 : confirm === "ban"
                   ? t("adminPage.banConfirmTitle")
-                  : t("adminPage.unbanConfirmTitle")
+                  : confirm === "reset-mfa"
+                    ? t("adminDetail.resetMfaConfirmTitle")
+                    : t("adminPage.unbanConfirmTitle")
             }
             description={
               confirm === "reject"
                 ? t("adminPage.rejectConfirm", { name: detail?.profile.name ?? "" })
                 : confirm === "ban"
                   ? t("adminPage.banConfirm", { name: detail?.profile.name ?? "" })
-                  : t("adminPage.unbanConfirm", { name: detail?.profile.name ?? "" })
+                  : confirm === "reset-mfa"
+                    ? t("adminDetail.resetMfaConfirm", {
+                        name: detail?.profile.name ?? "",
+                      })
+                    : t("adminPage.unbanConfirm", { name: detail?.profile.name ?? "" })
             }
             confirmLabel={
               confirm === "reject"
                 ? t("adminPage.rejectShort")
                 : confirm === "ban"
                   ? t("adminPage.banShort")
-                  : t("adminPage.unbanShort")
+                  : confirm === "reset-mfa"
+                    ? t("adminDetail.resetMfa")
+                    : t("adminPage.unbanShort")
             }
             cancelLabel={t("common.cancel")}
             tone={confirm === "unban" ? "warning" : "danger"}
@@ -906,7 +951,28 @@ export function AdminUserDetailPanel({
               if (actionBusy) return;
               setConfirm(null);
             }}
-            onConfirm={() => void runModeration(confirm)}
+            onConfirm={() => {
+              if (confirm === "reset-mfa") {
+                void (async () => {
+                  setActionBusy(true);
+                  try {
+                    await resetMfa(profileId);
+                    toast.success(t("adminDetail.resetMfaSuccess"));
+                    setConfirm(null);
+                    reloadDetail();
+                    onActionComplete?.();
+                  } catch (error) {
+                    toast.error(
+                      getSafeUserError(error, t("adminPage.actionFailed"))
+                    );
+                  } finally {
+                    setActionBusy(false);
+                  }
+                })();
+                return;
+              }
+              void runModeration(confirm);
+            }}
           />
         )}
       </motion.div>

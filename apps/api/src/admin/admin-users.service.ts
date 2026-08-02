@@ -35,6 +35,7 @@ import { buildAdminUserDateFilter } from "./admin-user-date-filter";
 import type { ReviewStatus } from "@prisma/client";
 import { normalizeEmail } from "../auth/crypto-util";
 import { emailMatchWhere } from "../auth/email-identity";
+import { MfaService } from "../auth/mfa.service";
 
 const SOMALI_PHOTO_MSG =
   "Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.";
@@ -77,6 +78,7 @@ export class AdminUsersService {
     private readonly mediaAccess: MediaAccessService,
     private readonly accountStatus: AccountStatusService,
     private readonly config: ConfigService,
+    private readonly mfa: MfaService,
     @Inject(MAIL_ADAPTER) private readonly mail: MailAdapter
   ) {}
 
@@ -462,7 +464,17 @@ export class AdminUsersService {
   async getUserDetail(profileId: string, actorUserId: string, actorRole: "admin" | "owner") {
     const profile = await this.prisma.profile.findUnique({
       where: { id: profileId },
-      include: { user: { select: { email: true, id: true, convexId: true } } },
+      include: {
+        user: {
+          select: {
+            email: true,
+            id: true,
+            convexId: true,
+            mfaEnabled: true,
+            mfaEnabledAt: true,
+          },
+        },
+      },
     });
     if (!profile) throw new NotFoundException("Profile not found");
     const preferences = await this.prisma.preference.findUnique({
@@ -487,10 +499,35 @@ export class AdminUsersService {
         profileImageId: profile.profileImageMediaId ?? profile.profileImageConvexId,
         profileImageMediaId: profile.profileImageMediaId,
         imageUrl,
+        mfaEnabled: profile.user.mfaEnabled === true,
+        mfaEnabledAt: profile.user.mfaEnabledAt?.toISOString() ?? null,
         user: undefined,
       },
       preferences,
     };
+  }
+
+  /**
+   * L4: reset staff MFA by profile id (same :id convention as ban/approve).
+   * Authorization uses H4 hierarchy inside MfaService.adminResetMfa.
+   */
+  async resetUserMfa(
+    actorUserId: string,
+    actorRole: "admin" | "owner",
+    profileId: string,
+    ip?: string
+  ) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id: profileId },
+      select: { userId: true, role: true },
+    });
+    if (!profile) throw new NotFoundException("Profile not found");
+    return this.mfa.adminResetMfa({
+      actorUserId,
+      actorRole,
+      targetUserId: profile.userId,
+      ip,
+    });
   }
 
   async getUserActivity(

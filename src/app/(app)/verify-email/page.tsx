@@ -7,7 +7,43 @@ import { useApiAuth } from "@/components/auth/api-auth-provider";
 import { Button } from "@/components/ui/button";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { apiClient } from "@/data/api-client";
+import { auth } from "@/data/auth";
 import { useTranslation } from "@/lib/i18n/context";
+import { getAuthenticatedHomeRoute } from "@/lib/routes";
+
+function nextRouteAfterVerify(user: {
+  emailVerified?: boolean;
+  mfaEnrollmentRequired?: boolean;
+  mustResetPassword?: boolean;
+  role?: string;
+  hasPaid?: boolean;
+  profile?: Record<string, unknown> | null;
+} | null): string {
+  if (!user) return "/login";
+  if (
+    user.mustResetPassword ||
+    (user.profile as { mustResetPassword?: boolean } | null | undefined)
+      ?.mustResetPassword
+  ) {
+    return "/change-password";
+  }
+  if (
+    user.mfaEnrollmentRequired ||
+    (user.profile as { mfaEnrollmentRequired?: boolean } | null | undefined)
+      ?.mfaEnrollmentRequired
+  ) {
+    return "/enroll-mfa";
+  }
+  const profileForRoute =
+    (user.profile as Parameters<typeof getAuthenticatedHomeRoute>[0]) ??
+    ({
+      role: user.role,
+      hasPaid: user.hasPaid,
+      questionnaireComplete: true,
+      registrationComplete: true,
+    } as Parameters<typeof getAuthenticatedHomeRoute>[0]);
+  return getAuthenticatedHomeRoute(profileForRoute);
+}
 
 function VerifyEmailInner() {
   const { t } = useTranslation();
@@ -42,7 +78,9 @@ function VerifyEmailInner() {
         setDone(true);
         toast.success(t("auth.verifyEmailSuccess"));
         await refresh();
-        router.replace("/register/details");
+        const current = await auth.getCurrentUser();
+        if (cancelled) return;
+        router.replace(nextRouteAfterVerify(current as never));
       } catch {
         if (cancelled) return;
         toast.error(t("auth.verifyEmailFailed"));
@@ -60,9 +98,9 @@ function VerifyEmailInner() {
 
   useEffect(() => {
     if (!isLoading && emailVerified && !token) {
-      router.replace("/dashboard");
+      router.replace(nextRouteAfterVerify(user as never));
     }
-  }, [isLoading, emailVerified, token, router]);
+  }, [isLoading, emailVerified, token, router, user]);
 
   if (isLoading || verifying) {
     return <MemberDataLoading />;
@@ -95,7 +133,8 @@ function VerifyEmailInner() {
             if (res?.alreadyVerified) {
               toast.success(t("auth.verifyEmailAlready"));
               await refresh();
-              router.replace("/dashboard");
+              const current = await auth.getCurrentUser();
+              router.replace(nextRouteAfterVerify(current as never));
               return;
             }
             toast.success(t("auth.verifyEmailResent"));
