@@ -1,25 +1,30 @@
 # Hel Calafkaaga — Full Product & Technical Report (Mobile App)
 
-**Audience:** Backend / platform / frontend / mobile engineers  
+**Audience:** Backend / platform / frontend / mobile / Play Store engineers  
 **Product:** Halal Muslim marriage matchmaking (**native mobile app**)  
-**Last updated:** 27 July 2026  
+**Last updated:** 3 August 2026  
 **Marketing site:** `https://helcalafkaaga.com` / `https://www.helcalafkaaga.com`  
 **Production API:** NestJS on Render (e.g. `https://tel-calafkaaga-1.onrender.com`)  
 **App ID:** `com.telcalafkaaga.app` · Version `1.0.0` · Capacitor `7.x`
 
-> This document describes the **mobile monorepo** (Capacitor / React / Vite + NestJS API + PostgreSQL).  
-> It pairs with the **website** report (`FULL_REPORT.md` in the Next.js monorepo). Both clients share one Nest backend.  
-> Do **not** use Convex URLs, `$10/$20` flat pricing, 7-day free trial unlock, or ≥70% discover thresholds as current truth.
+> Canonical filename: **`FULL_REPORT_MOBILE.md`**  
+> This file is the mobile / Play Store handoff. It pairs with `FULL_REPORT.md` (website) in this Next.js monorepo.  
+> Both clients share **one NestJS API**. Do **not** use Convex, free-trial unlock, or outdated pricing as current truth.
 
-**There is no Convex backend.** Legacy `convexId` / `convex_user_id` columns exist only for migration parity. Import tooling lives under `packages/migration/`.
+---
 
-**There is no Next.js website in the mobile repo.** Website lives in a separate monorepo; the mobile repo ships `apps/client` (Capacitor) + `apps/api` (Nest).
+## 0. Important: two repos
 
-> **Note:** When this file lives in the **website** workspace (`Hel-Calafkaaga`), it is the companion mobile handoff. Copy it into the Capacitor monorepo as needed. Canonical filename: `FULL_REPORT_MOBILE.md`.
+| Repo | What it contains | Deploy |
+|------|------------------|--------|
+| **This workspace** (`Hel-Calafkaaga`) | Next.js website (`src/`) + Nest API (`apps/api`) | Vercel + Render |
+| **Mobile monorepo** (separate) | Capacitor client (`apps/client`) + Android/iOS + Nest (or shared API) | Play / App Store + Render |
 
-Related docs (mobile repo): `README.md`, `PRIVACY_DATA_MAP.md`, `ACCOUNT_DELETION.md`, `STORE_POLICY_DECISIONS.md`, `RELEASE_CHECKLIST.md`.
+**In this website workspace there is no `apps/client` / `android/` folder.**  
+Play Store builds require the Capacitor monorepo (or adding Capacitor here later).  
+Keep this report as the shared product/API truth for mobile engineers.
 
-Canonical filename for cross-repo copy: `FULL_REPORT_MOBILE.md` (same content as this file).
+Related (mobile repo when present): `README.md`, `PRIVACY_DATA_MAP.md`, `ACCOUNT_DELETION.md`, `STORE_POLICY_DECISIONS.md`, `RELEASE_CHECKLIST.md`, `store/README.md`.
 
 ---
 
@@ -31,6 +36,7 @@ Hel Calafkaaga connects Muslim men and women seeking **marriage** (not casual da
 
 ```
 Register (email + password)
+  → Email verification (M3)
   → Choose gender
   → Complete questionnaire (+ photo)
   → Pay (Stripe card OR EVC / M-PESA proof)
@@ -38,9 +44,16 @@ Register (email + password)
   → Home / Discover / Matches / Chat
 ```
 
+Forced password reset (M4) and staff MFA (L4) can interrupt that flow when the API requires them.
+
 ### Staff
 
-`admin` / `owner` manage members, payments (Stripe + EVC), reports, support inbox, announcements, and invites. Staff profiles are **hidden** from member Discover / matches / chat lists.
+`admin` / `owner` manage members, payments (Stripe + EVC), reports, support, announcements, and invites.
+
+**Staff profiles are hidden from member Discover / matches / likes / chat.**  
+Members must never see admin/owner cards or photos on dating surfaces (`shouldHideProfileFromViewer`).
+
+Photo privacy copy like “Visible to everyone / Members browsing Discover can see your photos” applies to **member → member** privacy settings — **not** to staff accounts.
 
 ---
 
@@ -48,371 +61,224 @@ Register (email + password)
 
 | Layer | Technology |
 |--------|------------|
-| Mobile app | **Capacitor 7** + React 19 + Vite + TypeScript |
-| Frontend data | `@hel/api-client` → Nest REST (+ Socket.IO) |
+| Mobile UI | **Capacitor 7** + React + Vite + TypeScript (`apps/client` in mobile repo) |
+| Website UI | **Next.js** (`src/` in this repo) on Vercel |
+| Frontend data | REST + Socket.IO → Nest (`NEXT_PUBLIC_*` website / `VITE_*` mobile) |
 | Backend | **NestJS** (`apps/api`) |
 | Database | **PostgreSQL** via **Prisma** |
 | Cache / queues / rate limits | **Redis** (+ BullMQ) |
-| Object storage | S3-compatible (local MinIO; production R2/S3) |
+| Object storage | S3-compatible (MinIO local; R2/S3 production) |
 | Realtime chat | **Socket.IO** |
 | Payments | **Stripe Checkout** + **manual EVC / M-PESA** proof review |
-| Email | Resend when `MAIL_DRIVER=resend` (else console / disabled) |
-| Auth | Nest sessions + CSRF; mobile stores session token in **secure storage** |
-| Local infra | Docker Compose: Postgres + Redis + MinIO (`infra/`) |
-| Languages | Somali (default) + English |
-| Hosting | **Render** (API) · native builds for Play / App Store |
-| Native | Android (`apps/client/android`) · iOS (`apps/client/ios`, needs macOS) |
+| Email | Resend when `MAIL_DRIVER=resend` |
+| Auth | Nest sessions + CSRF; website = HttpOnly cookies; mobile may use secure storage for session token |
+| Languages | Somali + English |
+| Hosting | **Render** (API) · **Vercel** (website) · native builds for Play / App Store |
 
-### Repo layout
+### Layout (mobile monorepo)
 
 ```
 apps/
-  api/                 NestJS API + Prisma
+  api/                 NestJS API + Prisma (shared with website)
   client/              Capacitor app (React + Vite)
     android/           Native Android (com.telcalafkaaga.app)
-    ios/               Native iOS
+    ios/               Native iOS (needs macOS)
 packages/
-  api-client/          Shared HTTP/Socket adapters
-  migration/           Convex → Postgres import tooling (legacy only)
+  api-client/          Shared HTTP/Socket adapters (if present)
+  migration/           Legacy Convex → Postgres tooling
 infra/
   docker-compose.yml   Local Postgres / Redis / MinIO
 store/                 Play / App Store listing assets
 ```
 
-**No `convex/` folder. No Next.js `src/app/` in the mobile repo.**
-
----
-
-## 3. Access & routing (source of truth)
-
-Server builds `accessState` (`apps/api/src/common/access-state.ts`).  
-Mobile maps API `nextRoute` → Capacitor screens (`SessionProvider.homeRouteFromAccess`).
-
-| Condition | API `nextRoute` | Mobile screen |
-|-----------|-----------------|---------------|
-| Staff (`admin` / `owner`) | `/admin` | `/admin` |
-| Gender / registration incomplete | `/register/details` | `/onboarding/gender` |
-| Questionnaire incomplete | `/questionnaire` | `/onboarding/questionnaire` |
-| No paid access | `/payment` | `/plans` |
-| Ready | `/dashboard` | `/home` |
-| Banned | `/login` | `/login` |
-
-### Paid access (`hasPaidAccess`)
-
-**Shared website Nest (intended production rule):**
-
-- Staff → always access  
-- `hasPaid === true` → access  
-- **`trialEndsAt` / free trial does NOT grant access** (legacy field only)  
-- Admin **approval** controls discovery / review for some women on Basic — **separate** from paywall unlock  
-
-Matching controllers use `@RequirePaid()` so Discover / likes / chat require server paid access.
-
-> **Mobile API fork note:** If a mobile-only Nest fork also returns true when `approved === true` or `reviewStatus === "approved"`, confirm which code is live on Render. Align forks so website and mobile see the same paywall rule.  
-> **This website monorepo** (`apps/api/src/common/access.ts`): payment or staff only — not approval-only unlock.
-
-### Discoverability
-
-From `apps/api/src/common/review-status.ts`:
-
-- Not banned, not staff, questionnaire complete  
-- Paid / approval rules for discovery  
-- **Paid women on Basic** may need admin profile approval  
-- **Premium women** (`hasPersonalSupport`) skip the basic review queue  
-- **Staff (`admin` / `owner`) never appear** in member Discover / matches / chat lists  
-
----
-
-## 4. Pricing (current)
-
-Constants: `apps/api/src/payments/pricing.ts` and `apps/client/src/lib/constants.ts`.
-
-| Plan | Amount | Notes |
-|------|--------|--------|
-| Men — Basic registration | **$5** one-time | Full platform after grant |
-| Women — Basic registration | **$2.50** one-time | May need admin approval after pay |
-| Men — Premium (personal support) | **$20** one-time | Sets `hasPersonalSupport` |
-| Women — Premium / upgrade | **$15** | Premium signup or Basic → Premium |
-| Basic → Premium upgrade | **$15** | Existing basic members |
-
-**Deprecated:** 7-day free trial unlocking the app (`TRIAL_DAYS` / `trialEndsAt` are legacy only).
-
-### Payment methods
-
-1. **Stripe Checkout** — card; webhook + verify-session grant access  
-2. **EVC Plus (Somalia) / M-PESA (Kenya)** — member uploads proof screenshot; staff approve/reject in Admin → Payments  
-
-Access is granted only via server grant logic (idempotency keys like `stripe:{sessionId}` / `evc:{proofId}`). Client claims never unlock features.
-
-Webhook URL: `https://<API_HOST>/webhooks/stripe` (Nest — not Convex).
-
-**Store policy:** Play Billing / StoreKit IAP decision is still open before production store listing (`STORE_POLICY_DECISIONS.md`).
-
----
-
-## 5. End-to-end member journey (mobile)
+### Layout (this website monorepo)
 
 ```
-/welcome
-  → /register or /login
-  → /onboarding/gender
-  → /onboarding/questionnaire   (one question per screen)
-  → /plans                      (Stripe and/or EVC)
-  → /home                       (dashboard feed)
-      /discover                 (cards: like / pass / shortlist)
-      /matches
-      /messages → /chat/:id
-      /profile · /settings · /legal/*
-      /admin                    (staff only)
+apps/api/              NestJS API + Prisma
+src/                   Next.js website
+docs/                  Deploy / security / migration docs
+store/                 Android APK publish notes (website-hosted download)
+scripts/publish-android-apk.sh
+FULL_REPORT_MOBILE.md  This file
 ```
 
-Forgot password: `/forgot-password` → API password-reset tokens (email when Resend configured).
-
-Optional device feature: **biometric unlock** gate (does not replace password / Nest session).
-
 ---
 
-## 6. Auth API (Nest)
-
-Base path: `/auth`  
-Guards: rate limit + CSRF.
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/auth/register` | Create account |
-| POST | `/auth/register/check-email` | Email availability |
-| POST | `/auth/login` | Login |
-| POST | `/auth/logout` | Logout |
-| POST | `/auth/logout-all` | Revoke all sessions |
-| GET | `/auth/me` | Current user + accessState + CSRF |
-| POST | `/auth/register/complete` | Set gender (`male` \| `female`) |
-| POST | `/auth/forgot-password` | Request reset |
-| POST | `/auth/reset-password` | Apply token + new password |
-| POST | `/auth/change-password` | Authenticated change |
-| POST | `/auth/delete-account` | Self-delete `{ password, confirm: true }` (**mobile**; shipped) |
-
-Health: `GET /health/live`, `GET /health/ready`
-
-**One email = one account** (normalized email uniqueness enforced in auth).
-
-Mobile: session token in Capacitor secure storage via `@hel/api-client` (not browser cookies alone).
-
-> **Shared API:** Website also supports `DELETE /profile/account` `{ password }` on the website Nest deploy. Both use the same `DeletionService`. Mobile should keep `POST /auth/delete-account`. Confirm both exist on the Render deploy that serves both clients.
-
----
-
-## 7. Profile & questionnaire
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/profile/me` | Own profile |
-| PATCH | `/profile/me` | Update allowed fields (server strips unsafe location writes) |
-| GET | `/profile/access-state` | Access flags |
-| GET/PATCH | `/profile/wali` | Guardian contact |
-| Preferences | `/preferences/me` | Partner filters |
-| Photos | Media signed upload + profile attach | Max photos: `MAX_PROFILE_PHOTOS = 5` |
-| DELETE | `/profile/account` | Website self-delete (website Nest) |
-| POST | `/auth/delete-account` | Mobile self-delete (see §12) |
-
-Mobile questionnaire UX is **one question per screen** (`OnboardingScreens.tsx`) over the same profile fields as the website.
-
-When questionnaire completes:
-
-- `questionnaireComplete = true`
-- Review status follows `resolveReviewStatus`
-- Compatibility scores recalculated (queue)
-- Completing the form ≠ paid ≠ always discoverable
-
----
-
-## 8. Payments API
-
-### Stripe
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/payments/stripe/registration-checkout` | `{ tier: "basic" \| "premium" }` |
-| POST | `/payments/stripe/premium-upgrade-checkout` | Upgrade |
-| POST | `/payments/stripe/verify-session` | After return |
-| POST | `/webhooks/stripe` | Public webhook (signature required) |
-| GET | `/payments/status` | Current status |
-
-### EVC / M-PESA
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/payments/evc/proof/sign-upload` | Signed PUT to EVC bucket |
-| POST | `/payments/evc/proof/upload` | Base64 upload via API (**shipped**; JSON body up to ~12mb) |
-| POST | `/payments/evc/proof/submit` | Submit proof `{ tier, payerFullName, lastFourDigits, mediaId }` |
-| GET | `/payments/evc/me/latest` | Member’s latest proof |
-| GET | `/payments/evc/admin/pending` | Staff pending list |
-| POST | `/payments/evc/admin/:proofId/approve` | Grant access |
-| POST | `/payments/evc/admin/:proofId/reject` | Reject |
-
-Payee display: Somalia EVC + Kenya M-PESA in `apps/client/src/lib/constants.ts`.
-
-Staff may also have `/admin/evc/*` on the website Nest deploy (same proofs).
-
----
-
-## 9. Matching, likes, discover
-
-**Min discover score:** `MIN_COMPATIBILITY_SCORE = 40`  
-Engine: `apps/api/src/matching/` · Scores in `CompatibilityScore`
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/matches/discover` | Opposite-gender cards |
-| GET | `/matches/home-feed` | Home dashboard feed |
-| GET | `/matches/lists` | Shortlist / liked-you / passed aggregates |
-| GET | `/matches/mutual` | Mutual matches (`list=active\|new\|archived`) |
-| POST | `/matches/:userId/action` | `like` \| `pass` \| `shortlist` |
-| Mutual like | Creates `Match` + `Conversation` | Chat unlocked per paid rules |
-
-Staff profiles are filtered out of member dating surfaces.
-
----
-
-## 10. Chat & messaging
-
-HTTP: `/conversations` (+ messages, typing, read, image upload).  
-Realtime: Socket.IO gateway.
-
-- Text + optional images  
-- Blocks prevent messaging both ways  
-- **Not end-to-end encrypted** — do not claim E2EE  
-
----
-
-## 11. Notifications
-
-API: `/notifications`  
-In-app notification rows for like / match / message / announcement / payment / approval.  
-
-Mobile: **no dedicated `/notifications` tab yet** — home points members to Messages / Matches.  
-Device push (FCM/APNs): **not implemented** (`PRIVACY_DATA_MAP.md`).
-
----
-
-## 12. Roles & safety
-
-| Role | Access |
-|------|--------|
-| `user` | Onboarding → paywall → member app |
-| `admin` | Admin console |
-| `owner` | Admin + staff invites + elevated ops |
+## 3. Auth & security (shared Nest — Aug 2026)
 
 | Feature | Behavior |
 |---------|----------|
-| Block | Hide for likes/chat/discover |
-| Report | Admin → Reports |
-| Ban | `banned: true` — cannot use app |
-| Account deletion | `POST /auth/delete-account` `{ password, confirm: true }` → `DeletionService`. Staff cannot self-delete here. |
+| Sessions | HttpOnly `hel_session` cookie (website); CSRF `hel_csrf` |
+| H5 | No browser-readable session token in body / `localStorage` |
+| M3 Email verification | Unverified → restricted; `EMAIL_VERIFICATION_REQUIRED` |
+| M4 Forced password reset | `mustResetPassword` → `PASSWORD_RESET_REQUIRED` |
+| L4 Staff MFA (TOTP) | Admin/owner; challenge before full session when enabled |
+| Mandatory staff MFA | `REQUIRE_STAFF_MFA=true` → restricted session until enroll (`MFA_ENROLLMENT_REQUIRED`) |
+| Recovery codes | 10 hashed codes; one-time; regen invalidates old |
+| Admin MFA reset | Owner can reset admin MFA via `POST /admin/users/:id/reset-mfa` (**profile id**) |
+| Staff hiding | Members never see admin/owner on dating surfaces |
+| Rate limits | Redis fail-closed on auth |
+| CORS | Explicit `CORS_ORIGINS` (+ Capacitor origins in non-prod defaults) |
+
+**Rollout:** keep `REQUIRE_STAFF_MFA` off until one production owner enrolls and tests TOTP + recovery.
+
+Website UI routes: `/verify-email`, `/change-password`, `/enroll-mfa`, login MFA challenge, profile MFA card, admin reset MFA.
 
 ---
 
-## 13. Admin (mobile)
+## 4. Member journey details
 
-Staff UI: Capacitor `/admin/*`. Backend: `/admin/*`.
+1. **Register** → session + email verification mail  
+2. **Verify email** → then gender / questionnaire  
+3. **Pay** Basic or Premium (Stripe or EVC proof)  
+4. **Approval** may apply for women on Basic  
+5. **Discover / Matches / Chat** — server-gated by paid + review status  
 
-| Area | Mobile screen | Backend |
-|------|---------------|---------|
-| Dashboard | `/admin` | `GET /admin/stats` |
-| Members | `/admin/members` | List / approve / reject / ban |
-| Payments | `/admin/payments` | Stripe list + EVC approve/reject |
-| Reports | `/admin/reports` | Moderation |
-| Support | `/admin/messages` | Inbox |
-| Announcements | `/admin/announcements` | Create / send |
-| Invites (owner) | `/admin/invites` | Staff invites |
-
-### API available; mobile UI not dedicated yet
-
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /admin/analytics` | Insights |
-| `GET /admin/audit-logs` | Staff action log |
-| `GET /admin/activity` | Recent activity |
-| `GET /admin/site-metrics` | Global metrics |
+Staff go to `/admin` (website) or Capacitor `/admin` (mobile), not the member dating funnel.
 
 ---
 
-## 14. Database (PostgreSQL / Prisma)
+## 5. Matching & photos
 
-Schema: `apps/api/prisma/schema.prisma`
-
-| Model | Purpose |
-|-------|---------|
-| `User` / `AuthAccount` / `Session` | Identity + sessions |
-| `PasswordResetToken` / `AuthAuditEvent` | Auth flows |
-| `Profile` | Questionnaire, role, payment flags, review, photos |
-| `Preference` | Partner filters |
-| `CompatibilityScore` | Pair scores |
-| `Like` / `Match` / `PhotoReveal` | Dating actions |
-| `Conversation` / `Message` | Chat |
-| `Notification` | In-app alerts |
-| `Payment` / `StripeWebhookEvent` | Stripe + grant metadata |
-| `EvcPaymentProof` | Mobile-money proofs |
-| `MediaObject` / `UserUpload` / `OrphanedMediaObject` | Files |
-| `Announcement` / `StaffInvite` | Broadcasts / invites |
-| `Block` / `Report` | Safety |
-| `SupportContact` / `SupportMessage` | Support |
-| `AuditLog` / `DeletionJob` | Accountability / deletion |
-| `SiteMetrics` / `MigrationRun` | Ops / migration |
-
-Many models retain `convexId` for **legacy import only**.
-
-Migrations: `apps/api/prisma/migrations/` · deploy via `prisma migrate deploy`.
+- Discover pool is **members only** (`role: "user"` + discoverable rules).  
+- Compatibility soft floor and filters are server-side.  
+- Photo visibility: `everyone` | `matches` | `private` (member privacy).  
+- Staff viewers may see member photos for support; **members do not see staff**.  
+- Unauthorized / hidden media → `null` URL + safe UI placeholder (no retry loops).
 
 ---
 
-## 15. Object storage
+## 6. Payments
 
-| Purpose | Typical bucket |
-|---------|----------------|
-| Profile | `hel-profile` |
-| Profile private | `hel-profile-private` |
-| Chat | `hel-chat` |
-| Support | `hel-support` |
-| EVC proofs | `hel-evc` |
+| Path | Notes |
+|------|--------|
+| Stripe Checkout | Webhook `POST /webhooks/stripe` on Nest |
+| EVC / M-PESA | Upload proof → admin review → `hasPaid` |
+| Pricing | Gender / tier matrix in `apps/api/src/payments/pricing.ts` |
+| Fake Stripe | Local/tests only — blocked in production |
 
-Access: signed URLs via media policy (`apps/api/src/media/access-policy.ts`).
+Mobile must use the **same** production Nest base URL as the website.
 
 ---
 
-## 16. Environment variables
+## 7. Chat & notifications
 
-### Mobile client (build-time, public)
+- REST + Socket.IO on the Nest host  
+- Cookie / token auth on connect; M3/M4/MFA enrollment block sockets when required  
+- Push notifications: **not implemented**  
+- In-app notifications API exists; mobile dedicated UI may lag website  
 
-| Variable | Purpose |
-|----------|---------|
-| `VITE_API_URL` | Nest HTTPS base (**required public HTTPS** for production builds) |
-| `VITE_SOCKET_URL` | Socket.IO base |
-| `VITE_APP_URL` | Deep links / share |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe.js / Checkout |
-| `VITE_USE_LOCAL_DEMO` | Must be `false` for store / phone-against-Render |
+---
 
-Production Vite builds **fail** if `VITE_API_URL` is localhost / `10.0.2.2`.
+## 8. Account deletion
 
-### API (`apps/api/.env`)
+- Website: `DELETE /profile/account` and/or `POST /auth/delete-account` (password + confirm)  
+- Mobile Settings should call the Nest delete endpoint and clear secure storage  
+- Required for Play Store policy  
+
+---
+
+## 9. Environment (production)
+
+### Nest (Render)
 
 | Variable | Purpose |
 |----------|---------|
 | `DATABASE_URL` | Postgres |
 | `REDIS_URL` | Rate limits + queues + sockets |
-| `SESSION_SECRET` | Sessions (strong in prod) |
-| `COOKIE_*` / `CORS_ORIGINS` / `TRUST_PROXY` | HTTP / cookies |
-| `APP_URL` | Redirects / emails |
+| `SESSION_SECRET` | Sessions (≥32 chars) |
+| `COOKIE_SECURE` / `COOKIE_SAMESITE` | `true` / `none` for cross-site |
+| `CORS_ORIGINS` | www + apex (+ Capacitor if needed) |
+| `APP_URL` | Website origin for emails/links |
 | `MAIL_DRIVER` / `RESEND_*` | Email |
-| `STRIPE_*` | Payments (`fake` for local tests only; blocked in production) |
-| `S3_*` + bucket names | Media |
+| `STRIPE_*` | Live payments |
+| `S3_*` + buckets | Media |
+| `REQUIRE_STAFF_MFA` | Optional mandatory staff MFA (default off) |
 
-See `apps/api/.env.example` and `apps/client/.env.example`.
+### Website (Vercel)
 
-Nest CORS defaults include Capacitor origins (`capacitor://localhost`, `ionic://localhost`) plus website production domains.
+```bash
+NEXT_PUBLIC_APP_URL=https://www.helcalafkaaga.com
+NEXT_PUBLIC_API_URL=https://tel-calafkaaga-1.onrender.com
+NEXT_PUBLIC_SOCKET_URL=https://tel-calafkaaga-1.onrender.com
+```
+
+### Mobile (Capacitor)
+
+```bash
+VITE_API_URL=https://tel-calafkaaga-1.onrender.com
+VITE_SOCKET_URL=https://tel-calafkaaga-1.onrender.com
+# Emulator → host machine API: http://10.0.2.2:4000
+```
+
+See `apps/api/.env.example` and `infra/staging/vercel-api-mode.env.example`.
 
 ---
 
-## 17. Security (must stay aligned)
+## 10. Deploy checklist (finish production)
+
+1. **Push** Nest + website to `main` (already on GitHub for recent security work).  
+2. **Render** — Manual Deploy Nest; confirm `prisma migrate deploy` (incl. MFA migration).  
+3. **Stripe** webhook → `https://YOUR-API/webhooks/stripe`.  
+4. **Vercel** — Redeploy website after `NEXT_PUBLIC_*` set.  
+5. **Smoke** — login, verify email, MFA (staff), photo, chat, payment.  
+6. **Mobile** — open Capacitor repo; point `VITE_*` at production Nest; sync Android.  
+7. **Play Store** — signed AAB, listing, privacy, content rating, internal test → production.
+
+Website deploy helper: `npm run deploy:checklist`.
+
+---
+
+## 11. Android / Play Store build (mobile monorepo)
+
+```bash
+# In Capacitor monorepo
+npm install
+npm run build -w @hel/client
+cd apps/client && npx cap sync android
+cd android && ./gradlew bundleRelease
+# → app/build/outputs/bundle/release/app-release.aab
+```
+
+Debug APK:
+
+```bash
+cd apps/client/android && ./gradlew assembleDebug
+```
+
+Website-hosted APK publish notes: `store/README.md` + `scripts/publish-android-apk.sh`  
+Share URL pattern: `https://YOUR-API-HOST/download` (Nest download controller).
+
+**Play Console still needs:** signed keystore, store listing, privacy policy URL, data safety form, screenshots, content rating, IAP decision if charging in-app.
+
+---
+
+## 12. Local run (API + website)
+
+```bash
+npm install
+cp infra/.env.example infra/.env
+# start postgres/redis/minio via compose
+
+cp apps/api/.env.example apps/api/.env
+npm run prisma:generate
+npm run prisma:migrate:deploy -w @hel/api
+npm run dev:api
+
+# website
+npm run dev
+```
+
+Mobile client (separate repo):
+
+```bash
+cp apps/client/.env.example apps/client/.env
+npm run dev:client
+```
+
+---
+
+## 13. Security claims (store / privacy)
 
 | Claim | Status |
 |-------|--------|
@@ -420,117 +286,121 @@ Nest CORS defaults include Capacitor origins (`capacitor://localhost`, `ionic://
 | Sell personal data | No |
 | End-to-end encrypted chat | **No** |
 | Background / government ID checks | **No** |
-| Account self-deletion | Yes — Settings → Delete account |
+| Account self-deletion | Yes |
 | Device push tokens | **Not implemented** |
-| Analytics SDK in app | Not by default |
-| One email → one account | Yes |
-| CSRF on mutating routes | Yes |
-| Rate limits (Redis) | Yes |
 | Staff hidden from member dating | Yes |
+| CSRF + rate limits | Yes |
+| Staff MFA (TOTP) | Yes (opt-in / mandatory via flag) |
 
-Legal screens in app: `/legal/privacy`, `/legal/terms`, `/legal/guidelines`, `/legal/safety`, `/legal/help`, `/legal/about` (EN + SO).
+Legal screens (website): `/legal/privacy`, `/legal/terms`, `/legal/guidelines`, `/legal/safety`, `/legal/help`, `/legal/about` (EN + SO).
 
 ---
 
-## 18. Local run (short)
+## 14. Update mobile from latest website (parity checklist)
+
+**Why this file exists:** so the Capacitor app can be updated against the **latest Nest + website security**, then verified that behavior is the **same** for members and staff.
+
+**Repos on this machine**
+| Role | Path |
+|------|------|
+| Latest website + Nest (source of truth) | `/home/tryhackme/Downloads/Hel-Calafkaaga` (`main`, includes M3/M4/L4) |
+| Mobile Capacitor monorepo | `/home/tryhackme/TEL-CALAFKAAGA-1 app` (older Nest fork; client missing M3/M4/L4 UI) |
+
+### What is already the same (server-side when mobile points at production Nest)
+
+If mobile `VITE_API_URL` / `VITE_SOCKET_URL` = production Render Nest from **this** repo:
+
+| Behavior | Same? |
+|----------|-------|
+| Pricing, paywall, Stripe/EVC | Yes (API) |
+| Staff hidden from Discover/matches/chat | Yes (API `shouldHideProfileFromViewer`) |
+| Account delete endpoint | Yes if mobile calls Nest delete |
+| Email verify / forced reset / MFA gates | Yes on **API** — mobile UI may not handle 403 codes yet |
+
+### What is NOT the same today (must fix in mobile repo)
+
+| Area | Website (latest) | Mobile app today |
+|------|------------------|------------------|
+| Nest copy in mobile repo | N/A (uses this repo’s API in prod ideally) | Forked `apps/api` **missing** MFA, email-verification guard, must-reset |
+| Email verification (M3) | `/verify-email` + soft redirect | **Missing** |
+| Forced password reset (M4) | `/change-password` gate | Settings change-password only; **no** `PASSWORD_RESET_REQUIRED` gate |
+| Staff MFA (L4) | Login challenge + `/enroll-mfa` | **Missing** |
+| Soft 403 redirects | `PASSWORD_RESET_REQUIRED` → change-password, `EMAIL_VERIFICATION_REQUIRED` → verify-email, `MFA_ENROLLMENT_REQUIRED` → enroll-mfa | **Missing** |
+
+### Recommended sync order
+
+1. **One Nest only** — Redeploy Render from website `main`. Do **not** run the older mobile `apps/api` in production.  
+2. **Point mobile** — `apps/client/.env.production`:  
+   `VITE_API_URL` + `VITE_SOCKET_URL` = production Nest (e.g. `https://tel-calafkaaga-1.onrender.com`).  
+3. **Port website security UI into Capacitor** (same API contracts):  
+   - Handle login `mfaRequired` + `POST /auth/mfa/verify-login`  
+   - Screens/routes for verify-email, forced change-password, enroll-mfa  
+   - API client: on 403 codes soft-navigate like website `security-gate-codes.ts`  
+4. **Smoke same flows** on phone + website: register → verify email → pay → discover (no staff) → chat → delete account; staff MFA if admin.  
+5. **Rebuild** Android AAB/APK and ship Play / sideload.
+
+### Quick verify commands
 
 ```bash
-npm install
-cp infra/.env.example infra/.env
-npm run infra:up
+# Website Nest health (production)
+curl -sS https://tel-calafkaaga-1.onrender.com/health
 
-cp apps/api/.env.example apps/api/.env
-npm run prisma:generate
-npm run prisma:migrate:deploy -w @hel/api
-npm run dev:api
-
-cp apps/client/.env.example apps/client/.env
-# Emulator → host API: VITE_API_URL=http://10.0.2.2:4000
-npm run dev:client
+# Mobile production env must match that host
+grep VITE_ /path/to/mobile/apps/client/.env.production
 ```
 
-Android debug APK:
+---
 
-```bash
-npm run build -w @hel/client
-cd apps/client && npx cap sync android
-cd android && ./gradlew assembleDebug
-# → apps/client/android/app/build/outputs/apk/debug/app-debug.apk
-```
+## 15. Known gaps / follow-ups
 
-Health smoke: `npm run ops:health-smoke`
+1. Confirm Render is on latest website `main` (MFA migration applied).  
+2. Sync Capacitor client security UI (section 14) — open mobile workspace to implement.  
+3. Stop using mobile repo’s older Nest fork in production.  
+4. IAP / Play Billing decision before charging only through Google Play.  
+5. Push notifications not shipped.  
+6. Owner MFA enroll + recovery test before `REQUIRE_STAFF_MFA=true`.
 
 ---
 
-## 19. Known gaps / backend follow-ups
+## 16. One-page summary
 
-### Done on shared Nest (website monorepo → redeploy Render)
-
-1. ~~`POST /auth/delete-account`~~ — shipped (password + `confirm: true`)  
-2. ~~`POST /payments/evc/proof/upload`~~ — shipped (base64; 12mb JSON limit; `uploadProofImage`)  
-3. ~~Staff hiding from Discover~~ — shipped (`role: "user"` + `isDiscoverable`)  
-4. ~~Account delete alignment~~ — both `POST /auth/delete-account` and `DELETE /profile/account` on website Nest  
-5. Capacitor CORS origins added for local WebView  
-
-### Still open (product / ops)
-
-1. **Redeploy Nest on Render** so mobile sees the new routes — **confirm which repo/commit is deployed**.  
-2. Align `hasPaidAccess` between website Nest and any mobile `apps/api` fork (approval-only unlock must not diverge).  
-3. Stripe webhook must hit Nest `/webhooks/stripe`.  
-4. IAP decision before Play / App Store production listing.  
-5. Admin analytics / audit APIs exist; mobile UI not dedicated yet.  
-6. Push notifications not implemented.  
-7. Dedicated in-app notifications page not shipped.  
-8. Photo EXIF strip — do not claim unless verified in Nest media pipeline.  
-9. Announcement audience `trial` is legacy; trial does not grant access.  
-10. Same Nest API serves **website** and **mobile** — keep `CORS_ORIGINS` / `APP_URL` covering both.
+Hel Calafkaaga **mobile** is a **Capacitor** Android/iOS app talking to the same **NestJS** API as the **Next.js** website (Postgres + Redis + S3 + Socket.IO). Members register, verify email, complete a questionnaire, and pay via Stripe or EVC. Access is server-gated. Discover hides staff. Staff can use TOTP MFA; mandatory enrollment is flag-gated. Website ships from this repo (Vercel + Render). **Play Store shipping requires the Capacitor/Android project** and a signed AAB upload to Play Console.
 
 ---
 
-## 20. One-page summary
-
-Hel Calafkaaga **mobile** is a **Capacitor** app talking to a **NestJS API** on **Postgres + Redis + S3 + Socket.IO** (same API as the Next.js website). Members register, finish a questionnaire, then pay via **Stripe or EVC/M-PESA**. Access is **server-gated** (`hasPaid` / staff on shared Nest). Discover uses **≥40%** compatibility and **hides staff**. Admins moderate users, Stripe + EVC proofs, reports, and support. Free trial does **not** unlock the app. Pricing is **$5 / $2.50 / $15 / $20** by gender and tier. Members can **delete their account** from Settings (`POST /auth/delete-account`). Push is not shipped. **Redeploy Render** after Nest changes so both clients stay in sync.
-
----
-
-## 21. Key source files
+## 17. Key source files (shared Nest — this repo)
 
 | Concern | Path |
 |---------|------|
-| Paid / staff access | `apps/api/src/common/access.ts` |
+| Paid / staff access + hide staff | `apps/api/src/common/access.ts` |
 | Review / discoverable | `apps/api/src/common/review-status.ts` |
-| Access routing | `apps/api/src/common/access-state.ts` |
-| Pricing | `apps/api/src/payments/pricing.ts` |
-| Stripe + EVC | `apps/api/src/payments/payments.controller.ts` |
-| EVC base64 upload | `apps/api/src/payments/evc-payments.service.ts` → `uploadProofImage` |
+| Auth + MFA | `apps/api/src/auth/` |
 | Matching | `apps/api/src/matching/match.service.ts` |
 | Chat realtime | `apps/api/src/chat/chat.gateway.ts` |
-| Account deletion | `apps/api/src/admin/deletion.service.ts` + `POST /auth/delete-account` |
+| Payments / EVC | `apps/api/src/payments/` |
+| Account deletion | `apps/api/src/admin/deletion.service.ts` |
 | Prisma schema | `apps/api/prisma/schema.prisma` |
-| Mobile routes | `apps/client/src/App.tsx` |
-| Mobile home redirect | `apps/client/src/features/auth/SessionProvider.tsx` |
-| Client constants | `apps/client/src/lib/constants.ts` |
-| Shared API client | `packages/api-client/` |
-| Privacy data map | `PRIVACY_DATA_MAP.md` |
-| Store IAP decision | `STORE_POLICY_DECISIONS.md` |
+| Website MFA UI | `src/app/(app)/enroll-mfa/`, `src/components/profile/mfa-settings-card.tsx` |
+| CI / security notes | `docs/CI_SECURITY.md` |
+| Deploy checklist | `scripts/deploy-checklist.mjs` |
+
+Mobile-only (Capacitor repo): `apps/client/src/App.tsx`, `SessionProvider`, Android `com.telcalafkaaga.app`.
 
 ---
 
-## 22. How this relates to the website report
+## 18. Website vs mobile routes
 
-| Topic | Website repo (`FULL_REPORT.md`) | This (mobile) report |
-|-------|----------------------------------|----------------------|
-| UI | Next.js on Vercel | Capacitor Android / iOS |
-| API | Same NestJS | Same NestJS |
-| Env (client) | `NEXT_PUBLIC_*` | `VITE_*` |
+| Topic | Website | Mobile (Capacitor) |
+|-------|---------|---------------------|
+| UI | Next.js / Vercel | Capacitor Android / iOS |
+| API | Same Nest | Same Nest |
+| Client env | `NEXT_PUBLIC_*` | `VITE_*` |
 | Home after paywall | `/dashboard` | `/home` |
-| Payment page | `/payment` | `/plans` |
+| Payment | `/payment` | `/plans` |
 | Gender step | `/register/details` | `/onboarding/gender` |
-| Account delete | `DELETE /profile/account` | `POST /auth/delete-account` |
-| Admin UI | Next `/admin` | Capacitor `/admin` |
-
-Backend engineers can treat **one Nest deployment** as source of truth for both clients.
+| MFA enroll | `/enroll-mfa` | Mirror when implemented |
+| Admin | `/admin` | `/admin` |
 
 ---
 
-*This report describes how the current mobile codebase is designed to work. For live member counts, Stripe, Render logs, and Redis/Postgres health, use production dashboards — not this file.*
+*This report describes how the product and shared Nest API are designed to work for mobile and Play Store. For live counts, Stripe, Render, and store status, use production dashboards — not this file.*

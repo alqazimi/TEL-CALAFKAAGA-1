@@ -237,41 +237,61 @@ export class AdminUsersService {
 
     if (opts.search?.trim()) {
       const q = opts.search.trim();
-      const qLower = q.toLowerCase();
-      const emailNormalized = q.includes("@") ? normalizeEmail(q) : "";
-      const phoneDigits = q.replace(/[^\d+]/g, "");
-      const or: Prisma.ProfileWhereInput[] = [
-        { name: { contains: q, mode: "insensitive" } },
-        { city: { contains: q, mode: "insensitive" } },
-        { country: { contains: q, mode: "insensitive" } },
-        { user: { emailNormalized: { contains: qLower } } },
-        { user: { email: { contains: q, mode: "insensitive" } } },
-        { user: { name: { contains: q, mode: "insensitive" } } },
-        // UUID fields only support exact equals (no startsWith on UuidFilter).
-        { id: { equals: q } },
-        { userId: { equals: q } },
-      ];
-      if (emailNormalized) {
-        or.push({ user: { emailNormalized } });
-        or.push({
-          user: { email: { equals: emailNormalized, mode: "insensitive" } },
+      // Tokens are AND'd across fields so "ahmed somalia" matches name+country.
+      const tokens = q.split(/\s+/).filter((t) => t.length > 0);
+      const matchToken = (token: string): Prisma.ProfileWhereInput => {
+        const tLower = token.toLowerCase();
+        const emailNormalized = token.includes("@")
+          ? normalizeEmail(token)
+          : "";
+        const phoneDigits = token.replace(/[^\d+]/g, "");
+        const looksLikeUuid =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            token
+          );
+        const or: Prisma.ProfileWhereInput[] = [
+          { name: { contains: token, mode: "insensitive" } },
+          { city: { contains: token, mode: "insensitive" } },
+          { country: { contains: token, mode: "insensitive" } },
+          { occupation: { contains: token, mode: "insensitive" } },
+          { education: { contains: token, mode: "insensitive" } },
+          { waliName: { contains: token, mode: "insensitive" } },
+          { user: { emailNormalized: { contains: tLower } } },
+          { user: { email: { contains: token, mode: "insensitive" } } },
+          { user: { name: { contains: token, mode: "insensitive" } } },
+        ];
+        if (looksLikeUuid) {
+          or.push({ id: { equals: token } }, { userId: { equals: token } });
+        }
+        if (emailNormalized) {
+          or.push({ user: { emailNormalized } });
+          or.push({
+            user: {
+              email: { equals: emailNormalized, mode: "insensitive" },
+            },
+          });
+        }
+        if (phoneDigits.length >= 3) {
+          or.push({ phone: { contains: phoneDigits } });
+          or.push({ waliPhone: { contains: phoneDigits } });
+        } else if (token.length >= 3) {
+          or.push({ phone: { contains: token } });
+          or.push({ waliPhone: { contains: token } });
+        }
+        return { OR: or };
+      };
+
+      if (tokens.length <= 1) {
+        andClauses.push(matchToken(tokens[0] ?? q));
+      } else {
+        // Full phrase in name, OR each word matching somewhere (name/email/country/…).
+        andClauses.push({
+          OR: [
+            { name: { contains: q, mode: "insensitive" } },
+            { AND: tokens.map(matchToken) },
+          ],
         });
       }
-      if (phoneDigits.length >= 3) {
-        or.push({ phone: { contains: phoneDigits } });
-      } else if (q.length >= 3) {
-        or.push({ phone: { contains: q } });
-      }
-      // Multi-word names: match when each token appears in the profile name.
-      const tokens = q.split(/\s+/).filter((t) => t.length >= 2);
-      if (tokens.length > 1) {
-        or.push({
-          AND: tokens.map((token) => ({
-            name: { contains: token, mode: "insensitive" as const },
-          })),
-        });
-      }
-      andClauses.push({ OR: or });
     }
 
     if (andClauses.length > 0) {

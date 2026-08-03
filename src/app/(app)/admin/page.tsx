@@ -132,6 +132,8 @@ export default function AdminPage() {
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [countryFilter, setCountryFilter] = useState("");
+  const [debouncedCountry, setDebouncedCountry] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("all");
   const [genderFilter, setGenderFilter] = useState<GenderFilter>("all");
@@ -154,6 +156,11 @@ export default function AdminPage() {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedCountry(countryFilter), 300);
+    return () => clearTimeout(timer);
+  }, [countryFilter]);
 
   const isMemberSearch = Boolean(debouncedSearch.trim());
   const { user: authUser } = useUnifiedAuth();
@@ -185,8 +192,9 @@ export default function AdminPage() {
   } = useAdminUsers(
     !!isStaff && activeTab === "users" && usersMode === "members",
     {
-      // While searching, ignore other filters so name/email always finds the user.
+      // While searching, ignore role/payment/review/gender so name/email/country always finds the user.
       search: debouncedSearch || undefined,
+      country: debouncedCountry.trim() || undefined,
       role: isMemberSearch ? "all" : roleFilter,
       payment: isMemberSearch ? "all" : paymentFilter,
       review: isMemberSearch ? "all" : reviewFilter,
@@ -243,6 +251,7 @@ export default function AdminPage() {
     gender?: GenderFilter;
   }) => {
     setSearch("");
+    setCountryFilter("");
     setRoleFilter(opts?.role ?? "all");
     setPaymentFilter(opts?.payment ?? "all");
     setReviewFilter(opts?.review ?? "all");
@@ -777,7 +786,7 @@ export default function AdminPage() {
               </button>
               <p className="text-xs text-muted-foreground sm:ml-2">
                 {usersMode === "members"
-                  ? "Search anyone by name or email · newest signups first"
+                  ? "Search name, email, country, city, phone · newest signups first"
                   : "Approve pending profiles · click Period activity numbers to open users"}
               </p>
             </div>
@@ -797,6 +806,8 @@ export default function AdminPage() {
                       setGenderFilter("all");
                     }
                   }}
+                  countryFilter={countryFilter}
+                  onCountryFilterChange={setCountryFilter}
                   roleFilter={roleFilter}
                   onRoleFilterChange={setRoleFilter}
                   paymentFilter={paymentFilter}

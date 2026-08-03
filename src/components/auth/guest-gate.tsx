@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { LoadingRecovery } from "@/components/auth/loading-recovery";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadingTimeout } from "@/hooks/use-loading-timeout";
-import { getAuthenticatedHomeRoute } from "@/lib/routes";
+import { getPostLoginRoute } from "@/lib/post-login-route";
 import { useUnifiedAuth } from "@/data/auth/hooks";
+import { useApiAuth } from "@/components/auth/api-auth-provider";
 
 /**
  * Redirects signed-in users away from login/register.
@@ -14,30 +15,17 @@ import { useUnifiedAuth } from "@/data/auth/hooks";
  */
 export function GuestGate({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, user } = useUnifiedAuth();
+  const { accessState } = useApiAuth();
   const router = useRouter();
   const waitingOnUser = isAuthenticated && user === undefined;
   const stuck = useLoadingTimeout(waitingOnUser, 8_000);
 
   useEffect(() => {
     if (isLoading || !isAuthenticated) return;
-    if (user === undefined) return;
+    if (user === undefined || user === null) return;
 
-    const profile = (user?.profile ?? undefined) as
-      | { registrationComplete?: boolean }
-      | undefined
-      | null;
-
-    if ((user as { emailVerified?: boolean } | null)?.emailVerified === false) {
-      router.replace("/verify-email");
-      return;
-    }
-
-    if (profile?.registrationComplete === false) {
-      router.replace("/register/details");
-      return;
-    }
-    router.replace(getAuthenticatedHomeRoute(profile ?? undefined));
-  }, [isAuthenticated, isLoading, router, user]);
+    router.replace(getPostLoginRoute(user, accessState));
+  }, [isAuthenticated, isLoading, router, user, accessState]);
 
   if (isAuthenticated && !isLoading) {
     if (waitingOnUser && stuck) {

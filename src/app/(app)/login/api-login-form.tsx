@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { getAuthenticatedHomeRoute } from "@/lib/routes";
 import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { normalizeAuthEmail } from "@/lib/auth-email";
+import { getPostLoginRoute } from "@/lib/post-login-route";
 import { useTranslation } from "@/lib/i18n/context";
 import { useUnifiedAuth } from "@/data/auth/hooks";
 import { auth } from "@/data/auth";
@@ -20,7 +20,7 @@ import { APP_NAME } from "@/lib/constants";
 
 export default function ApiLoginForm() {
   const { login, refresh } = useUnifiedAuth();
-  const { verifyMfaLogin } = useApiAuth();
+  const { verifyMfaLogin, accessState } = useApiAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [mfaToken, setMfaToken] = useState<string | null>(null);
@@ -29,24 +29,13 @@ export default function ApiLoginForm() {
 
   const finishLogin = async () => {
     await refresh?.();
-    const user = await auth.getCurrentUser();
+    const boot = await auth.bootstrapMe();
     toast.success(t("auth.welcomeBackToast"));
-    if (
-      (user as { mfaEnrollmentRequired?: boolean } | null)
-        ?.mfaEnrollmentRequired === true
-    ) {
-      router.push("/enroll-mfa");
-      return;
-    }
-    const profileForRoute =
-      (user?.profile as Parameters<typeof getAuthenticatedHomeRoute>[0]) ??
-      ({
-        role: (user as { role?: string } | null)?.role,
-        hasPaid: (user as { hasPaid?: boolean } | null)?.hasPaid,
-        questionnaireComplete: true,
-        registrationComplete: true,
-      } as Parameters<typeof getAuthenticatedHomeRoute>[0]);
-    router.push(getAuthenticatedHomeRoute(profileForRoute));
+    const dest = getPostLoginRoute(
+      boot.user,
+      boot.accessState ?? accessState
+    );
+    router.replace(dest);
   };
 
   const onSubmit = async (data: LoginForm) => {

@@ -191,6 +191,8 @@ interface AdminMembersPanelProps {
   total?: number | null;
   search: string;
   onSearchChange: (value: string) => void;
+  countryFilter: string;
+  onCountryFilterChange: (value: string) => void;
   roleFilter: RoleFilter;
   onRoleFilterChange: (value: RoleFilter) => void;
   paymentFilter: PaymentFilter;
@@ -219,6 +221,8 @@ export function AdminMembersPanel({
   total,
   search,
   onSearchChange,
+  countryFilter,
+  onCountryFilterChange,
   roleFilter,
   onRoleFilterChange,
   paymentFilter,
@@ -429,25 +433,57 @@ export function AdminMembersPanel({
           </div>
         </div>
 
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="h-12 rounded-xl border-border bg-background pl-10 text-base"
-            placeholder="Search by name or email…"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            autoComplete="off"
-            spellCheck={false}
-          />
-          {searching ? (
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground hover:text-foreground"
-              onClick={() => onSearchChange("")}
-            >
-              Clear
-            </button>
-          ) : null}
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-12 rounded-xl border-border bg-background pl-10 text-base"
+              placeholder="Name, email, country, city, phone…"
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              aria-label="Search members"
+            />
+            {searching ? (
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                onClick={() => onSearchChange("")}
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Tip: combine words — e.g. <span className="font-medium text-foreground">ahmed somalia</span> or{" "}
+            <span className="font-medium text-foreground">@gmail.com</span>. Also filters occupation, education, wali.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-muted-foreground">Country</p>
+              <Input
+                className="h-10 rounded-xl"
+                placeholder="e.g. Somalia, Kenya…"
+                value={countryFilter}
+                onChange={(e) => onCountryFilterChange(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                aria-label="Filter by country"
+              />
+            </div>
+            {countryFilter.trim() ? (
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  className="text-xs font-medium text-muted-foreground hover:text-foreground h-10"
+                  onClick={() => onCountryFilterChange("")}
+                >
+                  Clear country
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {search.trim().includes("@") ? (
@@ -665,10 +701,11 @@ export function AdminMembersPanel({
             <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
               {searching
-                ? `No member found for “${search.trim()}”. Try full email or part of the name.`
+                ? `No member found for “${search.trim()}”. Try name, email, country, city, or phone.`
                 : t("adminPage.noUsers")}
             </p>
             {searching ||
+            countryFilter.trim() ||
             reviewFilter !== "all" ||
             paymentFilter !== "all" ||
             roleFilter !== "all" ||
@@ -679,6 +716,7 @@ export function AdminMembersPanel({
                 variant="outline"
                 onClick={() => {
                   onSearchChange("");
+                  onCountryFilterChange("");
                   onReviewFilterChange("all");
                   onPaymentFilterChange("all");
                   onRoleFilterChange("all");
