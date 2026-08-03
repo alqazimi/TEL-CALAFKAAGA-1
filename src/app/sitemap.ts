@@ -21,6 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/download",
     "/privacy",
     "/terms",
+    "/delete-account",
   ];
 
   return publicPaths.map((path) => ({

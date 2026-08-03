@@ -26,6 +26,7 @@ const SUPPORT_LINKS = [
   { href: "/faq", label: "Help Center" },
   { href: "/privacy", label: "Privacy Policy" },
   { href: "/terms", label: "Terms of Service" },
+  { href: "/delete-account", label: "Delete account" },
 ] as const;
 
 export function Footer() {
@@ -91,7 +92,13 @@ export function Footer() {
                     href={link.href}
                     className="text-sm text-white/70 hover:text-primary transition-colors"
                   >
-                    {link.href === "/faq" ? t("common.helpCenter") : t(`nav.${link.href === "/privacy" ? "privacy" : "terms"}`)}
+                    {link.href === "/faq"
+                      ? t("common.helpCenter")
+                      : link.href === "/privacy"
+                        ? t("nav.privacy")
+                        : link.href === "/delete-account"
+                          ? t("nav.deleteAccount")
+                          : t("nav.terms")}
                   </Link>
                 </li>
               ))}

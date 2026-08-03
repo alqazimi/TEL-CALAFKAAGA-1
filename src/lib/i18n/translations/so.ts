@@ -16,6 +16,7 @@ export const so: Translations = {
     contact: "Nala Soo Xiriir",
     privacy: "Siyaasadda Qarsoodiga",
     terms: "Shuruudaha Adeegga",
+    deleteAccount: "Tirtir akoonka",
     dashboard: "Dashboard",
     memberLogin: "Gal Akoonka",
     websiteSection: "Website-ka",
@@ -448,6 +449,34 @@ export const so: Translations = {
     s6Title: "6. Nala Soo Xiriir",
     s6Body: "Su'aalaha la xiriira qarsoodiga, fadlan nala soo xiriir {{email}}.",
   },
+  deleteAccountPage: {
+    title: "Tirtir akoonkaaga",
+    subtitle:
+      "Sida loo tirtiro si joogto ah akoonkaaga Hel Calafkaaga website-ka ama app-ka.",
+    intro:
+      "Waad tirtiri kartaa akoonkaaga Hel Calafkaaga wakhti kasta. Tirtiriddu waxay ka saartaa profile-kaaga iyo xogta akoonka nidaamyada firfircoon. Qaar ka mid ah diiwaannada waa la hayn karaa marka sharcigu u baahan yahay (tusaale lacag-bixinta ama baaritaanka amniga).",
+    webTitle: "Ka tirtir website-ka",
+    webSteps:
+      "1. Gal helcalafkaaga.com\n2. Fur Profile (ama Settings)\n3. Dooro Tirtir akoonka\n4. Geli furahaaga oo xaqiiji",
+    appTitle: "Ka tirtir app-ka Android / iOS",
+    appSteps:
+      "1. Fur app-ka Hel Calafkaaga\n2. Tag Settings\n3. Taabo Tirtir akoonka\n4. Geli furahaaga oo xaqiiji",
+    whatDeletedTitle: "Waxa la tirtirayo",
+    whatDeletedBody:
+      "Profile-kaaga, sawirrada ku xiran akoonkaaga, likes, matches, sessions, iyo fariimaha in-app ee la xiriira akoonkaaga waa la tirtiraa ama waa laga xiraa marka akoonka la tirtirayo.",
+    whatRetainedTitle: "Waxa la hayn karo",
+    whatRetainedBody:
+      "Waxaan hayn karnaa macluumaad xaddidan oo loo baahan yahay sharci, xisaabaad, kahortagga khiyaamada, ama amniga (tusaale rasiidhada lacag-bixinta ama warbixinnada xadgudubka). Akoonkaaga kama sii firfircoonayn isbarbardhigga ka dib markaad tirtirto.",
+    supportTitle: "Ma u baahan tahay caawimo tirtiridda?",
+    supportBody:
+      "Haddii aadan geli karin, u dir email {{email}} cinwaanka akoonkaaga ku qoran oo waydiiso inaan tirtirno. Ku dar emailka aad ku diiwaangashay.",
+    signedInTitle: "Hadda tirtir",
+    signedInBody:
+      "Waad gashay. Xaqiiji furahaaga hoose si aad si joogto ah u tirtirto akoonkaaga.",
+    signInCta: "Gal si aad u tirtirto akoonkaaga",
+    privacyLink: "Akhri Siyaasadda Qarsoodiga",
+    profileLink: "Fur goobaha profile-ka",
+  },
   termsPage: {
     title: "Shuruudaha Adeegga",
     subtitle: "Cusbooneysii u dambaysay: Luulyo 2026",
@@ -620,7 +649,7 @@ export const so: Translations = {
     q4: "Xogtayda sidee loo ilaaliyaa?",
     a4: "Waxaan isticmaalnaa sir-qarin heer caalami ah oo aanan waligaa la wadaagin xogtaada shakhsi ahaaneed dhinacyada saddexaad. Qarsoodigaaga waa mudnaantayada.",
     q5: "Ma tirtiri karaa akoonkayga?",
-    a5: "Haa, waad tirtiri kartaa akoonkaaga wakhti kasta goobaha profile-kaaga. Dhammaan xogtaada si joogto ah ayaa loo tirtiri doonaa.",
+    a5: "Haa. Tirtir wakhti kasta Profile → Tirtir akoonka, ama raac https://www.helcalafkaaga.com/delete-account. Waxaad sidoo kale u diri kartaa email taageerada haddii aadan geli karin.",
     q6: "Taageerada shakhsi ahaan waa maxay?",
     a6: "Premium waxay ku jirtaa wax kasta oo Basic ah, oo lagu daray taageero WhatsApp iyo raadinta lammaane. Diiwaangelin Premium cusub $20; kor u qaadis Basic $15.",
     stillHaveQuestions: "Weli su'aalo ma haysataa?",

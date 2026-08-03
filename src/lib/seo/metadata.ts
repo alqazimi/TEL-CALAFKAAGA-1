@@ -82,6 +82,11 @@ export const SEO_SO = {
       description:
         "Soo deg oo rakib Hel Calafkaaga Android APK — guur xalaal, isbarbardhig, iyo sheekaysi ammaan ah telefoonkaaga.",
     },
+    deleteAccount: {
+      title: "Tirtir Akoonka",
+      description:
+        "Sida loo tirtiro akoonkaaga Hel Calafkaaga — website, app, waxa la tirtirayo, iyo sida nala soo xiriirayo.",
+    },
   },
 } as const;
 

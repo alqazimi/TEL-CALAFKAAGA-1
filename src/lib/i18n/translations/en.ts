@@ -14,6 +14,7 @@ export const en = {
     contact: "Contact",
     privacy: "Privacy Policy",
     terms: "Terms of Service",
+    deleteAccount: "Delete account",
     dashboard: "Dashboard",
     memberLogin: "Member Login",
     websiteSection: "Website",
@@ -442,6 +443,33 @@ export const en = {
     s6Title: "6. Contact",
     s6Body: "For privacy-related inquiries, please contact us at {{email}}.",
   },
+  deleteAccountPage: {
+    title: "Delete your account",
+    subtitle:
+      "How to permanently delete your Hel Calafkaaga account on the website or mobile app.",
+    intro:
+      "You can delete your Hel Calafkaaga account at any time. Deletion removes your profile and account data from our active systems. Some records may be kept where required by law (for example payment records or safety investigations).",
+    webTitle: "Delete on the website",
+    webSteps:
+      "1. Sign in at helcalafkaaga.com\n2. Open Profile (or Settings)\n3. Choose Delete account\n4. Enter your password and confirm",
+    appTitle: "Delete in the Android / iOS app",
+    appSteps:
+      "1. Open the Hel Calafkaaga app\n2. Go to Settings\n3. Tap Delete account\n4. Enter your password and confirm",
+    whatDeletedTitle: "What is deleted",
+    whatDeletedBody:
+      "Your profile, photos linked to your account, likes, matches, sessions, and in-app messages associated with your account are removed or disconnected as part of account deletion.",
+    whatRetainedTitle: "What may be retained",
+    whatRetainedBody:
+      "We may retain limited information required for legal, accounting, fraud prevention, or safety reasons (for example payment receipts or abuse reports). We do not keep your account active for matching after you delete it.",
+    supportTitle: "Need help deleting?",
+    supportBody:
+      "If you cannot sign in, email {{email}} from the address on your account and ask us to delete it. Include the email you registered with.",
+    signedInTitle: "Delete now",
+    signedInBody: "You are signed in. Confirm with your password below to delete your account permanently.",
+    signInCta: "Sign in to delete your account",
+    privacyLink: "Read our Privacy Policy",
+    profileLink: "Open profile settings",
+  },
   termsPage: {
     title: "Terms of Service",
     subtitle: "Last updated: July 2026",
@@ -614,7 +642,7 @@ export const en = {
     q4: "How is my data protected?",
     a4: "We use industry-standard encryption and never share your personal data with third parties. Your privacy is our priority.",
     q5: "Can I delete my account?",
-    a5: "Yes, you can delete your account at any time from your profile settings. All your data will be permanently removed.",
+    a5: "Yes. Delete anytime from Profile → Delete account, or follow https://www.helcalafkaaga.com/delete-account. You can also email support if you cannot sign in.",
     q6: "What is Premium?",
     a6: "Premium includes everything in Basic, plus personal WhatsApp support and staff help searching for your match. New men Premium signup is $20; upgrade from Basic (and all women) is $15.",
     stillHaveQuestions: "Still have questions?",
