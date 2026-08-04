@@ -87,6 +87,11 @@ export const SEO_SO = {
       description:
         "Sida loo tirtiro akoonkaaga Hel Calafkaaga — website, app, waxa la tirtirayo, iyo sida nala soo xiriirayo.",
     },
+    childSafety: {
+      title: "Child Safety Standards (CSAE)",
+      description:
+        "HelCalaf / Hel Calafkaaga child safety standards — adults 18+ only, CSAE prohibition, reporting, and compliance contacts.",
+    },
   },
 } as const;
 

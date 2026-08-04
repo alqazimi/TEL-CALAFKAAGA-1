@@ -17,6 +17,7 @@ export const so: Translations = {
     privacy: "Siyaasadda Qarsoodiga",
     terms: "Shuruudaha Adeegga",
     deleteAccount: "Tirtir akoonka",
+    childSafety: "Badbaadada carruurta",
     dashboard: "Dashboard",
     memberLogin: "Gal Akoonka",
     websiteSection: "Website-ka",

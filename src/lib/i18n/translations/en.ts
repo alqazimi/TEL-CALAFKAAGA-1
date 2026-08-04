@@ -15,6 +15,7 @@ export const en = {
     privacy: "Privacy Policy",
     terms: "Terms of Service",
     deleteAccount: "Delete account",
+    childSafety: "Child safety",
     dashboard: "Dashboard",
     memberLogin: "Member Login",
     websiteSection: "Website",

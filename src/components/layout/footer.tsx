@@ -27,6 +27,7 @@ const SUPPORT_LINKS = [
   { href: "/privacy", label: "Privacy Policy" },
   { href: "/terms", label: "Terms of Service" },
   { href: "/delete-account", label: "Delete account" },
+  { href: "/child-safety", label: "Child safety" },
 ] as const;
 
 export function Footer() {
@@ -86,22 +87,28 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold mb-4">{t("common.support")}</h3>
             <ul className="space-y-2">
-              {SUPPORT_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-white/70 hover:text-primary transition-colors"
-                  >
-                    {link.href === "/faq"
-                      ? t("common.helpCenter")
-                      : link.href === "/privacy"
-                        ? t("nav.privacy")
+              {SUPPORT_LINKS.map((link) => {
+                const label =
+                  link.href === "/faq"
+                    ? t("common.helpCenter")
+                    : link.href === "/privacy"
+                      ? t("nav.privacy")
+                      : link.href === "/terms"
+                        ? t("nav.terms")
                         : link.href === "/delete-account"
                           ? t("nav.deleteAccount")
-                          : t("nav.terms")}
-                  </Link>
-                </li>
-              ))}
+                          : t("nav.childSafety");
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-white/70 hover:text-primary transition-colors"
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
