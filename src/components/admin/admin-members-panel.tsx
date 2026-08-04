@@ -308,20 +308,34 @@ export function AdminMembersPanel({
       const res = await apiAdmin.users.exportEmails();
       const lines = res.emails;
       if (!lines.length) {
-        toast.error("No member emails to export.");
+        toast.error(
+          res.skipped
+            ? `No valid emails to export (${res.skipped} skipped as invalid).`
+            : "No member emails to export."
+        );
         return;
       }
-      // Play Console closed testing accepts one email per line.
+      // Play Console CSV: one email per line (no header, no commas).
       const blob = new Blob([`${lines.join("\n")}\n`], {
-        type: "text/plain;charset=utf-8",
+        type: "text/csv;charset=utf-8",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "hel-calafkaaga-tester-emails.txt";
+      a.download = "hel-calafkaaga-tester-emails.csv";
       a.click();
       URL.revokeObjectURL(url);
-      toast.success(`Exported ${res.count} emails for Play testers.`);
+      const extras = [
+        res.fixed ? `${res.fixed} typo-fixed` : null,
+        res.skipped ? `${res.skipped} skipped` : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      toast.success(
+        extras
+          ? `Exported ${res.count} emails (${extras}).`
+          : `Exported ${res.count} emails for Play testers.`
+      );
     } catch (error) {
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {

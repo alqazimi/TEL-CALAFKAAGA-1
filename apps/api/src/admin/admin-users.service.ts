@@ -36,6 +36,7 @@ import type { ReviewStatus } from "@prisma/client";
 import { normalizeEmail } from "../auth/crypto-util";
 import { emailMatchWhere } from "../auth/email-identity";
 import { MfaService } from "../auth/mfa.service";
+import { sanitizeEmailForPlayExport } from "./play-tester-email";
 
 const SOMALI_PHOTO_MSG =
   "Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.";
@@ -1222,11 +1223,13 @@ export class AdminUsersService {
 
   /**
    * Export unique member emails (role=user) for Play Console tester invites.
-   * Staff emails are excluded. Soft-deleted users are excluded.
+   * Fixes common Gmail domain typos (.come/.con/…) and drops still-invalid addresses.
    */
   async exportMemberEmails(): Promise<{
     emails: string[];
     count: number;
+    skipped: number;
+    fixed: number;
   }> {
     const rows = await this.prisma.profile.findMany({
       where: {
@@ -1242,16 +1245,28 @@ export class AdminUsersService {
 
     const seen = new Set<string>();
     const emails: string[] = [];
+    let skipped = 0;
+    let fixed = 0;
+
     for (const row of rows) {
       const raw = (row.user.email ?? row.user.emailNormalized ?? "").trim();
-      if (!raw || !raw.includes("@")) continue;
-      const key = raw.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      emails.push(raw);
+      if (!raw) {
+        skipped += 1;
+        continue;
+      }
+      const cleaned = sanitizeEmailForPlayExport(raw);
+      if (!cleaned) {
+        skipped += 1;
+        continue;
+      }
+      if (cleaned !== raw.trim().toLowerCase()) fixed += 1;
+      if (seen.has(cleaned)) continue;
+      seen.add(cleaned);
+      emails.push(cleaned);
     }
 
-    return { emails, count: emails.length };
+    emails.sort((a, b) => a.localeCompare(b));
+    return { emails, count: emails.length, skipped, fixed };
   }
 
   /**

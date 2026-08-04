@@ -108,6 +108,8 @@ export const apiAdmin: AdminAdapter = {
       return apiClient.get("/admin/users/emails") as Promise<{
         emails: string[];
         count: number;
+        skipped: number;
+        fixed: number;
       }>;
     },
     async releaseOrphan(userId) {

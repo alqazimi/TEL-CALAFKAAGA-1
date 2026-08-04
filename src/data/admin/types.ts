@@ -8,7 +8,12 @@ export type AdminAdapter = {
   users: {
     list(opts?: Record<string, unknown>): Promise<unknown>;
     lookupEmail(email: string): Promise<unknown>;
-    exportEmails(): Promise<{ emails: string[]; count: number }>;
+    exportEmails(): Promise<{
+      emails: string[];
+      count: number;
+      skipped: number;
+      fixed: number;
+    }>;
     releaseOrphan(userId: string): Promise<unknown>;
     detail(id: string): Promise<unknown>;
     activity(id: string): Promise<unknown>;
