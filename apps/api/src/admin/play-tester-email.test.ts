@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
-import { sanitizeEmailForPlayExport } from "./play-tester-email";
+import {
+  detectEmailDomainTypo,
+  sanitizeEmailForPlayExport,
+} from "./play-tester-email";
 
 assert.equal(
-  sanitizeEmailForPlayExport("rumanbintihamdi@gmail.come"),
+  detectEmailDomainTypo("rumanbintihamdi@gmail.come")?.fixed,
   "rumanbintihamdi@gmail.com"
 );
 assert.equal(

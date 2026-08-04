@@ -16,6 +16,7 @@ import {
   Check,
 } from "lucide-react";
 import { AuthRegisterCta } from "@/components/auth/auth-register-cta";
+import { AndroidDownloadLink } from "@/components/marketing/android-download-link";
 import { PlanChoiceNote } from "@/components/marketing/plan-choice-note";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -108,18 +109,25 @@ export function LandingPage() {
         <div className="relative mx-auto w-full max-w-7xl px-5 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32 lg:px-8">
           <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-12">
             <div className="max-w-xl">
-              <p className="motion-safe:animate-hero-rise font-display text-[2.75rem] font-semibold leading-[1.02] tracking-tight text-white sm:text-5xl lg:text-6xl">
+              <div className="motion-safe:animate-hero-rise">
+                <AndroidDownloadLink className="w-fit max-w-full" />
+              </div>
+
+              <p
+                className="motion-safe:animate-hero-rise mt-6 font-display text-[2.75rem] font-semibold leading-[1.02] tracking-tight text-white sm:text-5xl lg:text-6xl"
+                style={{ animationDelay: "70ms" }}
+              >
                 {SITE_BRAND_NAME}
               </p>
               <div
                 className="motion-safe:animate-hero-rise mt-4 h-px w-16 bg-gold/80"
-                style={{ animationDelay: "90ms" }}
+                style={{ animationDelay: "110ms" }}
                 aria-hidden
               />
 
               <h1
                 className="motion-safe:animate-hero-rise mt-6 max-w-lg font-display text-[1.65rem] font-medium leading-snug tracking-tight text-white/95 sm:text-3xl lg:text-[2.1rem]"
-                style={{ animationDelay: "140ms" }}
+                style={{ animationDelay: "160ms" }}
               >
                 {t("landing.heroTitle")}{" "}
                 <span className="text-white/80">{t("landing.heroHighlight")}</span>
@@ -127,14 +135,14 @@ export function LandingPage() {
 
               <p
                 className="motion-safe:animate-hero-rise mt-5 max-w-md text-base leading-relaxed text-white/80 sm:text-lg"
-                style={{ animationDelay: "220ms" }}
+                style={{ animationDelay: "240ms" }}
               >
                 {t("landing.heroDesc")}
               </p>
 
               <div
                 className="motion-safe:animate-hero-rise mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
-                style={{ animationDelay: "300ms" }}
+                style={{ animationDelay: "320ms" }}
               >
                 <AuthRegisterCta
                   registerLabel={t("common.joinNow")}

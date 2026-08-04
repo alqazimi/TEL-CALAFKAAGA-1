@@ -468,16 +468,21 @@ export default function AdminPage() {
           !chatOpen && "pb-[calc(var(--app-tabbar)+0.75rem)] lg:pb-0"
         )}
       >
-        <header className={cn("space-y-1", chatOpen && "hidden lg:block")}>
+        <header
+          className={cn(
+            "relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-[rgba(166,27,43,0.07)] via-card to-[rgba(201,162,39,0.06)] px-4 py-5 shadow-[var(--shadow-sm)] sm:px-6 sm:py-6",
+            chatOpen && "hidden lg:block"
+          )}
+        >
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             {isOwner ? t("adminPage.ownerConsole") : t("adminPage.adminConsole")}
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
             {activeTab === "dashboard"
               ? t("adminPage.title")
               : t(TAB_META[activeTab].title)}
           </h1>
-          <p className="max-w-2xl text-sm text-muted-foreground lg:block">
+          <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground lg:block">
             {activeTab === "dashboard"
               ? isOwner
                 ? t("adminPage.ownerDesc")
@@ -756,35 +761,37 @@ export default function AdminPage() {
 
         {activeTab === "users" && (
           <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setUsersMode("members");
-                  setPeriodDrilldown(null);
-                }}
-                className={cn(
-                  "rounded-xl border px-4 py-2 text-sm font-semibold transition-colors",
-                  usersMode === "members"
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-background text-muted-foreground hover:text-foreground"
-                )}
-              >
-                All members
-              </button>
-              <button
-                type="button"
-                onClick={() => setUsersMode("review")}
-                className={cn(
-                  "rounded-xl border px-4 py-2 text-sm font-semibold transition-colors",
-                  usersMode === "review"
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border bg-background text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Review queue
-              </button>
-              <p className="text-xs text-muted-foreground sm:ml-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="inline-flex flex-wrap items-center gap-1 rounded-2xl border border-border/80 bg-muted/40 p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsersMode("members");
+                    setPeriodDrilldown(null);
+                  }}
+                  className={cn(
+                    "rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
+                    usersMode === "members"
+                      ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  All members
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUsersMode("review")}
+                  className={cn(
+                    "rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
+                    usersMode === "review"
+                      ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Review queue
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
                 {usersMode === "members"
                   ? "Search name, email, country, city, phone · newest signups first"
                   : "Approve pending profiles · click Period activity numbers to open users"}

@@ -259,6 +259,8 @@ export function AdminMembersPanel({
   const [emailLookupLoading, setEmailLookupLoading] = useState(false);
   const [releasingId, setReleasingId] = useState<string | null>(null);
   const [exportingEmails, setExportingEmails] = useState(false);
+  const [purgingTypos, setPurgingTypos] = useState(false);
+  const [ownerToolsOpen, setOwnerToolsOpen] = useState(false);
 
   useEffect(() => {
     const q = search.trim();
@@ -303,9 +305,15 @@ export function AdminMembersPanel({
   };
 
   const exportEmailsForTesters = async () => {
+    const ok = window.confirm(
+      "Export all member emails for Play Console testers?\n\nThis downloads private emails to your device. Only use for Google Play closed testing. The action is logged."
+    );
+    if (!ok) return;
     setExportingEmails(true);
     try {
-      const res = await apiAdmin.users.exportEmails();
+      const res = await apiAdmin.users.exportEmails({
+        confirm: "EXPORT_MEMBER_EMAILS",
+      });
       const lines = res.emails;
       if (!lines.length) {
         toast.error(
@@ -340,6 +348,68 @@ export function AdminMembersPanel({
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {
       setExportingEmails(false);
+    }
+  };
+
+  const purgeTypoEmailAccounts = async (mode: "dry-run" | "fix" | "delete") => {
+    if (mode === "fix") {
+      const ok = window.confirm(
+        "Fix typo domains in the database? (e.g. gmail.come → gmail.com). Staff accounts are never changed."
+      );
+      if (!ok) return;
+    }
+    if (mode === "delete") {
+      const ok = window.confirm(
+        "DELETE all member accounts with fake email domains (@gmail.come, @gmail.con, …)? This cannot be undone. Staff are never deleted."
+      );
+      if (!ok) return;
+    }
+    setPurgingTypos(true);
+    try {
+      const res = (await apiAdmin.users.purgeTypoEmails({
+        mode,
+        confirm:
+          mode === "fix"
+            ? "FIX_TYPO_EMAILS"
+            : mode === "delete"
+              ? "DELETE_TYPO_EMAILS"
+              : undefined,
+      })) as {
+        mode: string;
+        count?: number;
+        paidCount?: number;
+        fixed?: number;
+        deleted?: number;
+        conflicts?: number;
+        items?: Array<{ original: string; fixed: string; name: string | null }>;
+        errors?: string[];
+      };
+      if (mode === "dry-run") {
+        toast.message(
+          `Found ${res.count ?? 0} typo-email accounts` +
+            (res.paidCount ? ` (${res.paidCount} paid)` : "")
+        );
+        if (res.items?.length) {
+          console.info("[typo-emails]", res.items.slice(0, 50));
+        }
+      } else if (mode === "fix") {
+        toast.success(
+          `Fixed ${res.fixed ?? 0} emails` +
+            (res.conflicts ? ` · ${res.conflicts} skipped (conflict)` : "")
+        );
+        onActionComplete?.();
+      } else {
+        toast.success(`Deleted ${res.deleted ?? 0} typo-email accounts`);
+        if (res.errors?.length) {
+          toast.error(`${res.errors.length} deletes failed — see console`);
+          console.error(res.errors);
+        }
+        onActionComplete?.();
+      }
+    } catch (error) {
+      toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
+    } finally {
+      setPurgingTypos(false);
     }
   };
 
@@ -450,45 +520,108 @@ export function AdminMembersPanel({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-semibold">All members</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Newest signups first
-              {typeof total === "number" ? ` · ${total} total` : ""}
-              {searching ? " · searching all members (filters paused)" : ""}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="rounded-xl"
-              disabled={exportingEmails}
-              onClick={() => void exportEmailsForTesters()}
-            >
-              <Download className="mr-1.5 h-4 w-4" />
-              {exportingEmails ? "Exporting…" : "Export emails"}
-            </Button>
-            <div className="flex gap-3 text-center text-xs">
-            <div>
-              <p className="text-base font-semibold tabular-nums">{approvedMale ?? "—"}</p>
-              <p className="text-muted-foreground">{t("adminPage.approvedMen")}</p>
+      <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-[var(--shadow-sm)]">
+        <div className="border-b border-border/70 bg-gradient-to-br from-[rgba(166,27,43,0.06)] via-transparent to-[rgba(201,162,39,0.05)] px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Users className="h-4 w-4" />
+                </span>
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight">All members</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Newest signups first
+                    {typeof total === "number" ? ` · ${total} total` : ""}
+                    {searching ? " · searching all members (filters paused)" : ""}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-base font-semibold tabular-nums">{approvedFemale ?? "—"}</p>
-              <p className="text-muted-foreground">{t("adminPage.approvedWomen")}</p>
-            </div>
-            <div>
-              <p className="text-base font-semibold tabular-nums">{approvedTotal ?? "—"}</p>
-              <p className="text-muted-foreground">{t("adminPage.approvedTotal")}</p>
-            </div>
+            <div className="flex gap-4 text-center text-xs">
+              <div className="rounded-xl bg-background/70 px-3 py-2 ring-1 ring-border/60">
+                <p className="text-base font-semibold tabular-nums">{approvedMale ?? "—"}</p>
+                <p className="text-muted-foreground">{t("adminPage.approvedMen")}</p>
+              </div>
+              <div className="rounded-xl bg-background/70 px-3 py-2 ring-1 ring-border/60">
+                <p className="text-base font-semibold tabular-nums">{approvedFemale ?? "—"}</p>
+                <p className="text-muted-foreground">{t("adminPage.approvedWomen")}</p>
+              </div>
+              <div className="rounded-xl bg-background/70 px-3 py-2 ring-1 ring-border/60">
+                <p className="text-base font-semibold tabular-nums">{approvedTotal ?? "—"}</p>
+                <p className="text-muted-foreground">{t("adminPage.approvedTotal")}</p>
+              </div>
             </div>
           </div>
+
+          {canManageRoles ? (
+            <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-2 text-left"
+                onClick={() => setOwnerToolsOpen((v) => !v)}
+                aria-expanded={ownerToolsOpen}
+              >
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Owner tools</p>
+                  <p className="text-xs text-muted-foreground">
+                    Email export &amp; typo cleanup — logged, rate-limited, owner only
+                  </p>
+                </div>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {ownerToolsOpen ? "Hide" : "Show"}
+                </span>
+              </button>
+              {ownerToolsOpen ? (
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-amber-500/20 pt-3">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl"
+                    disabled={exportingEmails || purgingTypos}
+                    onClick={() => void exportEmailsForTesters()}
+                  >
+                    <Download className="mr-1.5 h-4 w-4" />
+                    {exportingEmails ? "Exporting…" : "Export emails (Play)"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl"
+                    disabled={purgingTypos || exportingEmails}
+                    onClick={() => void purgeTypoEmailAccounts("dry-run")}
+                  >
+                    {purgingTypos ? "Working…" : "Scan fake emails"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="rounded-xl"
+                    disabled={purgingTypos || exportingEmails}
+                    onClick={() => void purgeTypoEmailAccounts("fix")}
+                  >
+                    Fix fake emails
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    className="rounded-xl"
+                    disabled={purgingTypos || exportingEmails}
+                    onClick={() => void purgeTypoEmailAccounts("delete")}
+                  >
+                    Delete fake-email users
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
+        <div className="space-y-4 p-4 sm:p-5">
         <div className="space-y-2">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -1025,6 +1158,7 @@ export function AdminMembersPanel({
             {t("adminPage.showingMembers", { count: users.length })}
           </p>
         )}
+        </div>
       </div>
 
       {pendingConfirm && (

@@ -157,11 +157,36 @@ export class AdminUsersController {
     return this.users.lookupEmailIdentity(email ?? "");
   }
 
-  /** Member emails only — for Play Console closed-testing lists. */
-  @Get("emails")
-  @UseGuards(RateLimitGuard)
-  exportEmails() {
-    return this.users.exportMemberEmails();
+  /** Member emails only — Play Console tester list. Owner-only (bulk PII). */
+  @Post("emails")
+  @Roles("owner")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  exportEmails(@CurrentUser() user: RequestUser, @Body() body: unknown) {
+    const parsed = parseBody(
+      z.object({
+        confirm: z.literal("EXPORT_MEMBER_EMAILS"),
+      }),
+      body ?? {}
+    );
+    return this.users.exportMemberEmails(user.id, parsed.confirm);
+  }
+
+  /** Preview / fix / delete accounts with typo domains like @gmail.come — owner only. */
+  @Post("purge-typo-emails")
+  @Roles("owner")
+  @UseGuards(CsrfGuard, RateLimitGuard)
+  purgeTypoEmails(
+    @CurrentUser() user: RequestUser,
+    @Body() body: unknown
+  ) {
+    const parsed = parseBody(
+      z.object({
+        mode: z.enum(["dry-run", "fix", "delete"]),
+        confirm: z.string().optional(),
+      }),
+      body ?? {}
+    );
+    return this.users.purgeTypoEmails(user.id, parsed);
   }
 
   @Post("release-orphan")

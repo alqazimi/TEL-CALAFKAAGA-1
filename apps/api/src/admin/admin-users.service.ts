@@ -36,7 +36,7 @@ import type { ReviewStatus } from "@prisma/client";
 import { normalizeEmail } from "../auth/crypto-util";
 import { emailMatchWhere } from "../auth/email-identity";
 import { MfaService } from "../auth/mfa.service";
-import { sanitizeEmailForPlayExport } from "./play-tester-email";
+import { detectEmailDomainTypo, sanitizeEmailForPlayExport } from "./play-tester-email";
 
 const SOMALI_PHOTO_MSG =
   "Fadlan geli sawirkaaga saxda ah si uu kuu furmo. Mahadsanid.";
@@ -1222,15 +1222,180 @@ export class AdminUsersService {
   }
 
   /**
-   * Export unique member emails (role=user) for Play Console tester invites.
-   * Fixes common Gmail domain typos (.come/.con/…) and drops still-invalid addresses.
+   * List / fix / delete member accounts with known fake email domains
+   * (@gmail.come, @gmail.con, …). Owner only — returns PII. Staff never touched.
    */
-  async exportMemberEmails(): Promise<{
+  async purgeTypoEmails(
+    actorUserId: string,
+    opts: {
+      mode: "dry-run" | "fix" | "delete";
+      confirm?: string;
+    }
+  ) {
+    const actor = await this.prisma.profile.findUnique({
+      where: { userId: actorUserId },
+      select: { role: true },
+    });
+    if (!actor || !isOwnerRole(actor.role)) {
+      throw new ForbiddenException("Only the owner can manage typo-email accounts");
+    }
+    if (opts.mode === "fix" && opts.confirm !== "FIX_TYPO_EMAILS") {
+      throw new BadRequestException('confirm must be "FIX_TYPO_EMAILS"');
+    }
+    if (opts.mode === "delete" && opts.confirm !== "DELETE_TYPO_EMAILS") {
+      throw new BadRequestException('confirm must be "DELETE_TYPO_EMAILS"');
+    }
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        OR: [{ email: { not: null } }, { emailNormalized: { not: null } }],
+      },
+      select: {
+        id: true,
+        email: true,
+        emailNormalized: true,
+        profile: {
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            hasPaid: true,
+            banned: true,
+          },
+        },
+      },
+    });
+
+    const hits: Array<{
+      userId: string;
+      profileId: string;
+      name: string | null;
+      hasPaid: boolean;
+      original: string;
+      fixed: string;
+    }> = [];
+
+    for (const u of users) {
+      const raw = (u.emailNormalized || u.email || "").trim();
+      if (!raw) continue;
+      const typo = detectEmailDomainTypo(raw);
+      if (!typo) continue;
+      if (!u.profile || isStaffRole(u.profile.role)) continue;
+      hits.push({
+        userId: u.id,
+        profileId: u.profile.id,
+        name: u.profile.name,
+        hasPaid: u.profile.hasPaid,
+        original: typo.original,
+        fixed: typo.fixed,
+      });
+    }
+
+    if (opts.mode === "dry-run") {
+      return {
+        mode: "dry-run" as const,
+        count: hits.length,
+        paidCount: hits.filter((h) => h.hasPaid).length,
+        items: hits,
+      };
+    }
+
+    if (opts.mode === "fix") {
+      let fixed = 0;
+      let conflicts = 0;
+      for (const h of hits) {
+        const taken = await this.prisma.user.findFirst({
+          where: {
+            id: { not: h.userId },
+            OR: [
+              { emailNormalized: h.fixed },
+              { email: { equals: h.fixed, mode: "insensitive" } },
+            ],
+          },
+          select: { id: true },
+        });
+        if (taken) {
+          conflicts += 1;
+          continue;
+        }
+        await this.prisma.user.update({
+          where: { id: h.userId },
+          data: { email: h.fixed, emailNormalized: h.fixed },
+        });
+        await this.prisma.authAccount.updateMany({
+          where: {
+            userId: h.userId,
+            provider: "password",
+            providerAccountId: {
+              equals: h.original,
+              mode: "insensitive",
+            },
+          },
+          data: { providerAccountId: h.fixed },
+        });
+        fixed += 1;
+      }
+      await this.audit.write({
+        actorUserId,
+        action: "purge_typo_emails_fix",
+        metadata: { fixed, conflicts, scanned: hits.length },
+      });
+      return { mode: "fix" as const, fixed, conflicts, count: hits.length };
+    }
+
+    // delete
+    let deleted = 0;
+    const errors: string[] = [];
+    for (const h of hits) {
+      try {
+        await this.deletion.execute(actorUserId, h.profileId);
+        deleted += 1;
+      } catch (e) {
+        errors.push(
+          `${h.original}: ${e instanceof Error ? e.message : "failed"}`
+        );
+      }
+    }
+    await this.metrics.scheduleRebuild();
+    await this.audit.write({
+      actorUserId,
+      action: "purge_typo_emails_delete",
+      metadata: { deleted, errors: errors.slice(0, 20), scanned: hits.length },
+    });
+    return {
+      mode: "delete" as const,
+      deleted,
+      errors,
+      count: hits.length,
+    };
+  }
+
+  /**
+   * Export unique member emails (role=user) for Play Console tester invites.
+   * Owner-only. Fixes common Gmail domain typos and drops still-invalid addresses.
+   * Every export is audit-logged (count only — not the email list).
+   */
+  async exportMemberEmails(
+    actorUserId: string,
+    confirm: "EXPORT_MEMBER_EMAILS"
+  ): Promise<{
     emails: string[];
     count: number;
     skipped: number;
     fixed: number;
   }> {
+    if (confirm !== "EXPORT_MEMBER_EMAILS") {
+      throw new BadRequestException('confirm must be "EXPORT_MEMBER_EMAILS"');
+    }
+    const actor = await this.prisma.profile.findUnique({
+      where: { userId: actorUserId },
+      select: { role: true },
+    });
+    if (!actor || !isOwnerRole(actor.role)) {
+      throw new ForbiddenException("Only the owner can export member emails");
+    }
+
     const rows = await this.prisma.profile.findMany({
       where: {
         role: "user",
@@ -1266,6 +1431,17 @@ export class AdminUsersService {
     }
 
     emails.sort((a, b) => a.localeCompare(b));
+
+    await this.audit.write({
+      actorUserId,
+      action: "export_member_emails",
+      metadata: {
+        count: emails.length,
+        skipped,
+        fixed,
+      },
+    });
+
     return { emails, count: emails.length, skipped, fixed };
   }
 

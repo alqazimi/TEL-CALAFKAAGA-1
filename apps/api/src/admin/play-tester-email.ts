@@ -7,7 +7,7 @@ const EMAIL_RE =
   /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
 
 /** Trailing junk / mistyped TLD after a real provider domain. */
-const DOMAIN_TYPO_FIXES: Array<[RegExp, string]> = [
+export const DOMAIN_TYPO_FIXES: Array<[RegExp, string]> = [
   [/@gmail\.come$/i, "@gmail.com"],
   [/@gmail\.coms$/i, "@gmail.com"],
   [/@gmail\.comh$/i, "@gmail.com"],
@@ -28,16 +28,27 @@ const DOMAIN_TYPO_FIXES: Array<[RegExp, string]> = [
   [/@outlook\.come$/i, "@outlook.com"],
 ];
 
+export function detectEmailDomainTypo(
+  raw: string
+): { original: string; fixed: string } | null {
+  const email = raw.trim().toLowerCase().replace(/[,;\s]+$/g, "");
+  if (!email.includes("@")) return null;
+  for (const [pattern, replacement] of DOMAIN_TYPO_FIXES) {
+    if (!pattern.test(email)) continue;
+    const fixed = email.replace(pattern, replacement);
+    if (fixed !== email && EMAIL_RE.test(fixed)) {
+      return { original: email, fixed };
+    }
+  }
+  return null;
+}
+
 export function sanitizeEmailForPlayExport(raw: string): string | null {
   let email = raw.trim().toLowerCase().replace(/[,;\s]+$/g, "");
   if (!email || !email.includes("@")) return null;
 
-  for (const [pattern, replacement] of DOMAIN_TYPO_FIXES) {
-    if (pattern.test(email)) {
-      email = email.replace(pattern, replacement);
-      break;
-    }
-  }
+  const typo = detectEmailDomainTypo(email);
+  if (typo) email = typo.fixed;
 
   if (!EMAIL_RE.test(email)) return null;
   const domain = email.split("@")[1] ?? "";

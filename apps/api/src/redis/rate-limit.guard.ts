@@ -126,6 +126,11 @@ const LIMITS: Record<
   "admin.delete": {
     user: { windowSec: 60, max: 10 },
   },
+  /** Bulk member-email export (Play testers) — owner-only PII dump. */
+  "admin.exportEmails": {
+    user: { windowSec: 60 * 60, max: 5 },
+    ip: { windowSec: 60 * 60, max: 10 },
+  },
   "profile.delete_account": {
     user: { windowSec: 60 * 60, max: 3 },
     ip: { windowSec: 60 * 60, max: 10 },
@@ -287,6 +292,9 @@ export class RateLimitGuard implements CanActivate {
     if (path.startsWith("/admin") || path.startsWith("/staff-invites") || path.startsWith("/support") || path.startsWith("/moderation")) {
       if (method === "DELETE" || path.includes("/delete") || /\/admin\/users\/[^/]+$/.test(path) && method === "DELETE") {
         return "admin.delete";
+      }
+      if (path.includes("/admin/users/emails") || path.includes("/admin/users/purge-typo-emails")) {
+        return "admin.exportEmails";
       }
       if (path.includes("/staff-invites")) return "admin.invite";
       if (path.includes("/announcements")) return "admin.announce";
