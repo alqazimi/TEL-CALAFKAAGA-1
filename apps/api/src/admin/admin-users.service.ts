@@ -1221,6 +1221,40 @@ export class AdminUsersService {
   }
 
   /**
+   * Export unique member emails (role=user) for Play Console tester invites.
+   * Staff emails are excluded. Soft-deleted users are excluded.
+   */
+  async exportMemberEmails(): Promise<{
+    emails: string[];
+    count: number;
+  }> {
+    const rows = await this.prisma.profile.findMany({
+      where: {
+        role: "user",
+        banned: false,
+        user: { deletedAt: null },
+      },
+      select: {
+        user: { select: { email: true, emailNormalized: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const seen = new Set<string>();
+    const emails: string[] = [];
+    for (const row of rows) {
+      const raw = (row.user.email ?? row.user.emailNormalized ?? "").trim();
+      if (!raw || !raw.includes("@")) continue;
+      const key = raw.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      emails.push(raw);
+    }
+
+    return { emails, count: emails.length };
+  }
+
+  /**
    * Resolve why an email blocks signup even when Members search looks empty.
    * Checks User + password AuthAccount (same as register), not only Profile.
    */

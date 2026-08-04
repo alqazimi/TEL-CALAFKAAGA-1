@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   Ban,
   CheckCircle,
+  Download,
   Eye,
   ImagePlus,
   Mail,
@@ -257,6 +258,7 @@ export function AdminMembersPanel({
   const [emailLookup, setEmailLookup] = useState<EmailLookupResult | null>(null);
   const [emailLookupLoading, setEmailLookupLoading] = useState(false);
   const [releasingId, setReleasingId] = useState<string | null>(null);
+  const [exportingEmails, setExportingEmails] = useState(false);
 
   useEffect(() => {
     const q = search.trim();
@@ -297,6 +299,33 @@ export function AdminMembersPanel({
       toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
     } finally {
       setReleasingId(null);
+    }
+  };
+
+  const exportEmailsForTesters = async () => {
+    setExportingEmails(true);
+    try {
+      const res = await apiAdmin.users.exportEmails();
+      const lines = res.emails;
+      if (!lines.length) {
+        toast.error("No member emails to export.");
+        return;
+      }
+      // Play Console closed testing accepts one email per line.
+      const blob = new Blob([`${lines.join("\n")}\n`], {
+        type: "text/plain;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "hel-calafkaaga-tester-emails.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${res.count} emails for Play testers.`);
+    } catch (error) {
+      toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
+    } finally {
+      setExportingEmails(false);
     }
   };
 
@@ -417,7 +446,19 @@ export function AdminMembersPanel({
               {searching ? " · searching all members (filters paused)" : ""}
             </p>
           </div>
-          <div className="flex gap-3 text-center text-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-xl"
+              disabled={exportingEmails}
+              onClick={() => void exportEmailsForTesters()}
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              {exportingEmails ? "Exporting…" : "Export emails"}
+            </Button>
+            <div className="flex gap-3 text-center text-xs">
             <div>
               <p className="text-base font-semibold tabular-nums">{approvedMale ?? "—"}</p>
               <p className="text-muted-foreground">{t("adminPage.approvedMen")}</p>
@@ -429,6 +470,7 @@ export function AdminMembersPanel({
             <div>
               <p className="text-base font-semibold tabular-nums">{approvedTotal ?? "—"}</p>
               <p className="text-muted-foreground">{t("adminPage.approvedTotal")}</p>
+            </div>
             </div>
           </div>
         </div>

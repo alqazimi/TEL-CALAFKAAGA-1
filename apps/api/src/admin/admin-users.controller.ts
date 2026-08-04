@@ -157,6 +157,13 @@ export class AdminUsersController {
     return this.users.lookupEmailIdentity(email ?? "");
   }
 
+  /** Member emails only — for Play Console closed-testing lists. */
+  @Get("emails")
+  @UseGuards(RateLimitGuard)
+  exportEmails() {
+    return this.users.exportMemberEmails();
+  }
+
   @Post("release-orphan")
   @UseGuards(CsrfGuard, RateLimitGuard)
   releaseOrphan(

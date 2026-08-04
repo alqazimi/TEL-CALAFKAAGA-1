@@ -104,6 +104,12 @@ export const apiAdmin: AdminAdapter = {
         `/admin/users/lookup-email${q({ email })}`
       );
     },
+    async exportEmails() {
+      return apiClient.get("/admin/users/emails") as Promise<{
+        emails: string[];
+        count: number;
+      }>;
+    },
     async releaseOrphan(userId) {
       return apiClient.post("/admin/users/release-orphan", { userId });
     },

@@ -3,7 +3,7 @@
 import { Smartphone } from "lucide-react";
 import { MarketingPage } from "@/components/marketing/marketing-page";
 import { Button } from "@/components/ui/button";
-import { ANDROID_APK_URL } from "@/lib/constants";
+import { ANDROID_APK_URL, PLAY_STORE_PACKAGE_ID, PLAY_STORE_URL } from "@/lib/constants";
 import { useTranslation } from "@/lib/i18n/context";
 
 export function DownloadPageContent() {
@@ -23,10 +23,14 @@ export function DownloadPageContent() {
         </p>
 
         <Button asChild size="lg" className="mt-6 h-12 w-full rounded-full text-base">
-          <a href={ANDROID_APK_URL} rel="noopener noreferrer">
-            {t("downloadPage.downloadApk")}
+          <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">
+            {t("downloadPage.openPlayStore")}
           </a>
         </Button>
+
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          {t("downloadPage.packageLabel")}: {PLAY_STORE_PACKAGE_ID}
+        </p>
 
         <p className="mt-6 text-sm font-semibold text-foreground">
           {t("downloadPage.stepsTitle")}
@@ -37,6 +41,15 @@ export function DownloadPageContent() {
           <li>{t("downloadPage.step3")}</li>
           <li>{t("downloadPage.step4")}</li>
         </ol>
+
+        <div className="mt-8 border-t border-border pt-5">
+          <p className="text-xs text-muted-foreground">{t("downloadPage.apkFallback")}</p>
+          <Button asChild variant="outline" className="mt-3 w-full rounded-full">
+            <a href={ANDROID_APK_URL} rel="noopener noreferrer">
+              {t("downloadPage.downloadApk")}
+            </a>
+          </Button>
+        </div>
       </div>
     </MarketingPage>
   );
