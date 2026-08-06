@@ -1093,6 +1093,8 @@ export const so: Translations = {
     deleteAccountSuccess: "Akoonkaaga waa la tirtiray.",
     deleteAccountFailed: "Akoonka lama tirtiri karo. Hubi furaha oo isku day mar kale.",
     deleteAccountPasswordRequired: "Geli furaha si aad u xaqiijiso tirtiridda.",
+    deleteAccountSignInAgain: "Fadlan mar kale gal, ka dibna tirtir akoonkaaga.",
+    deleteAccountWrongPassword: "Furaha waa khalad. Isku day mar kale.",
   },
   support: {
     title: "La xiriir taageerada",

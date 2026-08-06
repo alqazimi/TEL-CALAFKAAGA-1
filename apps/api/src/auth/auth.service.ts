@@ -14,6 +14,7 @@ import { isStaffRole } from "../common/access";
 import { PrismaService } from "../prisma/prisma.service";
 import {
   AUTH_FAILED_MESSAGE,
+  INCORRECT_PASSWORD_MESSAGE,
   REGISTER_FAILED_MESSAGE,
   RESET_GENERIC_MESSAGE,
   generateToken,
@@ -976,7 +977,7 @@ export class AuthService {
       where: { userId, provider: "password" },
     });
     if (!account?.passwordHash) {
-      throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+      throw new UnauthorizedException(INCORRECT_PASSWORD_MESSAGE);
     }
     const verified = await verifyPassword(
       password,
@@ -984,7 +985,7 @@ export class AuthService {
       account.passwordAlgo
     );
     if (!verified.ok) {
-      throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+      throw new UnauthorizedException(INCORRECT_PASSWORD_MESSAGE);
     }
   }
 

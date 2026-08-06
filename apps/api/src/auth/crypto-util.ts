@@ -34,6 +34,12 @@ export function safeEqualHex(a: string, b: string): boolean {
 /** Generic auth failure — never distinguish email vs password vs ban. */
 export const AUTH_FAILED_MESSAGE = "Invalid email or password";
 
+/** Missing/expired session on an authenticated route (not a login attempt). */
+export const SESSION_REQUIRED_MESSAGE = "Please sign in again";
+
+/** Wrong password while already authenticated (change password / delete account). */
+export const INCORRECT_PASSWORD_MESSAGE = "Incorrect password";
+
 export const RESET_GENERIC_MESSAGE =
   "A password reset link has been sent to your email. Check your inbox and spam folder.";
 

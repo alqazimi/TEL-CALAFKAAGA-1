@@ -103,7 +103,7 @@ export function DeleteAccountPageContent() {
                 {t("deleteAccountPage.signInCta")}
               </p>
               <Button asChild className="rounded-xl">
-                <Link href="/login">
+                <Link href="/login?next=/delete-account">
                   {t("deleteAccountPage.signInCta")}
                 </Link>
               </Button>

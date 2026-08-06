@@ -21,6 +21,10 @@ export const apiProfile: ProfileAdapter = {
     return apiClient.get("/profile/access-state");
   },
   async deleteAccount(password: string) {
-    return apiClient.delete("/profile/account", { password });
+    // Prefer POST — some proxies strip DELETE bodies, which made password checks fail.
+    return apiClient.post("/auth/delete-account", {
+      password,
+      confirm: true,
+    });
   },
 };

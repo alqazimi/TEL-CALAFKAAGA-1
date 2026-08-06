@@ -16,6 +16,9 @@ import { ConfigService } from "@nestjs/config";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import {
+  AllowDuringPasswordReset,
+  AllowWhileMfaEnrollment,
+  AllowWhileUnverified,
   CurrentUser,
   RequireProfile,
   type RequestUser,
@@ -281,7 +284,9 @@ export class ProfileController {
 
   @Delete("account")
   @HttpCode(200)
-  @RequireProfile()
+  @AllowDuringPasswordReset()
+  @AllowWhileUnverified()
+  @AllowWhileMfaEnrollment()
   @UseGuards(RateLimitGuard)
   async deleteAccount(
     @CurrentUser() user: RequestUser,

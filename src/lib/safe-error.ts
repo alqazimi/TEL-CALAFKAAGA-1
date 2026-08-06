@@ -48,7 +48,7 @@ export function getAdminActionError(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message) {
     const line = firstLine(error.message);
     if (
-      /could not delete|cannot delete|unauthorized|forbidden|invalid csrf|not found|related records/i.test(
+      /could not delete|cannot delete|unauthorized|forbidden|invalid csrf|not found|related records|incorrect password|please sign in again/i.test(
         line
       )
     ) {

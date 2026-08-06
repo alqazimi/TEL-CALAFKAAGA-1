@@ -173,6 +173,16 @@ describe("auth failure message", () => {
   it("is generic", () => {
     assert.match(AUTH_FAILED_MESSAGE, /Invalid email or password/);
   });
+
+  it("session and password prompts are distinct from login failure", async () => {
+    const { SESSION_REQUIRED_MESSAGE, INCORRECT_PASSWORD_MESSAGE } = await import(
+      "./crypto-util"
+    );
+    assert.match(SESSION_REQUIRED_MESSAGE, /sign in again/i);
+    assert.match(INCORRECT_PASSWORD_MESSAGE, /Incorrect password/i);
+    assert.notEqual(SESSION_REQUIRED_MESSAGE, AUTH_FAILED_MESSAGE);
+    assert.notEqual(INCORRECT_PASSWORD_MESSAGE, AUTH_FAILED_MESSAGE);
+  });
 });
 
 describe("AuthService behaviour (mocked prisma)", () => {

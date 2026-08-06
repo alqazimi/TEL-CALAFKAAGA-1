@@ -11,7 +11,7 @@ import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
 import { isStaffRole } from "../common/access";
-import { AUTH_FAILED_MESSAGE } from "./crypto-util";
+import { SESSION_REQUIRED_MESSAGE } from "./crypto-util";
 import { SessionService } from "./session.service";
 import { isStaffMfaRequired } from "./staff-mfa-policy";
 
@@ -83,7 +83,7 @@ export type AuthedRequest = Request & {
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): RequestUser => {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
-    if (!req.user) throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+    if (!req.user) throw new UnauthorizedException(SESSION_REQUIRED_MESSAGE);
     return req.user;
   }
 );
@@ -124,13 +124,13 @@ export class AuthGuard implements CanActivate {
 
     if (!raw) {
       if (isPublic) return true;
-      throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+      throw new UnauthorizedException(SESSION_REQUIRED_MESSAGE);
     }
 
     const session = await this.sessions.findValidSession(raw);
     if (!session) {
       if (isPublic) return true;
-      throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+      throw new UnauthorizedException(SESSION_REQUIRED_MESSAGE);
     }
 
     await this.sessions.touchSession(
@@ -258,7 +258,7 @@ export class AuthGuard implements CanActivate {
 export class ActiveUserGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<AuthedRequest>();
-    if (!req.user) throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+    if (!req.user) throw new UnauthorizedException(SESSION_REQUIRED_MESSAGE);
     if (req.user.banned) {
       throw new ForbiddenException("Unable to access this account");
     }
@@ -270,7 +270,7 @@ export class ActiveUserGuard implements CanActivate {
 export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<AuthedRequest>();
-    if (!req.user) throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+    if (!req.user) throw new UnauthorizedException(SESSION_REQUIRED_MESSAGE);
     if (req.user.role !== "admin" && req.user.role !== "owner") {
       throw new ForbiddenException("Admin required");
     }
@@ -282,7 +282,7 @@ export class AdminGuard implements CanActivate {
 export class OwnerGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<AuthedRequest>();
-    if (!req.user) throw new UnauthorizedException(AUTH_FAILED_MESSAGE);
+    if (!req.user) throw new UnauthorizedException(SESSION_REQUIRED_MESSAGE);
     if (req.user.role !== "owner") {
       throw new ForbiddenException("Owner required");
     }

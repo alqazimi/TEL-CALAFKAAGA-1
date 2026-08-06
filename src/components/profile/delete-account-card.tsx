@@ -14,6 +14,22 @@ import { disconnectRealtime } from "@/data/realtime/socket-client";
 import { useTranslation } from "@/lib/i18n/context";
 import { getSafeUserError } from "@/lib/safe-error";
 
+function deleteAccountErrorMessage(
+  error: unknown,
+  t: (key: string) => string
+): string {
+  const raw =
+    error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  const line = raw.split("\n")[0]?.trim() ?? "";
+  if (/incorrect password/i.test(line)) {
+    return t("profilePage.deleteAccountWrongPassword");
+  }
+  if (/please sign in again|sign in again/i.test(line)) {
+    return t("profilePage.deleteAccountSignInAgain");
+  }
+  return getSafeUserError(error, t("profilePage.deleteAccountFailed"));
+}
+
 export function DeleteAccountCard({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -31,9 +47,7 @@ export function DeleteAccountCard({ embedded = false }: { embedded?: boolean }) 
       toast.success(t("profilePage.deleteAccountSuccess"));
       router.replace("/");
     } catch (error) {
-      toast.error(
-        getSafeUserError(error, t("profilePage.deleteAccountFailed"))
-      );
+      toast.error(deleteAccountErrorMessage(error, t));
     } finally {
       setDeleting(false);
       setConfirmOpen(false);

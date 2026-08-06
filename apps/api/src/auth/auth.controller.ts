@@ -407,12 +407,14 @@ export class AuthController {
   }
 
   /**
-   * Mobile self-delete (Capacitor). Website also has DELETE /profile/account.
-   * Both require password and permanently remove the member via DeletionService.
+   * Self-delete (web + mobile). Requires password. Permanently removes the member.
+   * Allowed while unverified / forced-reset / MFA enroll so stuck users can leave.
    */
   @Post("delete-account")
   @HttpCode(200)
-  @RequireProfile()
+  @AllowDuringPasswordReset()
+  @AllowWhileUnverified()
+  @AllowWhileMfaEnrollment()
   async deleteAccount(
     @CurrentUser() user: RequestUser,
     @Body() body: unknown,

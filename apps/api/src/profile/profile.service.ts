@@ -877,8 +877,14 @@ export class ProfileService {
 
   async deleteMyAccount(userId: string, password: string, ip?: string) {
     await this.auth.verifyCurrentPassword(userId, password);
-    const result = await this.deletion.executeSelfDelete(userId, { requestId: ip });
-    await this.metrics.scheduleRebuild();
+    const result = await this.deletion.executeSelfDelete(userId, {
+      requestId: ip,
+    });
+    try {
+      await this.metrics.scheduleRebuild();
+    } catch {
+      // Account already deleted; metrics must not fail the request.
+    }
     return result;
   }
 }

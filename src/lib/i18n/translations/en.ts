@@ -1083,6 +1083,8 @@ export const en = {
     deleteAccountSuccess: "Your account has been deleted.",
     deleteAccountFailed: "Could not delete your account. Check your password and try again.",
     deleteAccountPasswordRequired: "Enter your password to confirm deletion.",
+    deleteAccountSignInAgain: "Please sign in again, then delete your account.",
+    deleteAccountWrongPassword: "Incorrect password. Try again.",
   },
   support: {
     title: "Message support",
