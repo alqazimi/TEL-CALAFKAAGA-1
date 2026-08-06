@@ -156,26 +156,18 @@ export function QuestionnaireReview({
 
   const employmentItems = [
     { label: "Occupation", value: profile.occupation || "—" },
-    ...(profile.gender === "male"
-      ? [{ label: "Financial Readiness", value: profile.financialReadiness || "—" }]
-      : [
+    ...(profile.gender === "female"
+      ? [
           {
             label: "Work Preference After Marriage",
-            value: profile.marriageWorkPreference || profile.financialReadiness || "—",
+            value: profile.marriageWorkPreference || "—",
           },
-        ]),
+        ]
+      : []),
   ];
 
   const marriageItems = [
     { label: "Marital Status", value: profile.maritalStatus ? optionLabel(profile.maritalStatus) : "—" },
-    ...(profile.gender === "male"
-      ? [
-          {
-            label: "Current Wife",
-            value: profile.hasCurrentWife ? optionLabel(profile.hasCurrentWife) : "—",
-          },
-        ]
-      : []),
   ];
 
   const lifestyleItems = [
@@ -192,7 +184,6 @@ export function QuestionnaireReview({
 
   const aboutItems = [
     { label: "Marriage Timeline", value: profile.marriageTimeline || "—" },
-    { label: "Love Language", value: profile.loveLanguage ? optionLabel(profile.loveLanguage) : "—" },
     { label: "Qualities", value: translateList(profile.qualities) },
     { label: "Hobbies", value: translateList(profile.hobbies) },
   ];

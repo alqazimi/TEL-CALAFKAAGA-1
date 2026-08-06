@@ -42,18 +42,12 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
 export type SectionStatus = "complete" | "in_progress" | "not_started";
 
 export function isMarriageComplete(profile: Profile): boolean {
-  if (!profile.maritalStatus) return false;
-  if (profile.gender === "male") {
-    return !!profile.hasCurrentWife;
-  }
-  return true;
+  return !!profile.maritalStatus;
 }
 
 export function isEducationComplete(profile: Profile): boolean {
   const employmentPreferenceComplete =
-    profile.gender === "female"
-      ? !!(profile.marriageWorkPreference || profile.financialReadiness)
-      : !!profile.financialReadiness;
+    profile.gender === "female" ? !!profile.marriageWorkPreference : true;
   return !!profile.education && !!profile.occupation && employmentPreferenceComplete;
 }
 
@@ -84,7 +78,6 @@ export function isReligiousComplete(profile: Profile): boolean {
 export function isAboutYouComplete(profile: Profile): boolean {
   return (
     !!profile.marriageTimeline &&
-    !!profile.loveLanguage &&
     (profile.qualities?.length ?? 0) > 0 &&
     (profile.hobbies?.length ?? 0) > 0
   );
@@ -180,15 +173,10 @@ export function getSectionStatus(
     education:
       !!profile.education ||
       !!profile.occupation ||
-      !!profile.financialReadiness ||
       !!profile.marriageWorkPreference,
-    marriage:
-      !!profile.maritalStatus ||
-      !!profile.hasCurrentWife,
+    marriage: !!profile.maritalStatus,
     lifestyle: profile.smokes === "Yes" || profile.smokes === "No",
-    about:
-      !!profile.marriageTimeline ||
-      !!profile.loveLanguage,
+    about: !!profile.marriageTimeline,
     preferences:
       !!prefs?.educationLevel ||
       !!prefs?.partnerHijabLevel ||

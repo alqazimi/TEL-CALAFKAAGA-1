@@ -26,12 +26,10 @@ Source of truth in code: `src/components/questionnaire/steps.ts`
 
 ### Employment (step 4)
 - `occupation` — Employment Status
-- `financialReadiness` — Financial readiness for marriage *(men only)*
 - `marriageWorkPreference` — After marriage, what is your preference? *(women only)*
 
 ### Marriage & family (step 5)
 - `maritalStatus` — What is your marital status?
-- `hasCurrentWife` — Do you currently have a wife? *(men only)*
 
 ### Lifestyle (step 6)
 - `substanceUse` — Do you use any substances (smoking, drugs, etc.)?
@@ -39,7 +37,6 @@ Source of truth in code: `src/components/questionnaire/steps.ts`
 
 ### About you (step 7)
 - `marriageTimeline` — Marriage Timeline
-- `loveLanguage` — What is your love language?
 - `qualities` — Choose up to 10 qualities that describe you
 - `hobbies` — Choose your hobbies
 

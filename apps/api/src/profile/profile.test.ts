@@ -232,7 +232,6 @@ describe("questionnaire completion validation", () => {
     maritalStatus: "Never married",
     smokes: "No",
     marriageTimeline: "Within 1 year",
-    loveLanguage: "Quality Time",
     qualities: ["Kind"],
     hobbies: ["Reading"],
     spousePrayerImportance: "Very important",
@@ -274,8 +273,6 @@ describe("questionnaire completion validation", () => {
       ...completeFemale,
       gender: "male",
       wearsHijab: undefined,
-      financialReadiness: "Ready",
-      hasCurrentWife: "No",
     };
     const prefsMissingHijab = {
       minAge: 20,

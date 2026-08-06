@@ -71,14 +71,11 @@ export function initFormState(
   if (profile.substanceDetails) textFields.substanceDetails = profile.substanceDetails;
   if (profile.livingSituation) radios.livingSituation = profile.livingSituation;
   if (profile.polygynyOpenness) radios.polygynyOpenness = profile.polygynyOpenness;
-  if (profile.hasCurrentWife) radios.hasCurrentWife = profile.hasCurrentWife;
   if (profile.acceptManWithWife) radios.acceptManWithWife = profile.acceptManWithWife;
   if (profile.citizenshipStatus) radios.citizenshipStatus = profile.citizenshipStatus;
-  if (profile.financialReadiness) radios.financialReadiness = profile.financialReadiness;
   if (profile.marriageWorkPreference) radios.marriageWorkPreference = profile.marriageWorkPreference;
 
   if (profile.marriageTimeline) radios.marriageTimeline = profile.marriageTimeline;
-  if (profile.loveLanguage) radios.loveLanguage = profile.loveLanguage;
 
   if (preferences) {
     if (preferences.minAge) selects.pref_minAge = String(preferences.minAge);

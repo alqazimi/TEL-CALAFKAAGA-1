@@ -736,14 +736,6 @@ export function AdminUserDetailPanel({
                   emptyLabel={t("adminDetail.notProvided")}
                   items={[
                     { label: t("profilePage.maritalStatus"), value: detail.profile.maritalStatus || "—" },
-                    ...(detail.profile.gender === "male"
-                      ? [
-                          {
-                            label: t("adminDetail.hasCurrentWife"),
-                            value: detail.profile.hasCurrentWife || "—",
-                          },
-                        ]
-                      : []),
                   ]}
                 />
               </DetailSection>
@@ -788,28 +780,19 @@ export function AdminUserDetailPanel({
                         ? detail.profile.languagesSpoken.join(", ")
                         : "—",
                     },
-                    ...(detail.profile.gender === "male"
+                    ...(detail.profile.gender === "female"
                       ? [
                           {
-                            label: t("adminDetail.financialReadiness"),
-                            value: detail.profile.financialReadiness || "—",
+                            label: t("adminDetail.marriageWorkPreference"),
+                            value: detail.profile.marriageWorkPreference || "—",
                           },
                         ]
-                      : [
-                          {
-                            label: t("adminDetail.marriageWorkPreference"),
-                            value:
-                              detail.profile.marriageWorkPreference ||
-                              detail.profile.financialReadiness ||
-                              "—",
-                          },
-                        ]),
+                      : []),
                     {
                       label: t("adminDetail.livingSituation"),
                       value: detail.profile.livingSituation || "—",
                     },
                     { label: t("adminDetail.marriageTimeline"), value: detail.profile.marriageTimeline || "—" },
-                    { label: t("profilePage.loveLanguage"), value: detail.profile.loveLanguage || "—" },
                     {
                       label: t("profilePage.qualities"),
                       value: detail.profile.qualities?.length

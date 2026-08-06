@@ -78,20 +78,15 @@ function isReligiousComplete(profile: ProfileLike): boolean {
 function isEducationComplete(profile: ProfileLike): boolean {
   const employmentOk =
     profile.gender === "female"
-      ? hasText(profile.marriageWorkPreference) ||
-        hasText(profile.financialReadiness)
-      : hasText(profile.financialReadiness);
+      ? hasText(profile.marriageWorkPreference)
+      : true;
   return (
     hasText(profile.education) && hasText(profile.occupation) && employmentOk
   );
 }
 
 function isMarriageComplete(profile: ProfileLike): boolean {
-  if (!hasText(profile.maritalStatus)) return false;
-  if (profile.gender === "male") {
-    return hasText(profile.hasCurrentWife);
-  }
-  return true;
+  return hasText(profile.maritalStatus);
 }
 
 function isLifestyleComplete(profile: ProfileLike): boolean {
@@ -104,7 +99,6 @@ function isLifestyleComplete(profile: ProfileLike): boolean {
 function isAboutYouComplete(profile: ProfileLike): boolean {
   return (
     hasText(profile.marriageTimeline) &&
-    hasText(profile.loveLanguage) &&
     (profile.qualities?.length ?? 0) > 0 &&
     (profile.hobbies?.length ?? 0) > 0
   );
