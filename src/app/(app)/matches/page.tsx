@@ -4,16 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Filter, HeartHandshake, LayoutGrid, Layers, X } from "lucide-react";
+import { HeartHandshake, X } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataLoadError } from "@/components/ui/data-load-error";
-import { MatchFilters } from "@/components/matches/match-filters";
 import { MatchProfileModal } from "@/components/matches/match-profile-modal";
-import { MatchSwipeDeck } from "@/components/matches/match-swipe-deck";
 import { MatchProfileCard } from "@/components/matches/match-profile-card";
 import { ProfileLockedGate } from "@/components/profile/profile-locked-gate";
 import { PendingApprovalGate } from "@/components/profile/pending-approval-gate";
@@ -41,26 +39,6 @@ import { cn } from "@/lib/utils";
 
 type DiscoverTab = "discover" | "online" | "new" | "nearby";
 
-function buildFilterArgs(filters: Record<string, string>) {
-  return {
-    country: filters.country || undefined,
-    city: filters.city || undefined,
-    minAge: filters.minAge ? parseInt(filters.minAge) : undefined,
-    maxAge: filters.maxAge ? parseInt(filters.maxAge) : undefined,
-    minHeight: filters.minHeight ? parseInt(filters.minHeight) : undefined,
-    maxHeight: filters.maxHeight ? parseInt(filters.maxHeight) : undefined,
-    religiousLevel: filters.religiousLevel || undefined,
-    education: filters.education || undefined,
-    occupation: filters.occupation || undefined,
-    maritalStatus: filters.maritalStatus || undefined,
-    marriageTimeline: filters.marriageTimeline || undefined,
-    children:
-      filters.children !== undefined && filters.children !== ""
-        ? parseInt(filters.children)
-        : undefined,
-  };
-}
-
 export default function MatchesPage() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -68,20 +46,11 @@ export default function MatchesPage() {
   const searchParams = useSearchParams();
   const focusUserId = searchParams.get("user") ?? undefined;
   const openedFocusRef = useRef<string | null>(null);
-  const [filters, setFilters] = useState<Record<string, string>>({});
-  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({});
-  const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<"swipe" | "browse">("browse");
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>("discover");
   const [dismissCompleteBanner, setDismissCompleteBanner] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
   const [actionBusyId, setActionBusyId] = useState<string | null>(null);
   const { isOnline, seed: seedPresence } = usePresence();
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedFilters(filters), 350);
-    return () => clearTimeout(timer);
-  }, [filters]);
 
   const {
     profile: profileRaw,
@@ -111,14 +80,12 @@ export default function MatchesPage() {
 
   useMarkNotificationsRead(["match", "approval"], canQuery);
 
-  const filterArgs = useMemo(() => buildFilterArgs(debouncedFilters), [debouncedFilters]);
-
   const {
     matches: discoverMatchesRaw,
     isRefreshing: matchesRefreshing,
     error: matchesError,
     refresh: refreshMatches,
-  } = useMatches(filterArgs, canQuery);
+  } = useMatches({}, canQuery);
   const discoverMatches = (
     canQuery && Array.isArray(discoverMatchesRaw) ? discoverMatchesRaw : undefined
   ) as MatchResult[] | undefined;
@@ -377,56 +344,26 @@ export default function MatchesPage() {
       <div className="mx-auto w-full max-w-2xl space-y-4 pb-24 sm:space-y-5">
         {profile && isInTrialPeriod(profile) && <TrialBanner profile={profile} />}
 
-        <div className="flex items-center justify-between gap-2">
-          <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-0.5" aria-label={t("matchesPage.discoverTitle")}>
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setDiscoverTab(tab.id)}
-                className={cn(
-                  "shrink-0 rounded-none border-b-2 px-3 py-2 text-sm font-semibold transition-colors",
-                  discoverTab === tab.id
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-          <div className="flex shrink-0 gap-1.5">
-            <Button
-              variant={viewMode === "browse" ? "default" : "outline"}
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={() => setViewMode("browse")}
-              aria-label={t("matchesPage.viewBrowse")}
+        <nav
+          className="flex min-w-0 gap-1 overflow-x-auto pb-0.5"
+          aria-label={t("matchesPage.discoverTitle")}
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setDiscoverTab(tab.id)}
+              className={cn(
+                "shrink-0 rounded-none border-b-2 px-3 py-2 text-sm font-semibold transition-colors",
+                discoverTab === tab.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              )}
             >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === "swipe" ? "default" : "outline"}
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={() => setViewMode("swipe")}
-              aria-label={t("matchesPage.viewSwipe")}
-            >
-              <Layers className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-full"
-              onClick={() => setShowFilters(!showFilters)}
-              aria-label={t("matchesPage.filters")}
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {showFilters && <MatchFilters filters={filters} onChange={setFilters} />}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
         <div className="rounded-2xl border border-primary/15 bg-accent/50 p-4">
           <div className="flex gap-3">
@@ -468,7 +405,7 @@ export default function MatchesPage() {
             <h3 className="text-lg font-semibold mb-2">{emptyTitle}</h3>
             <p className="text-muted-foreground text-sm">{emptyDesc}</p>
           </Card>
-        ) : viewMode === "browse" ? (
+        ) : (
           <div className="space-y-3 sm:space-y-4">
             {filteredMatches.map((match, i) => (
               <MatchProfileCard
@@ -481,17 +418,6 @@ export default function MatchesPage() {
                 onMessage={() => void handleMessage(match.userId)}
               />
             ))}
-          </div>
-        ) : (
-          <div className="mx-auto w-full max-w-xl">
-            <MatchSwipeDeck
-              matches={filteredMatches}
-              startUserId={focusUserId}
-              actionBusyId={actionBusyId}
-              onView={setSelectedMatch}
-              onAction={handleAction}
-              onMessage={(userId) => handleMessage(userId)}
-            />
           </div>
         )}
       </div>
