@@ -32,6 +32,11 @@ type DeletionPlan = {
   supportContactsNulled: number;
   supportMessagesNulled: number;
   evcProofs: number;
+  accountStatusHistory: number;
+  accountAppeals: number;
+  emailVerificationTokens: number;
+  photoReveals: number;
+  auditLogsAsActor: number;
   profile: number;
   authAccounts: number;
   user: number;
@@ -71,6 +76,12 @@ export class DeletionService {
       supportContacts,
       supportMessages,
       evcProofs,
+      accountStatusHistory,
+      accountAppeals,
+      emailVerificationTokens,
+      photoRevealsViewed,
+      photoRevealsOwned,
+      auditLogsAsActor,
       authAccounts,
     ] = await Promise.all([
       this.prisma.session.count({ where: { userId } }),
@@ -97,6 +108,12 @@ export class DeletionService {
       this.prisma.supportContact.count({ where: { userId } }),
       this.prisma.supportMessage.count({ where: { authorUserId: userId } }),
       this.prisma.evcPaymentProof.count({ where: { userId } }),
+      this.prisma.accountStatusHistory.count({ where: { userId } }),
+      this.prisma.accountAppeal.count({ where: { userId } }),
+      this.prisma.emailVerificationToken.count({ where: { userId } }),
+      this.prisma.photoReveal.count({ where: { viewerUserId: userId } }),
+      this.prisma.photoReveal.count({ where: { ownerUserId: userId } }),
+      this.prisma.auditLog.count({ where: { actorUserId: userId } }),
       this.prisma.authAccount.count({ where: { userId } }),
     ]);
 
@@ -149,6 +166,11 @@ export class DeletionService {
       supportContactsNulled: supportContacts,
       supportMessagesNulled: supportMessages,
       evcProofs,
+      accountStatusHistory,
+      accountAppeals,
+      emailVerificationTokens,
+      photoReveals: photoRevealsViewed + photoRevealsOwned,
+      auditLogsAsActor,
       profile: 1,
       authAccounts,
       user: 1,
@@ -236,25 +258,39 @@ export class DeletionService {
       },
     });
 
-    await this.audit.write({
-      actorUserId,
-      action: opts?.self ? "delete_user_self" : "delete_user",
-      targetUserId: profile.userId,
-      targetProfileId: profile.id,
-      metadata: { name: profile.name, self: opts?.self ?? false },
-      correlationId: opts?.correlationId,
-      requestId: opts?.requestId,
-    });
+    // Admin deletes: keep an audit row (actor is staff, not the target).
+    // Self-delete cannot keep an actor FK to the deleted user (ON DELETE RESTRICT);
+    // deletion_jobs retains the self-delete trail instead.
+    if (!opts?.self) {
+      await this.audit.write({
+        actorUserId,
+        action: "delete_user",
+        targetUserId: profile.userId,
+        targetProfileId: profile.id,
+        metadata: { name: profile.name, self: false },
+        correlationId: opts?.correlationId,
+        requestId: opts?.requestId,
+      });
+    }
 
     const userId = profile.userId;
 
     try {
       await this.prisma.$transaction(async (tx) => {
-        // 1. Sessions first
+        // 1. Sessions / auth tokens first
         await tx.session.deleteMany({ where: { userId } });
         await tx.passwordResetToken.deleteMany({ where: { userId } });
+        await tx.emailVerificationToken.deleteMany({ where: { userId } });
         await tx.authAuditEvent.deleteMany({ where: { userId } });
         await tx.profileAuditEvent.deleteMany({ where: { userId } });
+        // Restrict FKs added after the original cascade plan
+        await tx.accountAppeal.deleteMany({ where: { userId } });
+        await tx.accountStatusHistory.deleteMany({ where: { userId } });
+        await tx.photoReveal.deleteMany({
+          where: { OR: [{ viewerUserId: userId }, { ownerUserId: userId }] },
+        });
+        // audit_logs.actor_user_id is Restrict — must clear before user.delete
+        await tx.auditLog.deleteMany({ where: { actorUserId: userId } });
 
         // 2. Orphan media (no physical purge)
         const media = await tx.mediaObject.findMany({
@@ -350,11 +386,12 @@ export class DeletionService {
           data: { reviewedById: null },
         });
 
-        // Staff invite accepter null
+        // Staff invite accepter null; sender invites must go (Restrict)
         await tx.staffInvite.updateMany({
           where: { acceptedByUserId: userId },
           data: { acceptedByUserId: null },
         });
+        await tx.staffInvite.deleteMany({ where: { invitedById: userId } });
 
         // Audit targets SetNull via FK; also clear report reviewedBy
         await tx.report.updateMany({
@@ -372,7 +409,12 @@ export class DeletionService {
         data: {
           status: "completed",
           completedAt: new Date(),
-          resultJson: { deleted: true, userId },
+          resultJson: {
+            deleted: true,
+            userId,
+            self: opts?.self ?? false,
+            action: opts?.self ? "delete_user_self" : "delete_user",
+          },
         },
       });
 

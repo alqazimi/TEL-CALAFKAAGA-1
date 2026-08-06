@@ -1575,7 +1575,14 @@ export class AdminUsersService {
     await this.prisma.$transaction(async (tx) => {
       await tx.session.deleteMany({ where: { userId } });
       await tx.passwordResetToken.deleteMany({ where: { userId } });
+      await tx.emailVerificationToken.deleteMany({ where: { userId } });
       await tx.authAuditEvent.deleteMany({ where: { userId } });
+      await tx.accountStatusHistory.deleteMany({ where: { userId } });
+      await tx.accountAppeal.deleteMany({ where: { userId } });
+      await tx.photoReveal.deleteMany({
+        where: { OR: [{ viewerUserId: userId }, { ownerUserId: userId }] },
+      });
+      await tx.auditLog.deleteMany({ where: { actorUserId: userId } });
       await tx.preference.deleteMany({ where: { userId } });
       await tx.authAccount.deleteMany({ where: { userId } });
       await tx.user.delete({ where: { id: userId } });

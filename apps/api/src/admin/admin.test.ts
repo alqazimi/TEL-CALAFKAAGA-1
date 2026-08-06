@@ -402,6 +402,82 @@ describe("Phase 9 admin unit tests", () => {
     assert.equal(mediaRow?.ownerUserId, null);
   });
 
+  it("10b. admin delete with status history + email verification token", async () => {
+    const victim = await createSynthetic(prisma, {
+      email: `p9.delhist.${randomUUID().slice(0, 8)}@hel.local`,
+      gender: "female",
+      hasPaid: true,
+      approved: true,
+      reviewStatus: "approved",
+    });
+    await prisma.accountStatusHistory.create({
+      data: {
+        userId: victim.id,
+        profileId: victim.profile!.id,
+        eventType: "approved",
+        previousStatus: "pending_review",
+        newStatus: "approved",
+        performedByAdminId: admin.id,
+        performedByAdminName: "Admin",
+      },
+    });
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: victim.id,
+        email: victim.email!,
+        tokenHash: `hash_${randomUUID()}`,
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    });
+    const result = await users.deleteUser(admin.id, victim.profile!.id);
+    assert.equal((result as { deleted?: boolean }).deleted, true);
+    assert.equal(await prisma.user.findUnique({ where: { id: victim.id } }), null);
+    assert.equal(
+      await prisma.accountStatusHistory.count({ where: { userId: victim.id } }),
+      0
+    );
+    assert.equal(
+      await prisma.emailVerificationToken.count({ where: { userId: victim.id } }),
+      0
+    );
+  });
+
+  it("10c. self-delete succeeds even after writing actor audit would have blocked", async () => {
+    const victim = await createSynthetic(prisma, {
+      email: `p9.selfdel.${randomUUID().slice(0, 8)}@hel.local`,
+      gender: "male",
+      hasPaid: true,
+      approved: true,
+      reviewStatus: "approved",
+    });
+    await prisma.accountStatusHistory.create({
+      data: {
+        userId: victim.id,
+        profileId: victim.profile!.id,
+        eventType: "approved",
+        previousStatus: "pending_review",
+        newStatus: "approved",
+      },
+    });
+    // Simulate prior activity where the member was an audit actor
+    await audit.write({
+      actorUserId: victim.id,
+      action: "profile_update",
+      targetUserId: victim.id,
+      targetProfileId: victim.profile!.id,
+      metadata: { note: "self activity" },
+    });
+    const result = await deletion.executeSelfDelete(victim.id);
+    assert.equal(result.deleted, true);
+    assert.equal(await prisma.user.findUnique({ where: { id: victim.id } }), null);
+    const job = await prisma.deletionJob.findFirst({
+      where: { targetUserId: victim.id, mode: "execute" },
+      orderBy: { createdAt: "desc" },
+    });
+    assert.ok(job);
+    assert.equal(job!.status, "completed");
+  });
+
   it("11. report resolve/dismiss", async () => {
     const r = await moderation.reportUser(member.id, {
       reportedUserId: womanBasic.id,

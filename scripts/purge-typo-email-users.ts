@@ -50,9 +50,28 @@ async function deleteUsers(ids: string[]) {
 
   await prisma.passwordResetToken.deleteMany({ where: { userId: { in: ids } } });
   await prisma.session.deleteMany({ where: { userId: { in: ids } } });
+  await prisma.emailVerificationToken
+    .deleteMany({ where: { userId: { in: ids } } })
+    .catch(() => undefined);
   await prisma.authAuditEvent.deleteMany({ where: { userId: { in: ids } } });
   await prisma.profileAuditEvent
     .deleteMany({ where: { userId: { in: ids } } })
+    .catch(() => undefined);
+  await prisma.accountAppeal
+    .deleteMany({ where: { userId: { in: ids } } })
+    .catch(() => undefined);
+  await prisma.accountStatusHistory
+    .deleteMany({ where: { userId: { in: ids } } })
+    .catch(() => undefined);
+  await prisma.photoReveal
+    .deleteMany({
+      where: {
+        OR: [{ viewerUserId: { in: ids } }, { ownerUserId: { in: ids } }],
+      },
+    })
+    .catch(() => undefined);
+  await prisma.auditLog
+    .deleteMany({ where: { actorUserId: { in: ids } } })
     .catch(() => undefined);
   await prisma.userUpload.deleteMany({ where: { userId: { in: ids } } });
   await prisma.mediaObject.updateMany({
