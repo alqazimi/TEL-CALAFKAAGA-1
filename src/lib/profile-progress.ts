@@ -8,6 +8,8 @@ export interface Preferences {
   maxAge?: number;
   minHeight?: number;
   maxHeight?: number;
+  minWeight?: number;
+  maxWeight?: number;
   preferredCountries?: string[];
   educationLevel?: string;
   religiousLevel?: string;
@@ -40,17 +42,11 @@ export const PROFILE_SECTIONS: ProfileSection[] = [
 export type SectionStatus = "complete" | "in_progress" | "not_started";
 
 export function isMarriageComplete(profile: Profile): boolean {
-  const polygynyOk =
-    profile.gender === "male"
-      ? !!(profile.hasCurrentWife && profile.openToSecondWife) ||
-        !!profile.polygynyOpenness
-      : !!(profile.acceptPreviouslyMarriedMan && profile.acceptFutureCoWife) ||
-        !!profile.polygynyOpenness;
-  return (
-    !!profile.maritalStatus &&
-    !!profile.wantChildren &&
-    polygynyOk
-  );
+  if (!profile.maritalStatus) return false;
+  if (profile.gender === "male") {
+    return !!profile.hasCurrentWife;
+  }
+  return true;
 }
 
 export function isEducationComplete(profile: Profile): boolean {
@@ -95,10 +91,10 @@ export function isAboutYouComplete(profile: Profile): boolean {
 }
 
 export function isLifestyleComplete(profile: Profile): boolean {
-  const substanceOk =
+  return (
     profile.smokes === "No" ||
-    (profile.smokes === "Yes" && !!profile.substanceDetails?.trim());
-  return substanceOk && !!profile.exercise;
+    (profile.smokes === "Yes" && !!profile.substanceDetails?.trim())
+  );
 }
 
 export function isPhotoComplete(_profile: Profile): boolean {
@@ -117,25 +113,14 @@ export function isPreferencesComplete(
   prefs: Preferences | null | undefined
 ): boolean {
   if (!prefs) return false;
-  const divorceeOk = true;
-  const widowOk = true;
-  const childrenOk =
-    profile.marrySomeoneWithChildren === "No" || !!prefs.acceptChildren;
   const appearanceOk =
     profile.gender === "male" ? !!prefs.partnerHijabLevel : true;
   return (
-    !!profile.spousePrayerImportance &&
-    !!profile.marrySomeoneWithChildren &&
     appearanceOk &&
     prefs.minAge !== undefined &&
-    prefs.maxAge !== undefined &&
     prefs.minHeight !== undefined &&
-    prefs.maxHeight !== undefined &&
-    !!prefs.educationLevel &&
-    childrenOk &&
-    // Empty preferredCountries = "any" (same as matching + review).
-    divorceeOk &&
-    widowOk
+    prefs.minWeight !== undefined &&
+    !!prefs.educationLevel
   );
 }
 
@@ -199,20 +184,17 @@ export function getSectionStatus(
       !!profile.marriageWorkPreference,
     marriage:
       !!profile.maritalStatus ||
-      !!profile.wantChildren ||
-      !!profile.polygynyOpenness ||
-      !!profile.hasCurrentWife ||
-      !!profile.openToSecondWife ||
-      !!profile.acceptPreviouslyMarriedMan ||
-      !!profile.acceptFutureCoWife,
+      !!profile.hasCurrentWife,
     lifestyle: profile.smokes === "Yes" || profile.smokes === "No",
     about:
       !!profile.marriageTimeline ||
       !!profile.loveLanguage,
     preferences:
-      !!profile.spousePrayerImportance ||
       !!prefs?.educationLevel ||
       !!prefs?.partnerHijabLevel ||
+      prefs?.minAge !== undefined ||
+      prefs?.minHeight !== undefined ||
+      prefs?.minWeight !== undefined ||
       (prefs?.preferredCountries?.length ?? 0) > 0,
     contact: isContactComplete(profile),
     photo: !!profile.profileImageId,

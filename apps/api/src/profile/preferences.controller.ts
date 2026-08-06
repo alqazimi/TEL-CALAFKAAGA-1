@@ -31,6 +31,8 @@ const prefsSchema = z
     maxAge: z.number().int().optional(),
     minHeight: z.number().int().optional(),
     maxHeight: z.number().int().optional(),
+    minWeight: z.number().int().optional(),
+    maxWeight: z.number().int().optional(),
     preferredCountries: z.array(z.string()).optional(),
     acceptChildren: z.string().optional(),
     educationLevel: z.string().optional(),

@@ -717,10 +717,6 @@ export function AdminUserDetailPanel({
                           value: yesNo(detail.profile.wearsHijab),
                         }]
                       : []),
-                    {
-                      label: t("adminDetail.spousePrayerImportance"),
-                      value: detail.profile.spousePrayerImportance || "—",
-                    },
                   ]}
                 />
               </DetailSection>
@@ -740,49 +736,14 @@ export function AdminUserDetailPanel({
                   emptyLabel={t("adminDetail.notProvided")}
                   items={[
                     { label: t("profilePage.maritalStatus"), value: detail.profile.maritalStatus || "—" },
-                    ...(detail.profile.maritalStatus !== "Never married"
-                      ? [
-                          {
-                            label: t("adminDetail.children"),
-                            value:
-                              detail.profile.children > 0
-                                ? t("adminDetail.yes")
-                                : t("adminDetail.no"),
-                          },
-                        ]
-                      : []),
-                    { label: t("adminDetail.wantChildren"), value: detail.profile.wantChildren || "—" },
                     ...(detail.profile.gender === "male"
                       ? [
                           {
                             label: t("adminDetail.hasCurrentWife"),
                             value: detail.profile.hasCurrentWife || "—",
                           },
-                          {
-                            label: t("adminDetail.openToSecondWife"),
-                            value:
-                              detail.profile.openToSecondWife ||
-                              detail.profile.polygynyOpenness ||
-                              "—",
-                          },
                         ]
-                      : [
-                          {
-                            label: t("adminDetail.acceptPreviouslyMarriedMan"),
-                            value: detail.profile.acceptPreviouslyMarriedMan || "—",
-                          },
-                          {
-                            label: t("adminDetail.acceptFutureCoWife"),
-                            value:
-                              detail.profile.acceptFutureCoWife ||
-                              detail.profile.polygynyOpenness ||
-                              "—",
-                          },
-                        ]),
-                    {
-                      label: t("adminDetail.marryWithChildren"),
-                      value: detail.profile.marrySomeoneWithChildren || "—",
-                    },
+                      : []),
                   ]}
                 />
               </DetailSection>
@@ -802,7 +763,6 @@ export function AdminUserDetailPanel({
                             ? t("adminDetail.no")
                             : detail.profile.smokes || "—",
                     },
-                    { label: "Exercise", value: detail.profile.exercise || "—" },
                   ]}
                 />
               </DetailSection>
@@ -873,11 +833,24 @@ export function AdminUserDetailPanel({
                     items={[
                       {
                         label: t("adminDetail.preferredAge"),
-                        value: `${detail.preferences.minAge ?? "—"} – ${detail.preferences.maxAge ?? "—"}`,
+                        value:
+                          detail.preferences.minAge != null
+                            ? String(detail.preferences.minAge)
+                            : "—",
                       },
                       {
                         label: t("adminDetail.preferredHeight"),
-                        value: `${detail.preferences.minHeight ?? "—"} – ${detail.preferences.maxHeight ?? "—"} cm`,
+                        value:
+                          detail.preferences.minHeight != null
+                            ? `${detail.preferences.minHeight} cm`
+                            : "—",
+                      },
+                      {
+                        label: t("adminDetail.preferredWeight"),
+                        value:
+                          detail.preferences.minWeight != null
+                            ? `${detail.preferences.minWeight} kg`
+                            : "—",
                       },
                       {
                         label: t("adminDetail.preferredCountries"),
@@ -896,12 +869,6 @@ export function AdminUserDetailPanel({
                               value: detail.preferences.partnerHijabLevel || "—",
                             },
                           ]
-                        : []),
-                      ...(detail.profile.marrySomeoneWithChildren !== "No"
-                        ? [{
-                            label: t("adminDetail.acceptChildren"),
-                            value: detail.preferences.acceptChildren || "—",
-                          }]
                         : []),
                     ]}
                   />

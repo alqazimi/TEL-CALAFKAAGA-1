@@ -423,6 +423,8 @@ export class AuthService {
             maxAge: 60,
             minHeight: 150,
             maxHeight: 210,
+            minWeight: 45,
+            maxWeight: 150,
             preferredCountries: [],
             acceptChildren: "",
             educationLevel: "Bachelor",

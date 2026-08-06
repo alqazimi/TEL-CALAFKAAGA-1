@@ -65,29 +65,14 @@ export function initFormState(
   if (profile.occupation) radios.occupation = profile.occupation;
 
   if (profile.maritalStatus) radios.maritalStatus = profile.maritalStatus;
-  if (profile.children > 0) {
-    radios.hasChildren = "Yes";
-  } else if (profile.maritalStatus && profile.maritalStatus !== "Never married") {
-    radios.hasChildren = "No";
-  }
-  if (profile.marrySomeoneWithChildren) {
-    radios.marrySomeoneWithChildren = profile.marrySomeoneWithChildren;
-  }
 
   const substanceUse = legacySubstanceUse(profile.smokes);
   if (substanceUse) radios.substanceUse = substanceUse;
   if (profile.substanceDetails) textFields.substanceDetails = profile.substanceDetails;
-  if (profile.exercise) radios.exercise = profile.exercise;
-  if (profile.wantChildren) radios.wantChildren = profile.wantChildren;
   if (profile.livingSituation) radios.livingSituation = profile.livingSituation;
   if (profile.polygynyOpenness) radios.polygynyOpenness = profile.polygynyOpenness;
   if (profile.hasCurrentWife) radios.hasCurrentWife = profile.hasCurrentWife;
-  if (profile.openToSecondWife) radios.openToSecondWife = profile.openToSecondWife;
   if (profile.acceptManWithWife) radios.acceptManWithWife = profile.acceptManWithWife;
-  if (profile.acceptPreviouslyMarriedMan) {
-    radios.acceptPreviouslyMarriedMan = profile.acceptPreviouslyMarriedMan;
-  }
-  if (profile.acceptFutureCoWife) radios.acceptFutureCoWife = profile.acceptFutureCoWife;
   if (profile.citizenshipStatus) radios.citizenshipStatus = profile.citizenshipStatus;
   if (profile.financialReadiness) radios.financialReadiness = profile.financialReadiness;
   if (profile.marriageWorkPreference) radios.marriageWorkPreference = profile.marriageWorkPreference;
@@ -97,13 +82,15 @@ export function initFormState(
 
   if (preferences) {
     if (preferences.minAge) selects.pref_minAge = String(preferences.minAge);
-    if (preferences.maxAge) selects.pref_maxAge = String(preferences.maxAge);
-    if (preferences.minHeight) selects.pref_minHeight = String(preferences.minHeight);
-    if (preferences.maxHeight) selects.pref_maxHeight = String(preferences.maxHeight);
+    if (preferences.minHeight) {
+      selects.pref_minHeight = formatHeightWeight(preferences.minHeight, "200+");
+    }
+    if (preferences.minWeight) {
+      selects.pref_minWeight = formatHeightWeight(preferences.minWeight, "100+");
+    }
     if (preferences.educationLevel) radios.pref_educationLevel = preferences.educationLevel;
     if (preferences.acceptDivorcee) radios.pref_acceptDivorcee = preferences.acceptDivorcee;
     if (preferences.acceptWidow) radios.pref_acceptWidow = preferences.acceptWidow;
-    if (preferences.acceptChildren) radios.pref_acceptChildren = preferences.acceptChildren;
     if (preferences.partnerBeard) radios.pref_partnerBeard = preferences.partnerBeard;
     if (preferences.partnerHijabLevel) radios.pref_partnerHijabLevel = preferences.partnerHijabLevel;
     if (preferences.preferredCountries?.length) {
@@ -143,9 +130,6 @@ export function getFieldValue(
   if (selects?.[fieldName]) return selects[fieldName];
   if (fieldName === "maritalStatus") return profile?.maritalStatus;
   if (fieldName === "country") return selects?.country ?? profile?.country;
-  if (fieldName === "hasChildren" && profile?.children !== undefined) {
-    return profile.children > 0 ? "Yes" : "No";
-  }
   return undefined;
 }
 
@@ -170,30 +154,16 @@ export function isFieldVisible(
   return true;
 }
 
-const WANT_CHILDREN_HAS_KIDS_OPTION = "Already have and open to more";
+const PREFERRED_AGE_UPPER = 60;
+const PREFERRED_HEIGHT_UPPER = 210;
+const PREFERRED_WEIGHT_UPPER = 150;
 
-export function userHasChildrenFromPastMarriage(
-  profile: { maritalStatus?: string; children?: number } | null | undefined,
-  radios: Record<string, string>
-): boolean {
-  const maritalStatus = radios.maritalStatus ?? profile?.maritalStatus;
-  if (maritalStatus === "Never married") return false;
-  if (radios.hasChildren === "Yes") return true;
-  if (radios.hasChildren === "No") return false;
-  return (profile?.children ?? 0) > 0;
-}
-
-/** Filter options that do not apply given current answers (e.g. Muslim marriage logic). */
 export function getFieldOptions(
   field: FieldConfig,
-  profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
-  radios: Record<string, string>
+  _profile: { gender?: string; maritalStatus?: string; children?: number; country?: string } | null | undefined,
+  _radios: Record<string, string>
 ): string[] {
-  const options = (field.options ?? []).map(String);
-  if (field.name === "wantChildren" && !userHasChildrenFromPastMarriage(profile, radios)) {
-    return options.filter((option) => option !== WANT_CHILDREN_HAS_KIDS_OPTION);
-  }
-  return options;
+  return (field.options ?? []).map(String);
 }
 
 export function buildStepData(
@@ -246,9 +216,14 @@ export function buildStepData(
       const value = selects[field.name];
       if (field.preferences) {
         const key = field.name.replace("pref_", "");
-        preferences[key] = field.name.includes("Age") || field.name.includes("Height")
-          ? parseInt(value) || 0
-          : value;
+        preferences[key] =
+          field.name.includes("Age") ||
+          field.name.includes("Height") ||
+          field.name.includes("Weight")
+            ? value === "200+" || value === "100+"
+              ? parseInt(value) || 200
+              : parseInt(value) || 0
+            : value;
       } else if (field.name === "age" || field.name === "height" || field.name === "weight") {
         data[field.name] =
           value === "200+" || value === "100+"
@@ -280,24 +255,17 @@ export function buildStepData(
     }
   }
 
-  if (step.fields.some((f) => f.name === "hasChildren")) {
-    const maritalStatus = radios.maritalStatus ?? profile?.maritalStatus;
-    if (maritalStatus === "Never married") {
-      data.children = 0;
-    } else {
-      const hasChildren = radios.hasChildren ?? getFieldValue("hasChildren", profile, radios, selects);
-      data.children = hasChildren === "Yes" ? 1 : 0;
-    }
-  }
-
-  if (
-    step.fields.some((f) => f.name === "pref_acceptChildren") &&
-    radios.marrySomeoneWithChildren === "No"
-  ) {
-    preferences.acceptChildren = "No";
-  }
-
   if (Object.keys(preferences).length > 0) {
+    // Single preferred age/height/weight: treat as minimum, keep matching range open above.
+    if (typeof preferences.minAge === "number" && preferences.maxAge === undefined) {
+      preferences.maxAge = PREFERRED_AGE_UPPER;
+    }
+    if (typeof preferences.minHeight === "number" && preferences.maxHeight === undefined) {
+      preferences.maxHeight = PREFERRED_HEIGHT_UPPER;
+    }
+    if (typeof preferences.minWeight === "number" && preferences.maxWeight === undefined) {
+      preferences.maxWeight = PREFERRED_WEIGHT_UPPER;
+    }
     data.preferences = preferences;
   }
 

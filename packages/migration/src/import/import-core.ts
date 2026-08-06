@@ -548,6 +548,8 @@ export async function runImportCore(opts: {
             maxAge: Number(row.maxAge ?? 60),
             minHeight: Number(row.minHeight ?? 150),
             maxHeight: Number(row.maxHeight ?? 210),
+            minWeight: Number(row.minWeight ?? 45),
+            maxWeight: Number(row.maxWeight ?? 150),
             preferredCountries: stringArray(row.preferredCountries),
             acceptChildren: String(row.acceptChildren ?? ""),
             educationLevel: String(row.educationLevel ?? ""),

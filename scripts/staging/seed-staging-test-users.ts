@@ -200,6 +200,8 @@ async function upsertUser(u: (typeof STAGING_TEST_USERS)[number]) {
         maxAge: 45,
         minHeight: 150,
         maxHeight: 210,
+        minWeight: 45,
+        maxWeight: 150,
         preferredCountries: ["Somalia"],
         acceptChildren: "Depends",
         educationLevel: "Bachelor",

@@ -487,6 +487,8 @@ model Preference {
   maxAge             Int      @map("max_age")
   minHeight          Int      @map("min_height")
   maxHeight          Int      @map("max_height")
+  minWeight          Int      @default(45) @map("min_weight")
+  maxWeight          Int      @default(150) @map("max_weight")
   preferredCountries String[] @default([]) @map("preferred_countries")
   acceptChildren     String   @map("accept_children")
   educationLevel     String   @map("education_level")

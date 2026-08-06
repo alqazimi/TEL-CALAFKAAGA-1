@@ -1512,6 +1512,7 @@ export const en = {
     marriageTimeline: "Marriage Timeline",
     preferredAge: "Preferred Age",
     preferredHeight: "Preferred Height",
+    preferredWeight: "Preferred Weight",
     preferredCountries: "Preferred Countries",
     preferredEducation: "Preferred Education",
     acceptDivorcee: "Accept Divorcee",

@@ -1523,6 +1523,7 @@ export const so: Translations = {
     marriageTimeline: "Waqtiga Guurka",
     preferredAge: "Da'da aad rabtid",
     preferredHeight: "Dhererka aad rabtid",
+    preferredWeight: "Miisaanka aad rabtid",
     preferredCountries: "Dalalka aad rabtid",
     preferredEducation: "Waxbarashada la doorbidaayo",
     acceptDivorcee: "Aqbal Furriinka",

@@ -489,17 +489,6 @@ export function QuestionnaireStep({
                 onClick={() => {
                   setRadios((prev) => {
                     const next = { ...prev, [field.name]: value };
-                    if (field.name === "maritalStatus" && value === "Never married") {
-                      delete next.hasChildren;
-                      if (prev.wantChildren === "Already have and open to more") {
-                        delete next.wantChildren;
-                      }
-                    }
-                    if (field.name === "hasChildren" && value === "No") {
-                      if (prev.wantChildren === "Already have and open to more") {
-                        delete next.wantChildren;
-                      }
-                    }
                     if (field.name === "substanceUse" && value === "No") {
                       setTextFields((tf) => {
                         const updated = { ...tf };

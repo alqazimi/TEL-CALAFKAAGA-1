@@ -50,6 +50,8 @@ export const PREFERENCE_FIELD_KEYS = new Set([
   "maxAge",
   "minHeight",
   "maxHeight",
+  "minWeight",
+  "maxWeight",
   "preferredCountries",
   "acceptChildren",
   "educationLevel",
@@ -149,7 +151,9 @@ export function pruneIncompleteAutosaveWrites(
       (key === "minAge" ||
         key === "maxAge" ||
         key === "minHeight" ||
-        key === "maxHeight") &&
+        key === "maxHeight" ||
+        key === "minWeight" ||
+        key === "maxWeight") &&
       value === 0
     ) {
       delete preferences[key];

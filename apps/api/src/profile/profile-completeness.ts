@@ -44,6 +44,8 @@ export type PrefsLike = {
   maxAge?: number | null;
   minHeight?: number | null;
   maxHeight?: number | null;
+  minWeight?: number | null;
+  maxWeight?: number | null;
   preferredCountries?: string[] | null;
   educationLevel?: string | null;
   acceptChildren?: string | null;
@@ -85,25 +87,18 @@ function isEducationComplete(profile: ProfileLike): boolean {
 }
 
 function isMarriageComplete(profile: ProfileLike): boolean {
-  const polygynyOk =
-    profile.gender === "male"
-      ? (!!profile.hasCurrentWife && !!profile.openToSecondWife) ||
-        hasText(profile.polygynyOpenness)
-      : (!!profile.acceptPreviouslyMarriedMan &&
-          !!profile.acceptFutureCoWife) ||
-        hasText(profile.polygynyOpenness);
-  return (
-    hasText(profile.maritalStatus) &&
-    hasText(profile.wantChildren) &&
-    polygynyOk
-  );
+  if (!hasText(profile.maritalStatus)) return false;
+  if (profile.gender === "male") {
+    return hasText(profile.hasCurrentWife);
+  }
+  return true;
 }
 
 function isLifestyleComplete(profile: ProfileLike): boolean {
-  const substanceOk =
+  return (
     profile.smokes === "No" ||
-    (profile.smokes === "Yes" && hasText(profile.substanceDetails));
-  return substanceOk && hasText(profile.exercise);
+    (profile.smokes === "Yes" && hasText(profile.substanceDetails))
+  );
 }
 
 function isAboutYouComplete(profile: ProfileLike): boolean {
@@ -124,24 +119,17 @@ function isContactComplete(profile: ProfileLike): boolean {
 
 function isPreferencesComplete(profile: ProfileLike, prefs: PrefsLike): boolean {
   if (!prefs) return false;
-  const childrenOk =
-    profile.marrySomeoneWithChildren === "No" || !!prefs.acceptChildren;
   const appearanceOk =
     profile.gender === "male" ? !!prefs.partnerHijabLevel : true;
   return (
-    hasText(profile.spousePrayerImportance) &&
-    hasText(profile.marrySomeoneWithChildren) &&
     appearanceOk &&
     prefs.minAge !== undefined &&
     prefs.minAge !== null &&
-    prefs.maxAge !== undefined &&
-    prefs.maxAge !== null &&
     prefs.minHeight !== undefined &&
     prefs.minHeight !== null &&
-    prefs.maxHeight !== undefined &&
-    prefs.maxHeight !== null &&
-    !!prefs.educationLevel &&
-    childrenOk
+    prefs.minWeight !== undefined &&
+    prefs.minWeight !== null &&
+    !!prefs.educationLevel
   );
 }
 

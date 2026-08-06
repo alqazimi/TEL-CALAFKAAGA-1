@@ -230,17 +230,12 @@ describe("questionnaire completion validation", () => {
     occupation: "Teacher",
     marriageWorkPreference: "Open to work",
     maritalStatus: "Never married",
-    wantChildren: "Yes",
-    acceptPreviouslyMarriedMan: "Yes",
-    acceptFutureCoWife: "No",
     smokes: "No",
-    exercise: "Sometimes",
     marriageTimeline: "Within 1 year",
     loveLanguage: "Quality Time",
     qualities: ["Kind"],
     hobbies: ["Reading"],
     spousePrayerImportance: "Very important",
-    marrySomeoneWithChildren: "No",
     profileImageMediaId: "11111111-1111-1111-1111-111111111111",
   };
 
@@ -248,11 +243,9 @@ describe("questionnaire completion validation", () => {
     assert.equal(
       getProfileIncompleteReason(completeFemale, {
         minAge: 25,
-        maxAge: 40,
         minHeight: 160,
-        maxHeight: 190,
+        minWeight: 55,
         educationLevel: "Bachelor",
-        acceptChildren: "No",
       }),
       null
     );
@@ -268,11 +261,9 @@ describe("questionnaire completion validation", () => {
     assert.equal(
       getProfileIncompleteReason(withoutPhoto, {
         minAge: 25,
-        maxAge: 40,
         minHeight: 160,
-        maxHeight: 190,
+        minWeight: 55,
         educationLevel: "Bachelor",
-        acceptChildren: "No",
       }),
       null
     );
@@ -285,15 +276,12 @@ describe("questionnaire completion validation", () => {
       wearsHijab: undefined,
       financialReadiness: "Ready",
       hasCurrentWife: "No",
-      openToSecondWife: "No",
     };
     const prefsMissingHijab = {
       minAge: 20,
-      maxAge: 35,
       minHeight: 150,
-      maxHeight: 180,
+      minWeight: 60,
       educationLevel: "Bachelor",
-      acceptChildren: "Yes",
     };
     assert.match(
       getProfileIncompleteReason(male, prefsMissingHijab) ?? "",

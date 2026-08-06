@@ -15,6 +15,8 @@ const PREF_KEYS = [
   "maxAge",
   "minHeight",
   "maxHeight",
+  "minWeight",
+  "maxWeight",
   "preferredCountries",
   "acceptChildren",
   "educationLevel",
@@ -65,6 +67,8 @@ export class PreferencesService {
         maxAge: (data.maxAge as number) ?? 60,
         minHeight: (data.minHeight as number) ?? 150,
         maxHeight: (data.maxHeight as number) ?? 210,
+        minWeight: (data.minWeight as number) ?? 45,
+        maxWeight: (data.maxWeight as number) ?? 150,
         preferredCountries: (data.preferredCountries as string[]) ?? [],
         acceptChildren: (data.acceptChildren as string) ?? "",
         educationLevel: (data.educationLevel as string) ?? "Bachelor",
@@ -144,6 +148,8 @@ export class PreferencesService {
     const maxAge = body.maxAge as number | undefined;
     const minHeight = body.minHeight as number | undefined;
     const maxHeight = body.maxHeight as number | undefined;
+    const minWeight = body.minWeight as number | undefined;
+    const maxWeight = body.maxWeight as number | undefined;
     if (minAge !== undefined && (minAge < 18 || minAge > 100)) {
       throw new BadRequestException("minAge out of range");
     }
@@ -170,6 +176,19 @@ export class PreferencesService {
     ) {
       throw new BadRequestException("minHeight cannot exceed maxHeight");
     }
+    if (minWeight !== undefined && (minWeight < 30 || minWeight > 300)) {
+      throw new BadRequestException("minWeight out of range");
+    }
+    if (maxWeight !== undefined && (maxWeight < 30 || maxWeight > 300)) {
+      throw new BadRequestException("maxWeight out of range");
+    }
+    if (
+      minWeight !== undefined &&
+      maxWeight !== undefined &&
+      minWeight > maxWeight
+    ) {
+      throw new BadRequestException("minWeight cannot exceed maxWeight");
+    }
   }
 
   private toView(prefs: {
@@ -180,6 +199,8 @@ export class PreferencesService {
     maxAge: number;
     minHeight: number;
     maxHeight: number;
+    minWeight: number;
+    maxWeight: number;
     preferredCountries: string[];
     acceptChildren: string;
     educationLevel: string;
@@ -202,6 +223,8 @@ export class PreferencesService {
       maxAge: prefs.maxAge,
       minHeight: prefs.minHeight,
       maxHeight: prefs.maxHeight,
+      minWeight: prefs.minWeight,
+      maxWeight: prefs.maxWeight,
       preferredCountries: prefs.preferredCountries,
       acceptChildren: prefs.acceptChildren,
       educationLevel: prefs.educationLevel,

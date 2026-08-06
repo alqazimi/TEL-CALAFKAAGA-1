@@ -22,6 +22,7 @@ function baseProfile(over: Partial<Profile> = {}): Profile {
     country: "Somalia",
     city: "Mogadishu",
     height: 170,
+    weight: 70,
     education: "Bachelor",
     maritalStatus: "Never married",
     children: 0,

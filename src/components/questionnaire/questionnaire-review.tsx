@@ -168,41 +168,14 @@ export function QuestionnaireReview({
 
   const marriageItems = [
     { label: "Marital Status", value: profile.maritalStatus ? optionLabel(profile.maritalStatus) : "—" },
-    ...(profile.maritalStatus !== "Never married"
-      ? [{ label: "Children", value: profile.children > 0 ? optionLabel("Yes") : optionLabel("No") }]
-      : []),
-    { label: "Want Children", value: profile.wantChildren ? optionLabel(profile.wantChildren) : "—" },
     ...(profile.gender === "male"
       ? [
           {
             label: "Current Wife",
             value: profile.hasCurrentWife ? optionLabel(profile.hasCurrentWife) : "—",
           },
-          {
-            label: "Open to Second Wife",
-            value: profile.openToSecondWife
-              ? optionLabel(profile.openToSecondWife)
-              : profile.polygynyOpenness
-                ? optionLabel(profile.polygynyOpenness)
-                : "—",
-          },
         ]
-      : [
-          {
-            label: "Previously Married Man",
-            value: profile.acceptPreviouslyMarriedMan
-              ? optionLabel(profile.acceptPreviouslyMarriedMan)
-              : "—",
-          },
-          {
-            label: "Accept Future Co-Wife",
-            value: profile.acceptFutureCoWife
-              ? optionLabel(profile.acceptFutureCoWife)
-              : profile.polygynyOpenness
-                ? optionLabel(profile.polygynyOpenness)
-                : "—",
-          },
-        ]),
+      : []),
   ];
 
   const lifestyleItems = [
@@ -215,7 +188,6 @@ export function QuestionnaireReview({
             ? "No"
             : profile.smokes || "—",
     },
-    { label: "Exercise", value: profile.exercise || "—" },
   ];
 
   const aboutItems = [
@@ -226,20 +198,16 @@ export function QuestionnaireReview({
   ];
 
   const prefItems = [
-    { label: "Spouse Prayer Importance", value: profile.spousePrayerImportance || "—" },
     ...(profile.gender === "male"
       ? [{ label: "Partner Hijab / Niqab", value: preferences?.partnerHijabLevel || "—" }]
       : []),
-    { label: "Marry Someone With Children", value: profile.marrySomeoneWithChildren || "—" },
     ...(preferences
       ? [
-        { label: "Preferred Age", value: `${preferences.minAge ?? "—"} – ${preferences.maxAge ?? "—"}` },
-        { label: "Preferred Height", value: `${preferences.minHeight ?? "—"} – ${preferences.maxHeight ?? "—"} cm` },
+        { label: "Preferred Age", value: preferences.minAge != null ? String(preferences.minAge) : "—" },
+        { label: "Preferred Height", value: preferences.minHeight != null ? `${preferences.minHeight} cm` : "—" },
+        { label: "Preferred Weight", value: preferences.minWeight != null ? `${preferences.minWeight} kg` : "—" },
         { label: "Preferred Countries", value: preferences.preferredCountries?.length ? preferences.preferredCountries.join(", ") : ui("anyValue") },
         { label: "Preferred Education", value: preferences.educationLevel || "—" },
-        ...(profile.marrySomeoneWithChildren !== "No"
-          ? [{ label: "Accept Children", value: preferences.acceptChildren || "—" }]
-          : []),
       ]
       : []),
   ];

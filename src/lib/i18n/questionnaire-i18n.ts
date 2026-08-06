@@ -112,12 +112,20 @@ const FIELD_WHY: Record<string, Bilingual> = {
     so: "Qorshayaasha qoysku waa udub-dhexaadka wadahadalka guurka waara.",
   },
   minAge: {
-    en: "Sets the age window you are open to considering.",
-    so: "Waxay dejinaysaa da'da aad diyaar u tahay inaad tixgeliso.",
+    en: "Choose the preferred age you are looking for.",
+    so: "Dooro da'da aad rabtid.",
   },
   maxAge: {
     en: "Sets the age window you are open to considering.",
     so: "Waxay dejinaysaa da'da aad diyaar u tahay inaad tixgeliso.",
+  },
+  minHeight: {
+    en: "Choose the preferred height you are looking for.",
+    so: "Dooro dhererka aad rabtid.",
+  },
+  minWeight: {
+    en: "Choose the preferred weight you are looking for.",
+    so: "Dooro miisaanka aad rabtid.",
   },
   preferredCountries: {
     en: "Narrows discover to places you are willing to connect with.",
@@ -254,11 +262,15 @@ const FIELD_LABELS: Record<string, Bilingual> = {
     en: "Would you marry someone with children?",
     so: "Ma guursan lahayd qof carruur leh?",
   },
-  pref_minAge: { en: "Preferred Min Age", so: "Da'da ugu Yar ee aad rabtid" },
+  pref_minAge: { en: "Preferred Age", so: "Da'da aad rabtid" },
   pref_maxAge: { en: "Preferred Max Age", so: "Da'da ugu Badan ee aad rabtid" },
   pref_minHeight: {
-    en: "Preferred Min Height",
-    so: "Dhererka ugu Gaaban ee aad rabtid",
+    en: "Preferred Height",
+    so: "Dhererka aad rabtid",
+  },
+  pref_minWeight: {
+    en: "Preferred Weight (kg)",
+    so: "Miisaanka aad rabtid (kg)",
   },
   pref_maxHeight: {
     en: "Preferred Max Height",
