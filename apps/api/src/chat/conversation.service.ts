@@ -34,6 +34,7 @@ import {
 } from "./chat.constants";
 import { TypingService } from "./typing.service";
 import { bumpUnread, readUnreadCount, zeroUnread } from "./unread";
+import { PresenceService } from "../presence/presence.service";
 
 type ConvWithMatch = Conversation & { match: Match };
 
@@ -48,6 +49,7 @@ export class ConversationService {
     private readonly typing: TypingService,
     private readonly realtime: ChatRealtimeService,
     private readonly notificationQueue: NotificationQueueService,
+    private readonly presence: PresenceService,
     private readonly config: ConfigService
   ) {
     this.chatBucket = this.config.get<string>("S3_BUCKET_CHAT") ?? "hel-chat";
@@ -181,6 +183,7 @@ export class ConversationService {
       photoVisibility: other.photoVisibility,
       approved: other.approved,
       reviewStatus: other.reviewStatus,
+      isOnline: await this.presence.isOnline(otherUserId),
     };
   }
 

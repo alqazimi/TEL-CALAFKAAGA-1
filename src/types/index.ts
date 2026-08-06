@@ -107,6 +107,7 @@ export interface MatchResult {
   marriageTimeline?: string;
   wantChildren?: string;
   highlightKeys?: string[];
+  isOnline?: boolean;
 }
 
 export interface ConversationPartnerProfile {
@@ -139,6 +140,7 @@ export interface ConversationPartnerProfile {
   photoVisibility?: string | null;
   approved?: boolean;
   reviewStatus?: string;
+  isOnline?: boolean;
 }
 
 export interface Conversation {

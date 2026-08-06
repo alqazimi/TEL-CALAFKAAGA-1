@@ -19,9 +19,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { OnlineBadge } from "@/components/ui/online-status";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
 import { apiChat } from "@/data/chat/api";
+import { usePresence } from "@/data/presence/hooks";
 import { useTranslation } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import type { ConversationPartnerProfile } from "@/types";
@@ -63,6 +65,7 @@ export function ChatPartnerProfileModal({
   const [score, setScore] = useState(seedScore);
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation();
+  const { isOnline, seed } = usePresence();
 
   useEffect(() => setMounted(true), []);
 
@@ -70,7 +73,8 @@ export function ChatPartnerProfileModal({
     if (!open) return;
     setProfile(seedProfile);
     setScore(seedScore);
-  }, [open, seedProfile, seedScore]);
+    seed([{ userId: seedProfile.userId, isOnline: seedProfile.isOnline }]);
+  }, [open, seedProfile, seedScore, seed]);
 
   useEffect(() => {
     if (!open || !conversationId) return;
@@ -82,6 +86,9 @@ export function ChatPartnerProfileModal({
         if (cancelled) return;
         if (isPartnerProfile(res?.profile)) {
           setProfile(res.profile);
+          seed([
+            { userId: res.profile.userId, isOnline: res.profile.isOnline },
+          ]);
         }
         if (typeof res?.score === "number") {
           setScore(res.score);
@@ -95,7 +102,7 @@ export function ChatPartnerProfileModal({
     return () => {
       cancelled = true;
     };
-  }, [open, conversationId]);
+  }, [open, conversationId, seed]);
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +112,8 @@ export function ChatPartnerProfileModal({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  const online = isOnline(profile.userId, !!profile.isOnline);
 
   if (!mounted || !open) return null;
 
@@ -262,6 +271,10 @@ export function ChatPartnerProfileModal({
             <X className="h-4 w-4" />
           </Button>
 
+          <div className="absolute left-3 top-3">
+            <OnlineBadge online={online} label={t("matchesPage.online")} />
+          </div>
+
           {matchScore != null ? (
             <Badge className="absolute bottom-4 right-4 border-0 bg-primary px-3 py-1 text-sm font-bold text-primary-foreground shadow-lg">
               <Heart className="mr-1.5 h-3.5 w-3.5 fill-current" />
@@ -289,6 +302,11 @@ export function ChatPartnerProfileModal({
                 {location}
               </p>
             ) : null}
+            <OnlineBadge
+              online={online}
+              label={t("matchesPage.online")}
+              variant="text"
+            />
             <TrustBadges profile={profile} size="sm" className="mt-3" />
           </div>
 

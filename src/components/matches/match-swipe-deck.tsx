@@ -27,8 +27,10 @@ import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { CompatibilityHighlights } from "@/components/matches/compatibility-highlights";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
+import { OnlineBadge } from "@/components/ui/online-status";
 import type { MatchResult } from "@/types";
 import { useTranslation } from "@/lib/i18n/context";
+import { usePresence } from "@/data/presence/hooks";
 import { cn } from "@/lib/utils";
 
 const SWIPE_THRESHOLD = 96;
@@ -61,6 +63,8 @@ function SwipeCard({
   externalBusy?: boolean;
 }) {
   const { t } = useTranslation();
+  const { isOnline, seed } = usePresence();
+  const online = isOnline(match.userId, !!match.isOnline);
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-180, 180], [-12, 12]);
   const likeOpacity = useTransform(x, [40, SWIPE_THRESHOLD], [0, 1]);
@@ -68,6 +72,10 @@ function SwipeCard({
   const [busy, setBusy] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+
+  useEffect(() => {
+    seed([{ userId: match.userId, isOnline: match.isOnline }]);
+  }, [match.userId, match.isOnline, seed]);
 
   const location = [match.city, match.country].filter(Boolean).join(", ");
   const photos = useMemo(() => {
@@ -197,9 +205,10 @@ function SwipeCard({
                 )}
               </button>
               <div
-                className="absolute top-3 left-3 z-10"
+                className="absolute top-3 left-3 z-10 flex flex-col items-start gap-2"
                 onPointerDown={(e) => e.stopPropagation()}
               >
+                <OnlineBadge online={online} label={t("matchesPage.online")} />
                 <ReportBlockMenu
                   userId={String(match.userId)}
                   userName={match.name || "Member"}

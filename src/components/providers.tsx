@@ -9,6 +9,7 @@ import { ForcedPasswordResetGate } from "@/components/auth/forced-password-reset
 import { EmailVerificationGate } from "@/components/auth/email-verification-gate";
 import { MfaEnrollmentGate } from "@/components/auth/mfa-enrollment-gate";
 import { LanguageProvider } from "@/lib/i18n/context";
+import { PresenceProvider } from "@/data/presence/hooks";
 import { validateFrontendEnv } from "@/data/env";
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -22,17 +23,19 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <ApiAuthProvider>
-      <LanguageProvider>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <IdleSessionGuard />
-          <ForcedPasswordResetGate>
-            <EmailVerificationGate>
-              <MfaEnrollmentGate>{children}</MfaEnrollmentGate>
-            </EmailVerificationGate>
-          </ForcedPasswordResetGate>
-          <Toaster position="top-right" richColors />
-        </ThemeProvider>
-      </LanguageProvider>
+      <PresenceProvider>
+        <LanguageProvider>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+            <IdleSessionGuard />
+            <ForcedPasswordResetGate>
+              <EmailVerificationGate>
+                <MfaEnrollmentGate>{children}</MfaEnrollmentGate>
+              </EmailVerificationGate>
+            </ForcedPasswordResetGate>
+            <Toaster position="top-right" richColors />
+          </ThemeProvider>
+        </LanguageProvider>
+      </PresenceProvider>
     </ApiAuthProvider>
   );
 }

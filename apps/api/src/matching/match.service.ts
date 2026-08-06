@@ -32,6 +32,7 @@ import {
   utcDayKey,
 } from "./highlights";
 import { ScoreService } from "./score.service";
+import { PresenceService } from "../presence/presence.service";
 
 type AccessCtx = { userId: string; profile: Profile };
 
@@ -40,7 +41,8 @@ export class MatchService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly scores: ScoreService,
-    private readonly media: MediaAccessService
+    private readonly media: MediaAccessService,
+    private readonly presence: PresenceService
   ) {}
 
   private async requireMatchAccess(userId: string): Promise<AccessCtx> {
@@ -1321,6 +1323,7 @@ export class MatchService {
       hasPersonalSupport: !!profile.hasPersonalSupport,
       questionnaireComplete: profile.questionnaireComplete,
       verified: profile.verified,
+      isOnline: await this.presence.isOnline(targetUserId),
     };
   }
 

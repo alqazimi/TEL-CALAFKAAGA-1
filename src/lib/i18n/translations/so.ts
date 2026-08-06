@@ -937,6 +937,8 @@ export const so: Translations = {
     viewSwipeShort: "Hal",
     viewBrowseShort: "Dhammaan",
     photoPrivate: "Sawirka wuxuu muuqanayaa ka dib isbarbardhigga",
+    online: "Online",
+    offline: "Offline",
   },
   likesPage: {
     summary: "{{count}} ayaa ku jira liisaskaaga",
@@ -1586,6 +1588,8 @@ export const so: Translations = {
     locked: "Xiran",
     typing: "Wuu qorayaa...",
     activeNow: "Hadda firfircoon",
+    online: "Online",
+    offline: "Offline",
     unlockChat: "Fur sheekaysiga",
     unlockChatDesc:
       "Dhammaystir diiwaangelintaada ${{price}} si aad ula sheekaysato {{name}}.",

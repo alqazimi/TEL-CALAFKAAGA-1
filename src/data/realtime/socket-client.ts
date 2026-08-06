@@ -8,7 +8,8 @@ export type RealtimeEvent =
   | "typing:update"
   | "unread:update"
   | "notification:new"
-  | "session:revoked";
+  | "session:revoked"
+  | "presence:update";
 
 type Handler = (payload: unknown) => void;
 
@@ -64,6 +65,7 @@ function ensureSocket(): Socket | null {
     "unread:update",
     "notification:new",
     "session:revoked",
+    "presence:update",
   ];
   for (const ev of fanoutEvents) {
     socket.on(ev, (payload: unknown) => {

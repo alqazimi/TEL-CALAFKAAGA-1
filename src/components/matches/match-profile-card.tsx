@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Heart,
@@ -19,11 +20,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { OnlineBadge } from "@/components/ui/online-status";
 import { TrustBadges } from "@/components/profile/trust-badges";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import { CompatibilityHighlights } from "@/components/matches/compatibility-highlights";
 import type { MatchResult } from "@/types";
 import { useTranslation } from "@/lib/i18n/context";
+import { usePresence } from "@/data/presence/hooks";
 import { cn } from "@/lib/utils";
 
 interface MatchProfileCardProps {
@@ -50,6 +53,13 @@ export function MatchProfileCard({
   onMessage,
 }: MatchProfileCardProps) {
   const { t } = useTranslation();
+  const { isOnline, seed } = usePresence();
+  const online = isOnline(match.userId, !!match.isOnline);
+
+  useEffect(() => {
+    seed([{ userId: match.userId, isOnline: match.isOnline }]);
+  }, [match.userId, match.isOnline, seed]);
+
   const location = [match.city, match.country].filter(Boolean).join(", ");
   const facts = [
     match.prayerFrequency
@@ -110,7 +120,8 @@ export function MatchProfileCard({
               {t("matchesPage.matchPercent", { score: match.score })}
             </Badge>
           </div>
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-2">
+            <OnlineBadge online={online} label={t("matchesPage.online")} />
             <ReportBlockMenu
               userId={match.userId as string}
               userName={match.name}

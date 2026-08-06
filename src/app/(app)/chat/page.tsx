@@ -53,6 +53,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { OnlineDot } from "@/components/ui/online-status";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataLoadError } from "@/components/ui/data-load-error";
@@ -61,6 +62,7 @@ import { LazyImage } from "@/components/ui/lazy-image";
 import { ImageFileHitArea } from "@/components/ui/image-file-hit-area";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";
+import { usePresence } from "@/data/presence/hooks";
 import { resetFileInput } from "@/lib/upload-image";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
@@ -165,6 +167,17 @@ export default function ChatPage() {
   const conversations = Array.isArray(conversationsRaw)
     ? (conversationsRaw as Conversation[])
     : undefined;
+  const { isOnline, seed: seedPresence } = usePresence();
+
+  useEffect(() => {
+    if (!conversations?.length) return;
+    seedPresence(
+      conversations
+        .map((c) => c.profile)
+        .filter((p): p is NonNullable<typeof p> => !!p?.userId)
+        .map((p) => ({ userId: p.userId, isOnline: p.isOnline }))
+    );
+  }, [conversations, seedPresence]);
 
   // Drive the open thread from the URL so phone/browser Back closes chat first.
   const activeConversation = conversationParam
@@ -481,12 +494,20 @@ export default function ChatPage() {
                           : "hover:bg-muted"
                       )}
                     >
-                      <Avatar className="h-11 w-11 shrink-0">
-                        <AvatarImage src={conv.profile?.imageUrl ?? undefined} />
-                        <AvatarFallback className="bg-muted text-foreground font-medium">
-                          {conv.profile?.name?.charAt(0) ?? "?"}
-                        </AvatarFallback>
-                      </Avatar>
+                      <span className="relative h-11 w-11 shrink-0">
+                        <Avatar className="h-11 w-11">
+                          <AvatarImage src={conv.profile?.imageUrl ?? undefined} />
+                          <AvatarFallback className="bg-muted text-foreground font-medium">
+                            {conv.profile?.name?.charAt(0) ?? "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <OnlineDot
+                          online={isOnline(
+                            conv.profile?.userId,
+                            !!conv.profile?.isOnline
+                          )}
+                        />
+                      </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-semibold truncate text-sm flex items-center gap-1.5">
@@ -548,12 +569,21 @@ export default function ChatPage() {
                       name: activeConv.profile?.name ?? t("chatPage.match"),
                     })}
                   >
-                    <Avatar className="h-10 w-10 shrink-0 ring-2 ring-border/60">
-                      <AvatarImage src={activeConv.profile?.imageUrl ?? undefined} />
-                      <AvatarFallback className="bg-muted font-medium">
-                        {activeConv.profile?.name?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <span className="relative h-10 w-10 shrink-0">
+                      <Avatar className="h-10 w-10 ring-2 ring-border/60">
+                        <AvatarImage src={activeConv.profile?.imageUrl ?? undefined} />
+                        <AvatarFallback className="bg-muted font-medium">
+                          {activeConv.profile?.name?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <OnlineDot
+                        online={isOnline(
+                          activeConv.profile?.userId,
+                          !!activeConv.profile?.isOnline
+                        )}
+                        size="sm"
+                      />
+                    </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 min-w-0">
                         <p className="font-bold text-sm truncate underline-offset-2 group-hover:underline">
@@ -575,6 +605,14 @@ export default function ChatPage() {
                         <p className="text-xs text-muted-foreground mt-1">{t("chatPage.locked")}</p>
                       ) : isTyping ? (
                         <p className="text-xs text-primary mt-1">{t("chatPage.typing")}</p>
+                      ) : isOnline(
+                          activeConv.profile?.userId,
+                          !!activeConv.profile?.isOnline
+                        ) ? (
+                        <p className="text-xs font-medium text-emerald-600 mt-1 flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+                          {t("chatPage.online")}
+                        </p>
                       ) : (
                         <p className="text-[11px] text-muted-foreground mt-1">
                           {t("chatPage.tapForProfile")}

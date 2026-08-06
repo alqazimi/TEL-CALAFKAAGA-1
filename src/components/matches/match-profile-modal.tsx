@@ -17,8 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
+import { OnlineBadge } from "@/components/ui/online-status";
 import { MatchViewErrorBoundary } from "@/components/matches/match-view-error-boundary";
 import { useTranslation } from "@/lib/i18n/context";
+import { usePresence } from "@/data/presence/hooks";
 
 type MatchLike = {
   userId: string;
@@ -39,6 +41,7 @@ type MatchLike = {
   score?: number | null;
   shortlisted?: boolean;
   liked?: boolean;
+  isOnline?: boolean;
 };
 
 interface MatchProfileModalProps {
@@ -95,6 +98,8 @@ function MatchProfileModalBody({
   busy = false,
 }: Omit<MatchProfileModalProps, "isPremium">) {
   const { t } = useTranslation();
+  const { isOnline, seed } = usePresence();
+  const online = isOnline(match.userId, !!match.isOnline);
   const name = text(match.name, "Member");
   const age = typeof match.age === "number" ? match.age : null;
   const score = typeof match.score === "number" ? match.score : 0;
@@ -110,6 +115,10 @@ function MatchProfileModalBody({
   const marriageTimeline = text(match.marriageTimeline);
   const wantChildren = text(match.wantChildren);
   const bio = text(match.bio);
+
+  useEffect(() => {
+    seed([{ userId: match.userId, isOnline: match.isOnline }]);
+  }, [match.userId, match.isOnline, seed]);
 
   return (
     <div
@@ -149,6 +158,9 @@ function MatchProfileModalBody({
           >
             <X className="h-4 w-4" />
           </button>
+          <div className="absolute top-4 left-4">
+            <OnlineBadge online={online} label={t("matchesPage.online")} />
+          </div>
           <div className="absolute bottom-4 right-4">
             <Badge className="text-lg font-bold bg-primary text-primary-foreground border-0 px-3 py-1">
               {t("matchesPage.matchPercent", { score })}
@@ -168,6 +180,11 @@ function MatchProfileModalBody({
                 {location}
               </p>
             ) : null}
+            <OnlineBadge
+              online={online}
+              label={t("matchesPage.online")}
+              variant="text"
+            />
           </div>
 
           {bio ? (

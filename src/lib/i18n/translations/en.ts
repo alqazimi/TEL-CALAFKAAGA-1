@@ -927,6 +927,8 @@ export const en = {
     viewSwipeShort: "One",
     viewBrowseShort: "All",
     photoPrivate: "Photo visible after match",
+    online: "Online",
+    offline: "Offline",
   },
   likesPage: {
     summary: "{{count}} saved in your lists",
@@ -1575,6 +1577,8 @@ export const en = {
     locked: "Locked",
     typing: "Typing...",
     activeNow: "Active now",
+    online: "Online",
+    offline: "Offline",
     unlockChat: "Unlock chat",
     unlockChatDesc:
       "Complete your ${{price}} registration to message {{name}}.",

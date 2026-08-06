@@ -15,6 +15,7 @@ import { SessionService } from "../auth/session.service";
 import { isStaffMfaRequired } from "../auth/staff-mfa-policy";
 import { isStaffRole } from "../common/access";
 import { isInteractionLocked } from "../common/review-status";
+import { PresenceService } from "../presence/presence.service";
 import { ConversationService } from "./conversation.service";
 import { ChatRealtimeService } from "./chat-realtime.service";
 import { RedisService } from "../redis/redis.module";
@@ -62,6 +63,7 @@ export class ChatGateway
     private readonly conversations: ConversationService,
     private readonly realtime: ChatRealtimeService,
     private readonly redis: RedisService,
+    private readonly presence: PresenceService,
     private readonly config: ConfigService
   ) {}
 
@@ -163,15 +165,42 @@ export class ChatGateway
     await client.join(`user:${session.user.id}`);
   }
 
+  /** Notify everyone connected that this user's online status changed. */
+  private async broadcastPresence(userId: string, isOnline: boolean) {
+    try {
+      this.realtime.emitToAll("presence:update", {
+        userId,
+        isOnline,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `presence broadcast failed: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
   async handleConnection(client: AuthedSocket) {
     if (!client.data.userId) {
       client.emit("session:revoked", { reason: "unauthenticated" });
       client.disconnect(true);
+      return;
+    }
+    const newlyOnline = await this.presence.markConnected(
+      client.data.userId,
+      client.id
+    );
+    if (newlyOnline) {
+      await this.broadcastPresence(client.data.userId, true);
     }
   }
 
-  handleDisconnect(_client: AuthedSocket) {
-    // Rooms leave automatically
+  async handleDisconnect(client: AuthedSocket) {
+    const userId = client.data.userId;
+    if (!userId) return;
+    const wentOffline = await this.presence.markDisconnected(userId, client.id);
+    if (wentOffline) {
+      await this.broadcastPresence(userId, false);
+    }
   }
 
   private requireUser(client: AuthedSocket): string {
@@ -181,6 +210,17 @@ export class ChatGateway
       throw new Error("unauthenticated");
     }
     return client.data.userId;
+  }
+
+  @SubscribeMessage("presence:ping")
+  async onPresencePing(@ConnectedSocket() client: AuthedSocket) {
+    try {
+      const userId = this.requireUser(client);
+      await this.presence.heartbeat(userId);
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
   }
 
   @SubscribeMessage("conversation:join")
