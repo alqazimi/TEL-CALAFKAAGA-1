@@ -12,11 +12,12 @@ import { useDeleteAccount } from "@/data/profile/hooks-mutations";
 import { clearApiAuthStorage } from "@/data/api-client";
 import { disconnectRealtime } from "@/data/realtime/socket-client";
 import { useTranslation } from "@/lib/i18n/context";
+import type { TranslationPath } from "@/lib/i18n/translations";
 import { getSafeUserError } from "@/lib/safe-error";
 
 function deleteAccountErrorMessage(
   error: unknown,
-  t: (key: string) => string
+  t: (key: TranslationPath) => string
 ): string {
   const raw =
     error instanceof Error ? error.message : typeof error === "string" ? error : "";
