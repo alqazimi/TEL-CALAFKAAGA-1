@@ -258,22 +258,12 @@ export class DeletionService {
       },
     });
 
-    // Admin deletes: keep an audit row (actor is staff, not the target).
-    // Self-delete cannot keep an actor FK to the deleted user (ON DELETE RESTRICT);
-    // deletion_jobs retains the self-delete trail instead.
-    if (!opts?.self) {
-      await this.audit.write({
-        actorUserId,
-        action: "delete_user",
-        targetUserId: profile.userId,
-        targetProfileId: profile.id,
-        metadata: { name: profile.name, self: false },
-        correlationId: opts?.correlationId,
-        requestId: opts?.requestId,
-      });
-    }
+    // Do not write audit_logs before the hard-delete transaction:
+    // target_user_id / actor_user_id Restrict FKs blocked deletes in production.
+    // Trail is kept on deletion_jobs; admin audit is written after success.
 
     const userId = profile.userId;
+    const deletedName = profile.name;
 
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -281,6 +271,8 @@ export class DeletionService {
         await tx.session.deleteMany({ where: { userId } });
         await tx.passwordResetToken.deleteMany({ where: { userId } });
         await tx.emailVerificationToken.deleteMany({ where: { userId } });
+        await tx.mfaRecoveryCode.deleteMany({ where: { userId } });
+        await tx.mfaLoginChallenge.deleteMany({ where: { userId } });
         await tx.authAuditEvent.deleteMany({ where: { userId } });
         await tx.profileAuditEvent.deleteMany({ where: { userId } });
         // Restrict FKs added after the original cascade plan
@@ -289,8 +281,18 @@ export class DeletionService {
         await tx.photoReveal.deleteMany({
           where: { OR: [{ viewerUserId: userId }, { ownerUserId: userId }] },
         });
-        // audit_logs.actor_user_id is Restrict — must clear before user.delete
+        // Clear any audit rows that still point at this user (actor or target)
         await tx.auditLog.deleteMany({ where: { actorUserId: userId } });
+        await tx.auditLog.updateMany({
+          where: {
+            OR: [{ targetUserId: userId }, { targetProfileId: profile.id }],
+          },
+          data: { targetUserId: null, targetProfileId: null },
+        });
+        await tx.notification.updateMany({
+          where: { relatedUserId: userId },
+          data: { relatedUserId: null, convexRelatedUserId: null },
+        });
 
         // 2. Orphan media (no physical purge)
         const media = await tx.mediaObject.findMany({
@@ -418,8 +420,38 @@ export class DeletionService {
         },
       });
 
+      if (!opts?.self) {
+        try {
+          await this.audit.write({
+            actorUserId,
+            action: "delete_user",
+            // User/profile rows are gone — keep IDs only in metadata.
+            targetUserId: null,
+            targetProfileId: null,
+            metadata: {
+              name: deletedName,
+              deletedUserId: userId,
+              deletedProfileId: profile.id,
+              self: false,
+            },
+            correlationId: opts?.correlationId,
+            requestId: opts?.requestId,
+          });
+        } catch {
+          // Deletion already succeeded; audit is best-effort.
+        }
+      }
+
       return { success: true, deleted: true as const, jobId: job.id, plan };
     } catch (err) {
+      const prismaCode =
+        err && typeof err === "object" && "code" in err
+          ? String((err as { code?: string }).code ?? "")
+          : "";
+      const prismaMeta =
+        err && typeof err === "object" && "meta" in err
+          ? (err as { meta?: unknown }).meta
+          : undefined;
       await this.prisma.deletionJob.update({
         where: { id: job.id },
         data: {
@@ -427,9 +459,16 @@ export class DeletionService {
           completedAt: new Date(),
           resultJson: {
             error: err instanceof Error ? err.message : "unknown",
+            prismaCode: prismaCode || undefined,
+            prismaMeta: prismaMeta ?? undefined,
           },
         },
       });
+      if (prismaCode === "P2003") {
+        throw new BadRequestException(
+          "Could not delete this member because related records are still linked. Try again or contact support."
+        );
+      }
       throw err;
     }
   }

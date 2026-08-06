@@ -1217,7 +1217,11 @@ export class AdminUsersService {
       correlationId: opts?.correlationId,
       requestId: opts?.requestId,
     });
-    await this.metrics.scheduleRebuild();
+    try {
+      await this.metrics.scheduleRebuild();
+    } catch {
+      // Member is already deleted; metrics rebuild must not fail the request.
+    }
     return result;
   }
 

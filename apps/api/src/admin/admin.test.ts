@@ -693,23 +693,34 @@ describe("Phase 9 admin unit tests", () => {
       approved: true,
       reviewStatus: "approved",
     });
+    const victimConvexId = victim.convexId;
+    const victimProfileId = victim.profile!.id;
     await audit.write({
       actorUserId: admin.id,
-      action: "delete_user",
+      action: "approve_user",
       targetUserId: victim.id,
       targetProfileId: victim.profile!.id,
       metadata: { name: "Phase9" },
     });
     await users.deleteUser(admin.id, victim.profile!.id);
     const logs = await audit.list({ action: "delete_user", limit: 20 });
-    const orphaned = logs.items.find(
-      (l) => l.convexTargetUserId === victim.convexId || l.targetUserId === null
-    );
-    assert.ok(orphaned);
-    assert.ok(
-      orphaned!.convexTargetUserId === victim.convexId ||
-        orphaned!.targetUserId === null
-    );
+    const postDelete = logs.items.find((l) => {
+      if (l.action !== "delete_user") return false;
+      try {
+        const meta = l.metadata ? JSON.parse(String(l.metadata)) : null;
+        return meta?.deletedUserId === victim.id || meta?.deletedProfileId === victimProfileId;
+      } catch {
+        return false;
+      }
+    });
+    assert.ok(postDelete, "expected post-delete audit row");
+    assert.equal(postDelete!.targetUserId, null);
+
+    const prior = await prisma.auditLog.findFirst({
+      where: { action: "approve_user", convexTargetUserId: victimConvexId },
+    });
+    assert.ok(prior);
+    assert.equal(prior!.targetUserId, null);
   });
 
   it("bonus: email masking", () => {

@@ -43,6 +43,21 @@ export function getSafeUserError(error: unknown, fallback: string): string {
   return line;
 }
 
+/** Prefer Nest safe messages for admin actions; keep Prisma dumps out of toasts. */
+export function getAdminActionError(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    const line = firstLine(error.message);
+    if (
+      /could not delete|cannot delete|unauthorized|forbidden|invalid csrf|not found|related records/i.test(
+        line
+      )
+    ) {
+      return line.slice(0, MAX_SAFE_LENGTH);
+    }
+  }
+  return getSafeUserError(error, fallback);
+}
+
 /** Dev-only logging — never dump full errors in production browsers. */
 export function logClientError(scope: string, error: unknown): void {
   if (process.env.NODE_ENV !== "development") return;

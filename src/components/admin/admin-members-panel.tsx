@@ -43,7 +43,7 @@ import type { TranslationPath } from "@/lib/i18n/translations";
 import { resolveReviewStatus, requiresAdminProfileApproval } from "@/lib/review-status";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog, type ConfirmDialogTone } from "@/components/ui/confirm-dialog";
-import { getSafeUserError } from "@/lib/safe-error";
+import { getAdminActionError, getSafeUserError } from "@/lib/safe-error";
 
 type RoleFilter = "all" | "user" | "admin" | "owner";
 type PaymentFilter = "all" | "unpaid" | "paid" | "basic" | "premium" | "trial";
@@ -443,7 +443,8 @@ export function AdminMembersPanel({
       afterSuccess?.();
       onActionComplete?.();
     } catch (error) {
-      toast.error(getSafeUserError(error, t("adminPage.actionFailed")));
+      console.error("[admin-members] action failed", profileId, error);
+      toast.error(getAdminActionError(error, t("adminPage.actionFailed")));
     } finally {
       setBusyId(null);
     }
