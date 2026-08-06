@@ -2,28 +2,15 @@
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  Heart,
-  X,
-  Eye,
-  MapPin,
-  GraduationCap,
-  Briefcase,
-  Bookmark,
-  CalendarHeart,
-  Moon,
-  Ruler,
-  MessageCircle,
-} from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Heart, X, BadgeCheck } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { OnlineBadge } from "@/components/ui/online-status";
-import { TrustBadges } from "@/components/profile/trust-badges";
 import { ReportBlockMenu } from "@/components/safety/report-block-menu";
-import { CompatibilityHighlights } from "@/components/matches/compatibility-highlights";
+import {
+  buildProfileFacts,
+  ProfileFactChips,
+} from "@/components/matches/profile-fact-chips";
 import type { MatchResult } from "@/types";
 import { useTranslation } from "@/lib/i18n/context";
 import { usePresence } from "@/data/presence/hooks";
@@ -38,19 +25,12 @@ interface MatchProfileCardProps {
   onMessage?: () => void;
 }
 
-function scoreTone(score: number) {
-  if (score >= 75) return "bg-primary text-primary-foreground";
-  if (score >= 55) return "bg-primary/90 text-primary-foreground";
-  return "bg-card text-foreground border border-border shadow-md";
-}
-
 export function MatchProfileCard({
   match,
   index = 0,
   busy = false,
   onView,
   onAction,
-  onMessage,
 }: MatchProfileCardProps) {
   const { t } = useTranslation();
   const { isOnline, seed } = usePresence();
@@ -61,29 +41,23 @@ export function MatchProfileCard({
   }, [match.userId, match.isOnline, seed]);
 
   const location = [match.city, match.country].filter(Boolean).join(", ");
-  const facts = [
-    match.prayerFrequency
-      ? { icon: Moon, label: match.prayerFrequency }
-      : match.religiousLevel
-        ? { icon: Moon, label: match.religiousLevel }
-        : null,
-    location ? { icon: MapPin, label: location } : null,
-    match.height ? { icon: Ruler, label: `${match.height} cm` } : null,
-    match.marriageTimeline
-      ? { icon: CalendarHeart, label: match.marriageTimeline }
-      : null,
-    match.education ? { icon: GraduationCap, label: match.education } : null,
-    match.occupation ? { icon: Briefcase, label: match.occupation } : null,
-  ].filter((f): f is { icon: typeof MapPin; label: string } => f !== null);
+  const meta = [match.age, location].filter(Boolean).join(" • ");
+  const facts = buildProfileFacts(match);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
+    <motion.article
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.35 }}
+      transition={{ delay: index * 0.03, duration: 0.3 }}
+      className="rounded-2xl border border-border/80 bg-card p-3 shadow-sm sm:p-4"
     >
-      <Card className="overflow-hidden group hover:shadow-xl hover:shadow-primary/8 transition-all duration-300 border-border/80">
-        <div className="relative h-72 sm:h-80 lg:h-[22rem] bg-muted">
+      <div className="flex gap-3 sm:gap-4">
+        <button
+          type="button"
+          onClick={onView}
+          className="relative h-[9.5rem] w-[7.25rem] shrink-0 overflow-hidden rounded-2xl bg-muted sm:h-[11rem] sm:w-[8.5rem]"
+          aria-label={t("matchesPage.view")}
+        >
           {match.imageUrl ? (
             <LazyImage
               src={match.imageUrl}
@@ -91,132 +65,106 @@ export function MatchProfileCard({
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/10 to-gold/10">
-              <Avatar className="h-24 w-24 sm:h-28 sm:w-28">
-                <AvatarFallback className="text-3xl font-display sm:text-4xl">
+            <div className="flex h-full flex-col items-center justify-center gap-1 bg-gradient-to-br from-primary/10 to-accent">
+              <Avatar className="h-14 w-14">
+                <AvatarFallback className="text-xl font-display">
                   {(match.name || "?").charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              {match.photoHidden && (
-                <p className="text-xs text-muted-foreground px-4 text-center sm:text-sm">
+              {match.photoHidden ? (
+                <p className="px-2 text-center text-[10px] text-muted-foreground">
                   {t("matchesPage.photoPrivate")}
                 </p>
-              )}
+              ) : null}
             </div>
           )}
-          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/75 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4 text-white sm:bottom-5 sm:left-5 sm:right-5">
-            <h3 className="text-xl font-semibold tracking-tight sm:text-2xl">
-              {match.name}, {match.age}
-            </h3>
-          </div>
-          <div className="absolute top-3 right-3">
-            <Badge
-              className={cn(
-                "px-3 py-1.5 text-base font-bold border-0 shadow-lg sm:text-lg",
-                scoreTone(match.score)
-              )}
-            >
-              {t("matchesPage.matchPercent", { score: match.score })}
-            </Badge>
-          </div>
-          <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-2">
+          <div className="absolute left-2 top-2">
             <OnlineBadge online={online} label={t("matchesPage.online")} />
+          </div>
+          <button
+            type="button"
+            className={cn(
+              "absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-primary shadow-sm",
+              match.shortlisted && "bg-primary text-primary-foreground"
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!match.shortlisted) onAction("shortlist");
+            }}
+            disabled={busy || match.shortlisted}
+            aria-label={t("matchesPage.shortlist")}
+          >
+            <Heart
+              className={cn("h-3.5 w-3.5", match.shortlisted && "fill-current")}
+            />
+          </button>
+        </button>
+
+        <div className="min-w-0 flex-1 flex flex-col">
+          <div className="flex items-start justify-between gap-2">
+            <button
+              type="button"
+              onClick={onView}
+              className="min-w-0 text-left"
+            >
+              <h3 className="flex items-center gap-1.5 text-base font-semibold tracking-tight sm:text-lg">
+                <span className="truncate">{match.name}</span>
+                {match.verified ? (
+                  <BadgeCheck
+                    className="h-4 w-4 shrink-0 fill-emerald-500 text-white"
+                    aria-label={t("trustBadges.approved")}
+                  />
+                ) : null}
+              </h3>
+              {meta ? (
+                <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+                  {meta}
+                </p>
+              ) : null}
+            </button>
             <ReportBlockMenu
               userId={match.userId as string}
               userName={match.name}
               compact
             />
           </div>
-        </div>
 
-        <CardContent className="p-5 space-y-4 sm:p-6">
-          <TrustBadges profile={match} size="sm" />
-          <CompatibilityHighlights keys={match.highlightKeys} />
+          <ProfileFactChips
+            facts={facts}
+            max={4}
+            className="mt-2"
+            chipClassName="bg-muted/80 border-transparent"
+          />
 
-          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-            {facts.slice(0, 6).map((fact) => (
-              <div
-                key={fact.label}
-                className="flex items-center gap-2 rounded-xl bg-muted/60 px-2.5 py-2.5 text-xs text-muted-foreground sm:text-sm"
-              >
-                <fact.icon className="h-3.5 w-3.5 shrink-0 text-primary sm:h-4 sm:w-4" />
-                <span className="truncate">{fact.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {match.bio && (
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+          {match.bio ? (
+            <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
               {match.bio}
             </p>
-          )}
+          ) : null}
 
-          <div className="flex flex-col gap-2 pt-1">
-            {onMessage ? (
-              <Button
-                type="button"
-                className="h-11 w-full rounded-full relative z-20"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onMessage();
-                }}
-                disabled={busy}
-              >
-                <MessageCircle className="h-4 w-4 mr-1.5" />
-                {t("matchesPage.message")}
-              </Button>
-            ) : null}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-11 w-11 rounded-full shrink-0 border-rose-200 text-rose-600"
-                onClick={() => onAction("pass")}
-                disabled={busy}
-                aria-label={t("matchesPage.pass")}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant={match.shortlisted ? "secondary" : "outline"}
-                className="h-11 rounded-full"
-                onClick={() => onAction("shortlist")}
-                disabled={busy || match.shortlisted}
-                aria-label={t("matchesPage.shortlist")}
-              >
-                <Bookmark className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-11 flex-1 rounded-full relative z-20"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onView();
-                }}
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                {t("matchesPage.view")}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-11 flex-1 rounded-full"
-                onClick={() => onAction("like")}
-                disabled={busy || match.liked}
-              >
-                <Heart className="h-4 w-4 mr-1" />
-                {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
-              </Button>
-            </div>
+          <div className="mt-auto flex items-center justify-end gap-2 pt-3">
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm disabled:opacity-50"
+              onClick={() => onAction("pass")}
+              disabled={busy}
+              aria-label={t("matchesPage.pass")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md disabled:opacity-50"
+              onClick={() => onAction("like")}
+              disabled={busy || match.liked}
+              aria-label={t("matchesPage.like")}
+            >
+              <Heart className="h-5 w-5 fill-current" />
+            </button>
           </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+        </div>
+      </div>
+    </motion.article>
   );
 }

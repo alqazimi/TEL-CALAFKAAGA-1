@@ -1,26 +1,29 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   X,
   Heart,
-  MapPin,
-  GraduationCap,
-  Briefcase,
-  Bookmark,
-  CalendarHeart,
-  Baby,
-  MessageCircle,
+  Star,
+  ArrowLeft,
+  BadgeCheck,
+  ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LazyImage } from "@/components/ui/lazy-image";
 import { OnlineBadge } from "@/components/ui/online-status";
+import { PhotoGalleryLightbox } from "@/components/ui/photo-gallery-lightbox";
+import { ReportBlockMenu } from "@/components/safety/report-block-menu";
 import { MatchViewErrorBoundary } from "@/components/matches/match-view-error-boundary";
+import {
+  buildProfileFacts,
+  ProfileFactChips,
+  ValueChips,
+} from "@/components/matches/profile-fact-chips";
 import { useTranslation } from "@/lib/i18n/context";
 import { usePresence } from "@/data/presence/hooks";
+import { cn } from "@/lib/utils";
 
 type MatchLike = {
   userId: string;
@@ -32,16 +35,21 @@ type MatchLike = {
   education?: string | null;
   occupation?: string | null;
   religiousLevel?: string | null;
+  prayerFrequency?: string | null;
   bio?: string | null;
   maritalStatus?: string | null;
   marriageTimeline?: string | null;
   wantChildren?: string | null;
   imageUrl?: string | null;
+  additionalImageUrls?: string[];
   photoHidden?: boolean;
   score?: number | null;
   shortlisted?: boolean;
   liked?: boolean;
+  verified?: boolean;
   isOnline?: boolean;
+  qualities?: string[];
+  hobbies?: string[];
 };
 
 interface MatchProfileModalProps {
@@ -59,16 +67,10 @@ function text(value: unknown, fallback = ""): string {
   return String(value);
 }
 
-/**
- * Minimal, crash-resistant profile view.
- * Intentionally avoids CompatibilityBreakdown / ReportBlock / wali hooks
- * that previously took down the matches page on open.
- */
 export function MatchProfileModal({
   match,
   onClose,
   onLike,
-  onMessage,
   busy = false,
 }: MatchProfileModalProps) {
   const [mounted, setMounted] = useState(false);
@@ -82,7 +84,6 @@ export function MatchProfileModal({
         match={match}
         onClose={onClose}
         onLike={onLike}
-        onMessage={onMessage}
         busy={busy}
       />
     </MatchViewErrorBoundary>,
@@ -94,222 +95,281 @@ function MatchProfileModalBody({
   match,
   onClose,
   onLike,
-  onMessage,
   busy = false,
-}: Omit<MatchProfileModalProps, "isPremium">) {
+}: Omit<MatchProfileModalProps, "isPremium" | "onMessage">) {
   const { t } = useTranslation();
   const { isOnline, seed } = usePresence();
   const online = isOnline(match.userId, !!match.isOnline);
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+
   const name = text(match.name, "Member");
   const age = typeof match.age === "number" ? match.age : null;
-  const score = typeof match.score === "number" ? match.score : 0;
   const location = [text(match.city), text(match.country)].filter(Boolean).join(", ");
-  const imageUrl =
-    typeof match.imageUrl === "string" && match.imageUrl.length > 0
-      ? match.imageUrl
-      : null;
-  const education = text(match.education);
-  const occupation = text(match.occupation);
-  const religiousLevel = text(match.religiousLevel);
-  const maritalStatus = text(match.maritalStatus);
-  const marriageTimeline = text(match.marriageTimeline);
-  const wantChildren = text(match.wantChildren);
+  const meta = [age, location].filter(Boolean).join(" • ");
   const bio = text(match.bio);
+  const facts = buildProfileFacts(match);
+  const values = useMemo(() => {
+    const q = Array.isArray(match.qualities) ? match.qualities : [];
+    const h = Array.isArray(match.hobbies) ? match.hobbies : [];
+    return [...q, ...h].filter(Boolean).slice(0, 8);
+  }, [match.qualities, match.hobbies]);
+
+  const photos = useMemo(() => {
+    const main =
+      typeof match.imageUrl === "string" && match.imageUrl.length > 0
+        ? match.imageUrl
+        : null;
+    const extra = Array.isArray(match.additionalImageUrls)
+      ? match.additionalImageUrls
+      : [];
+    return [main, ...extra].filter(
+      (url): url is string => typeof url === "string" && url.length > 0
+    );
+  }, [match.imageUrl, match.additionalImageUrls]);
 
   useEffect(() => {
     seed([{ userId: match.userId, isOnline: match.isOnline }]);
   }, [match.userId, match.isOnline, seed]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div
-      data-view-modal="minimal-v15"
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/45 backdrop-blur-sm sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label={name}
     >
-      <div className="bg-card text-card-foreground rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-border">
-        <div className="relative h-72 sm:h-80 bg-gradient-to-br from-accent to-accent/50">
-          {imageUrl ? (
-            <LazyImage
-              src={imageUrl}
-              alt={name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2">
-              <Avatar className="h-24 w-24">
-                <AvatarFallback className="text-4xl">
-                  {name.charAt(0) || "?"}
-                </AvatarFallback>
-              </Avatar>
-              {match.photoHidden ? (
-                <p className="text-xs text-muted-foreground px-6 text-center">
-                  {t("matchesPage.photoPrivate")}
-                </p>
-              ) : null}
-            </div>
-          )}
+      <button
+        type="button"
+        className="absolute inset-0"
+        aria-label={t("common.a11yClose")}
+        onClick={onClose}
+      />
+      <div className="relative z-10 flex max-h-[94dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-border bg-background shadow-2xl sm:rounded-3xl">
+        <header className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white hover:bg-black/50"
+            className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-muted"
             aria-label={t("common.a11yClose")}
           >
-            <X className="h-4 w-4" />
+            <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="absolute top-4 left-4">
-            <OnlineBadge online={online} label={t("matchesPage.online")} />
-          </div>
-          <div className="absolute bottom-4 right-4">
-            <Badge className="text-lg font-bold bg-primary text-primary-foreground border-0 px-3 py-1">
-              {t("matchesPage.matchPercent", { score })}
-            </Badge>
-          </div>
-        </div>
+          <p className="font-display text-lg font-semibold text-primary tracking-tight">
+            Hel Calafkaaga
+          </p>
+          <ReportBlockMenu
+            userId={match.userId}
+            userName={name}
+            compact
+          />
+        </header>
 
-        <div className="p-6 space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold">
-              {name}
-              {age != null ? `, ${age}` : ""}
-            </h2>
-            {location ? (
-              <p className="text-muted-foreground flex items-center gap-1 mt-1">
-                <MapPin className="h-4 w-4" />
-                {location}
-              </p>
-            ) : null}
-            <OnlineBadge
-              online={online}
-              label={t("matchesPage.online")}
-              variant="text"
-            />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-4 space-y-5">
+          <div className="flex gap-4">
+            <div className="relative h-24 w-24 shrink-0 sm:h-28 sm:w-28">
+              {photos[0] ? (
+                <button
+                  type="button"
+                  className="h-full w-full overflow-hidden rounded-full ring-2 ring-border"
+                  onClick={() => {
+                    setGalleryIndex(0);
+                    setGalleryOpen(true);
+                  }}
+                >
+                  <LazyImage
+                    src={photos[0]}
+                    alt={name}
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              ) : (
+                <Avatar className="h-full w-full">
+                  <AvatarFallback className="text-3xl font-display">
+                    {name.charAt(0) || "?"}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+            </div>
+            <div className="min-w-0 flex-1 pt-1">
+              <h2 className="flex items-center gap-1.5 text-xl font-bold tracking-tight">
+                <span className="truncate">{name}</span>
+                {match.verified ? (
+                  <BadgeCheck
+                    className="h-5 w-5 shrink-0 fill-emerald-500 text-white"
+                    aria-label={t("trustBadges.approved")}
+                  />
+                ) : null}
+              </h2>
+              {meta ? (
+                <p className="mt-1 text-sm text-muted-foreground">{meta}</p>
+              ) : null}
+              <OnlineBadge
+                online={online}
+                label={t("matchesPage.online")}
+                variant="text"
+                className="mt-1.5"
+              />
+            </div>
           </div>
+
+          <ProfileFactChips facts={facts} chipClassName="border-primary/30 bg-card px-2.5 py-1.5 text-xs" />
 
           {bio ? (
-            <div className="rounded-2xl bg-muted/50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                {t("matchesPage.about")}
+            <section className="rounded-2xl bg-muted/70 p-4">
+              <h3 className="text-sm font-semibold text-primary">
+                {t("matchesPage.aboutMe")}
+              </h3>
+              <p
+                className={cn(
+                  "mt-2 text-sm leading-relaxed text-foreground/90",
+                  !bioExpanded && "line-clamp-3"
+                )}
+              >
+                {bio}
               </p>
-              <p className="text-sm leading-relaxed">{bio}</p>
-            </div>
+              {bio.length > 120 ? (
+                <button
+                  type="button"
+                  className="mt-2 inline-flex items-center gap-0.5 text-sm font-semibold text-primary"
+                  onClick={() => setBioExpanded((v) => !v)}
+                >
+                  {bioExpanded
+                    ? t("matchesPage.readLess")
+                    : t("matchesPage.readMore")}
+                  <ChevronRight
+                    className={cn(
+                      "h-4 w-4 transition-transform",
+                      bioExpanded && "rotate-90"
+                    )}
+                  />
+                </button>
+              ) : null}
+            </section>
           ) : null}
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            {religiousLevel ? (
-              <Fact label={t("matchesPage.religion")} value={religiousLevel} />
-            ) : null}
-            {maritalStatus ? (
-              <Fact
-                label={t("matchesPage.maritalStatus")}
-                value={maritalStatus}
-              />
-            ) : null}
-            {marriageTimeline ? (
-              <Fact
-                label={t("matchesPage.marriageTimeline")}
-                value={marriageTimeline}
-                icon={<CalendarHeart className="h-3.5 w-3.5" />}
-              />
-            ) : null}
-            {wantChildren ? (
-              <Fact
-                label={t("matchesPage.wantChildren")}
-                value={wantChildren}
-                icon={<Baby className="h-3.5 w-3.5" />}
-              />
-            ) : null}
-            {education ? (
-              <Fact
-                label={t("matchesPage.education")}
-                value={education}
-                icon={<GraduationCap className="h-3.5 w-3.5" />}
-              />
-            ) : null}
-            {occupation ? (
-              <Fact
-                label={t("matchesPage.occupation")}
-                value={occupation}
-                icon={<Briefcase className="h-3.5 w-3.5" />}
-              />
-            ) : null}
-            {typeof match.height === "number" && match.height > 0 ? (
-              <Fact
-                label={t("matchesPage.height")}
-                value={`${match.height} cm`}
-              />
-            ) : null}
-          </div>
+          {photos.length > 0 ? (
+            <section>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold">
+                  {t("matchesPage.photosCount", { count: photos.length })}
+                </h3>
+                <button
+                  type="button"
+                  className="text-sm font-semibold text-primary"
+                  onClick={() => {
+                    setGalleryIndex(0);
+                    setGalleryOpen(true);
+                  }}
+                >
+                  {t("matchesPage.seeAll")}
+                </button>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {photos.map((url, i) => (
+                  <button
+                    key={`${url}-${i}`}
+                    type="button"
+                    className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-muted"
+                    onClick={() => {
+                      setGalleryIndex(i);
+                      setGalleryOpen(true);
+                    }}
+                  >
+                    <LazyImage
+                      src={url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : match.photoHidden ? (
+            <p className="text-sm text-muted-foreground">
+              {t("matchesPage.photoPrivate")}
+            </p>
+          ) : null}
 
-          <div className="flex flex-col gap-3 pt-2">
-            {onMessage ? (
-              <Button
-                type="button"
-                className="w-full font-semibold"
-                onClick={onMessage}
-                disabled={busy}
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                {t("matchesPage.message")}
-              </Button>
-            ) : null}
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="font-semibold"
-                onClick={() => onLike("shortlist")}
-                disabled={busy || !!match.shortlisted}
-              >
-                <Bookmark className="h-4 w-4 mr-2" />
-                {match.shortlisted
-                  ? t("matchesPage.shortlisted")
-                  : t("matchesPage.shortlist")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 font-semibold"
-                onClick={() => onLike("like")}
-                disabled={busy || !!match.liked}
-              >
-                <Heart className="h-4 w-4 mr-2" />
-                {match.liked ? t("matchesPage.liked") : t("matchesPage.like")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 font-semibold"
-                onClick={() => onLike("pass")}
-                disabled={busy}
-              >
-                {t("matchesPage.pass")}
-              </Button>
-            </div>
+          {values.length > 0 ? (
+            <section className="rounded-2xl bg-muted/70 p-4">
+              <h3 className="text-sm font-semibold">
+                {t("matchesPage.myValues")}
+              </h3>
+              <ValueChips values={values} className="mt-3" />
+            </section>
+          ) : null}
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center gap-6 bg-gradient-to-t from-background via-background/95 to-transparent px-4 pb-5 pt-10">
+          <div className="pointer-events-auto flex flex-col items-center gap-1.5">
+            <button
+              type="button"
+              className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md disabled:opacity-50"
+              onClick={() => onLike("pass")}
+              disabled={busy}
+              aria-label={t("matchesPage.pass")}
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("matchesPage.pass")}
+            </span>
+          </div>
+          <div className="pointer-events-auto flex flex-col items-center gap-1.5">
+            <button
+              type="button"
+              className="flex h-[4.25rem] w-[4.25rem] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg disabled:opacity-50"
+              onClick={() => onLike("like")}
+              disabled={busy || !!match.liked}
+              aria-label={t("matchesPage.like")}
+            >
+              <Heart className="h-7 w-7 fill-current" />
+            </button>
+            <span className="text-xs font-semibold text-primary">
+              {t("matchesPage.like")}
+            </span>
+          </div>
+          <div className="pointer-events-auto flex flex-col items-center gap-1.5">
+            <button
+              type="button"
+              className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md disabled:opacity-50"
+              onClick={() => onLike("shortlist")}
+              disabled={busy || !!match.shortlisted}
+              aria-label={t("matchesPage.superLike")}
+            >
+              <Star
+                className={cn(
+                  "h-6 w-6",
+                  match.shortlisted && "fill-primary text-primary"
+                )}
+              />
+            </button>
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("matchesPage.superLike")}
+            </span>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-function Fact({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon?: ReactNode;
-}) {
-  return (
-    <div className="rounded-xl bg-muted p-3">
-      <p className="text-muted-foreground text-xs font-medium flex items-center gap-1">
-        {icon}
-        {label}
-      </p>
-      <p className="font-semibold mt-0.5 flex items-center gap-1">{value}</p>
+      {galleryOpen && photos.length > 0 ? (
+        <PhotoGalleryLightbox
+          images={photos}
+          initialIndex={galleryIndex}
+          open={galleryOpen}
+          onClose={() => setGalleryOpen(false)}
+          alt={name}
+        />
+      ) : null}
     </div>
   );
 }

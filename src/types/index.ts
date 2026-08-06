@@ -108,6 +108,9 @@ export interface MatchResult {
   wantChildren?: string;
   highlightKeys?: string[];
   isOnline?: boolean;
+  qualities?: string[];
+  hobbies?: string[];
+  languagesSpoken?: string[];
 }
 
 export interface ConversationPartnerProfile {

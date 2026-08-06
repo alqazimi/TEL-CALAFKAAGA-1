@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Filter, LayoutGrid, Layers } from "lucide-react";
+import { Filter, HeartHandshake, LayoutGrid, Layers, X } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { MemberDataLoading } from "@/components/auth/member-data-loading";
 import { Card } from "@/components/ui/card";
@@ -35,6 +36,10 @@ import { useTranslation } from "@/lib/i18n/context";
 import { useMarkNotificationsRead } from "@/hooks/use-mark-notifications-read";
 import { useProfile, usePreferencesQuery } from "@/data/profile/hooks";
 import { useMatches, useLikeUser, useStartChat } from "@/data/matching/hooks";
+import { usePresence } from "@/data/presence/hooks";
+import { cn } from "@/lib/utils";
+
+type DiscoverTab = "discover" | "online" | "new" | "nearby";
 
 function buildFilterArgs(filters: Record<string, string>) {
   return {
@@ -67,8 +72,11 @@ export default function MatchesPage() {
   const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"swipe" | "browse">("browse");
+  const [discoverTab, setDiscoverTab] = useState<DiscoverTab>("discover");
+  const [dismissCompleteBanner, setDismissCompleteBanner] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<MatchResult | null>(null);
   const [actionBusyId, setActionBusyId] = useState<string | null>(null);
+  const { isOnline, seed: seedPresence } = usePresence();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedFilters(filters), 350);
@@ -118,6 +126,37 @@ export default function MatchesPage() {
 
   const likeUser = useLikeUser();
   const startChat = useStartChat();
+
+  const matchList = useMemo(
+    () =>
+      (discoverMatches ?? []).filter((m) => !hiddenUserIds.has(m.userId)),
+    [discoverMatches, hiddenUserIds]
+  );
+
+  useEffect(() => {
+    if (!matchList.length) return;
+    seedPresence(
+      matchList.map((m) => ({ userId: m.userId, isOnline: m.isOnline }))
+    );
+  }, [matchList, seedPresence]);
+
+  const filteredMatches = useMemo(() => {
+    if (discoverTab === "online") {
+      return matchList.filter((m) => isOnline(m.userId, !!m.isOnline));
+    }
+    if (discoverTab === "nearby") {
+      const city = profile?.city?.trim().toLowerCase();
+      const country = profile?.country?.trim().toLowerCase();
+      return matchList.filter((m) => {
+        const mCity = m.city?.trim().toLowerCase();
+        const mCountry = m.country?.trim().toLowerCase();
+        if (city && mCity && city === mCity) return true;
+        if (country && mCountry && country === mCountry) return true;
+        return false;
+      });
+    }
+    return matchList;
+  }, [discoverTab, matchList, isOnline, profile?.city, profile?.country]);
 
   // Open the profile the user tapped on the dashboard (?user=).
   useEffect(() => {
@@ -308,54 +347,77 @@ export default function MatchesPage() {
     );
   }
 
-  const matchList = (discoverMatches ?? []).filter(
-    (m) => !hiddenUserIds.has(m.userId)
-  );
-  const matchLabel = matchList.length === 1 ? t("matchesPage.match") : t("matchesPage.matches");
+  const showCompleteBanner =
+    !!profile &&
+    !dismissCompleteBanner &&
+    !profile.questionnaireComplete;
+
+  const tabs: Array<{ id: DiscoverTab; label: string }> = [
+    { id: "discover", label: t("matchesPage.tabDiscover") },
+    { id: "online", label: t("matchesPage.tabOnline") },
+    { id: "new", label: t("matchesPage.tabNew") },
+    { id: "nearby", label: t("matchesPage.tabNearby") },
+  ];
+
+  const emptyTitle =
+    discoverTab === "online"
+      ? t("matchesPage.noOnlineTitle")
+      : discoverTab === "nearby"
+        ? t("matchesPage.noNearbyTitle")
+        : t("matchesPage.noMatchesTitle");
+  const emptyDesc =
+    discoverTab === "online"
+      ? t("matchesPage.noOnlineDesc")
+      : discoverTab === "nearby"
+        ? t("matchesPage.noNearbyDesc")
+        : t("matchesPage.noMatchesDesc");
 
   return (
     <DashboardLayout>
-      <div className="space-y-5 mx-auto w-full max-w-6xl">
+      <div className="mx-auto w-full max-w-2xl space-y-4 pb-24 sm:space-y-5">
         {profile && isInTrialPeriod(profile) && <TrialBanner profile={profile} />}
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-semibold sm:text-3xl">{t("matchesPage.discoverTitle")}</h1>
-            <p className="text-sm text-muted-foreground mt-1 sm:text-base">
-              {t("matchesPage.compatible", { count: matchList.length, label: matchLabel })}
-            </p>
-            {matchList.length > 0 ? (
-              <p className="text-xs text-muted-foreground mt-1.5 sm:text-sm">
-                {viewMode === "browse"
-                  ? t("matchesPage.browseHint")
-                  : t("matchesPage.swipeModeHint")}
-              </p>
-            ) : null}
-          </div>
-          <div className="flex gap-2 shrink-0">
+
+        <div className="flex items-center justify-between gap-2">
+          <nav className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-0.5" aria-label={t("matchesPage.discoverTitle")}>
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setDiscoverTab(tab.id)}
+                className={cn(
+                  "shrink-0 rounded-none border-b-2 px-3 py-2 text-sm font-semibold transition-colors",
+                  discoverTab === tab.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+          <div className="flex shrink-0 gap-1.5">
             <Button
               variant={viewMode === "browse" ? "default" : "outline"}
-              size="sm"
-              className="rounded-full shrink-0 gap-1.5 px-3"
+              size="icon"
+              className="h-9 w-9 rounded-full"
               onClick={() => setViewMode("browse")}
               aria-label={t("matchesPage.viewBrowse")}
             >
               <LayoutGrid className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("matchesPage.viewBrowseShort")}</span>
             </Button>
             <Button
               variant={viewMode === "swipe" ? "default" : "outline"}
-              size="sm"
-              className="rounded-full shrink-0 gap-1.5 px-3"
+              size="icon"
+              className="h-9 w-9 rounded-full"
               onClick={() => setViewMode("swipe")}
               aria-label={t("matchesPage.viewSwipe")}
             >
               <Layers className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("matchesPage.viewSwipeShort")}</span>
             </Button>
             <Button
               variant="outline"
               size="icon"
-              className="rounded-full shrink-0"
+              className="h-9 w-9 rounded-full"
               onClick={() => setShowFilters(!showFilters)}
               aria-label={t("matchesPage.filters")}
             >
@@ -366,14 +428,49 @@ export default function MatchesPage() {
 
         {showFilters && <MatchFilters filters={filters} onChange={setFilters} />}
 
-        {matchList.length === 0 ? (
-          <Card className="p-12 text-center">
-            <h3 className="text-lg font-semibold mb-2">{t("matchesPage.noMatchesTitle")}</h3>
-            <p className="text-muted-foreground text-sm">{t("matchesPage.noMatchesDesc")}</p>
+        <div className="rounded-2xl border border-primary/15 bg-accent/50 p-4">
+          <div className="flex gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <HeartHandshake className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                {t("matchesPage.faithBannerTitle")}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                {t("matchesPage.faithBannerBody")}
+              </p>
+              <Link
+                href="/about"
+                className="mt-2 inline-block text-sm font-semibold text-primary"
+              >
+                {t("matchesPage.faithBannerCta")}
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base font-semibold sm:text-lg">
+            {t("matchesPage.recommended")}
+          </h2>
+          <button
+            type="button"
+            className="text-sm font-semibold text-primary"
+            onClick={() => setDiscoverTab("discover")}
+          >
+            {t("matchesPage.seeAll")}
+          </button>
+        </div>
+
+        {filteredMatches.length === 0 ? (
+          <Card className="p-10 text-center sm:p-12">
+            <h3 className="text-lg font-semibold mb-2">{emptyTitle}</h3>
+            <p className="text-muted-foreground text-sm">{emptyDesc}</p>
           </Card>
         ) : viewMode === "browse" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-            {matchList.map((match, i) => (
+          <div className="space-y-3 sm:space-y-4">
+            {filteredMatches.map((match, i) => (
               <MatchProfileCard
                 key={match.userId}
                 match={match}
@@ -386,9 +483,9 @@ export default function MatchesPage() {
             ))}
           </div>
         ) : (
-          <div className="mx-auto w-full max-w-xl lg:max-w-2xl">
+          <div className="mx-auto w-full max-w-xl">
             <MatchSwipeDeck
-              matches={matchList}
+              matches={filteredMatches}
               startUserId={focusUserId}
               actionBusyId={actionBusyId}
               onView={setSelectedMatch}
@@ -398,6 +495,32 @@ export default function MatchesPage() {
           </div>
         )}
       </div>
+
+      {showCompleteBanner ? (
+        <div className="fixed inset-x-0 bottom-[calc(var(--app-tabbar)+env(safe-area-inset-bottom,0px)+0.5rem)] z-30 px-3 sm:px-4">
+          <div className="mx-auto flex max-w-2xl items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-lg">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">
+                {t("matchesPage.completeProfileBannerTitle")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t("matchesPage.completeProfileBannerBody")}
+              </p>
+            </div>
+            <Button asChild size="sm" className="shrink-0 rounded-full">
+              <Link href="/questionnaire">{t("matchesPage.completeProfileCta")}</Link>
+            </Button>
+            <button
+              type="button"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+              onClick={() => setDismissCompleteBanner(true)}
+              aria-label={t("common.a11yClose")}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {selectedMatch && (
         <MatchProfileModal
